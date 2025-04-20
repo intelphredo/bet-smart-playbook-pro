@@ -1,10 +1,10 @@
-
 import { LiveOdds as LiveOddsType } from "@/types/sports";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatDistanceToNow, parseISO } from "date-fns";
 import { Trophy } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { SPORTSBOOK_LOGOS } from "@/utils/sportsbook";
 
 interface LiveOddsProps {
   odds: LiveOddsType[];
@@ -23,7 +23,6 @@ const LiveOdds = ({ odds }: LiveOddsProps) => {
     }
   };
 
-  // Get best odds for each bet type
   const getBestOdds = () => {
     const bestOdds = {
       home: Math.max(...odds.map(o => o.homeWin)),
@@ -35,7 +34,6 @@ const LiveOdds = ({ odds }: LiveOddsProps) => {
 
   const bestOdds = getBestOdds();
 
-  // If no odds are provided, don't render anything
   if (!odds || odds.length === 0) {
     return null;
   }
@@ -53,7 +51,7 @@ const LiveOdds = ({ odds }: LiveOddsProps) => {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Sportsbook</TableHead>
+              <TableHead className="w-[200px]">Sportsbook</TableHead>
               <TableHead>Home</TableHead>
               {odds[0]?.draw !== undefined && <TableHead>Draw</TableHead>}
               <TableHead>Away</TableHead>
@@ -63,16 +61,16 @@ const LiveOdds = ({ odds }: LiveOddsProps) => {
           <TableBody>
             {odds.map((odd) => (
               <TableRow key={odd.sportsbook.id}>
-                <TableCell className="font-medium">
-                  <div className="flex items-center gap-2">
-                    {odd.sportsbook.logo && (
+                <TableCell>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 flex items-center justify-center rounded-md bg-white dark:bg-gray-800 p-1">
                       <img 
-                        src={odd.sportsbook.logo} 
-                        alt={odd.sportsbook.name} 
-                        className="w-6 h-6 object-contain" 
+                        src={odd.sportsbook.logo || SPORTSBOOK_LOGOS[odd.sportsbook.id as keyof typeof SPORTSBOOK_LOGOS]} 
+                        alt={odd.sportsbook.name}
+                        className="w-full h-full object-contain"
                       />
-                    )}
-                    {odd.sportsbook.name}
+                    </div>
+                    <span className="font-medium">{odd.sportsbook.name}</span>
                   </div>
                 </TableCell>
                 <TableCell className={odd.homeWin === bestOdds.home ? "font-bold text-green-600" : ""}>
