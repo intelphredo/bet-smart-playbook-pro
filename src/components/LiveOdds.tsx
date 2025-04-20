@@ -3,6 +3,8 @@ import { LiveOdds as LiveOddsType } from "@/types/sports";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatDistanceToNow, parseISO } from "date-fns";
+import { Trophy } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 interface LiveOddsProps {
   odds: LiveOddsType[];
@@ -21,6 +23,18 @@ const LiveOdds = ({ odds }: LiveOddsProps) => {
     }
   };
 
+  // Get best odds for each bet type
+  const getBestOdds = () => {
+    const bestOdds = {
+      home: Math.max(...odds.map(o => o.homeWin)),
+      away: Math.max(...odds.map(o => o.awayWin)),
+      draw: odds[0]?.draw !== undefined ? Math.max(...odds.filter(o => o.draw !== undefined).map(o => o.draw!)) : undefined
+    };
+    return bestOdds;
+  };
+
+  const bestOdds = getBestOdds();
+
   // If no odds are provided, don't render anything
   if (!odds || odds.length === 0) {
     return null;
@@ -29,6 +43,13 @@ const LiveOdds = ({ odds }: LiveOddsProps) => {
   return (
     <Card className="mt-4">
       <CardContent className="p-4">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold">Live Odds</h3>
+          <Badge variant="outline" className="flex items-center gap-1">
+            <Trophy className="h-3 w-3" />
+            Best Value Available
+          </Badge>
+        </div>
         <Table>
           <TableHeader>
             <TableRow>
@@ -42,12 +63,29 @@ const LiveOdds = ({ odds }: LiveOddsProps) => {
           <TableBody>
             {odds.map((odd) => (
               <TableRow key={odd.sportsbook.id}>
-                <TableCell className="font-medium">{odd.sportsbook.name}</TableCell>
-                <TableCell>{formatOdds(odd.homeWin)}</TableCell>
+                <TableCell className="font-medium">
+                  <div className="flex items-center gap-2">
+                    {odd.sportsbook.logo && (
+                      <img 
+                        src={odd.sportsbook.logo} 
+                        alt={odd.sportsbook.name} 
+                        className="w-6 h-6 object-contain" 
+                      />
+                    )}
+                    {odd.sportsbook.name}
+                  </div>
+                </TableCell>
+                <TableCell className={odd.homeWin === bestOdds.home ? "font-bold text-green-600" : ""}>
+                  {formatOdds(odd.homeWin)}
+                </TableCell>
                 {odd.draw !== undefined && (
-                  <TableCell>{formatOdds(odd.draw)}</TableCell>
+                  <TableCell className={odd.draw === bestOdds.draw ? "font-bold text-green-600" : ""}>
+                    {formatOdds(odd.draw)}
+                  </TableCell>
                 )}
-                <TableCell>{formatOdds(odd.awayWin)}</TableCell>
+                <TableCell className={odd.awayWin === bestOdds.away ? "font-bold text-green-600" : ""}>
+                  {formatOdds(odd.awayWin)}
+                </TableCell>
                 <TableCell className="text-muted-foreground text-sm">
                   {formatTime(odd.updatedAt)}
                 </TableCell>

@@ -1,4 +1,3 @@
-
 import { Match, Team, League } from "@/types/sports";
 
 // ESPN API endpoints
@@ -51,6 +50,12 @@ interface ESPNResponse {
   events: ESPNEvent[];
 }
 
+const SPORTSBOOK_LOGOS = {
+  fanduel: "https://upload.wikimedia.org/wikipedia/en/3/3d/FanDuel_logo.svg",
+  draftkings: "https://upload.wikimedia.org/wikipedia/en/f/fd/DraftKings_logo.svg",
+  betmgm: "https://upload.wikimedia.org/wikipedia/commons/2/2f/BetMGM_logo.svg",
+};
+
 // Map ESPN data to our app's data model
 const mapESPNEventToMatch = (event: ESPNEvent, league: League): Match => {
   const competition = event.competitions[0];
@@ -86,15 +91,56 @@ const mapESPNEventToMatch = (event: ESPNEvent, league: League): Match => {
   const status = event.status.type.state === "in" ? "live" : 
                  event.status.type.state === "post" ? "finished" : "scheduled";
   
-  // Create basic odds (mock data as ESPN doesn't provide full odds)
-  const odds = competition.odds?.[0] ? {
-    homeWin: 1.8,  // Default odds since ESPN API doesn't provide full odds
-    awayWin: 2.2,
-    ...(league === "SOCCER" && { draw: 3.0 })
-  } : {
-    homeWin: 1.9,
-    awayWin: 1.9,
-    ...(league === "SOCCER" && { draw: 3.2 })
+  // Generate realistic looking odds variations for different sportsbooks
+  const baseHomeOdds = competition.odds?.[0] ? 1.8 : 1.9;
+  const baseAwayOdds = competition.odds?.[0] ? 2.2 : 1.9;
+  const baseDrawOdds = league === "SOCCER" ? 3.0 : undefined;
+
+  // Create simulated live odds from different sportsbooks
+  const liveOdds = [
+    {
+      sportsbook: {
+        id: "fanduel",
+        name: "FanDuel",
+        logo: SPORTSBOOK_LOGOS.fanduel,
+        isAvailable: true
+      },
+      homeWin: baseHomeOdds + (Math.random() * 0.2 - 0.1),
+      awayWin: baseAwayOdds + (Math.random() * 0.2 - 0.1),
+      draw: baseDrawOdds ? baseDrawOdds + (Math.random() * 0.3 - 0.15) : undefined,
+      updatedAt: new Date().toISOString()
+    },
+    {
+      sportsbook: {
+        id: "draftkings",
+        name: "DraftKings",
+        logo: SPORTSBOOK_LOGOS.draftkings,
+        isAvailable: true
+      },
+      homeWin: baseHomeOdds + (Math.random() * 0.2 - 0.1),
+      awayWin: baseAwayOdds + (Math.random() * 0.2 - 0.1),
+      draw: baseDrawOdds ? baseDrawOdds + (Math.random() * 0.3 - 0.15) : undefined,
+      updatedAt: new Date(Date.now() - 120000).toISOString() // 2 minutes ago
+    },
+    {
+      sportsbook: {
+        id: "betmgm",
+        name: "BetMGM",
+        logo: SPORTSBOOK_LOGOS.betmgm,
+        isAvailable: true
+      },
+      homeWin: baseHomeOdds + (Math.random() * 0.2 - 0.1),
+      awayWin: baseAwayOdds + (Math.random() * 0.2 - 0.1),
+      draw: baseDrawOdds ? baseDrawOdds + (Math.random() * 0.3 - 0.15) : undefined,
+      updatedAt: new Date(Date.now() - 180000).toISOString() // 3 minutes ago
+    }
+  ];
+
+  // Create basic odds
+  const odds = {
+    homeWin: baseHomeOdds,
+    awayWin: baseAwayOdds,
+    ...(league === "SOCCER" && { draw: baseDrawOdds })
   };
   
   // Create score object if the match is live or finished
@@ -115,6 +161,7 @@ const mapESPNEventToMatch = (event: ESPNEvent, league: League): Match => {
     awayTeam,
     startTime: event.date,
     odds,
+    liveOdds,
     prediction: {
       recommended: homeTeamFavored ? "home" : "away",
       confidence,
