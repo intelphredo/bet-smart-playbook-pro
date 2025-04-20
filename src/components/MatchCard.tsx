@@ -1,3 +1,4 @@
+
 import { Match } from "@/types/sports";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -52,7 +53,15 @@ const MatchCard = ({ match }: MatchCardProps) => {
         <div className="grid grid-cols-3 gap-2 items-center mb-4">
           <div className="text-center">
             <div className="w-10 h-10 bg-navy-50 dark:bg-navy-700 rounded-full mx-auto mb-1 flex items-center justify-center">
-              {match.homeTeam.shortName.substring(0, 2)}
+              {match.homeTeam.logo ? (
+                <img 
+                  src={match.homeTeam.logo} 
+                  alt={match.homeTeam.name} 
+                  className="w-8 h-8 object-contain rounded-full"
+                />
+              ) : (
+                match.homeTeam.shortName.substring(0, 2)
+              )}
             </div>
             <div className="text-sm font-medium truncate">{match.homeTeam.shortName}</div>
             <div className="text-xs text-muted-foreground">{match.homeTeam.record}</div>
@@ -71,7 +80,15 @@ const MatchCard = ({ match }: MatchCardProps) => {
           
           <div className="text-center">
             <div className="w-10 h-10 bg-navy-50 dark:bg-navy-700 rounded-full mx-auto mb-1 flex items-center justify-center">
-              {match.awayTeam.shortName.substring(0, 2)}
+              {match.awayTeam.logo ? (
+                <img 
+                  src={match.awayTeam.logo} 
+                  alt={match.awayTeam.name} 
+                  className="w-8 h-8 object-contain rounded-full"
+                />
+              ) : (
+                match.awayTeam.shortName.substring(0, 2)
+              )}
             </div>
             <div className="text-sm font-medium truncate">{match.awayTeam.shortName}</div>
             <div className="text-xs text-muted-foreground">{match.awayTeam.record}</div>

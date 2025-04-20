@@ -21,6 +21,11 @@ const LiveOdds = ({ odds }: LiveOddsProps) => {
     }
   };
 
+  // If no odds are provided, don't render anything
+  if (!odds || odds.length === 0) {
+    return null;
+  }
+
   return (
     <Card className="mt-4">
       <CardContent className="p-4">

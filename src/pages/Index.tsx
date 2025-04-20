@@ -6,29 +6,47 @@ import LeagueSelector from "@/components/LeagueSelector";
 import MatchCard from "@/components/MatchCard";
 import AlgorithmCard from "@/components/AlgorithmCard";
 import StatsOverview from "@/components/StatsOverview";
-import { upcomingMatches, liveMatches, algorithms } from "@/data/mockData";
+import { algorithms } from "@/data/mockData";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import PlayerPropCard from "@/components/PlayerPropCard";
 import { playerProps } from "@/data/playerPropData";
 import ArbitrageCard from "@/components/ArbitrageCard";
 import PremiumContent from "@/components/PremiumContent";
 import { arbitrageOpportunities } from "@/data/arbitrageData";
 import { Badge } from "@/components/ui/badge";
+import { useESPNData } from "@/hooks/useESPNData";
+import { useToast } from "@/hooks/use-toast";
 
 const Index = () => {
   const [selectedLeague, setSelectedLeague] = useState<League | "ALL">("ALL");
   const [activeTab, setActiveTab] = useState("upcoming");
+  const { toast } = useToast();
 
-  const filteredUpcoming = selectedLeague === "ALL" 
-    ? upcomingMatches 
-    : upcomingMatches.filter(match => match.league === selectedLeague);
-  
-  const filteredLive = selectedLeague === "ALL"
-    ? liveMatches
-    : liveMatches.filter(match => match.league === selectedLeague);
+  // Use our new ESPN data hook
+  const { 
+    upcomingMatches, 
+    liveMatches, 
+    isLoading, 
+    error, 
+    refetch 
+  } = useESPNData({ 
+    league: selectedLeague, 
+    refreshInterval: 60000 
+  });
 
+  // Handle data refresh
+  const handleRefreshData = () => {
+    refetch();
+    toast({
+      title: "Refreshing data",
+      description: "Fetching the latest sports data from ESPN",
+      variant: "default"
+    });
+  };
+
+  // Filter player props based on selected league
   const filteredProps = selectedLeague === "ALL"
     ? playerProps
     : playerProps.filter(prop => {
@@ -50,10 +68,10 @@ const Index = () => {
           <div className="text-center mb-4 animate-fade-in">
             <h1 className="text-3xl md:text-4xl font-bold mb-2">
               <span className="text-navy-500 dark:text-navy-200">Smart Betting.</span>{" "}
-              <span className="text-gold-500">Winning Algorithms.</span>
+              <span className="text-gold-500">Live ESPN Data.</span>
             </h1>
             <p className="text-md md:text-lg text-muted-foreground mb-4 max-w-2xl mx-auto">
-              Data-driven predictions for all major sports leagues with proven algorithms to maximize your winning potential.
+              Real-time sports data from ESPN with data-driven predictions to maximize your winning potential.
             </p>
             <Button size="lg" className="bg-navy-500 hover:bg-navy-600 text-white">
               Get Started
@@ -89,12 +107,35 @@ const Index = () => {
           {/* Leagues and Matches */}
           <div className="space-y-4">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-              <h2 className="text-2xl font-bold">Sports & Matches</h2>
+              <div className="flex items-center gap-2">
+                <h2 className="text-2xl font-bold">Live ESPN Data</h2>
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  onClick={handleRefreshData} 
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Refreshing..." : "Refresh Data"}
+                </Button>
+                <Badge variant="outline" className="bg-navy-50 dark:bg-navy-700">
+                  Auto-updates every 60s
+                </Badge>
+              </div>
               <LeagueSelector 
                 selectedLeague={selectedLeague} 
                 onSelectLeague={setSelectedLeague} 
               />
             </div>
+            
+            {error && (
+              <Card className="border-red-300 bg-red-50 dark:bg-red-900/20">
+                <CardContent className="p-4">
+                  <p className="text-red-600 dark:text-red-400">
+                    Error loading ESPN data. Please try refreshing.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
             
             <Tabs defaultValue="upcoming" value={activeTab} onValueChange={setActiveTab}>
               <TabsList>
@@ -103,9 +144,19 @@ const Index = () => {
               </TabsList>
               
               <TabsContent value="upcoming" className="mt-4">
-                {filteredUpcoming.length > 0 ? (
+                {isLoading ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {filteredUpcoming.map(match => (
+                    {[1, 2, 3].map(i => (
+                      <Card key={i}>
+                        <CardContent className="p-12 flex justify-center items-center">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-navy-500" />
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : upcomingMatches.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {upcomingMatches.map(match => (
                       <MatchCard key={match.id} match={match} />
                     ))}
                   </div>
@@ -119,9 +170,19 @@ const Index = () => {
               </TabsContent>
               
               <TabsContent value="live" className="mt-4">
-                {filteredLive.length > 0 ? (
+                {isLoading ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {filteredLive.map(match => (
+                    {[1, 2, 3].map(i => (
+                      <Card key={i}>
+                        <CardContent className="p-12 flex justify-center items-center">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-navy-500" />
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : liveMatches.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {liveMatches.map(match => (
                       <MatchCard key={match.id} match={match} />
                     ))}
                   </div>
