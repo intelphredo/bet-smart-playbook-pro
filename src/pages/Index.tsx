@@ -15,6 +15,7 @@ import { playerProps } from "@/data/playerPropData";
 import ArbitrageCard from "@/components/ArbitrageCard";
 import PremiumContent from "@/components/PremiumContent";
 import { arbitrageOpportunities } from "@/data/arbitrageData";
+import { Badge } from "@/components/ui/badge";
 
 const Index = () => {
   const [selectedLeague, setSelectedLeague] = useState<League | "ALL">("ALL");
