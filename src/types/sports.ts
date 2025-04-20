@@ -1,3 +1,4 @@
+
 export type League = 'NBA' | 'NFL' | 'MLB' | 'NHL' | 'SOCCER';
 
 export type PropType = 'points' | 'assists' | 'rebounds' | 'touchdowns' | 'goals' | 'saves' | 'shots';
@@ -77,4 +78,40 @@ export interface PlayerProp {
   };
   lastGames?: number[];
   seasonAverage?: number;
+}
+
+export interface ArbitrageOpportunity {
+  id: string;
+  matchId: string;
+  match: {
+    homeTeam: string;
+    awayTeam: string;
+    league: League;
+    startTime: string;
+  };
+  bookmakers: {
+    name: string;
+    odds: {
+      homeWin: number;
+      awayWin: number;
+      draw?: number;
+    };
+  }[];
+  arbitragePercentage: number; // <100% means guaranteed profit
+  potentialProfit: number; // Percentage of potential profit
+  bettingStrategy: {
+    bookmaker: string;
+    team: 'home' | 'away' | 'draw';
+    stakePercentage: number;
+    odds: number;
+  }[];
+  isPremium: boolean; // Flag to indicate premium-only opportunities
+}
+
+export interface User {
+  id: string;
+  email: string;
+  isPremium: boolean;
+  subscriptionEnds?: string;
+  lastLogin?: string;
 }

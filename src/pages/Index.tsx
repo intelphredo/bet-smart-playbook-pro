@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { League } from "@/types/sports";
 import NavBar from "@/components/NavBar";
@@ -11,6 +12,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import PlayerPropCard from "@/components/PlayerPropCard";
 import { playerProps } from "@/data/playerPropData";
+import ArbitrageCard from "@/components/ArbitrageCard";
+import PremiumContent from "@/components/PremiumContent";
+import { arbitrageOpportunities } from "@/data/arbitrageData";
 
 const Index = () => {
   const [selectedLeague, setSelectedLeague] = useState<League | "ALL">("ALL");
@@ -30,6 +34,10 @@ const Index = () => {
         const match = [...upcomingMatches, ...liveMatches].find(m => m.id === prop.matchId);
         return match?.league === selectedLeague;
       });
+      
+  const filteredArbitrage = selectedLeague === "ALL"
+    ? arbitrageOpportunities
+    : arbitrageOpportunities.filter(opportunity => opportunity.match.league === selectedLeague);
 
   return (
     <div className="min-h-screen bg-background">
@@ -54,6 +62,27 @@ const Index = () => {
           {/* Stats Overview */}
           <div className="animate-slide-in">
             <StatsOverview />
+          </div>
+          
+          {/* Arbitrage Opportunities */}
+          <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+              <div className="flex items-center">
+                <h2 className="text-2xl font-bold mr-2">Arbitrage Opportunities</h2>
+                <Badge className="bg-gold-500 text-navy-900">Premium</Badge>
+              </div>
+            </div>
+            
+            <PremiumContent
+              title="Premium Arbitrage Betting"
+              description="Get guaranteed profits with our arbitrage betting opportunities. Upgrade to premium to unlock."
+            >
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {filteredArbitrage.map(opportunity => (
+                  <ArbitrageCard key={opportunity.id} opportunity={opportunity} />
+                ))}
+              </div>
+            </PremiumContent>
           </div>
 
           {/* Leagues and Matches */}
