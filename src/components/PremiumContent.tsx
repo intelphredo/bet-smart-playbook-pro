@@ -34,7 +34,7 @@ const PremiumContent = ({
     toast({
       title: "Premium Unlocked 🎉",
       description: "You now have access to all premium features!",
-      variant: "success"
+      variant: "default"  // Changed from "success" to "default"
     });
   };
   
