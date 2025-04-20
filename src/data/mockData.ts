@@ -1,102 +1,95 @@
-
-import { Match, League, BettingAlgorithm } from "../types/sports";
+import { League, Match, BettingAlgorithm, PlayerProp, ArbitrageOpportunity } from "@/types/sports";
 
 export const upcomingMatches: Match[] = [
   {
-    id: "nba-1",
+    id: "1",
     league: "NBA",
     homeTeam: {
-      id: "lakers",
+      id: "1",
       name: "Los Angeles Lakers",
-      shortName: "Lakers",
-      logo: "/placeholder.svg",
-      record: "42-30",
-      recentForm: ["W", "W", "L", "W", "L"],
+      shortName: "LAL",
+      logo: "/lakers-logo.png",
+      record: "45-37",
     },
     awayTeam: {
-      id: "celtics",
-      name: "Boston Celtics",
-      shortName: "Celtics",
-      logo: "/placeholder.svg",
-      record: "48-24",
-      recentForm: ["W", "W", "W", "L", "W"],
+      id: "2",
+      name: "Golden State Warriors",
+      shortName: "GSW",
+      logo: "/warriors-logo.png",
+      record: "46-36",
     },
-    startTime: "2025-04-20T19:30:00Z",
+    startTime: "2025-04-21T18:00:00Z",
     odds: {
-      homeWin: 2.1,
-      awayWin: 1.75,
-    },
-    prediction: {
-      recommended: "away",
-      confidence: 68,
-      projectedScore: {
-        home: 108,
-        away: 114,
-      },
-    },
-    status: "scheduled",
-  },
-  {
-    id: "nfl-1",
-    league: "NFL",
-    homeTeam: {
-      id: "chiefs",
-      name: "Kansas City Chiefs",
-      shortName: "Chiefs",
-      logo: "/placeholder.svg",
-      record: "10-2",
-      recentForm: ["W", "W", "W", "W", "L"],
-    },
-    awayTeam: {
-      id: "bills",
-      name: "Buffalo Bills",
-      shortName: "Bills",
-      logo: "/placeholder.svg",
-      record: "8-4",
-      recentForm: ["W", "L", "W", "L", "W"],
-    },
-    startTime: "2025-04-21T20:15:00Z",
-    odds: {
-      homeWin: 1.65,
-      awayWin: 2.3,
-    },
-    prediction: {
-      recommended: "home",
-      confidence: 73,
-      projectedScore: {
-        home: 28,
-        away: 21,
-      },
-    },
-    status: "scheduled",
-  },
-  {
-    id: "mlb-1",
-    league: "MLB",
-    homeTeam: {
-      id: "yankees",
-      name: "New York Yankees",
-      shortName: "Yankees",
-      logo: "/placeholder.svg",
-      record: "88-64",
-      recentForm: ["W", "L", "W", "W", "W"],
-    },
-    awayTeam: {
-      id: "redsox",
-      name: "Boston Red Sox",
-      shortName: "Red Sox",
-      logo: "/placeholder.svg",
-      record: "76-76",
-      recentForm: ["L", "L", "W", "L", "W"],
-    },
-    startTime: "2025-04-22T18:05:00Z",
-    odds: {
-      homeWin: 1.72,
-      awayWin: 2.15,
+      homeWin: 1.85,
+      awayWin: 2.05,
     },
     prediction: {
       recommended: "home",
       confidence: 65,
+      projectedScore: {
+        home: 112,
+        away: 108,
+      },
+    },
+    status: "scheduled",
+  },
+  {
+    id: "2",
+    league: "NFL",
+    homeTeam: {
+      id: "3",
+      name: "New England Patriots",
+      shortName: "NE",
+      logo: "/patriots-logo.png",
+      record: "12-5",
+    },
+    awayTeam: {
+      id: "4",
+      name: "Kansas City Chiefs",
+      shortName: "KC",
+      logo: "/chiefs-logo.png",
+      record: "13-4",
+    },
+    startTime: "2025-09-08T20:20:00Z",
+    odds: {
+      homeWin: 2.10,
+      awayWin: 1.75,
+    },
+    prediction: {
+      recommended: "away",
+      confidence: 70,
+      projectedScore: {
+        home: 24,
+        away: 28,
+      },
+    },
+    status: "scheduled",
+  },
+  {
+    id: "3",
+    league: "MLB",
+    homeTeam: {
+      id: "5",
+      name: "Los Angeles Dodgers",
+      shortName: "LAD",
+      logo: "/dodgers-logo.png",
+      record: "95-67",
+    },
+    awayTeam: {
+      id: "6",
+      name: "San Francisco Giants",
+      shortName: "SF",
+      logo: "/giants-logo.png",
+      record: "88-74",
+    },
+    startTime: "2025-07-04T13:05:00Z",
+    odds: {
+      homeWin: 1.65,
+      awayWin: 2.25,
+    },
+    prediction: {
+      recommended: "home",
+      confidence: 60,
       projectedScore: {
         home: 5,
         away: 3,
@@ -105,69 +98,65 @@ export const upcomingMatches: Match[] = [
     status: "scheduled",
   },
   {
-    id: "nhl-1",
+    id: "4",
     league: "NHL",
     homeTeam: {
-      id: "rangers",
-      name: "New York Rangers",
-      shortName: "Rangers",
-      logo: "/placeholder.svg",
-      record: "40-22-8",
-      recentForm: ["W", "W", "L", "W", "W"],
+      id: "7",
+      name: "Boston Bruins",
+      shortName: "BOS",
+      logo: "/bruins-logo.png",
+      record: "51-26-5",
     },
     awayTeam: {
-      id: "penguins",
-      name: "Pittsburgh Penguins",
-      shortName: "Penguins",
-      logo: "/placeholder.svg",
-      record: "36-26-8",
-      recentForm: ["L", "W", "W", "L", "W"],
+      id: "8",
+      name: "Toronto Maple Leafs",
+      shortName: "TOR",
+      logo: "/leafs-logo.png",
+      record: "49-27-6",
     },
-    startTime: "2025-04-20T23:00:00Z",
+    startTime: "2025-05-15T19:30:00Z",
     odds: {
-      homeWin: 1.85,
-      awayWin: 1.95,
+      homeWin: 1.90,
+      awayWin: 1.90,
     },
     prediction: {
       recommended: "home",
       confidence: 55,
       projectedScore: {
-        home: 3,
-        away: 2,
+        home: 4,
+        away: 3,
       },
     },
     status: "scheduled",
   },
   {
-    id: "soccer-1",
+    id: "5",
     league: "SOCCER",
     homeTeam: {
-      id: "mancity",
-      name: "Manchester City",
-      shortName: "Man City",
-      logo: "/placeholder.svg",
-      record: "24-5-3",
-      recentForm: ["W", "W", "D", "W", "W"],
+      id: "9",
+      name: "Manchester United",
+      shortName: "MU",
+      logo: "/manutd-logo.png",
+      record: "26-8-4",
     },
     awayTeam: {
-      id: "liverpool",
-      name: "Liverpool FC",
-      shortName: "Liverpool",
-      logo: "/placeholder.svg",
-      record: "22-7-3",
-      recentForm: ["W", "W", "W", "D", "L"],
+      id: "10",
+      name: "Liverpool",
+      shortName: "LFC",
+      logo: "/liverpool-logo.png",
+      record: "24-10-4",
     },
-    startTime: "2025-04-21T14:00:00Z",
+    startTime: "2025-06-01T16:00:00Z",
     odds: {
-      homeWin: 2.0,
-      draw: 3.4,
-      awayWin: 3.75,
+      homeWin: 2.40,
+      awayWin: 2.60,
+      draw: 3.50,
     },
     prediction: {
-      recommended: "home",
-      confidence: 60,
+      recommended: "draw",
+      confidence: 45,
       projectedScore: {
-        home: 2,
+        home: 1,
         away: 1,
       },
     },
@@ -177,99 +166,757 @@ export const upcomingMatches: Match[] = [
 
 export const liveMatches: Match[] = [
   {
-    id: "nba-live-1",
+    id: "6",
     league: "NBA",
     homeTeam: {
-      id: "nets",
-      name: "Brooklyn Nets",
-      shortName: "Nets",
-      logo: "/placeholder.svg",
-      record: "35-37",
+      id: "11",
+      name: "Boston Celtics",
+      shortName: "BOS",
+      logo: "/celtics-logo.png",
+      record: "50-32",
     },
     awayTeam: {
-      id: "knicks",
-      name: "New York Knicks",
-      shortName: "Knicks",
-      logo: "/placeholder.svg",
-      record: "41-31",
+      id: "12",
+      name: "Milwaukee Bucks",
+      shortName: "MIL",
+      logo: "/bucks-logo.png",
+      record: "48-34",
     },
-    startTime: "2025-04-20T17:00:00Z",
+    startTime: "2025-04-18T19:00:00Z",
     odds: {
-      homeWin: 2.4,
-      awayWin: 1.6,
-    },
-    prediction: {
-      recommended: "away",
-      confidence: 70,
-      projectedScore: {
-        home: 105,
-        away: 112,
-      },
-    },
-    status: "live",
-    score: {
-      home: 78,
-      away: 83,
-      period: "3rd Quarter",
-    },
-  },
-  {
-    id: "soccer-live-1",
-    league: "SOCCER",
-    homeTeam: {
-      id: "arsenal",
-      name: "Arsenal FC",
-      shortName: "Arsenal",
-      logo: "/placeholder.svg",
-      record: "19-9-4",
-    },
-    awayTeam: {
-      id: "chelsea",
-      name: "Chelsea FC",
-      shortName: "Chelsea",
-      logo: "/placeholder.svg",
-      record: "17-10-5",
-    },
-    startTime: "2025-04-20T16:30:00Z",
-    odds: {
-      homeWin: 1.85,
-      draw: 3.5,
-      awayWin: 4.2,
+      homeWin: 1.75,
+      awayWin: 2.15,
     },
     prediction: {
       recommended: "home",
-      confidence: 61,
+      confidence: 58,
       projectedScore: {
-        home: 2,
-        away: 0,
+        home: 115,
+        away: 110,
       },
     },
     status: "live",
     score: {
-      home: 1,
-      away: 0,
-      period: "57'",
+      home: 60,
+      away: 55,
+      period: "Half-time",
+    },
+  },
+  {
+    id: "7",
+    league: "NFL",
+    homeTeam: {
+      id: "13",
+      name: "Seattle Seahawks",
+      shortName: "SEA",
+      logo: "/seahawks-logo.png",
+      record: "9-8",
+    },
+    awayTeam: {
+      id: "14",
+      name: "Green Bay Packers",
+      shortName: "GB",
+      logo: "/packers-logo.png",
+      record: "10-7",
+    },
+    startTime: "2025-09-15T20:15:00Z",
+    odds: {
+      homeWin: 1.95,
+      awayWin: 1.85,
+    },
+    prediction: {
+      recommended: "away",
+      confidence: 62,
+      projectedScore: {
+        home: 21,
+        away: 24,
+      },
+    },
+    status: "live",
+    score: {
+      home: 14,
+      away: 17,
+      period: "3rd Quarter",
     },
   },
 ];
 
 export const algorithms: BettingAlgorithm[] = [
   {
-    name: "ValueBet Pro",
-    description: "Identifies undervalued odds based on statistical analysis of team performance metrics.",
-    winRate: 67.3,
+    name: "SmartScore",
+    description: "A proprietary algorithm that predicts match outcomes based on historical data and real-time statistics.",
+    winRate: 72,
     recentResults: ["W", "W", "L", "W", "W"],
   },
   {
-    name: "Trend Analyzer",
-    description: "Analyzes recent team form, head-to-head statistics, and historical performance patterns.",
-    winRate: 64.8,
-    recentResults: ["W", "W", "W", "L", "W"],
+    name: "PropHunter",
+    description: "Identifies high-value player props by analyzing player performance, matchups, and betting odds.",
+    winRate: 68,
+    recentResults: ["W", "L", "W", "W", "L"],
   },
   {
-    name: "ML Predictor",
-    description: "Machine learning algorithm trained on over 50,000 historical matches across all major leagues.",
-    winRate: 71.2,
-    recentResults: ["W", "L", "W", "W", "W"],
+    name: "ArbAlert",
+    description: "Detects arbitrage opportunities across multiple sportsbooks for guaranteed profit.",
+    winRate: 95,
+    recentResults: ["W", "W", "W", "W", "W"],
+  },
+];
+
+export const playerProps: PlayerProp[] = [
+  {
+    id: "1",
+    playerId: "101",
+    playerName: "LeBron James",
+    team: "LAL",
+    matchId: "1",
+    propType: "points",
+    line: 27.5,
+    odds: {
+      over: 1.90,
+      under: 1.90,
+    },
+    prediction: {
+      recommended: "over",
+      confidence: 68,
+      projectedValue: 29.1,
+    },
+    lastGames: [30, 25, 28, 32, 27],
+    seasonAverage: 27.2,
+  },
+  {
+    id: "2",
+    playerId: "102",
+    playerName: "Patrick Mahomes",
+    team: "KC",
+    matchId: "2",
+    propType: "touchdowns",
+    line: 2.5,
+    odds: {
+      over: 2.10,
+      under: 1.75,
+    },
+    prediction: {
+      recommended: "over",
+      confidence: 72,
+      projectedValue: 2.8,
+    },
+    lastGames: [3, 2, 3, 4, 2],
+    seasonAverage: 2.6,
+  },
+  {
+    id: "3",
+    playerId: "103",
+    playerName: "Mookie Betts",
+    team: "LAD",
+    matchId: "3",
+    propType: "hits",
+    line: 1.5,
+    odds: {
+      over: 1.80,
+      under: 2.00,
+    },
+    prediction: {
+      recommended: "over",
+      confidence: 65,
+      projectedValue: 1.7,
+    },
+    lastGames: [2, 1, 3, 1, 2],
+    seasonAverage: 1.6,
+  },
+];
+
+export const arbitrageOpportunities: ArbitrageOpportunity[] = [
+  {
+    id: "1",
+    matchId: "5",
+    match: {
+      homeTeam: "Manchester United",
+      awayTeam: "Liverpool",
+      league: "SOCCER",
+      startTime: "2025-06-01T16:00:00Z",
+    },
+    bookmakers: [
+      {
+        name: "Bet365",
+        odds: {
+          homeWin: 2.40,
+          awayWin: 3.20,
+          draw: 3.50,
+        },
+      },
+      {
+        name: "William Hill",
+        odds: {
+          homeWin: 2.50,
+          awayWin: 3.10,
+          draw: 3.40,
+        },
+      },
+      {
+        name: "Pinnacle",
+        odds: {
+          homeWin: 2.45,
+          awayWin: 3.25,
+          draw: 3.60,
+        },
+      },
+    ],
+    arbitragePercentage: 98.5,
+    potentialProfit: 1.5,
+    bettingStrategy: [
+      {
+        bookmaker: "Bet365",
+        team: "home",
+        stakePercentage: 41.0,
+        odds: 2.40,
+      },
+      {
+        bookmaker: "William Hill",
+        team: "away",
+        stakePercentage: 31.5,
+        odds: 3.20,
+      },
+      {
+        bookmaker: "Pinnacle",
+        team: "draw",
+        stakePercentage: 27.5,
+        odds: 3.60,
+      },
+    ],
+    isPremium: true,
+  },
+  {
+    id: "2",
+    matchId: "6",
+    match: {
+      homeTeam: "Boston Celtics",
+      awayTeam: "Milwaukee Bucks",
+      league: "NBA",
+      startTime: "2025-04-18T19:00:00Z",
+    },
+    bookmakers: [
+      {
+        name: "FanDuel",
+        odds: {
+          homeWin: 1.75,
+          awayWin: 2.15,
+        },
+      },
+      {
+        name: "DraftKings",
+        odds: {
+          homeWin: 1.80,
+          awayWin: 2.10,
+        },
+      },
+    ],
+    arbitragePercentage: 99.2,
+    potentialProfit: 0.8,
+    bettingStrategy: [
+      {
+        bookmaker: "FanDuel",
+        team: "home",
+        stakePercentage: 54.5,
+        odds: 1.75,
+      },
+      {
+        bookmaker: "DraftKings",
+        team: "away",
+        stakePercentage: 45.5,
+        odds: 2.10,
+      },
+    ],
+    isPremium: false,
+  },
+];
+
+export const sportsbooks = [
+  {
+    id: "1",
+    name: "BetSmart",
+    logo: "/betsmart-logo.png",
+    isAvailable: true,
+  },
+  {
+    id: "2",
+    name: "SportKing",
+    logo: "/sportking-logo.png",
+    isAvailable: true,
+  },
+  {
+    id: "3",
+    name: "PlayOdds",
+    logo: "/playodds-logo.png",
+    isAvailable: true,
+  },
+];
+
+export const upcomingMatches = [
+  {
+    id: "1",
+    league: "NBA",
+    homeTeam: {
+      id: "1",
+      name: "Los Angeles Lakers",
+      shortName: "LAL",
+      logo: "/lakers-logo.png",
+      record: "45-37",
+    },
+    awayTeam: {
+      id: "2",
+      name: "Golden State Warriors",
+      shortName: "GSW",
+      logo: "/warriors-logo.png",
+      record: "46-36",
+    },
+    startTime: "2025-04-21T18:00:00Z",
+    odds: {
+      homeWin: 1.85,
+      awayWin: 2.05,
+    },
+    liveOdds: [
+      {
+        homeWin: 2.1,
+        awayWin: 1.8,
+        updatedAt: "2025-04-20T15:30:00Z",
+        sportsbook: sportsbooks[0],
+      },
+      {
+        homeWin: 2.15,
+        awayWin: 1.75,
+        updatedAt: "2025-04-20T15:28:00Z",
+        sportsbook: sportsbooks[1],
+      },
+      {
+        homeWin: 2.05,
+        awayWin: 1.85,
+        updatedAt: "2025-04-20T15:25:00Z",
+        sportsbook: sportsbooks[2],
+      },
+    ],
+    prediction: {
+      recommended: "home",
+      confidence: 65,
+      projectedScore: {
+        home: 112,
+        away: 108,
+      },
+    },
+    status: "scheduled",
+  },
+  {
+    id: "2",
+    league: "NFL",
+    homeTeam: {
+      id: "3",
+      name: "New England Patriots",
+      shortName: "NE",
+      logo: "/patriots-logo.png",
+      record: "12-5",
+    },
+    awayTeam: {
+      id: "4",
+      name: "Kansas City Chiefs",
+      shortName: "KC",
+      logo: "/chiefs-logo.png",
+      record: "13-4",
+    },
+    startTime: "2025-09-08T20:20:00Z",
+    odds: {
+      homeWin: 2.10,
+      awayWin: 1.75,
+    },
+    prediction: {
+      recommended: "away",
+      confidence: 70,
+      projectedScore: {
+        home: 24,
+        away: 28,
+      },
+    },
+    status: "scheduled",
+  },
+  {
+    id: "3",
+    league: "MLB",
+    homeTeam: {
+      id: "5",
+      name: "Los Angeles Dodgers",
+      shortName: "LAD",
+      logo: "/dodgers-logo.png",
+      record: "95-67",
+    },
+    awayTeam: {
+      id: "6",
+      name: "San Francisco Giants",
+      shortName: "SF",
+      logo: "/giants-logo.png",
+      record: "88-74",
+    },
+    startTime: "2025-07-04T13:05:00Z",
+    odds: {
+      homeWin: 1.65,
+      awayWin: 2.25,
+    },
+    prediction: {
+      recommended: "home",
+      confidence: 60,
+      projectedScore: {
+        home: 5,
+        away: 3,
+      },
+    },
+    status: "scheduled",
+  },
+  {
+    id: "4",
+    league: "NHL",
+    homeTeam: {
+      id: "7",
+      name: "Boston Bruins",
+      shortName: "BOS",
+      logo: "/bruins-logo.png",
+      record: "51-26-5",
+    },
+    awayTeam: {
+      id: "8",
+      name: "Toronto Maple Leafs",
+      shortName: "TOR",
+      logo: "/leafs-logo.png",
+      record: "49-27-6",
+    },
+    startTime: "2025-05-15T19:30:00Z",
+    odds: {
+      homeWin: 1.90,
+      awayWin: 1.90,
+    },
+    prediction: {
+      recommended: "home",
+      confidence: 55,
+      projectedScore: {
+        home: 4,
+        away: 3,
+      },
+    },
+    status: "scheduled",
+  },
+  {
+    id: "5",
+    league: "SOCCER",
+    homeTeam: {
+      id: "9",
+      name: "Manchester United",
+      shortName: "MU",
+      logo: "/manutd-logo.png",
+      record: "26-8-4",
+    },
+    awayTeam: {
+      id: "10",
+      name: "Liverpool",
+      shortName: "LFC",
+      logo: "/liverpool-logo.png",
+      record: "24-10-4",
+    },
+    startTime: "2025-06-01T16:00:00Z",
+    odds: {
+      homeWin: 2.40,
+      awayWin: 2.60,
+      draw: 3.50,
+    },
+    prediction: {
+      recommended: "draw",
+      confidence: 45,
+      projectedScore: {
+        home: 1,
+        away: 1,
+      },
+    },
+    status: "scheduled",
+  },
+];
+
+export const liveMatches = [
+  {
+    id: "6",
+    league: "NBA",
+    homeTeam: {
+      id: "11",
+      name: "Boston Celtics",
+      shortName: "BOS",
+      logo: "/celtics-logo.png",
+      record: "50-32",
+    },
+    awayTeam: {
+      id: "12",
+      name: "Milwaukee Bucks",
+      shortName: "MIL",
+      logo: "/bucks-logo.png",
+      record: "48-34",
+    },
+    startTime: "2025-04-18T19:00:00Z",
+    odds: {
+      homeWin: 1.75,
+      awayWin: 2.15,
+    },
+    liveOdds: [
+      {
+        homeWin: 1.78,
+        awayWin: 2.10,
+        updatedAt: "2025-04-18T20:30:00Z",
+        sportsbook: sportsbooks[0],
+      },
+      {
+        homeWin: 1.82,
+        awayWin: 2.05,
+        updatedAt: "2025-04-18T20:28:00Z",
+        sportsbook: sportsbooks[1],
+      },
+      {
+        homeWin: 1.73,
+        awayWin: 2.20,
+        updatedAt: "2025-04-18T20:25:00Z",
+        sportsbook: sportsbooks[2],
+      },
+    ],
+    prediction: {
+      recommended: "home",
+      confidence: 58,
+      projectedScore: {
+        home: 115,
+        away: 110,
+      },
+    },
+    status: "live",
+    score: {
+      home: 60,
+      away: 55,
+      period: "Half-time",
+    },
+  },
+  {
+    id: "7",
+    league: "NFL",
+    homeTeam: {
+      id: "13",
+      name: "Seattle Seahawks",
+      shortName: "SEA",
+      logo: "/seahawks-logo.png",
+      record: "9-8",
+    },
+    awayTeam: {
+      id: "14",
+      name: "Green Bay Packers",
+      shortName: "GB",
+      logo: "/packers-logo.png",
+      record: "10-7",
+    },
+    startTime: "2025-09-15T20:15:00Z",
+    odds: {
+      homeWin: 1.95,
+      awayWin: 1.85,
+    },
+    prediction: {
+      recommended: "away",
+      confidence: 62,
+      projectedScore: {
+        home: 21,
+        away: 24,
+      },
+    },
+    status: "live",
+    score: {
+      home: 14,
+      away: 17,
+      period: "3rd Quarter",
+    },
+  },
+];
+
+export const algorithms = [
+  {
+    name: "SmartScore",
+    description: "A proprietary algorithm that predicts match outcomes based on historical data and real-time statistics.",
+    winRate: 72,
+    recentResults: ["W", "W", "L", "W", "W"],
+  },
+  {
+    name: "PropHunter",
+    description: "Identifies high-value player props by analyzing player performance, matchups, and betting odds.",
+    winRate: 68,
+    recentResults: ["W", "L", "W", "W", "L"],
+  },
+  {
+    name: "ArbAlert",
+    description: "Detects arbitrage opportunities across multiple sportsbooks for guaranteed profit.",
+    winRate: 95,
+    recentResults: ["W", "W", "W", "W", "W"],
+  },
+];
+
+export const playerProps = [
+  {
+    id: "1",
+    playerId: "101",
+    playerName: "LeBron James",
+    team: "LAL",
+    matchId: "1",
+    propType: "points",
+    line: 27.5,
+    odds: {
+      over: 1.90,
+      under: 1.90,
+    },
+    prediction: {
+      recommended: "over",
+      confidence: 68,
+      projectedValue: 29.1,
+    },
+    lastGames: [30, 25, 28, 32, 27],
+    seasonAverage: 27.2,
+  },
+  {
+    id: "2",
+    playerId: "102",
+    playerName: "Patrick Mahomes",
+    team: "KC",
+    matchId: "2",
+    propType: "touchdowns",
+    line: 2.5,
+    odds: {
+      over: 2.10,
+      under: 1.75,
+    },
+    prediction: {
+      recommended: "over",
+      confidence: 72,
+      projectedValue: 2.8,
+    },
+    lastGames: [3, 2, 3, 4, 2],
+    seasonAverage: 2.6,
+  },
+  {
+    id: "3",
+    playerId: "103",
+    playerName: "Mookie Betts",
+    team: "LAD",
+    matchId: "3",
+    propType: "hits",
+    line: 1.5,
+    odds: {
+      over: 1.80,
+      under: 2.00,
+    },
+    prediction: {
+      recommended: "over",
+      confidence: 65,
+      projectedValue: 1.7,
+    },
+    lastGames: [2, 1, 3, 1, 2],
+    seasonAverage: 1.6,
+  },
+];
+
+export const arbitrageOpportunities = [
+  {
+    id: "1",
+    matchId: "5",
+    match: {
+      homeTeam: "Manchester United",
+      awayTeam: "Liverpool",
+      league: "SOCCER",
+      startTime: "2025-06-01T16:00:00Z",
+    },
+    bookmakers: [
+      {
+        name: "Bet365",
+        odds: {
+          homeWin: 2.40,
+          awayWin: 3.20,
+          draw: 3.50,
+        },
+      },
+      {
+        name: "William Hill",
+        odds: {
+          homeWin: 2.50,
+          awayWin: 3.10,
+          draw: 3.40,
+        },
+      },
+      {
+        name: "Pinnacle",
+        odds: {
+          homeWin: 2.45,
+          awayWin: 3.25,
+          draw: 3.60,
+        },
+      },
+    ],
+    arbitragePercentage: 98.5,
+    potentialProfit: 1.5,
+    bettingStrategy: [
+      {
+        bookmaker: "Bet365",
+        team: "home",
+        stakePercentage: 41.0,
+        odds: 2.40,
+      },
+      {
+        bookmaker: "William Hill",
+        team: "away",
+        stakePercentage: 31.5,
+        odds: 3.20,
+      },
+      {
+        bookmaker: "Pinnacle",
+        team: "draw",
+        stakePercentage: 27.5,
+        odds: 3.60,
+      },
+    ],
+    isPremium: true,
+  },
+  {
+    id: "2",
+    matchId: "6",
+    match: {
+      homeTeam: "Boston Celtics",
+      awayTeam: "Milwaukee Bucks",
+      league: "NBA",
+      startTime: "2025-04-18T19:00:00Z",
+    },
+    bookmakers: [
+      {
+        name: "FanDuel",
+        odds: {
+          homeWin: 1.75,
+          awayWin: 2.15,
+        },
+      },
+      {
+        name: "DraftKings",
+        odds: {
+          homeWin: 1.80,
+          awayWin: 2.10,
+        },
+      },
+    ],
+    arbitragePercentage: 99.2,
+    potentialProfit: 0.8,
+    bettingStrategy: [
+      {
+        bookmaker: "FanDuel",
+        team: "home",
+        stakePercentage: 54.5,
+        odds: 1.75,
+      },
+      {
+        bookmaker: "DraftKings",
+        team: "away",
+        stakePercentage: 45.5,
+        odds: 2.10,
+      },
+    ],
+    isPremium: false,
   },
 ];

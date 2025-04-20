@@ -1,7 +1,21 @@
-
 export type League = 'NBA' | 'NFL' | 'MLB' | 'NHL' | 'SOCCER';
 
 export type PropType = 'points' | 'assists' | 'rebounds' | 'touchdowns' | 'goals' | 'saves' | 'shots';
+
+export interface Sportsbook {
+  id: string;
+  name: string;
+  logo: string;
+  isAvailable: boolean;
+}
+
+export interface LiveOdds {
+  homeWin: number;
+  awayWin: number;
+  draw?: number;
+  updatedAt: string;
+  sportsbook: Sportsbook;
+}
 
 export interface Match {
   id: string;
@@ -12,11 +26,12 @@ export interface Match {
   odds: {
     homeWin: number;
     awayWin: number;
-    draw?: number; // Only for soccer
+    draw?: number;
   };
+  liveOdds?: LiveOdds[];
   prediction: {
     recommended: 'home' | 'away' | 'draw';
-    confidence: number; // 0-100
+    confidence: number;
     projectedScore: {
       home: number;
       away: number;
@@ -26,7 +41,7 @@ export interface Match {
   score?: {
     home: number;
     away: number;
-    period?: string; // Quarter, Half, Inning, etc.
+    period?: string;
   };
 }
 
@@ -35,8 +50,8 @@ export interface Team {
   name: string;
   shortName: string;
   logo: string;
-  record?: string; // W-L or W-D-L format
-  recentForm?: string[]; // Last 5 games: W, L, D
+  record?: string;
+  recentForm?: string[];
   stats?: {
     [key: string]: number | string;
   };
@@ -45,7 +60,7 @@ export interface Team {
 export interface BettingAlgorithm {
   name: string;
   description: string;
-  winRate: number; // 0-100
+  winRate: number;
   recentResults: ('W' | 'L')[];
 }
 
@@ -97,15 +112,15 @@ export interface ArbitrageOpportunity {
       draw?: number;
     };
   }[];
-  arbitragePercentage: number; // <100% means guaranteed profit
-  potentialProfit: number; // Percentage of potential profit
+  arbitragePercentage: number;
+  potentialProfit: number;
   bettingStrategy: {
     bookmaker: string;
     team: 'home' | 'away' | 'draw';
     stakePercentage: number;
     odds: number;
   }[];
-  isPremium: boolean; // Flag to indicate premium-only opportunities
+  isPremium: boolean;
 }
 
 export interface User {

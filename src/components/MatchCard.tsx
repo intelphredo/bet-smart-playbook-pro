@@ -1,10 +1,10 @@
-
 import { Match } from "@/types/sports";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TrendingUp, Trophy } from "lucide-react";
 import { formatDistanceToNow, parseISO } from "date-fns";
+import LiveOdds from "./LiveOdds";
 
 interface MatchCardProps {
   match: Match;
@@ -114,6 +114,9 @@ const MatchCard = ({ match }: MatchCardProps) => {
           </div>
         </div>
       </CardContent>
+      {match.liveOdds && match.liveOdds.length > 0 && (
+        <LiveOdds odds={match.liveOdds} />
+      )}
     </Card>
   );
 };
