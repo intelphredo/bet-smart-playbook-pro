@@ -1,6 +1,7 @@
+
 export type League = 'NBA' | 'NFL' | 'MLB' | 'NHL' | 'SOCCER';
 
-export type PropType = 'points' | 'assists' | 'rebounds' | 'touchdowns' | 'goals' | 'saves' | 'shots';
+export type PropType = 'points' | 'assists' | 'rebounds' | 'touchdowns' | 'goals' | 'saves' | 'shots' | 'hits';
 
 export interface Sportsbook {
   id: string;
