@@ -1,5 +1,6 @@
-
 export type League = 'NBA' | 'NFL' | 'MLB' | 'NHL' | 'SOCCER';
+
+export type PropType = 'points' | 'assists' | 'rebounds' | 'touchdowns' | 'goals' | 'saves' | 'shots';
 
 export interface Match {
   id: string;
@@ -55,4 +56,25 @@ export interface UserBet {
   amount: number;
   potentialWinnings: number;
   status: 'pending' | 'won' | 'lost';
+}
+
+export interface PlayerProp {
+  id: string;
+  playerId: string;
+  playerName: string;
+  team: string;
+  matchId: string;
+  propType: PropType;
+  line: number;
+  odds: {
+    over: number;
+    under: number;
+  };
+  prediction: {
+    recommended: 'over' | 'under';
+    confidence: number;
+    projectedValue: number;
+  };
+  lastGames?: number[];
+  seasonAverage?: number;
 }
