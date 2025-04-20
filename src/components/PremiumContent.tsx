@@ -10,6 +10,7 @@ import {
   SheetTrigger 
 } from "@/components/ui/sheet";
 import { Lock } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface PremiumContentProps {
   children: React.ReactNode;
@@ -17,17 +18,27 @@ interface PremiumContentProps {
   description?: string;
 }
 
-// This is a mock premium status. In a real app, this would come from authentication context
-const mockIsPremium = false;
-
 const PremiumContent = ({ 
   children, 
   title = "Premium Feature", 
   description = "This feature is only available to premium subscribers."
 }: PremiumContentProps) => {
+  const [isPremium, setIsPremium] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const { toast } = useToast();
+
+  const handleUpgrade = () => {
+    // Simulate premium upgrade
+    setIsPremium(true);
+    setIsOpen(false);
+    toast({
+      title: "Premium Unlocked 🎉",
+      description: "You now have access to all premium features!",
+      variant: "success"
+    });
+  };
   
-  if (mockIsPremium) {
+  if (isPremium) {
     return <>{children}</>;
   }
   
@@ -78,7 +89,10 @@ const PremiumContent = ({
                   </div>
                 </div>
                 
-                <Button className="w-full bg-gold-500 hover:bg-gold-600 text-navy-900">
+                <Button 
+                  onClick={handleUpgrade} 
+                  className="w-full bg-gold-500 hover:bg-gold-600 text-navy-900"
+                >
                   Subscribe Now
                 </Button>
               </div>
