@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -7,6 +6,7 @@ import SchedulesHeader from "@/components/schedules/SchedulesHeader";
 import SchedulesResults from "@/components/schedules/SchedulesResults";
 import { useSportsData } from "@/hooks/useSportsData";
 import { format, startOfDay, endOfDay, addDays, parseISO } from "date-fns";
+import { TeamAutocomplete } from "@/components/schedules/TeamAutocomplete";
 
 const SchedulesPage = () => {
   // State for filters
@@ -15,7 +15,9 @@ const SchedulesPage = () => {
   const [view, setView] = useState<"schedule" | "standings">("schedule");
   const [dataSource, setDataSource] = useState<DataSource>("ESPN");
   const [searchQuery, setSearchQuery] = useState("");
-  
+  const [isAutocompleteOpen, setIsAutocompleteOpen] = useState(false);
+  const searchInputRef = React.useRef<HTMLInputElement>(null);
+
   // Get sports data
   const { 
     allMatches, 
@@ -60,6 +62,31 @@ const SchedulesPage = () => {
     });
   })();
   
+  // Get a list of all matches for team suggestion
+  const allMatchesForAutocomplete = allMatches || [];
+
+  // Handler for input change (update query & show suggestions)
+  const handleSearchChange = (v: string) => {
+    setSearchQuery(v);
+    setIsAutocompleteOpen(true);
+  };
+
+  // When a team is selected from autocomplete
+  const handleAutocompleteSelect = (team: string) => {
+    setSearchQuery(team);
+    setIsAutocompleteOpen(false);
+    // Optionally focus the input after selection
+    if (searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+  };
+
+  // Hide suggestions when losing focus from the input
+  const handleBlur = () => {
+    // Short timeout to allow click on suggestion before closing
+    setTimeout(() => setIsAutocompleteOpen(false), 120);
+  };
+
   // Format the date for display
   const formattedDate = format(selectedDate, "EEEE, MMMM d, yyyy");
   
@@ -74,7 +101,7 @@ const SchedulesPage = () => {
         selectedLeague={selectedLeague}
         onLeagueChange={setSelectedLeague}
         searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
+        onSearchChange={handleSearchChange}
         view={view}
         onViewChange={setView}
         selectedDate={selectedDate}
@@ -85,6 +112,26 @@ const SchedulesPage = () => {
         dataSource={dataSource}
         onDataSourceChange={handleDataSourceChange}
       />
+      
+      <div className="relative mt-4 mb-2 max-w-md mx-auto">
+        <input
+          ref={searchInputRef}
+          type="text"
+          placeholder="Search teams..."
+          value={searchQuery}
+          onChange={(e) => handleSearchChange(e.target.value)}
+          onFocus={() => setIsAutocompleteOpen(true)}
+          onBlur={handleBlur}
+          className="w-full pl-8 pr-2 py-2 rounded-md border border-gray-300 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        />
+        {isAutocompleteOpen && (
+          <TeamAutocomplete
+            matches={allMatchesForAutocomplete}
+            query={searchQuery}
+            onSelect={handleAutocompleteSelect}
+          />
+        )}
+      </div>
       
       <div className="mt-6">
         <Tabs defaultValue={view} value={view} onValueChange={(v) => setView(v as "schedule" | "standings")}>
