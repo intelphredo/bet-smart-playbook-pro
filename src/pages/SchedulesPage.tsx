@@ -1,15 +1,11 @@
 
-import React from "react";
-import { useState, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import React, { useState, useEffect } from "react";
 import { League, DataSource } from "@/types/sports";
 import SchedulesHeader from "@/components/schedules/SchedulesHeader";
-import SchedulesResults from "@/components/schedules/SchedulesResults";
+import SchedulesFilterControls from "@/components/schedules/SchedulesFilterControls";
+import SchedulesTabContent from "@/components/schedules/SchedulesTabContent";
 import { useSportsData } from "@/hooks/useSportsData";
 import { format, startOfDay, endOfDay, addDays, parseISO } from "date-fns";
-import { TeamAutocomplete } from "@/components/schedules/TeamAutocomplete";
-import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 const SchedulesPage = () => {
@@ -40,103 +36,74 @@ const SchedulesPage = () => {
     defaultSource: dataSource,
     refreshInterval: 60000  // Force refresh every 60 seconds
   });
-  
-  // Force a refetch when filters change
+
   useEffect(() => {
     refetchSchedule();
-    // Show toast to indicate data is refreshing
     toast("Refreshing sports data...", {
       description: `Getting the latest ${selectedLeague} games`,
       duration: 2000
     });
   }, [selectedLeague, dataSource, refetchSchedule]);
-  
+
   // Update data source
   const handleDataSourceChange = (source: DataSource) => {
     setDataSource(source);
   };
-  
+
   // Filter matches by date, search query, and FanDuel odds
   const filteredMatches = (() => {
     let dateStart: Date;
     let dateEnd: Date;
-    
-    // Set date range based on selected view
     if (showWeekGames) {
       dateStart = startOfDay(selectedDate);
-      dateEnd = endOfDay(addDays(selectedDate, 6)); // Next 7 days including today
-      console.log("Week view:", dateStart, dateEnd);
+      dateEnd = endOfDay(addDays(selectedDate, 6));
     } else if (showTomorrowGames) {
       const dateToUse = addDays(selectedDate, 1);
       dateStart = startOfDay(dateToUse);
       dateEnd = endOfDay(dateToUse);
-      console.log("Tomorrow view:", dateStart, dateEnd);
     } else {
       dateStart = startOfDay(selectedDate);
       dateEnd = endOfDay(selectedDate);
-      console.log("Today view:", dateStart, dateEnd);
     }
-    
-    console.log(`Filtering ${allMatches.length} matches with date range:`, 
-                dateStart.toISOString(), "to", dateEnd.toISOString());
-    
+
     return allMatches.filter(match => {
       try {
-        // Parse match date
         const matchDate = parseISO(match.startTime);
-        console.log(`Match ${match.id} date:`, matchDate.toISOString(), 
-                   "In range:", matchDate >= dateStart && matchDate <= dateEnd);
-        
-        // Filter by date
         const isInDateRange = matchDate >= dateStart && matchDate <= dateEnd;
-        
-        // Filter by search query
         const searchLower = searchQuery.toLowerCase();
         const matchesSearch = searchQuery === "" || 
           match.homeTeam.name.toLowerCase().includes(searchLower) ||
           match.awayTeam.name.toLowerCase().includes(searchLower);
 
-        // Filter by FanDuel odds if option is enabled
         let hasFanDuelOdds = true;
         if (showFanDuelOddsOnly) {
           hasFanDuelOdds = match.liveOdds && 
                           match.liveOdds.some(odd => 
                             odd.sportsbook.name.toLowerCase() === "fanduel");
-          console.log(`Match ${match.id} FanDuel odds:`, hasFanDuelOdds);
         }
-        
         return isInDateRange && matchesSearch && hasFanDuelOdds;
       } catch (e) {
-        console.error("Error filtering match:", e);
         return false;
       }
     });
   })();
 
-  console.log("Filtered matches count:", filteredMatches.length);
-  
-  // Get a list of all matches for team suggestion
+  // For autocomplete suggestions
   const allMatchesForAutocomplete = allMatches || [];
 
-  // Handler for input change (update query & show suggestions)
+  // Handlers for autocomplete/search
   const handleSearchChange = (v: string) => {
     setSearchQuery(v);
     setIsAutocompleteOpen(true);
   };
-
-  // When a team is selected from autocomplete
   const handleAutocompleteSelect = (team: string) => {
     setSearchQuery(team);
     setIsAutocompleteOpen(false);
-    // Optionally focus the input after selection
     if (searchInputRef.current) {
       searchInputRef.current.focus();
     }
   };
-
-  // Hide suggestions when losing focus from the input
   const handleBlur = () => {
-    // Short timeout to allow click on suggestion before closing
     setTimeout(() => setIsAutocompleteOpen(false), 120);
   };
 
@@ -151,7 +118,7 @@ const SchedulesPage = () => {
     );
   }
 
-  // Navigation to previous/next dates (disable or adjust when filtering by week)
+  // Navigation handlers
   const goToPreviousDay = () => {
     if (showWeekGames) {
       setSelectedDate(prev => addDays(prev, -7));
@@ -172,7 +139,7 @@ const SchedulesPage = () => {
     setShowWeekGames(false);
   };
 
-  // Toggle between today, tomorrow, week
+  // Toggle handlers
   const handleShowToday = () => {
     setShowTomorrowGames(false);
     setShowWeekGames(false);
@@ -185,11 +152,8 @@ const SchedulesPage = () => {
     setShowWeekGames(true);
     setShowTomorrowGames(false);
   };
-
-  // Toggle FanDuel odds filter
   const toggleFanDuelOddsFilter = () => {
     setShowFanDuelOddsOnly(prev => !prev);
-    // Force data refresh when changing filter
     setTimeout(refetchSchedule, 100);
   };
 
@@ -210,169 +174,42 @@ const SchedulesPage = () => {
         dataSource={dataSource}
         onDataSourceChange={handleDataSourceChange}
       />
-      
-      <div className="relative mt-4 mb-2 max-w-md mx-auto">
-        <input
-          ref={searchInputRef}
-          type="text"
-          placeholder="Search teams..."
-          value={searchQuery}
-          onChange={(e) => handleSearchChange(e.target.value)}
-          onFocus={() => setIsAutocompleteOpen(true)}
-          onBlur={handleBlur}
-          className="w-full pl-8 pr-2 py-2 rounded-md border border-gray-300 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-        />
-        {isAutocompleteOpen && (
-          <TeamAutocomplete
-            matches={allMatchesForAutocomplete}
-            query={searchQuery}
-            onSelect={handleAutocompleteSelect}
-          />
-        )}
-      </div>
-      
-      <div className="mt-4 flex justify-between items-center max-w-md mx-auto">
-        <div className="flex gap-2 flex-wrap">
-          <Button 
-            variant={!showTomorrowGames && !showWeekGames ? "default" : "outline"}
-            size="sm"
-            onClick={handleShowToday}
-          >
-            Today's Games
-          </Button>
-          <Button 
-            variant={showTomorrowGames ? "default" : "outline"}
-            size="sm"
-            onClick={handleShowTomorrow}
-          >
-            Tomorrow's Games
-          </Button>
-          <Button
-            variant={showWeekGames ? "default" : "outline"}
-            size="sm"
-            onClick={handleShowWeek}
-          >
-            This Week's Games
-          </Button>
-        </div>
-        <Button 
-          variant={showFanDuelOddsOnly ? "default" : "outline"}
-          size="sm"
-          onClick={toggleFanDuelOddsFilter}
-          className="flex items-center gap-1"
-        >
-          {showFanDuelOddsOnly ? "FanDuel Odds Only" : "All Sportsbooks"}
-        </Button>
-      </div>
-      
-      <div className="mt-6">
-        <Tabs defaultValue={view} value={view} onValueChange={(v) => setView(v as "schedule" | "standings")}>
-          <TabsList className="grid w-full max-w-md grid-cols-2">
-            <TabsTrigger value="schedule">Schedule</TabsTrigger>
-            <TabsTrigger value="standings">Standings</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="schedule" className="mt-4">
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-semibold">{formattedDate}</h2>
-                  <div className="flex gap-2">
-                    <button 
-                      onClick={goToPreviousDay}
-                      className="px-3 py-1 text-sm border rounded-md hover:bg-muted"
-                    >
-                      Previous {showWeekGames ? 'Week' : 'Day'}
-                    </button>
-                    <button 
-                      onClick={goToToday}
-                      className="px-3 py-1 text-sm border rounded-md hover:bg-muted"
-                    >
-                      Today
-                    </button>
-                    <button 
-                      onClick={goToNextDay}
-                      className="px-3 py-1 text-sm border rounded-md hover:bg-muted"
-                    >
-                      Next {showWeekGames ? 'Week' : 'Day'}
-                    </button>
-                  </div>
-                </div>
-                
-                <SchedulesResults 
-                  filteredMatches={filteredMatches}
-                  isLoading={isLoading}
-                  error={error}
-                  handleRefreshData={refetchSchedule}
-                  itemsPerPage={10}
-                />
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="standings" className="mt-4">
-            <Card>
-              <CardContent className="pt-6">
-                <h2 className="text-xl font-semibold mb-4">
-                  {selectedLeague === "ALL" ? "MLB" : selectedLeague} Standings
-                </h2>
-                
-                {isLoadingStandings ? (
-                  <div className="text-center p-12">
-                    <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-t-2 border-navy-500"></div>
-                    <p className="mt-4">Loading standings...</p>
-                  </div>
-                ) : (
-                  <div className="space-y-8">
-                    {divisionsStandings.map((division, index) => (
-                      <div key={index} className="overflow-hidden">
-                        <h3 className="text-lg font-medium mb-2">{division.divisionName}</h3>
-                        <div className="overflow-x-auto">
-                          <table className="w-full border-collapse">
-                            <thead>
-                              <tr className="bg-muted/50">
-                                <th className="text-left p-2">Team</th>
-                                <th className="p-2">W</th>
-                                <th className="p-2">L</th>
-                                <th className="p-2">PCT</th>
-                                <th className="p-2">GB</th>
-                                <th className="p-2">STRK</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {division.teams.map((team) => (
-                                <tr key={team.team.id} className="border-b hover:bg-muted/50">
-                                  <td className="p-2">
-                                    <div className="flex items-center gap-2">
-                                      {team.team.logo && (
-                                        <img 
-                                          src={team.team.logo} 
-                                          alt={team.team.name} 
-                                          className="w-5 h-5 object-contain"
-                                        />
-                                      )}
-                                      <span>{team.team.name}</span>
-                                    </div>
-                                  </td>
-                                  <td className="p-2 text-center">{team.wins}</td>
-                                  <td className="p-2 text-center">{team.losses}</td>
-                                  <td className="p-2 text-center">{team.winPercentage}</td>
-                                  <td className="p-2 text-center">{team.gamesBack}</td>
-                                  <td className="p-2 text-center">{team.streak}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
+
+      <SchedulesFilterControls
+        searchQuery={searchQuery}
+        isAutocompleteOpen={isAutocompleteOpen}
+        searchInputRef={searchInputRef}
+        onSearchChange={handleSearchChange}
+        onAutocompleteSelect={handleAutocompleteSelect}
+        onBlur={handleBlur}
+        onFocus={() => setIsAutocompleteOpen(true)}
+        matches={allMatchesForAutocomplete}
+        showTomorrowGames={showTomorrowGames}
+        showWeekGames={showWeekGames}
+        showFanDuelOddsOnly={showFanDuelOddsOnly}
+        handleShowToday={handleShowToday}
+        handleShowTomorrow={handleShowTomorrow}
+        handleShowWeek={handleShowWeek}
+        toggleFanDuelOddsFilter={toggleFanDuelOddsFilter}
+      />
+
+      <SchedulesTabContent
+        view={view}
+        setView={setView}
+        formattedDate={formattedDate}
+        showWeekGames={showWeekGames}
+        goToPreviousDay={goToPreviousDay}
+        goToNextDay={goToNextDay}
+        goToToday={goToToday}
+        filteredMatches={filteredMatches}
+        isLoading={isLoading}
+        error={error}
+        refetchSchedule={refetchSchedule}
+        itemsPerPage={10}
+        divisionsStandings={divisionsStandings}
+        isLoadingStandings={isLoadingStandings}
+        selectedLeague={selectedLeague}
+      />
     </div>
   );
 };
