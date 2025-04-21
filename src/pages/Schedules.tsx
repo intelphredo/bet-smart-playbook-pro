@@ -1,4 +1,3 @@
-
 import { useState, useMemo } from "react";
 import { useESPNData } from "@/hooks/useESPNData";
 import { Match, League, Team } from "@/types/sports";
@@ -9,13 +8,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
-  Calendar,
-  CalendarIcon,
   ChevronLeft,
   ChevronRight,
   FilterIcon,
   Search,
   SlidersHorizontal,
+  CalendarIcon
 } from "lucide-react";
 import { format, parseISO, isAfter, isBefore, startOfDay, endOfDay, addDays, subDays } from "date-fns";
 import { Separator } from "@/components/ui/separator";
@@ -32,6 +30,7 @@ import ScheduleTable from "@/components/ScheduleTable";
 import ScheduleCard from "@/components/ScheduleCard";
 import ScheduleFilters from "@/components/ScheduleFilters";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { toast } from "@/hooks/use-toast";
 
 const ITEMS_PER_PAGE = 10;
@@ -64,13 +63,13 @@ const Schedules = () => {
     setCurrentPage(1); // Reset to first page when changing dates
   };
 
-  // Function to navigate to a specific date
-  const goToDate = (date: Date) => {
-    setCurrentDate(date);
-    setCurrentPage(1);
+  const goToDate = (date: Date | undefined) => {
+    if (date) {
+      setCurrentDate(date);
+      setCurrentPage(1);
+    }
   };
 
-  // Function to go to tomorrow
   const goToTomorrow = () => {
     const tomorrow = addDays(new Date(), 1);
     setCurrentDate(tomorrow);
@@ -82,7 +81,6 @@ const Schedules = () => {
     });
   };
 
-  // Function to go to today
   const goToToday = () => {
     const today = new Date();
     setCurrentDate(today);
@@ -114,7 +112,6 @@ const Schedules = () => {
       const matchDate = parseISO(match.startTime);
       const matchInDateRange = !isBefore(matchDate, startDate) && !isAfter(matchDate, endDate);
 
-      // selectedTeam logic: don't filter if "all_teams"
       const teamFilter = selectedTeam && selectedTeam !== "all_teams"
         ? (match.homeTeam.id === selectedTeam || match.awayTeam.id === selectedTeam)
         : true;
@@ -173,7 +170,6 @@ const Schedules = () => {
             </Button>
           </div>
 
-          {/* Filters Section Card */}
           <div className="bg-card/90 rounded-xl shadow-md p-6 border border-muted space-y-5 transition-all">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-4">
               <div className="flex flex-col md:flex-row gap-2 md:items-center">
@@ -196,7 +192,7 @@ const Schedules = () => {
                     <Calendar
                       mode="single"
                       selected={currentDate}
-                      onSelect={(date) => date && goToDate(date)}
+                      onSelect={goToDate}
                       initialFocus
                     />
                   </PopoverContent>
