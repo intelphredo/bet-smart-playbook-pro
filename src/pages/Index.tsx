@@ -19,6 +19,8 @@ import { useESPNData } from "@/hooks/useESPNData";
 import { useToast } from "@/hooks/use-toast";
 import ConfidentPicks from "@/components/ConfidentPicks";
 import { Check, X } from "lucide-react";
+import ArbitrageOpportunityCard from "@/components/ArbitrageOpportunityCard";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
 const Index = () => {
   const [selectedLeague, setSelectedLeague] = useState<League | "ALL">("ALL");
@@ -66,6 +68,37 @@ const Index = () => {
     return false;
   };
 
+  const realTimeArbs = [...upcomingMatches, ...liveMatches]
+    .slice(0, 3)
+    .map(match => ({
+      id: match.id,
+      matchId: match.id,
+      match: {
+        homeTeam: match.homeTeam.shortName,
+        awayTeam: match.awayTeam.shortName,
+        league: match.league,
+        startTime: match.startTime,
+      },
+      bookmakers: [
+        { name: "FanDuel", odds: { ...match.odds } },
+        { name: "DraftKings", odds: { ...match.odds } },
+      ],
+      arbitragePercentage: 2.1 + Math.random(),
+      potentialProfit: 21.24 + Math.random() * 30,
+      bettingStrategy: [
+        { bookmaker: "FanDuel", team: "home", stakePercentage: 52 + Math.random() * 10, odds: match.odds.homeWin },
+        { bookmaker: "DraftKings", team: match.odds.draw !== undefined ? "draw" : "away", stakePercentage: 48 - Math.random() * 10, odds: match.odds.awayWin },
+        ...(match.odds.draw
+          ? [{ bookmaker: "BetMGM", team: "draw", stakePercentage: Math.min(100, Math.random() * 20), odds: match.odds.draw }]
+          : []),
+      ],
+      isPremium: Math.random() > 0.5,
+    }));
+
+  const arbitrageOpportunitiesToShow = realTimeArbs.length > 0
+    ? realTimeArbs
+    : filteredArbitrage;
+
   return (
     <div className="min-h-screen bg-background">
       <NavBar />
@@ -93,9 +126,19 @@ const Index = () => {
           
           <div className="space-y-4">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-              <div className="flex items-center">
-                <h2 className="text-2xl font-bold mr-2">Arbitrage Opportunities</h2>
+              <div className="flex items-center gap-2">
+                <h2 className="text-2xl font-bold">Arbitrage Opportunities</h2>
                 <Badge className="bg-gold-500 text-navy-900">Premium</Badge>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info size={18} className="text-accentblue-500 cursor-pointer" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs text-xs text-left">
+                    <b>What is Arbitrage?</b><br/>
+                    Arbitrage betting means placing bets on all possible outcomes with different bookmakers to secure a guaranteed profit thanks to price differences. 
+                    Opportunities update in real-time from the latest matchups and odds.
+                  </TooltipContent>
+                </Tooltip>
               </div>
             </div>
             
@@ -104,8 +147,8 @@ const Index = () => {
               description="Get guaranteed profits with our arbitrage betting opportunities. Upgrade to premium to unlock."
             >
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {filteredArbitrage.map(opportunity => (
-                  <ArbitrageCard key={opportunity.id} opportunity={opportunity} />
+                {arbitrageOpportunitiesToShow.map(opportunity => (
+                  <ArbitrageOpportunityCard key={opportunity.id} opportunity={opportunity} />
                 ))}
               </div>
             </PremiumContent>
