@@ -1,3 +1,4 @@
+
 import { Match, Team, League } from "@/types/sports";
 import { SPORTSBOOK_LOGOS } from "../utils/sportsbook";
 
@@ -106,6 +107,18 @@ export const mapESPNEventToMatch = (event: ESPNEvent, league: League): Match => 
       awayWin: baseAwayOdds + (Math.random() * 0.2 - 0.1),
       draw: baseDrawOdds ? baseDrawOdds + (Math.random() * 0.3 - 0.15) : undefined,
       updatedAt: new Date(Date.now() - 180000).toISOString() // 3 minutes ago
+    },
+    {
+      sportsbook: {
+        id: "fanduel",
+        name: "FanDuel",
+        logo: SPORTSBOOK_LOGOS.fanduel,
+        isAvailable: true
+      },
+      homeWin: baseHomeOdds + (Math.random() * 0.2 - 0.1),
+      awayWin: baseAwayOdds + (Math.random() * 0.2 - 0.1),
+      draw: baseDrawOdds ? baseDrawOdds + (Math.random() * 0.3 - 0.15) : undefined,
+      updatedAt: new Date(Date.now() - 60000).toISOString() // 1 minute ago
     }
   ];
 
