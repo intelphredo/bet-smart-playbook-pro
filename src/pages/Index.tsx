@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { League } from "@/types/sports";
 import NavBar from "@/components/NavBar";
@@ -18,7 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { useESPNData } from "@/hooks/useESPNData";
 import { useToast } from "@/hooks/use-toast";
 import ConfidentPicks from "@/components/ConfidentPicks";
-import { Check, X } from "lucide-react";
+import { Check, X, Info } from "lucide-react"; // Added the Info icon import
 import ArbitrageOpportunityCard from "@/components/ArbitrageOpportunityCard";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
@@ -86,10 +87,10 @@ const Index = () => {
       arbitragePercentage: 2.1 + Math.random(),
       potentialProfit: 21.24 + Math.random() * 30,
       bettingStrategy: [
-        { bookmaker: "FanDuel", team: "home", stakePercentage: 52 + Math.random() * 10, odds: match.odds.homeWin },
-        { bookmaker: "DraftKings", team: match.odds.draw !== undefined ? "draw" : "away", stakePercentage: 48 - Math.random() * 10, odds: match.odds.awayWin },
+        { bookmaker: "FanDuel", team: "home" as "home", stakePercentage: 52 + Math.random() * 10, odds: match.odds.homeWin },
+        { bookmaker: "DraftKings", team: match.odds.draw !== undefined ? "draw" as "draw" : "away" as "away", stakePercentage: 48 - Math.random() * 10, odds: match.odds.awayWin },
         ...(match.odds.draw
-          ? [{ bookmaker: "BetMGM", team: "draw", stakePercentage: Math.min(100, Math.random() * 20), odds: match.odds.draw }]
+          ? [{ bookmaker: "BetMGM", team: "draw" as "draw", stakePercentage: Math.min(100, Math.random() * 20), odds: match.odds.draw }]
           : []),
       ],
       isPremium: Math.random() > 0.5,
