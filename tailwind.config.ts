@@ -1,4 +1,3 @@
-
 import type { Config } from "tailwindcss";
 
 export default {
@@ -63,7 +62,6 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
-				// Custom colors for the betting app
 				navy: {
 					DEFAULT: '#0a2342',
 					50: '#e6eaef',
@@ -79,22 +77,36 @@ export default {
 				},
 				gold: {
 					DEFAULT: '#ffd700',
-					50: '#fffbeb',
-					100: '#fef3c7',
-					200: '#fde68a',
-					300: '#fcd34d',
-					400: '#fbbf24',
-					500: '#f59e0b',
-					600: '#d97706',
-					700: '#b45309',
-					800: '#92400e',
-					900: '#78350f',
+					50: '#fffae5',
+					100: '#fdf6d2',
+					200: '#f8e78b',
+					300: '#f3d14d',
+					400: '#edb824',
+					500: '#ffd700',
+					600: '#d6b300',
+					700: '#ac9000',
+					800: '#887001',
+					900: '#705c00',
+				},
+				accentblue: {
+					DEFAULT: '#4f8cff',
+					50: '#edf5ff',
+					100: '#d1e5fe',
+					200: '#b3d3fd',
+					300: '#89bbfb',
+					400: '#619ef4',
+					500: '#4f8cff',
+					600: '#276be4',
+					700: '#17449c',
+					800: '#162a56',
+					900: '#0f1528',
 				},
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
 				md: 'calc(var(--radius) - 2px)',
-				sm: 'calc(var(--radius) - 4px)'
+				sm: 'calc(var(--radius) - 4px)',
+				"xl": "1.5rem"
 			},
 			keyframes: {
 				'accordion-down': {

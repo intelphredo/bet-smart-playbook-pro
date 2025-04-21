@@ -1,7 +1,9 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Add global font for polish */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
 
 @layer base {
   :root {
@@ -85,33 +87,98 @@
   }
 }
 
+/* Enhanced element polish */
 @layer base {
   * {
     @apply border-border;
+    font-family: 'Inter', system-ui, sans-serif;
+    outline-color: theme(colors.gold.500);
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    letter-spacing: 0.01em;
   }
 
-  /* Custom styling for the betting app */
-  .league-icon {
-    @apply w-10 h-10 transition-all duration-200 ease-in-out;
-  }
-  
-  .active-league {
-    @apply border-gold-500 text-gold-500 scale-110;
-  }
-  
+  /* Cards: subtle shadow, smooth hover transition, gentle lift effect */
+  .card,
   .match-card {
-    @apply hover:shadow-md transition-all duration-200 ease-in-out hover:translate-y-[-2px];
+    @apply transition-shadow transition-transform duration-200 ease-in-out;
+    box-shadow: 0 2px 10px 0 hsla(220, 40%, 40%, 0.08);
+    border-radius: 1rem;
   }
-  
-  .stat-value-up {
-    @apply text-green-500 font-semibold;
+  .card:hover,
+  .match-card:hover {
+    box-shadow: 0 6px 18px 0 hsla(220, 40%, 39%, 0.14);
+    transform: translateY(-2px) scale(1.015);
   }
-  
-  .stat-value-down {
-    @apply text-red-500 font-semibold;
+
+  /* Buttons: richer hover color, shadow, rounded */
+  button, .btn, .shadcn-btn {
+    @apply rounded-lg focus:ring-2 focus:ring-gold-300 focus:outline-none;
+    transition: box-shadow 0.2s, transform 0.2s;
+    box-shadow: 0 1px 3px 0 hsla(44, 100%, 50%, 0.04);
+  }
+  button:hover, .btn:hover, .shadcn-btn:hover {
+    @apply bg-gold-500 text-navy-900;
+    filter: brightness(1.04);
+    transform: translateY(-1px) scale(1.05);
+  }
+
+  /* Badges: more modern, pill shape */
+  .badge,
+  .shadcn-badge,
+  .bg-gold-500 {
+    @apply rounded-full px-3 py-1 font-semibold;
+    box-shadow: 0 1px 3px 0 hsla(44, 100%, 60%, 0.05);
+    font-size: 0.97em;
+    letter-spacing: 0.02em;
+  }
+
+  /* Headings: bolder, tighter spacing */
+  h1, h2, h3, .font-bold {
+    @apply font-bold tracking-tight;
+  }
+  h1 {
+    font-size: 2.5rem;
+    margin-bottom: 0.2em;
+  }
+  h2 {
+    font-size: 1.85rem;
+    margin-bottom: 0.15em;
+  }
+  h3 {
+    font-size: 1.3rem;
+    margin-bottom: 0.12em;
+  }
+
+  /* Subtle glass effect for cards, especially in dark mode */
+  .card,
+  .match-card,
+  .player-prop-card {
+    @apply bg-white/90 dark:bg-navy-700/70;
+    backdrop-filter: blur(2px);
+    border: 1px solid hsla(220, 20%, 90%, 0.12);
+  }
+
+  /* Input focus: soft gold border, gentle shadow */
+  input, textarea, select {
+    @apply rounded-lg;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  input:focus, textarea:focus, select:focus {
+    border-color: theme(colors.gold.400);
+    box-shadow: 0 0 0 2px hsla(44, 100%, 60%, 0.18);
+  }
+}
+
+/* Extra subtle shimmer for "Premium"/"New" badges (optional, can remove if too much) */
+@layer base {
+  .badge.bg-gold-500, .shadcn-badge.bg-gold-500 {
+    animation: badge-glow 2s ease-in-out infinite alternate;
+  }
+  @keyframes badge-glow {
+    from { box-shadow: 0 0 4px 0 #ffd70033; }
+    to { box-shadow: 0 0 10px 2px #ffd70088; }
   }
 }
