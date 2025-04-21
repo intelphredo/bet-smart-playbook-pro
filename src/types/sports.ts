@@ -1,4 +1,3 @@
-
 export type League = 'NBA' | 'NFL' | 'MLB' | 'NHL' | 'SOCCER';
 
 export type PropType = 'points' | 'assists' | 'rebounds' | 'touchdowns' | 'goals' | 'saves' | 'shots' | 'hits';
@@ -96,6 +95,41 @@ export interface PlayerProp {
   seasonAverage?: number;
 }
 
+export interface PlayerStats {
+  id: string;
+  name: string;
+  position: string;
+  jersey: string;
+  teamId?: string;
+  teamName?: string;
+  battingAverage?: string;
+  homeRuns?: number;
+  rbi?: number;
+  hits?: number;
+  runs?: number;
+  obp?: string;
+  ops?: string;
+  slg?: string;
+  era?: string;
+  wins?: number;
+  losses?: number;
+  saves?: number;
+  strikeouts?: number;
+  whip?: string;
+}
+
+export interface DivisionStanding {
+  divisionName: string;
+  teams: Array<{
+    team: Team;
+    wins: number;
+    losses: number;
+    winPercentage: string;
+    gamesBack: string;
+    streak: string;
+  }>;
+}
+
 export interface ArbitrageOpportunity {
   id: string;
   matchId: string;
@@ -131,3 +165,5 @@ export interface User {
   subscriptionEnds?: string;
   lastLogin?: string;
 }
+
+export type DataSource = 'ESPN' | 'MLB';

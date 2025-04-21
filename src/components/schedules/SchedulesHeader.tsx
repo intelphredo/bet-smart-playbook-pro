@@ -1,175 +1,140 @@
 
-import { Team, League } from "@/types/sports";
-import { Button } from "@/components/ui/button";
+import { CalendarIcon, SlidersHorizontal, Users } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, SlidersHorizontal, ChevronLeft, ChevronRight } from "lucide-react";
-import ScheduleFilters from "@/components/ScheduleFilters";
+import { League, DataSource } from "@/types/sports";
 
 interface SchedulesHeaderProps {
-  currentDate: Date;
-  currentView: "day" | "week" | "month";
-  dateRangeLabel: string;
-  selectedLeague: League | "ALL";
-  selectedTeam: string;
+  selectedLeague: "ALL" | League;
+  onLeagueChange: (league: "ALL" | League) => void;
   searchQuery: string;
-  filtersVisible: boolean;
-  allTeams: Team[];
-  isLoading: boolean;
-  onRefresh: () => void;
-  onDateNavigate: (direction: 'prev' | 'next') => void;
-  onLeagueChange: (value: League | "ALL") => void;
-  onTeamChange: (value: string) => void;
-  onSearchChange: (value: string) => void;
-  onViewChange: (view: "day" | "week" | "month") => void;
-  onToggleFilters: (value: boolean) => void;
+  onSearchChange: (query: string) => void;
+  view: "schedule" | "standings";
+  onViewChange: (view: "schedule" | "standings") => void;
+  selectedDate: Date;
+  onDateChange: (date: Date) => void;
+  onPreviousDay: () => void;
+  onNextDay: () => void;
+  onToday: () => void;
+  dataSource: DataSource;
+  onDataSourceChange: (source: DataSource) => void;
 }
 
 const SchedulesHeader = ({
-  currentDate,
-  currentView,
-  dateRangeLabel,
   selectedLeague,
-  selectedTeam,
-  searchQuery,
-  filtersVisible,
-  allTeams,
-  isLoading,
-  onRefresh,
-  onDateNavigate,
   onLeagueChange,
-  onTeamChange,
+  searchQuery,
   onSearchChange,
+  view,
   onViewChange,
-  onToggleFilters
+  selectedDate,
+  onDateChange,
+  dataSource,
+  onDataSourceChange
 }: SchedulesHeaderProps) => {
+  const handleLeagueChange = (value: string) => {
+    onLeagueChange(value as "ALL" | League);
+  };
+
+  const handleDataSourceChange = (value: string) => {
+    onDataSourceChange(value as DataSource);
+  };
+
   return (
-    <>
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold">Sports Schedules</h1>
-          <p className="text-muted-foreground">
-            Complete schedules and times for all professional sports teams
-          </p>
+    <div className="space-y-4">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div className="flex flex-row items-center gap-3">
+          <Users className="h-5 w-5" />
+          <h1 className="text-2xl font-bold tracking-tight">Schedules</h1>
+          <Badge variant="outline" className={view === "schedule" ? "bg-primary/10" : "bg-secondary/10"}>
+            {view === "schedule" ? "Games" : "Standings"}
+          </Badge>
         </div>
-        <Button onClick={onRefresh} disabled={isLoading}>
-          {isLoading ? "Loading..." : "Refresh Schedules"}
-        </Button>
+
+        <div className="flex flex-col sm:flex-row gap-2">
+          <div className="flex gap-2">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="w-[240px] justify-start">
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  <span>
+                    {selectedDate ? (
+                      new Date(selectedDate).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric'
+                      })
+                    ) : (
+                      "Pick a date"
+                    )}
+                  </span>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={(date) => date && onDateChange(date)}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+
+            <Select value={selectedLeague} onValueChange={handleLeagueChange}>
+              <SelectTrigger className="w-[110px]">
+                <SelectValue placeholder="League" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">All Leagues</SelectItem>
+                <SelectItem value="NBA">NBA</SelectItem>
+                <SelectItem value="NFL">NFL</SelectItem>
+                <SelectItem value="MLB">MLB</SelectItem>
+                <SelectItem value="NHL">NHL</SelectItem>
+                <SelectItem value="SOCCER">SOCCER</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={dataSource} onValueChange={handleDataSourceChange}>
+              <SelectTrigger className="w-[110px]">
+                <SelectValue placeholder="Data Source" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ESPN">ESPN API</SelectItem>
+                <SelectItem value="MLB">MLB API</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
       </div>
 
-      {/* Filters Section Card */}
-      <div className="bg-card/90 rounded-xl shadow-md p-6 border border-muted space-y-5 transition-all">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-4">
-          <div className="flex flex-col md:flex-row gap-2 md:items-center">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => onDateNavigate('prev')}
-              aria-label="Previous date range"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <div className="text-xl font-semibold">{dateRangeLabel}</div>
-            <Button
-              variant="outline"
-              size="icon" 
-              onClick={() => onDateNavigate('next')}
-              aria-label="Next date range"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Button 
-              variant={currentView === 'day' ? "default" : "outline"}
-              onClick={() => onViewChange('day')}
-              size="sm"
-            >
-              Day
-            </Button>
-            <Button 
-              variant={currentView === 'week' ? "default" : "outline"}
-              onClick={() => onViewChange('week')}
-              size="sm"
-            >
-              Week
-            </Button>
-            <Button 
-              variant={currentView === 'month' ? "default" : "outline"}
-              onClick={() => onViewChange('month')}
-              size="sm"
-            >
-              Month
-            </Button>
-          </div>
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1">
+          <Input
+            placeholder="Search teams..."
+            value={searchQuery}
+            onChange={e => onSearchChange(e.target.value)}
+            className="pl-8"
+          />
+          <SlidersHorizontal className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
         </div>
-        <div className="block text-base font-semibold mt-1 text-muted-foreground">
-          Filter Games
-        </div>
-        <div className="flex flex-col md:flex-row gap-4 items-stretch mt-1">
-          <div className="relative w-full md:w-72">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search teams..."
-              className="pl-9"
-              value={searchQuery}
-              onChange={(e) => onSearchChange(e.target.value)}
-            />
-          </div>
-          <Select 
-            value={selectedLeague} 
-            onValueChange={(value) => onLeagueChange(value as League | "ALL")}
-          >
-            <SelectTrigger className="w-full md:w-40">
-              <SelectValue placeholder="All Leagues" />
+
+        <div className="flex md:hidden">
+          <Select value={view} onValueChange={(v) => onViewChange(v as "schedule" | "standings")}>
+            <SelectTrigger className="w-[110px]">
+              <SelectValue placeholder="View" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="ALL">All Leagues</SelectItem>
-              <SelectItem value="NBA">NBA</SelectItem>
-              <SelectItem value="NFL">NFL</SelectItem>
-              <SelectItem value="MLB">MLB</SelectItem>
-              <SelectItem value="NHL">NHL</SelectItem>
-              <SelectItem value="SOCCER">Soccer</SelectItem>
+              <SelectItem value="schedule">Schedule</SelectItem>
+              <SelectItem value="standings">Standings</SelectItem>
             </SelectContent>
           </Select>
-          <Select value={selectedTeam} onValueChange={onTeamChange}>
-            <SelectTrigger className="w-full md:w-48">
-              <SelectValue placeholder="All Teams" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all_teams">All Teams</SelectItem>
-              {allTeams.map((team) => (
-                <SelectItem key={team.id} value={team.id}>
-                  <div className="flex items-center gap-2">
-                    {team.logo && (
-                      <img src={team.logo} alt={team.name} className="w-4 h-4 object-contain" />
-                    )}
-                    {team.name}
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button 
-            variant="outline" 
-            onClick={() => onToggleFilters(!filtersVisible)} 
-            className="md:ml-auto"
-            size="icon"
-            aria-label="Show advanced filters"
-          >
-            <SlidersHorizontal className="h-4 w-4" />
-          </Button>
         </div>
-        {filtersVisible && (
-          <div className="mt-4 p-4 border rounded-lg bg-muted/20">
-            <ScheduleFilters 
-              onClose={() => onToggleFilters(false)} 
-              onApply={() => onToggleFilters(false)}
-            />
-          </div>
-        )}
       </div>
-    </>
+    </div>
   );
 };
 
