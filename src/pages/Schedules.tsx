@@ -1,4 +1,3 @@
-
 import { useState, useMemo } from "react";
 import { useESPNData } from "@/hooks/useESPNData";
 import { Match, League, Team } from "@/types/sports";
@@ -50,7 +49,6 @@ const Schedules = () => {
     refreshInterval: 300000, // Every 5 minutes
   });
 
-  // Function to handle date navigation
   const navigateDate = (direction: 'prev' | 'next') => {
     if (direction === 'prev') {
       if (currentView === 'day') setCurrentDate(subDays(currentDate, 1));
@@ -64,7 +62,6 @@ const Schedules = () => {
     setCurrentPage(1); // Reset to first page when changing dates
   };
 
-  // Get all teams from matches for filtering
   const allTeams = useMemo(() => {
     const teams = new Map<string, Team>();
     
@@ -76,9 +73,7 @@ const Schedules = () => {
     return Array.from(teams.values()).sort((a, b) => a.name.localeCompare(b.name));
   }, [allMatches]);
 
-  // Filter and sort matches based on selected criteria
   const filteredMatches = useMemo(() => {
-    // Apply date range filter based on view
     let startDate = startOfDay(currentDate);
     let endDate;
     
@@ -94,11 +89,9 @@ const Schedules = () => {
       const matchDate = parseISO(match.startTime);
       const matchInDateRange = !isBefore(matchDate, startDate) && !isAfter(matchDate, endDate);
       
-      // Filter by team if selected
       const teamFilter = selectedTeam ? 
         (match.homeTeam.id === selectedTeam || match.awayTeam.id === selectedTeam) : true;
       
-      // Filter by search query
       const searchFilter = searchQuery ? 
         (match.homeTeam.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
          match.awayTeam.name.toLowerCase().includes(searchQuery.toLowerCase())) : true;
@@ -109,14 +102,12 @@ const Schedules = () => {
     });
   }, [allMatches, currentDate, currentView, selectedTeam, searchQuery]);
 
-  // Pagination
   const totalPages = Math.ceil(filteredMatches.length / ITEMS_PER_PAGE);
   const paginatedMatches = useMemo(() => {
     const start = (currentPage - 1) * ITEMS_PER_PAGE;
     return filteredMatches.slice(start, start + ITEMS_PER_PAGE);
   }, [filteredMatches, currentPage]);
 
-  // Handle refresh
   const handleRefreshData = () => {
     refetch();
     toast({
@@ -125,7 +116,6 @@ const Schedules = () => {
     });
   };
 
-  // Date range display
   const getDateRangeLabel = () => {
     if (currentView === 'day') {
       return format(currentDate, 'MMMM d, yyyy');
@@ -155,7 +145,6 @@ const Schedules = () => {
             </Button>
           </div>
           
-          {/* Filters Section */}
           <div className="bg-card rounded-lg shadow p-4">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
               <div className="flex flex-col md:flex-row gap-2 md:items-center">
@@ -233,7 +222,7 @@ const Schedules = () => {
                   <SelectValue placeholder="All Teams" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Teams</SelectItem>
+                  <SelectItem value="all_teams">All Teams</SelectItem>
                   {allTeams.map((team) => (
                     <SelectItem key={team.id} value={team.id}>
                       <div className="flex items-center gap-2">
