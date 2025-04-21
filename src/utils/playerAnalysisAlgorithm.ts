@@ -1,4 +1,3 @@
-
 import { PlayerProp, PropType } from "@/types/sports";
 import { 
   PlayerHistoricalData, 
@@ -168,7 +167,7 @@ function calculateBaseConfidence(
 }
 
 /**
- * Determine the recommendation based on all factors
+ * Determine the recommendation based on all factors with improved data judgment logic.
  */
 function determineRecommendation(
   prop: PlayerProp, 
@@ -176,31 +175,55 @@ function determineRecommendation(
   confidence: number,
   matchup: TeamMatchupHistory | undefined
 ): 'over' | 'under' {
-  // If player is on a hot streak and the line is beatable
-  if (playerData.currentStreak.type === 'hot' && 
-      playerData.currentStreak.stats[prop.propType]?.trend === 'increasing' &&
-      playerData.currentStreak.stats[prop.propType]?.average > prop.line) {
-    return 'over';
+  // Gather evidence from different factors
+  let overEvidence = 0;
+  let underEvidence = 0;
+
+  // Recent streaks
+  if (playerData.currentStreak.type === 'hot' && playerData.currentStreak.stats[prop.propType]?.trend === 'increasing' && playerData.currentStreak.stats[prop.propType]?.average > prop.line) {
+    overEvidence += 2;
   }
-  
-  // If player is on a cold streak
-  if (playerData.currentStreak.type === 'cold' && 
-      playerData.currentStreak.stats[prop.propType]?.trend === 'decreasing') {
-    return 'under';
+  if (playerData.currentStreak.type === 'cold' && playerData.currentStreak.stats[prop.propType]?.trend === 'decreasing' && playerData.currentStreak.stats[prop.propType]?.average < prop.line) {
+    underEvidence += 2;
   }
-  
-  // Historical struggles against this team
-  if (matchup?.struggles) {
-    return 'under';
+
+  // Historical matchups
+  if (matchup && matchup.struggles) {
+    underEvidence += 2;
   }
-  
-  // Check season average against line
+  if (matchup && matchup.averagePerformance[prop.propType] !== undefined) {
+    if (matchup.averagePerformance[prop.propType]! > prop.line * 1.1) {
+      overEvidence += 1;
+    } else if (matchup.averagePerformance[prop.propType]! < prop.line * 0.9) {
+      underEvidence += 1;
+    }
+  }
+
+  // Recent games trends
+  if (prop.lastGames && prop.lastGames.length > 0) {
+    const gamesOverLine = prop.lastGames.filter(v => v > prop.line).length;
+    const percentOverLine = gamesOverLine / prop.lastGames.length;
+    if (percentOverLine >= 0.7) overEvidence += 1;
+    if (percentOverLine <= 0.3) underEvidence += 1;
+  }
+
+  // Season average
   if (prop.seasonAverage) {
-    if (prop.seasonAverage > prop.line * 1.1) return 'over';
-    if (prop.seasonAverage < prop.line * 0.9) return 'under';
+    if (prop.seasonAverage > prop.line * 1.1) overEvidence += 1;
+    if (prop.seasonAverage < prop.line * 0.9) underEvidence += 1;
   }
-  
-  // Default to what the baseline prop prediction suggests
+
+  // Confidence bonus
+  if (confidence >= 70) {
+    if (prop.prediction.recommended === 'over') overEvidence += 1;
+    if (prop.prediction.recommended === 'under') underEvidence += 1;
+  }
+
+  // Decide recommendation based on evidence
+  if (overEvidence > underEvidence && overEvidence >= 2) return 'over';
+  if (underEvidence > overEvidence && underEvidence >= 2) return 'under';
+
+  // If evidence is weak or balanced, use the baseline recommendation
   return prop.prediction.recommended;
 }
 
