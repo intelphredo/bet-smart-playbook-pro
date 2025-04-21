@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useESPNData } from "./useESPNData";
 import { useMLBData } from "./useMLBData";
@@ -52,10 +53,10 @@ export function useSportsData({
     isLoadingSchedule: isLoadingMLB,
     scheduleError: mlbError,
     refetchSchedule: refetchMLB,
-    divisionsStandings,
-    isLoadingStandings,
-    standingsError,
-    fetchLiveGameData
+    divisionsStandings: mlbDivisionsStandings,
+    isLoadingStandings: mlbIsLoadingStandings,
+    standingsError: mlbStandingsError,
+    fetchLiveGameData: mlbFetchLiveGameData
   } = useMLBData({
     refreshInterval,
     includeTeams,
@@ -84,7 +85,9 @@ export function useSportsData({
   console.log('MLB upcoming matches:', mlbUpcomingMatches.length);
   
   // Determine which data set to use, now with Action
-  let baseMatches, baseUpcomingMatches, baseLiveMatches, baseFinishedMatches, isLoading, error, refetchSchedule, divisionsStandings, isLoadingStandings, standingsError, fetchLiveGameData;
+  let baseMatches, baseUpcomingMatches, baseLiveMatches, baseFinishedMatches, isLoading, error, refetchSchedule;
+  let selectedDivisionsStandings, selectedIsLoadingStandings, selectedStandingsError, selectedFetchLiveGameData;
+  
   if (dataSource === "ACTION") {
     baseMatches = anMatches;
     baseUpcomingMatches = anUpcomingMatches;
@@ -93,12 +96,11 @@ export function useSportsData({
     isLoading = isLoadingAN;
     error = anError;
     refetchSchedule = refetchAN;
-    divisionsStandings = [];
-    isLoadingStandings = false;
-    standingsError = null;
-    fetchLiveGameData = undefined;
+    selectedDivisionsStandings = [];
+    selectedIsLoadingStandings = false;
+    selectedStandingsError = null;
+    selectedFetchLiveGameData = undefined;
   } else if (dataSource === "MLB") {
-    // ... MLB path as before ...
     baseMatches = mlbMatches;
     baseUpcomingMatches = mlbUpcomingMatches;
     baseLiveMatches = mlbLiveMatches;
@@ -106,10 +108,10 @@ export function useSportsData({
     isLoading = isLoadingMLB;
     error = mlbError;
     refetchSchedule = refetchMLB;
-    divisionsStandings = divisionsStandings;
-    isLoadingStandings = isLoadingStandings;
-    standingsError = standingsError;
-    fetchLiveGameData = fetchLiveGameData;
+    selectedDivisionsStandings = mlbDivisionsStandings;
+    selectedIsLoadingStandings = mlbIsLoadingStandings;
+    selectedStandingsError = mlbStandingsError;
+    selectedFetchLiveGameData = mlbFetchLiveGameData;
   } else { // ESPN default
     baseMatches = espnMatches;
     baseUpcomingMatches = espnUpcomingMatches;
@@ -118,10 +120,10 @@ export function useSportsData({
     isLoading = isLoadingESPN;
     error = espnError;
     refetchSchedule = refetchESPN;
-    divisionsStandings = [];
-    isLoadingStandings = false;
-    standingsError = null;
-    fetchLiveGameData = undefined;
+    selectedDivisionsStandings = [];
+    selectedIsLoadingStandings = false;
+    selectedStandingsError = null;
+    selectedFetchLiveGameData = undefined;
   }
   
   // Filter MLB-only data if ESPN is selected but league is MLB
@@ -158,26 +160,19 @@ export function useSportsData({
     setDataSource("MLB");
   }
   
-  // Normalize the return structure between ESPN and MLB data sources
-  
-  // For ESPN, return empty standings data since it doesn't provide that
-  const normalizedDivisionsStandings = dataSource === "ESPN" ? [] : divisionsStandings;
-  const normalizedIsLoadingStandings = dataSource === "ESPN" ? false : isLoadingStandings;
-  const normalizedStandingsError = dataSource === "ESPN" ? null : standingsError;
-  
   return {
     dataSource,
     setDataSource,
-    upcomingMatches: baseUpcomingMatches,
-    liveMatches: baseLiveMatches,
-    finishedMatches: baseFinishedMatches,
-    allMatches: baseMatches,
+    upcomingMatches,
+    liveMatches,
+    finishedMatches,
+    allMatches,
     isLoading,
     error,
     refetchSchedule,
-    divisionsStandings,
-    isLoadingStandings,
-    standingsError,
-    fetchLiveGameData,
+    divisionsStandings: selectedDivisionsStandings,
+    isLoadingStandings: selectedIsLoadingStandings,
+    standingsError: selectedStandingsError,
+    fetchLiveGameData: selectedFetchLiveGameData,
   };
 }
