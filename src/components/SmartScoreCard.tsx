@@ -3,7 +3,7 @@ import React from "react";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Chart, Trophy, TrendingUp, Snowflake } from "lucide-react";
+import { ChartLineUp, Trophy, TrendingUp, Snowflake } from "lucide-react";
 import { Match, SmartScore } from "@/types/sports";
 import { cn } from "@/lib/utils";
 
@@ -64,7 +64,7 @@ const SmartScoreCard = ({ match }: SmartScoreCardProps) => {
       <CardHeader className="bg-navy-50 dark:bg-navy-700 p-4 pb-2">
         <div className="flex justify-between items-center">
           <CardTitle className="text-lg flex items-center gap-2">
-            <Chart className="h-5 w-5 text-navy-600" />
+            <ChartLineUp className="h-5 w-5 text-navy-600" />
             SmartScore™ Analysis
           </CardTitle>
           <div className={cn(
@@ -85,7 +85,8 @@ const SmartScoreCard = ({ match }: SmartScoreCardProps) => {
               </span>
             </div>
             <Progress value={smartScore.value} className="h-2" 
-              indicatorClassName={getProgressColor(smartScore.value)} />
+              style={{ backgroundColor: "var(--secondary)", 
+                      "--indicator-color": getProgressColor(smartScore.value) }} />
           </div>
           
           <div>
@@ -95,8 +96,9 @@ const SmartScoreCard = ({ match }: SmartScoreCardProps) => {
                 {smartScore.momentum}
               </span>
             </div>
-            <Progress value={smartScore.momentum} className="h-2" 
-              indicatorClassName={getProgressColor(smartScore.momentum)} />
+            <Progress value={smartScore.momentum} className="h-2"
+              style={{ backgroundColor: "var(--secondary)", 
+                      "--indicator-color": getProgressColor(smartScore.momentum) }} />
           </div>
           
           <div>
@@ -107,7 +109,8 @@ const SmartScoreCard = ({ match }: SmartScoreCardProps) => {
               </span>
             </div>
             <Progress value={smartScore.injuries} className="h-2" 
-              indicatorClassName={getProgressColor(smartScore.injuries)} />
+              style={{ backgroundColor: "var(--secondary)", 
+                      "--indicator-color": getProgressColor(smartScore.injuries) }} />
           </div>
           
           <div>
@@ -117,8 +120,9 @@ const SmartScoreCard = ({ match }: SmartScoreCardProps) => {
                 {smartScore.weatherImpact}
               </span>
             </div>
-            <Progress value={smartScore.weatherImpact} className="h-2" 
-              indicatorClassName={getProgressColor(smartScore.weatherImpact)} />
+            <Progress value={smartScore.weatherImpact} className="h-2"
+              style={{ backgroundColor: "var(--secondary)", 
+                      "--indicator-color": getProgressColor(smartScore.weatherImpact) }} />
           </div>
           
           {/* Key Factors */}
