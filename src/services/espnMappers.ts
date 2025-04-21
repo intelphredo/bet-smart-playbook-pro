@@ -1,5 +1,5 @@
 import { Match, Team, League } from "@/types/sports";
-import { SPORTSBOOK_LOGOS } from "./espnConstants";
+import { SPORTSBOOK_LOGOS } from "../utils/sportsbook";
 
 interface ESPNEvent {
   id: string;

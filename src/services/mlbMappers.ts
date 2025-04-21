@@ -1,6 +1,6 @@
 
 import { Match, Team, League, PlayerStats } from "@/types/sports";
-import { SPORTSBOOK_LOGOS } from "./espnConstants";
+import { SPORTSBOOK_LOGOS } from "../utils/sportsbook";
 
 // Define interfaces for MLB API responses
 export interface MLBGameResponse {
@@ -145,9 +145,9 @@ export const mapMLBGameToMatch = (data: MLBScheduleResponse): Match[] => {
         liveOdds: [
           {
             sportsbook: {
-              id: "fanduel",
-              name: "FanDuel",
-              logo: SPORTSBOOK_LOGOS.fanduel,
+              id: "draftkings",
+              name: "DraftKings",
+              logo: SPORTSBOOK_LOGOS.draftkings,
               isAvailable: true
             },
             homeWin: baseHomeOdds + (Math.random() * 0.2 - 0.1),
@@ -156,14 +156,14 @@ export const mapMLBGameToMatch = (data: MLBScheduleResponse): Match[] => {
           },
           {
             sportsbook: {
-              id: "draftkings",
-              name: "DraftKings",
-              logo: SPORTSBOOK_LOGOS.draftkings,
+              id: "betmgm",
+              name: "BetMGM",
+              logo: SPORTSBOOK_LOGOS.betmgm,
               isAvailable: true
             },
             homeWin: baseHomeOdds + (Math.random() * 0.2 - 0.1),
             awayWin: baseAwayOdds + (Math.random() * 0.2 - 0.1),
-            updatedAt: new Date(Date.now() - 120000).toISOString()
+            updatedAt: new Date(Date.now() - 120000).toISOString() // 2 minutes ago
           }
         ],
         prediction: {
