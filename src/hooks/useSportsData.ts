@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useESPNData } from "./useESPNData";
 import { useMLBData } from "./useMLBData";
-import { DataSource, League, Match, DivisionStanding } from "@/types/sports";
+import { DataSource, League } from "@/types/sports";
 import { useActionNetworkData } from "./useActionNetworkData";
 
 interface UseSportsDataOptions {
