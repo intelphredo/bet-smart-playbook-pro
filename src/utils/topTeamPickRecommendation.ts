@@ -1,6 +1,5 @@
 
 import { algorithmPerformanceData } from "@/data/algorithmPerformanceData";
-import { useESPNData } from "@/hooks/useESPNData";
 import { Match } from "@/types/sports";
 
 // Helper: for a list of matches, get the one with the highest confidence for the selected league
@@ -13,7 +12,7 @@ export const getTopTeamPicks = (matches: Match[]): Match[] => {
     const leagueMatches = matches.filter(m => m.league.toUpperCase() === league && m.prediction && typeof m.prediction.confidence === "number");
     if (leagueMatches.length > 0) {
       // sort by confidence, descending
-      leagueMatches.sort((a, b) => (b.prediction.confidence || 0) - (a.prediction.confidence || 0));
+      leagueMatches.sort((a, b) => (b.prediction?.confidence || 0) - (a.prediction?.confidence || 0));
       picks.push(leagueMatches[0]);
     }
   }
