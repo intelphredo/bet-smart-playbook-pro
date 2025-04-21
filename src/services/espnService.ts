@@ -1,4 +1,3 @@
-
 import { Match, Team, League } from "@/types/sports";
 
 // ESPN API endpoints
@@ -239,7 +238,7 @@ export const fetchAllESPNEvents = async (): Promise<Match[]> => {
 export const fetchLeagueSchedule = async (league: League): Promise<Match[]> => {
   try {
     let endpoint = "";
-    
+
     // Map our league types to ESPN schedule endpoints
     switch (league) {
       case "NBA":
@@ -260,27 +259,36 @@ export const fetchLeagueSchedule = async (league: League): Promise<Match[]> => {
       default:
         throw new Error(`Unsupported league: ${league}`);
     }
-    
+
     console.log(`Fetching schedule data from ESPN API: ${endpoint}`);
     const response = await fetch(endpoint);
-    
+
     if (!response.ok) {
       throw new Error(`Failed to fetch ESPN schedule: ${response.status}`);
     }
-    
+
+    // ESPN responds with varying schema for /schedule endpoints, and sometimes fails for some sports.
+    // Try to parse; if it doesn't have .events, fallback to scoreboard API
+
     const data = await response.json();
-    
-    // Process and return schedule data
-    // Note: ESPN schedule API has a different format than scoreboard API
-    // We'll need to convert it to our Match format
-    // This is a placeholder implementation
-    
-    // For now, we're using the same fetch as the scoreboard as ESPN doesn't
-    // provide full schedule API without authentication
-    return fetchESPNEvents(league);
+
+    if (!data.events || !Array.isArray(data.events) || data.events.length === 0) {
+      // Fallback: Fetch the scoreboard events instead.
+      console.warn(`No valid schedule events for ${league}, falling back to scoreboard API`);
+      return fetchESPNEvents(league);
+    }
+
+    // Defensive: ESPN sometimes gives empty or non-standard responses.
+    try {
+      // Try mapping normal schedule events to Match list (may need tweak based on format)
+      return data.events.map((event: any) => mapESPNEventToMatch(event, league));
+    } catch (err) {
+      console.error(`Error mapping schedule events for ${league}:`, err);
+      return fetchESPNEvents(league);
+    }
   } catch (error) {
     console.error(`Error fetching ${league} schedule:`, error);
-    return [];
+    return fetchESPNEvents(league); // fallback to scoreboard
   }
 };
 
