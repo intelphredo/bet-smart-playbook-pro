@@ -18,6 +18,7 @@ import { arbitrageOpportunities } from "@/data/arbitrageData";
 import { Badge } from "@/components/ui/badge";
 import { useESPNData } from "@/hooks/useESPNData";
 import { useToast } from "@/hooks/use-toast";
+import ConfidentPicks from "@/components/ConfidentPicks";
 
 const Index = () => {
   const [selectedLeague, setSelectedLeague] = useState<League | "ALL">("ALL");
@@ -82,6 +83,9 @@ const Index = () => {
           <div className="animate-slide-in">
             <StatsOverview />
           </div>
+          
+          {/* New Confident Picks Section */}
+          <ConfidentPicks />
           
           {/* Arbitrage Opportunities */}
           <div className="space-y-4">
