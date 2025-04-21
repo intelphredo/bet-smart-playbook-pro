@@ -6,6 +6,8 @@ import LeagueStatsModal from "./LeagueStatsModal";
 import { useESPNData } from "@/hooks/useESPNData";
 import { Match } from "@/types/sports";
 import { algorithmPerformanceData } from "@/data/algorithmPerformanceData";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useSportsData } from "@/hooks/useSportsData";
 
 // Determine if a prediction was correct
 function isPredictionCorrect(match: Match): boolean | null {
@@ -25,8 +27,16 @@ const StatsOverview = () => {
   const [selectedLeague, setSelectedLeague] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
 
-  // Get all ESPN matches (for league buttons) and finished matches (for stats)
-  const { finishedMatches, upcomingMatches, liveMatches } = useESPNData({ league: "ALL", refreshInterval: 60000 });
+  // Get all matches using sportsData hook to include MLB-specific data
+  const { 
+    finishedMatches, 
+    upcomingMatches, 
+    liveMatches, 
+    isLoading 
+  } = useSportsData({ 
+    league: "ALL", 
+    refreshInterval: 60000 
+  });
 
   // Compute league win rates and pick counts by analyzing finishedMatches
   const leagueStats = useMemo(() => {
@@ -41,6 +51,7 @@ const StatsOverview = () => {
       stats[league].picks += 1;
       if (isPredictionCorrect(match)) stats[league].wins += 1;
     }
+    
     // Convert to array and calculate win rate (%) per league
     return leagueNames.map((name) => {
       const stat = stats[name] || { name, picks: 0, wins: 0, winRate: 0 };
@@ -77,57 +88,70 @@ const StatsOverview = () => {
         <CardTitle className="text-xl">Algorithm Performance</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="h-[250px] w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart
-              data={leagueStats}
-              margin={{
-                top: 5,
-                right: 30,
-                left: 20,
-                bottom: 5,
-              }}
-            >
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis domain={[0, 100]} tickFormatter={v => `${v}%`} />
-              <Tooltip
-                formatter={(value, name) => [`${value}%`, "Win Rate"]}
-                labelFormatter={(value) => `${value} League`}
-              />
-              <Bar
-                dataKey="winRate"
-                fill="#ffd700"
-                className="fill-gold-500 dark:fill-gold-400"
-                radius={[4, 4, 0, 0]}
-                // Animate only when stats change so it's smooth
-                isAnimationActive={true}
-              />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+        {isLoading ? (
+          <div className="space-y-4">
+            <Skeleton className="h-[250px] w-full" />
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-4">
+              {Array.from({length: 5}).map((_, i) => (
+                <Skeleton key={i} className="h-16 w-full" />
+              ))}
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="h-[250px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={leagueStats}
+                  margin={{
+                    top: 5,
+                    right: 30,
+                    left: 20,
+                    bottom: 5,
+                  }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis domain={[0, 100]} tickFormatter={v => `${v}%`} />
+                  <Tooltip
+                    formatter={(value, name) => [`${value}%`, "Win Rate"]}
+                    labelFormatter={(value) => `${value} League`}
+                  />
+                  <Bar
+                    dataKey="winRate"
+                    fill="#ffd700"
+                    className="fill-gold-500 dark:fill-gold-400"
+                    radius={[4, 4, 0, 0]}
+                    // Animate only when stats change so it's smooth
+                    isAnimationActive={true}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-4">
-          {leagueStats.map((item) => (
-            <button
-              type="button"
-              key={item.name}
-              className="block text-center focus:outline-none focus:ring-2 rounded p-1 transition hover:bg-navy-50 dark:hover:bg-navy-800"
-              onClick={() => {
-                setSelectedLeague(item.name);
-                setModalOpen(true);
-              }}
-              aria-label={`Show ${item.name} picks and data`}
-            >
-              <div className="text-2xl font-bold text-navy-500 dark:text-navy-200 underline">
-                {item.winRate ? `${item.winRate}%` : "--"}
-              </div>
-              <div className="text-xs text-muted-foreground">
-                {item.name} | {item.picks} pick{item.picks !== 1 ? "s" : ""}
-              </div>
-            </button>
-          ))}
-        </div>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-4">
+              {leagueStats.map((item) => (
+                <button
+                  type="button"
+                  key={item.name}
+                  className="block text-center focus:outline-none focus:ring-2 rounded p-1 transition hover:bg-navy-50 dark:hover:bg-navy-800"
+                  onClick={() => {
+                    setSelectedLeague(item.name);
+                    setModalOpen(true);
+                  }}
+                  aria-label={`Show ${item.name} picks and data`}
+                >
+                  <div className="text-2xl font-bold text-navy-500 dark:text-navy-200 underline">
+                    {item.winRate ? `${item.winRate}%` : "--"}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {item.name} | {item.picks} pick{item.picks !== 1 ? "s" : ""}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
         <LeagueStatsModal
           open={modalOpen}
           onOpenChange={(open) => setModalOpen(open)}

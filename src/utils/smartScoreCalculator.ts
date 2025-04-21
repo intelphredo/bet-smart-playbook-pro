@@ -3,7 +3,9 @@ import { Match, SmartScore } from "@/types/sports";
 import { 
   calculateValueFactor, 
   calculateMomentumFactors, 
-  calculateOddsMovementFactors 
+  calculateOddsMovementFactors,
+  calculateInjuryImpact,
+  calculateWeatherImpact
 } from "./smartScoreFactors";
 import { getRecommendation } from "./smartScoreRecommendation";
 
@@ -14,10 +16,7 @@ import { getRecommendation } from "./smartScoreRecommendation";
  * Relies on modular factor calculators.
  */
 export function calculateSmartScore(match: Match): SmartScore {
-  let injuriesScore = 75; // Default - not accounting for detailed injury data
-  let weatherImpact = 80; // Default - not accounting for detailed weather data
-
-  // Value and momentum
+  // Value and momentum calculations
   const { valueScore: initialValue, valueFactors } = calculateValueFactor(match);
   let valueScore = initialValue;
   let factors = [...valueFactors];
@@ -30,12 +29,33 @@ export function calculateSmartScore(match: Match): SmartScore {
   valueScore = adjustedValueScore;
   factors = [...factors, ...oddsFactors];
 
-  // Compute overall - weighted average
+  // Injury and weather impacts
+  const { injuriesScore, injuryFactors } = calculateInjuryImpact(match);
+  const { weatherImpact, weatherFactors } = calculateWeatherImpact(match);
+  
+  factors = [...factors, ...injuryFactors, ...weatherFactors];
+
+  // Calculate weights based on league
+  let valueWeight = 0.35;
+  let momentumWeight = 0.35;
+  let injuriesWeight = 0.15;
+  let weatherWeight = 0.15;
+  
+  // MLB-specific weight adjustments
+  if (match.league === 'MLB') {
+    // For baseball, value (odds analysis) is more important, momentum less so
+    valueWeight = 0.45;
+    momentumWeight = 0.25;
+    injuriesWeight = 0.15; // injuries to starting pitchers are important
+    weatherWeight = 0.15;  // weather can impact baseball significantly
+  }
+
+  // Compute overall - weighted average with league-specific adjustments
   const overall = Math.round(
-    (valueScore * 0.35) + 
-    (momentumScore * 0.35) + 
-    (injuriesScore * 0.15) + 
-    (weatherImpact * 0.15)
+    (valueScore * valueWeight) + 
+    (momentumScore * momentumWeight) + 
+    (injuriesScore * injuriesWeight) + 
+    (weatherImpact * weatherWeight)
   );
 
   // Recommendation

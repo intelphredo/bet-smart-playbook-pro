@@ -94,7 +94,9 @@ export const mapMLBGameToMatch = (data: MLBScheduleResponse): Match[] => {
         logo: `https://www.mlbstatic.com/team-logos/${game.gameData.teams.home.id}.svg`,
         record: game.gameData.teams.home.record ? 
           `${game.gameData.teams.home.record.wins}-${game.gameData.teams.home.record.losses}` : 
-          undefined
+          undefined,
+        // Add recent form data (simulated)
+        recentForm: generateRecentForm(game.gameData.teams.home.record?.wins || 0, game.gameData.teams.home.record?.losses || 0)
       };
       
       const awayTeam: Team = {
@@ -104,7 +106,9 @@ export const mapMLBGameToMatch = (data: MLBScheduleResponse): Match[] => {
         logo: `https://www.mlbstatic.com/team-logos/${game.gameData.teams.away.id}.svg`,
         record: game.gameData.teams.away.record ? 
           `${game.gameData.teams.away.record.wins}-${game.gameData.teams.away.record.losses}` : 
-          undefined
+          undefined,
+        // Add recent form data (simulated)  
+        recentForm: generateRecentForm(game.gameData.teams.away.record?.wins || 0, game.gameData.teams.away.record?.losses || 0)
       };
       
       // Determine game status
@@ -127,9 +131,49 @@ export const mapMLBGameToMatch = (data: MLBScheduleResponse): Match[] => {
         period: `${game.liveData.linescore.inningState} ${game.liveData.linescore.currentInningOrdinal}`,
       } : undefined;
       
-      // Generate realistic looking odds variations
-      const baseHomeOdds = 1.8 + (Math.random() * 0.4 - 0.2);
-      const baseAwayOdds = 2.0 + (Math.random() * 0.4 - 0.2);
+      // Generate odds more realistically based on team records
+      const homeRecord = game.gameData.teams.home.record || { wins: 0, losses: 0 };
+      const awayRecord = game.gameData.teams.away.record || { wins: 0, losses: 0 };
+      
+      const homeWinPct = homeRecord.wins / (homeRecord.wins + homeRecord.losses || 1);
+      const awayWinPct = awayRecord.wins / (awayRecord.wins + awayRecord.losses || 1);
+      
+      // Baseball odds typically range from 1.5 to 3.0
+      let baseHomeOdds, baseAwayOdds;
+      
+      if (homeWinPct > awayWinPct) {
+        // Home team is favored
+        baseHomeOdds = 1.5 + (1 - (homeWinPct - awayWinPct)) * 0.5;
+        baseAwayOdds = 2.0 + (homeWinPct - awayWinPct) * 2;
+      } else {
+        // Away team is favored
+        baseAwayOdds = 1.5 + (1 - (awayWinPct - homeWinPct)) * 0.5;
+        baseHomeOdds = 2.0 + (awayWinPct - homeWinPct) * 2;
+      }
+      
+      // Add slight randomness to odds
+      baseHomeOdds += (Math.random() * 0.2) - 0.1;
+      baseAwayOdds += (Math.random() * 0.2) - 0.1;
+      
+      // Generate realistic prediction based on team records and recent form
+      const homeStrength = calculateMLBTeamStrength(homeTeam);
+      const awayStrength = calculateMLBTeamStrength(awayTeam);
+      
+      // Determine recommended side based on strengths
+      let recommended: "home" | "away";
+      let confidence: number;
+      
+      if (homeStrength > awayStrength) {
+        recommended = "home";
+        confidence = Math.floor(50 + Math.min(25, (homeStrength - awayStrength) * 10));
+      } else {
+        recommended = "away";
+        confidence = Math.floor(50 + Math.min(25, (awayStrength - homeStrength) * 10));
+      }
+      
+      // Add randomness to confidence (baseball has higher variance)
+      confidence += Math.floor(Math.random() * 8) - 4;
+      confidence = Math.max(51, Math.min(75, confidence));
       
       // Create match object
       const match: Match = {
@@ -150,8 +194,8 @@ export const mapMLBGameToMatch = (data: MLBScheduleResponse): Match[] => {
               logo: SPORTSBOOK_LOGOS.draftkings,
               isAvailable: true
             },
-            homeWin: baseHomeOdds + (Math.random() * 0.2 - 0.1),
-            awayWin: baseAwayOdds + (Math.random() * 0.2 - 0.1),
+            homeWin: baseHomeOdds + (Math.random() * 0.1 - 0.05),
+            awayWin: baseAwayOdds + (Math.random() * 0.1 - 0.05),
             updatedAt: new Date().toISOString()
           },
           {
@@ -161,17 +205,17 @@ export const mapMLBGameToMatch = (data: MLBScheduleResponse): Match[] => {
               logo: SPORTSBOOK_LOGOS.betmgm,
               isAvailable: true
             },
-            homeWin: baseHomeOdds + (Math.random() * 0.2 - 0.1),
-            awayWin: baseAwayOdds + (Math.random() * 0.2 - 0.1),
+            homeWin: baseHomeOdds + (Math.random() * 0.1 - 0.05),
+            awayWin: baseAwayOdds + (Math.random() * 0.1 - 0.05),
             updatedAt: new Date(Date.now() - 120000).toISOString() // 2 minutes ago
           }
         ],
         prediction: {
-          recommended: Math.random() > 0.5 ? "home" : "away",
-          confidence: Math.floor(Math.random() * 30) + 60,
+          recommended,
+          confidence,
           projectedScore: {
-            home: score ? score.home + (Math.random() > 0.7 ? 1 : 0) : Math.floor(Math.random() * 5) + 1,
-            away: score ? score.away + (Math.random() > 0.7 ? 1 : 0) : Math.floor(Math.random() * 5)
+            home: score ? score.home + (Math.random() > 0.7 ? 1 : 0) : Math.floor(homeStrength * 0.1) + Math.floor(Math.random() * 3),
+            away: score ? score.away + (Math.random() > 0.7 ? 1 : 0) : Math.floor(awayStrength * 0.1) + Math.floor(Math.random() * 3)
           }
         },
         status,
@@ -186,6 +230,60 @@ export const mapMLBGameToMatch = (data: MLBScheduleResponse): Match[] => {
   
   return allGames;
 };
+
+/**
+ * Generate realistic recent form data based on win-loss record
+ */
+function generateRecentForm(wins: number, losses: number): string[] {
+  if (wins === 0 && losses === 0) {
+    return [];
+  }
+  
+  const totalGames = wins + losses;
+  const winRate = wins / totalGames;
+  
+  // Generate 5 recent results
+  const recentForm: string[] = [];
+  for (let i = 0; i < 5; i++) {
+    // Higher win rate teams get more wins in recent form
+    const isWin = Math.random() < (winRate * 1.2) || Math.random() < 0.5;
+    recentForm.push(isWin ? 'W' : 'L');
+  }
+  
+  return recentForm;
+}
+
+/**
+ * Calculate MLB team strength based on record and form
+ */
+function calculateMLBTeamStrength(team: Team): number {
+  let strength = 50; // baseline
+  
+  // Factor in team record
+  if (team.record) {
+    const parts = team.record.split('-');
+    if (parts.length === 2) {
+      const wins = parseInt(parts[0]);
+      const losses = parseInt(parts[1]);
+      
+      if (!isNaN(wins) && !isNaN(losses) && (wins + losses > 0)) {
+        const winPct = wins / (wins + losses);
+        strength += (winPct - 0.5) * 40; // adjust strength based on win percentage
+      }
+    }
+  }
+  
+  // Factor in recent form
+  if (team.recentForm && team.recentForm.length > 0) {
+    const recentWins = team.recentForm.filter(r => r === 'W').length;
+    const recentWinPct = recentWins / team.recentForm.length;
+    
+    strength += (recentWinPct - 0.5) * 20; // recent form has less impact than overall record
+  }
+  
+  // Return strength between 30-70 for most teams
+  return Math.max(30, Math.min(70, strength));
+}
 
 // Map MLB teams response to Team type
 export const mapMLBTeamsResponse = (data: { teams: MLBTeam[] }): Team[] => {
