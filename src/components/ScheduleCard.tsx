@@ -1,4 +1,3 @@
-
 import { Match } from "@/types/sports";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -27,35 +26,6 @@ const ScheduleCard = ({ match }: ScheduleCardProps) => {
       default:
         return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Scheduled</Badge>;
     }
-  };
-
-  const formatOdds = (odds: number) => {
-    return odds >= 2 ? `+${Math.round((odds - 1) * 100)}` : `-${Math.round(100 / (odds - 1))}`;
-  };
-
-  const getFanDuelOdds = () => {
-    if (!match.liveOdds) return null;
-    
-    const fanDuelOdds = match.liveOdds.find(odd => 
-      odd.sportsbook.name.toLowerCase() === "fanduel"
-    );
-    
-    if (!fanDuelOdds) return null;
-    
-    return (
-      <div className="mt-3 pt-2 border-t">
-        <div className="text-xs font-semibold text-green-600 mb-1">FanDuel Odds</div>
-        <div className="grid grid-cols-3 gap-2 text-sm">
-          <div className="text-center">{formatOdds(fanDuelOdds.homeWin)}</div>
-          {fanDuelOdds.draw !== undefined ? (
-            <div className="text-center">{formatOdds(fanDuelOdds.draw)}</div>
-          ) : (
-            <div className="text-center">-</div>
-          )}
-          <div className="text-center">{formatOdds(fanDuelOdds.awayWin)}</div>
-        </div>
-      </div>
-    );
   };
 
   return (
@@ -112,8 +82,6 @@ const ScheduleCard = ({ match }: ScheduleCardProps) => {
             <div className="text-xs text-muted-foreground">{match.awayTeam.record}</div>
           </div>
         </div>
-        
-        {getFanDuelOdds()}
         
         <div className="mt-3 pt-3 border-t text-xs text-muted-foreground">
           <div className="flex justify-between">

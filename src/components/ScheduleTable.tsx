@@ -1,4 +1,3 @@
-
 import { Match } from "@/types/sports";
 import { 
   Table, 
@@ -38,29 +37,6 @@ const ScheduleTable = ({ matches }: ScheduleTableProps) => {
 
   const formatOdds = (odds: number) => {
     return odds >= 2 ? `+${Math.round((odds - 1) * 100)}` : `-${Math.round(100 / (odds - 1))}`;
-  };
-
-  const getFanDuelOdds = (match: Match) => {
-    if (!match.liveOdds) return null;
-    
-    const fanDuelOdds = match.liveOdds.find(odd => 
-      odd.sportsbook.name.toLowerCase() === "fanduel"
-    );
-    
-    if (!fanDuelOdds) return null;
-    
-    return (
-      <div className="text-xs mt-2 border-t pt-1">
-        <div className="font-semibold text-green-600">FanDuel Odds</div>
-        <div className="flex justify-between">
-          <span>{formatOdds(fanDuelOdds.homeWin)}</span>
-          {fanDuelOdds.draw !== undefined && (
-            <span>{formatOdds(fanDuelOdds.draw)}</span>
-          )}
-          <span>{formatOdds(fanDuelOdds.awayWin)}</span>
-        </div>
-      </div>
-    );
   };
 
   return (
@@ -113,7 +89,6 @@ const ScheduleTable = ({ matches }: ScheduleTableProps) => {
                       {match.score?.period && <span className="text-xs text-muted-foreground ml-2">({match.score.period})</span>}
                     </div>
                   ) : null}
-                  {getFanDuelOdds(match)}
                 </div>
               </TableCell>
               <TableCell>{getStatusBadge(match.status)}</TableCell>

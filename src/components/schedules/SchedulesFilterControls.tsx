@@ -14,11 +14,9 @@ interface SchedulesFilterControlsProps {
   matches: any[];
   showTomorrowGames: boolean;
   showWeekGames: boolean;
-  showFanDuelOddsOnly: boolean;
   handleShowToday: () => void;
   handleShowTomorrow: () => void;
   handleShowWeek: () => void;
-  toggleFanDuelOddsFilter: () => void;
 }
 
 const SchedulesFilterControls: React.FC<SchedulesFilterControlsProps> = ({
@@ -32,11 +30,9 @@ const SchedulesFilterControls: React.FC<SchedulesFilterControlsProps> = ({
   matches,
   showTomorrowGames,
   showWeekGames,
-  showFanDuelOddsOnly,
   handleShowToday,
   handleShowTomorrow,
   handleShowWeek,
-  toggleFanDuelOddsFilter,
 }) => {
   return (
     <>
@@ -84,14 +80,6 @@ const SchedulesFilterControls: React.FC<SchedulesFilterControlsProps> = ({
             This Week's Games
           </Button>
         </div>
-        <Button 
-          variant={showFanDuelOddsOnly ? "default" : "outline"}
-          size="sm"
-          onClick={toggleFanDuelOddsFilter}
-          className="flex items-center gap-1"
-        >
-          {showFanDuelOddsOnly ? "FanDuel Odds Only" : "All Sportsbooks"}
-        </Button>
       </div>
     </>
   );

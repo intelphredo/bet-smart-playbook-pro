@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { League, DataSource } from "@/types/sports";
 import SchedulesHeader from "@/components/schedules/SchedulesHeader";
@@ -19,7 +18,6 @@ const SchedulesPage = () => {
   const searchInputRef = React.useRef<HTMLInputElement>(null);
   const [showTomorrowGames, setShowTomorrowGames] = useState(false);
   const [showWeekGames, setShowWeekGames] = useState(false);
-  const [showFanDuelOddsOnly, setShowFanDuelOddsOnly] = useState(false);
 
   // Get sports data with forced refresh every minute
   const { 
@@ -59,7 +57,7 @@ const SchedulesPage = () => {
     setDataSource(source);
   };
 
-  // Filter matches by date, search query, and FanDuel odds
+  // Filter matches by date, search query
   const filteredMatches = (() => {
     let dateStart: Date;
     let dateEnd: Date;
@@ -108,15 +106,7 @@ const SchedulesPage = () => {
           match.homeTeam.name.toLowerCase().includes(searchLower) ||
           match.awayTeam.name.toLowerCase().includes(searchLower);
 
-        // FanDuel odds filter
-        let hasFanDuelOdds = true;
-        if (showFanDuelOddsOnly) {
-          hasFanDuelOdds = match.liveOdds && 
-                          match.liveOdds.some(odd => 
-                            odd.sportsbook.name.toLowerCase() === "fanduel");
-        }
-        
-        return isInDateRange && matchesSearch && hasFanDuelOdds;
+        return isInDateRange && matchesSearch;
       } catch (e) {
         console.error('Error filtering match:', e);
         return false;
@@ -193,10 +183,6 @@ const SchedulesPage = () => {
     setShowTomorrowGames(false);
     setTimeout(refetchSchedule, 100);
   };
-  const toggleFanDuelOddsFilter = () => {
-    setShowFanDuelOddsOnly(prev => !prev);
-    setTimeout(refetchSchedule, 100);
-  };
 
   return (
     <div className="container py-6 max-w-7xl">
@@ -227,11 +213,9 @@ const SchedulesPage = () => {
         matches={allMatchesForAutocomplete}
         showTomorrowGames={showTomorrowGames}
         showWeekGames={showWeekGames}
-        showFanDuelOddsOnly={showFanDuelOddsOnly}
         handleShowToday={handleShowToday}
         handleShowTomorrow={handleShowTomorrow}
         handleShowWeek={handleShowWeek}
-        toggleFanDuelOddsFilter={toggleFanDuelOddsFilter}
       />
 
       <SchedulesTabContent
