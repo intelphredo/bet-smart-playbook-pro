@@ -262,3 +262,4 @@ const NavBar = () => {
 
 export default NavBar;
 
+// NOTE: src/components/NavBar.tsx is getting very long and should be refactored into smaller files and components for maintainability.

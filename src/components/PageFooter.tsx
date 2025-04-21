@@ -9,7 +9,7 @@ const PageFooter = () => (
           © 2025 BetSmart Playbook Pro. All rights reserved.
         </div>
         <div className="flex gap-4 text-sm">
-          <Link to="/schedules" className="hover:underline">Schedules</Link>
+          {/* "Schedules" link removed */}
           <a href="#" className="hover:underline">Terms</a>
           <a href="#" className="hover:underline">Privacy</a>
           <a href="#" className="hover:underline">Contact</a>
@@ -20,3 +20,4 @@ const PageFooter = () => (
 );
 
 export default PageFooter;
+
