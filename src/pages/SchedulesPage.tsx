@@ -9,6 +9,7 @@ import SchedulesResults from "@/components/schedules/SchedulesResults";
 import { useSportsData } from "@/hooks/useSportsData";
 import { format, startOfDay, endOfDay, addDays, parseISO } from "date-fns";
 import { TeamAutocomplete } from "@/components/schedules/TeamAutocomplete";
+import { Button } from "@/components/ui/button";
 
 const SchedulesPage = () => {
   // State for filters
@@ -19,6 +20,8 @@ const SchedulesPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isAutocompleteOpen, setIsAutocompleteOpen] = useState(false);
   const searchInputRef = React.useRef<HTMLInputElement>(null);
+  const [showTomorrowGames, setShowTomorrowGames] = useState(false);
+  const [showFanDuelOddsOnly, setShowFanDuelOddsOnly] = useState(false);
 
   // Get sports data
   const { 
@@ -40,10 +43,12 @@ const SchedulesPage = () => {
     setDataSource(source);
   };
   
-  // Filter matches by date and search query
+  // Filter matches by date, search query, and FanDuel odds
   const filteredMatches = (() => {
-    const startDate = startOfDay(selectedDate);
-    const endDate = endOfDay(selectedDate);
+    // Determine which date to use based on the toggle
+    const dateToUse = showTomorrowGames ? addDays(selectedDate, 1) : selectedDate;
+    const startDate = startOfDay(dateToUse);
+    const endDate = endOfDay(dateToUse);
     
     return allMatches.filter(match => {
       try {
@@ -56,8 +61,13 @@ const SchedulesPage = () => {
         const matchesSearch = searchQuery === "" || 
           match.homeTeam.name.toLowerCase().includes(searchLower) ||
           match.awayTeam.name.toLowerCase().includes(searchLower);
+
+        // Filter by FanDuel odds if option is enabled
+        const hasFanDuelOdds = !showFanDuelOddsOnly || 
+          (match.liveOdds && match.liveOdds.some(odd => 
+            odd.sportsbook.name.toLowerCase() === "fanduel"));
         
-        return isInDateRange && matchesSearch;
+        return isInDateRange && matchesSearch && hasFanDuelOdds;
       } catch {
         return false;
       }
@@ -90,12 +100,23 @@ const SchedulesPage = () => {
   };
 
   // Format the date for display
-  const formattedDate = format(selectedDate, "EEEE, MMMM d, yyyy");
+  const formattedDate = format(
+    showTomorrowGames ? addDays(selectedDate, 1) : selectedDate,
+    "EEEE, MMMM d, yyyy"
+  );
   
   // Navigation to previous/next dates
   const goToPreviousDay = () => setSelectedDate(prev => addDays(prev, -1));
   const goToNextDay = () => setSelectedDate(prev => addDays(prev, 1));
-  const goToToday = () => setSelectedDate(new Date());
+  const goToToday = () => {
+    setSelectedDate(new Date());
+    setShowTomorrowGames(false);
+  };
+
+  // Toggle between today and tomorrow
+  const toggleTomorrowGames = () => {
+    setShowTomorrowGames(prev => !prev);
+  };
   
   return (
     <div className="container py-6 max-w-7xl">
@@ -133,6 +154,33 @@ const SchedulesPage = () => {
             onSelect={handleAutocompleteSelect}
           />
         )}
+      </div>
+      
+      <div className="mt-4 flex justify-between items-center max-w-md mx-auto">
+        <div className="flex gap-2">
+          <Button 
+            variant={!showTomorrowGames ? "default" : "outline"}
+            size="sm"
+            onClick={() => setShowTomorrowGames(false)}
+          >
+            Today's Games
+          </Button>
+          <Button 
+            variant={showTomorrowGames ? "default" : "outline"}
+            size="sm"
+            onClick={() => setShowTomorrowGames(true)}
+          >
+            Tomorrow's Games
+          </Button>
+        </div>
+        <Button 
+          variant={showFanDuelOddsOnly ? "default" : "outline"}
+          size="sm"
+          onClick={() => setShowFanDuelOddsOnly(!showFanDuelOddsOnly)}
+          className="flex items-center gap-1"
+        >
+          {showFanDuelOddsOnly ? "All Sportsbooks" : "FanDuel Odds Only"}
+        </Button>
       </div>
       
       <div className="mt-6">
