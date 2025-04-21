@@ -10,6 +10,7 @@ import ConfidentPicks from "@/components/ConfidentPicks";
 import { useState, useEffect } from "react";
 import SmartScoreSection from "./SmartScoreSection";
 import { applySmartScores } from "@/utils/smartScoreCalculator";
+import FinishedMatchInfo from "./FinishedMatchInfo";
 
 interface Props {
   selectedLeague: League | "ALL";
@@ -308,73 +309,7 @@ const LiveESPNSection = ({
                         <div className="text-xs text-muted-foreground">{match.awayTeam.record}</div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 mt-2 flex-wrap">
-                      {isPredictionCorrect(match) === true && (
-                        <Badge className="bg-green-500 text-white flex items-center gap-1">
-                          <Check className="w-4 h-4" /> Correct Pick
-                        </Badge>
-                      )}
-                      {isPredictionCorrect(match) === false && (
-                        <Badge className="bg-red-500 text-white flex items-center gap-1">
-                          <X className="w-4 h-4" /> Incorrect Pick
-                        </Badge>
-                      )}
-                      {isPredictionCorrect(match) === null && (
-                        <Badge className="bg-gray-200 text-gray-600">N/A</Badge>
-                      )}
-                      <span className="text-xs text-muted-foreground">
-                        Algo pick:
-                        <span className="font-bold ml-1 uppercase">
-                          {match.prediction?.recommended === "home"
-                            ? match.homeTeam.shortName
-                            : match.prediction?.recommended === "away"
-                            ? match.awayTeam.shortName
-                            : "Draw"}
-                        </span>
-                      </span>
-                      <span className="text-xs text-muted-foreground ml-2">{match.prediction?.confidence}%</span>
-                    </div>
-                    <div className="mt-2 text-xs text-muted-foreground italic pl-1 space-y-1">
-                      {match.smartScore?.recommendation?.reasoning ? (
-                        <div>
-                          <span className="font-semibold text-navy-600 dark:text-navy-200">
-                            Reason:{" "}
-                          </span>
-                          {match.smartScore.recommendation.reasoning}
-                        </div>
-                      ) : match.prediction?.recommended ? (
-                        <div>
-                          <span className="font-semibold text-navy-600 dark:text-navy-200">
-                            Reason:{" "}
-                          </span>
-                          Prediction based on statistical edge from available match data.
-                        </div>
-                      ) : null}
-                      {(() => {
-                        const outcome = isPredictionCorrect(match);
-                        if (outcome === true) {
-                          return (
-                            <div>
-                              <span className="font-semibold text-green-700 dark:text-green-400">
-                                Why Correct?{" "}
-                              </span>
-                              {getPersonalizedOutcomeReasoning(match, true)}
-                            </div>
-                          );
-                        }
-                        if (outcome === false) {
-                          return (
-                            <div>
-                              <span className="font-semibold text-red-700 dark:text-red-400">
-                                Why Incorrect?{" "}
-                              </span>
-                              {getPersonalizedOutcomeReasoning(match, false)}
-                            </div>
-                          );
-                        }
-                        return null;
-                      })()}
-                    </div>
+                    <FinishedMatchInfo match={match} />
                   </CardContent>
                 </Card>
               ))}

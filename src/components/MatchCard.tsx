@@ -6,6 +6,8 @@ import { TrendingUp, Trophy, ChartLine } from "lucide-react";
 import { formatDistanceToNow, parseISO } from "date-fns";
 import LiveOdds from "./LiveOdds";
 import { SPORTSBOOK_LOGOS } from "@/utils/sportsbook";
+import MatchOutcomeBadges from "./MatchOutcomeBadges";
+import MatchOutcomeReasoning from "./MatchOutcomeReasoning";
 
 interface MatchCardProps {
   match: Match;
