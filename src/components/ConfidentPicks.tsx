@@ -2,11 +2,20 @@
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Star } from 'lucide-react';
-import { getTopLeaguePicks } from '@/utils/topLeaguePickRecommendation';
-import ConfidentPicksList from './ConfidentPicksList';
+import { getTopTeamPicks } from '@/utils/topTeamPickRecommendation';
+import ConfidentTeamPickList from './ConfidentTeamPickList';
+import { useESPNData } from '@/hooks/useESPNData';
+import { League } from "@/types/sports";
 
 const ConfidentPicks = () => {
-  const confidentPicks = React.useMemo(() => getTopLeaguePicks(), []);
+  // Show top confident team pick PER LEAGUE -- live and upcoming matches (like main page)
+  const { upcomingMatches, liveMatches } = useESPNData({ league: "ALL" as League, refreshInterval: 60000 });
+  // For all matches that have prediction
+  const allMatchesWithPred = React.useMemo(
+    () => [...(upcomingMatches || []), ...(liveMatches || [])].filter(m => !!m.prediction && typeof m.prediction.confidence === "number"),
+    [upcomingMatches, liveMatches]
+  );
+  const confidentPicks = React.useMemo(() => getTopTeamPicks(allMatchesWithPred), [allMatchesWithPred]);
   if (!confidentPicks.length) {
     return null;
   }
@@ -19,10 +28,10 @@ const ConfidentPicks = () => {
       <div className="flex items-center gap-1 mb-4">
         <Star className="h-4 w-4 text-gold-500" />
         <p className="text-sm text-muted-foreground">
-          Our unique algorithm analyzes player streaks, historical matchups and past performance to identify high-confidence picks for each league, matched to the Algorithm Performance stats.
+          Our unique algorithm analyzes team matchups, strengths and past performance to identify high-confidence team picks for each league, matching Algorithm Performance stats.
         </p>
       </div>
-      <ConfidentPicksList picks={confidentPicks} />
+      <ConfidentTeamPickList picks={confidentPicks} />
     </div>
   );
 };
