@@ -1,3 +1,4 @@
+
 import { Match, Team, League } from "@/types/sports";
 
 // ESPN API endpoints
@@ -230,6 +231,69 @@ export const fetchAllESPNEvents = async (): Promise<Match[]> => {
     return results.flat();
   } catch (error) {
     console.error("Error fetching all ESPN data:", error);
+    return [];
+  }
+};
+
+// New function to fetch full season schedules
+export const fetchLeagueSchedule = async (league: League): Promise<Match[]> => {
+  try {
+    let endpoint = "";
+    
+    // Map our league types to ESPN schedule endpoints
+    switch (league) {
+      case "NBA":
+        endpoint = `${ESPN_API_BASE}/basketball/nba/schedule`;
+        break;
+      case "NFL":
+        endpoint = `${ESPN_API_BASE}/football/nfl/schedule`;
+        break;
+      case "MLB":
+        endpoint = `${ESPN_API_BASE}/baseball/mlb/schedule`;
+        break;
+      case "NHL":
+        endpoint = `${ESPN_API_BASE}/hockey/nhl/schedule`;
+        break;
+      case "SOCCER":
+        endpoint = `${ESPN_API_BASE}/soccer/eng.1/schedule`;
+        break;
+      default:
+        throw new Error(`Unsupported league: ${league}`);
+    }
+    
+    console.log(`Fetching schedule data from ESPN API: ${endpoint}`);
+    const response = await fetch(endpoint);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch ESPN schedule: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    // Process and return schedule data
+    // Note: ESPN schedule API has a different format than scoreboard API
+    // We'll need to convert it to our Match format
+    // This is a placeholder implementation
+    
+    // For now, we're using the same fetch as the scoreboard as ESPN doesn't
+    // provide full schedule API without authentication
+    return fetchESPNEvents(league);
+  } catch (error) {
+    console.error(`Error fetching ${league} schedule:`, error);
+    return [];
+  }
+};
+
+// Fetch all schedules for all leagues
+export const fetchAllSchedules = async (): Promise<Match[]> => {
+  const leagues: League[] = ["NBA", "NFL", "MLB", "NHL", "SOCCER"];
+  const promises = leagues.map(fetchLeagueSchedule);
+  
+  try {
+    const results = await Promise.all(promises);
+    return results.flat();
+  } catch (error) {
+    console.error("Error fetching all schedules:", error);
     return [];
   }
 };

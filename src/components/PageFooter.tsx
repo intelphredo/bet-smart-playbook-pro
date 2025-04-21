@@ -1,4 +1,6 @@
 
+import { Link } from "react-router-dom";
+
 const PageFooter = () => (
   <footer className="mt-12 py-6 border-t">
     <div className="container px-4">
@@ -7,6 +9,7 @@ const PageFooter = () => (
           © 2025 BetSmart Playbook Pro. All rights reserved.
         </div>
         <div className="flex gap-4 text-sm">
+          <Link to="/schedules" className="hover:underline">Schedules</Link>
           <a href="#" className="hover:underline">Terms</a>
           <a href="#" className="hover:underline">Privacy</a>
           <a href="#" className="hover:underline">Contact</a>
