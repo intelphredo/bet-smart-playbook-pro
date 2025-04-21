@@ -4,13 +4,13 @@ import { League } from "@/types/sports";
 import StatsOverview from "@/components/StatsOverview";
 import { useESPNData } from "@/hooks/useESPNData";
 import { useToast } from "@/hooks/use-toast";
-import { playerProps } from "@/data/playerPropData";
+// Removed playerProps import
 import { arbitrageOpportunities } from "@/data/arbitrageData";
 import ConfidentPicks from "@/components/ConfidentPicks";
 import HeroHeader from "@/components/HeroHeader";
 import ArbitrageOpportunitiesSection from "@/components/ArbitrageOpportunitiesSection";
 import LiveESPNSection from "@/components/LiveESPNSection";
-// Removed import of PlayerPropsSection
+// Removed PlayerPropsSection import
 import AlgorithmsSection from "@/components/AlgorithmsSection";
 import PremiumSubscribeCard from "@/components/PremiumSubscribeCard";
 import PageFooter from "@/components/PageFooter";
@@ -42,15 +42,7 @@ const Index = () => {
     });
   };
 
-  const filteredProps =
-    selectedLeague === "ALL"
-      ? playerProps
-      : playerProps.filter((prop) => {
-          const match = [...upcomingMatches, ...liveMatches].find(
-            (m) => m.id === prop.matchId
-          );
-          return match?.league === selectedLeague;
-        });
+  // Removed filtering and usage of playerProps
 
   const filteredArbitrage =
     selectedLeague === "ALL"
@@ -126,3 +118,4 @@ const Index = () => {
 };
 
 export default Index;
+
