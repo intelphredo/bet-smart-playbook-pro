@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -136,8 +137,13 @@
   }
 
   /* Headings: bolder, tighter spacing */
-  h1, h2, h3, .font-bold {
+  /* Fix: Removed .font-bold from the selector to avoid circular dependency */
+  h1, h2, h3 {
     @apply font-bold tracking-tight;
+  }
+  /* Add separate styling for .font-bold */
+  .font-bold {
+    @apply tracking-tight;
   }
   h1 {
     font-size: 2.5rem;
