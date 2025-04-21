@@ -1,3 +1,4 @@
+
 import { useState, useMemo } from "react";
 import { useESPNData } from "@/hooks/useESPNData";
 import { Match, League, Team } from "@/types/sports";
@@ -37,7 +38,7 @@ const ITEMS_PER_PAGE = 10;
 
 const Schedules = () => {
   const [selectedLeague, setSelectedLeague] = useState<League | "ALL">("ALL");
-  const [selectedTeam, setSelectedTeam] = useState<string>("");
+  const [selectedTeam, setSelectedTeam] = useState<string>("all_teams");
   const [searchQuery, setSearchQuery] = useState("");
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [currentView, setCurrentView] = useState<"day" | "week" | "month">("week");
@@ -64,19 +65,16 @@ const Schedules = () => {
 
   const allTeams = useMemo(() => {
     const teams = new Map<string, Team>();
-    
     allMatches.forEach(match => {
       teams.set(match.homeTeam.id, match.homeTeam);
       teams.set(match.awayTeam.id, match.awayTeam);
     });
-    
     return Array.from(teams.values()).sort((a, b) => a.name.localeCompare(b.name));
   }, [allMatches]);
 
   const filteredMatches = useMemo(() => {
     let startDate = startOfDay(currentDate);
     let endDate;
-    
     if (currentView === 'day') {
       endDate = endOfDay(currentDate);
     } else if (currentView === 'week') {
@@ -88,14 +86,17 @@ const Schedules = () => {
     return allMatches.filter(match => {
       const matchDate = parseISO(match.startTime);
       const matchInDateRange = !isBefore(matchDate, startDate) && !isAfter(matchDate, endDate);
-      
-      const teamFilter = selectedTeam ? 
-        (match.homeTeam.id === selectedTeam || match.awayTeam.id === selectedTeam) : true;
-      
-      const searchFilter = searchQuery ? 
-        (match.homeTeam.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-         match.awayTeam.name.toLowerCase().includes(searchQuery.toLowerCase())) : true;
-      
+
+      // selectedTeam logic: don't filter if "all_teams"
+      const teamFilter = selectedTeam && selectedTeam !== "all_teams"
+        ? (match.homeTeam.id === selectedTeam || match.awayTeam.id === selectedTeam)
+        : true;
+
+      const searchFilter = searchQuery
+        ? (match.homeTeam.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+           match.awayTeam.name.toLowerCase().includes(searchQuery.toLowerCase()))
+        : true;
+
       return matchInDateRange && teamFilter && searchFilter;
     }).sort((a, b) => {
       return new Date(a.startTime).getTime() - new Date(b.startTime).getTime();
@@ -144,29 +145,29 @@ const Schedules = () => {
               {isLoading ? "Loading..." : "Refresh Schedules"}
             </Button>
           </div>
-          
-          <div className="bg-card rounded-lg shadow p-4">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
+
+          {/* Filters Section Card */}
+          <div className="bg-card/90 rounded-xl shadow-md p-6 border border-muted space-y-5 transition-all">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-4">
               <div className="flex flex-col md:flex-row gap-2 md:items-center">
                 <Button
                   variant="outline"
                   size="icon"
                   onClick={() => navigateDate('prev')}
+                  aria-label="Previous date range"
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
-                
                 <div className="text-xl font-semibold">{getDateRangeLabel()}</div>
-                
                 <Button
                   variant="outline"
                   size="icon" 
                   onClick={() => navigateDate('next')}
+                  aria-label="Next date range"
                 >
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
-              
               <div className="flex flex-wrap gap-2">
                 <Button 
                   variant={currentView === 'day' ? "default" : "outline"}
@@ -191,8 +192,10 @@ const Schedules = () => {
                 </Button>
               </div>
             </div>
-            
-            <div className="flex flex-col md:flex-row gap-4">
+            <div className="block text-base font-semibold mt-1 text-muted-foreground">
+              Filter Games
+            </div>
+            <div className="flex flex-col md:flex-row gap-4 items-stretch mt-1">
               <div className="relative w-full md:w-72">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -202,7 +205,6 @@ const Schedules = () => {
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
-              
               <Select value={selectedLeague} onValueChange={(value) => setSelectedLeague(value as League | "ALL")}>
                 <SelectTrigger className="w-full md:w-40">
                   <SelectValue placeholder="All Leagues" />
@@ -216,7 +218,6 @@ const Schedules = () => {
                   <SelectItem value="SOCCER">Soccer</SelectItem>
                 </SelectContent>
               </Select>
-              
               <Select value={selectedTeam} onValueChange={setSelectedTeam}>
                 <SelectTrigger className="w-full md:w-48">
                   <SelectValue placeholder="All Teams" />
@@ -235,19 +236,18 @@ const Schedules = () => {
                   ))}
                 </SelectContent>
               </Select>
-              
               <Button 
                 variant="outline" 
                 onClick={() => setFiltersVisible(!filtersVisible)} 
                 className="md:ml-auto"
                 size="icon"
+                aria-label="Show advanced filters"
               >
                 <SlidersHorizontal className="h-4 w-4" />
               </Button>
             </div>
-            
             {filtersVisible && (
-              <div className="mt-4 p-4 border rounded-md">
+              <div className="mt-4 p-4 border rounded-lg bg-muted/20">
                 <ScheduleFilters 
                   onClose={() => setFiltersVisible(false)} 
                   onApply={() => setFiltersVisible(false)}
@@ -255,7 +255,7 @@ const Schedules = () => {
               </div>
             )}
           </div>
-          
+
           {isLoading ? (
             <div className="text-center p-12">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-t-2 border-navy-500"></div>
@@ -282,19 +282,16 @@ const Schedules = () => {
                   <div className="hidden md:block">
                     <ScheduleTable matches={paginatedMatches} />
                   </div>
-                  
                   <div className="md:hidden space-y-4">
                     {paginatedMatches.map((match) => (
                       <ScheduleCard key={match.id} match={match} />
                     ))}
                   </div>
-                  
                   <div className="flex items-center justify-between mt-4">
                     <p className="text-sm text-muted-foreground">
                       Showing <span className="font-medium">{Math.min(filteredMatches.length, ITEMS_PER_PAGE)}</span> of{" "}
                       <span className="font-medium">{filteredMatches.length}</span> games
                     </p>
-                    
                     {totalPages > 1 && (
                       <Pagination>
                         <PaginationContent>
@@ -304,7 +301,6 @@ const Schedules = () => {
                               className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
                             />
                           </PaginationItem>
-                          
                           {Array.from({length: Math.min(5, totalPages)}, (_, i) => {
                             const pageNum = i + 1;
                             return (
@@ -318,7 +314,6 @@ const Schedules = () => {
                               </PaginationItem>
                             );
                           })}
-                          
                           {totalPages > 5 && (
                             <>
                               <PaginationItem>
@@ -334,7 +329,6 @@ const Schedules = () => {
                               </PaginationItem>
                             </>
                           )}
-                          
                           <PaginationItem>
                             <PaginationNext 
                               onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
