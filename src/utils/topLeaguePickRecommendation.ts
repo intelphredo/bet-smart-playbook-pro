@@ -24,7 +24,15 @@ export function getTopLeaguePicks(): PlayerTrendAnalysis[] {
     const leagueKey = leagueShortMap[leagueObj.name] || leagueObj.name;
     // Filter playerProps by this league
     const leaguePicks = getMostConfidentPicks(
-      playerProps.filter(prop => prop.league?.toUpperCase() === leagueKey),
+      playerProps.filter(prop => {
+        // Check if the property exists and matches case-insensitive
+        if (prop.league) {
+          return prop.league.toUpperCase() === leagueKey;
+        }
+        // For props without a league property, check if team name contains the league name
+        // This is a fallback if league property is missing
+        return prop.team && prop.team.toUpperCase().includes(leagueKey);
+      }),
       60 // Use a threshold by default, could be adapted
     );
     if (leaguePicks.length > 0) {

@@ -80,6 +80,7 @@ export interface PlayerProp {
   playerId: string;
   playerName: string;
   team: string;
+  league?: string; // Added optional league property
   matchId: string;
   propType: PropType;
   line: number;
@@ -87,7 +88,7 @@ export interface PlayerProp {
     over: number;
     under: number;
   };
-  prediction: {
+  prediction?: {
     recommended: 'over' | 'under';
     confidence: number;
     projectedValue: number;
