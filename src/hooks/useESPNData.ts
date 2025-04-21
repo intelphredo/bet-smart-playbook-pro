@@ -22,17 +22,18 @@ export function useESPNData({
     staleTime: refreshInterval,
   });
 
-  // Split matches into upcoming and live
-  const { upcomingMatches, liveMatches } = useMemo(() => {
+  // Split matches into upcoming, live, and finished
+  const { upcomingMatches, liveMatches, finishedMatches } = useMemo(() => {
     const live = data?.filter(match => match.status === "live") || [];
     const upcoming = data?.filter(match => match.status === "scheduled") || [];
-    
-    return { upcomingMatches: upcoming, liveMatches: live };
+    const finished = data?.filter(match => match.status === "finished") || [];
+    return { upcomingMatches: upcoming, liveMatches: live, finishedMatches: finished };
   }, [data]);
 
   return {
     upcomingMatches,
     liveMatches,
+    finishedMatches,
     allMatches: data || [],
     isLoading,
     error,

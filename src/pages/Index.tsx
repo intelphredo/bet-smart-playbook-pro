@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { League } from "@/types/sports";
 import NavBar from "@/components/NavBar";
@@ -19,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { useESPNData } from "@/hooks/useESPNData";
 import { useToast } from "@/hooks/use-toast";
 import ConfidentPicks from "@/components/ConfidentPicks";
+import { Check, X } from "lucide-react";
 
 const Index = () => {
   const [selectedLeague, setSelectedLeague] = useState<League | "ALL">("ALL");
@@ -29,6 +29,7 @@ const Index = () => {
   const { 
     upcomingMatches, 
     liveMatches, 
+    finishedMatches,
     isLoading, 
     error, 
     refetch 
@@ -58,6 +59,16 @@ const Index = () => {
   const filteredArbitrage = selectedLeague === "ALL"
     ? arbitrageOpportunities
     : arbitrageOpportunities.filter(opportunity => opportunity.match.league === selectedLeague);
+
+  // Helper to determine if prediction was correct
+  const isPredictionCorrect = (match: any) => {
+    if (!match.prediction || !match.score) return null;
+    const { recommended } = match.prediction;
+    if (recommended === "home" && match.score.home > match.score.away) return true;
+    if (recommended === "away" && match.score.away > match.score.home) return true;
+    if (recommended === "draw" && match.score.home === match.score.away) return true;
+    return false;
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -145,6 +156,7 @@ const Index = () => {
               <TabsList>
                 <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
                 <TabsTrigger value="live">Live</TabsTrigger>
+                <TabsTrigger value="finished">Finished</TabsTrigger>
               </TabsList>
               
               <TabsContent value="upcoming" className="mt-4">
@@ -194,6 +206,110 @@ const Index = () => {
                   <Card>
                     <CardContent className="pt-6 text-center">
                       <p>No live matches currently for this league.</p>
+                    </CardContent>
+                  </Card>
+                )}
+              </TabsContent>
+
+              <TabsContent value="finished" className="mt-4">
+                {isLoading ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {[1, 2, 3].map(i => (
+                      <Card key={i}>
+                        <CardContent className="p-12 flex justify-center items-center">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-navy-500" />
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : finishedMatches.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {finishedMatches.map(match => (
+                      <Card key={match.id} className="overflow-hidden">
+                        <CardHeader className="p-3 bg-navy-50 dark:bg-navy-700 flex flex-row justify-between items-center space-y-0">
+                          <div className="flex items-center space-x-2">
+                            <Badge variant="outline" className="text-xs font-normal bg-white dark:bg-navy-600">{match.league}</Badge>
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {/* Show start time or finished */}
+                            Finished
+                          </div>
+                        </CardHeader>
+                        <CardContent className="p-4">
+                          <div className="grid grid-cols-3 gap-2 items-center mb-2">
+                            <div className="text-center">
+                              <div className="w-10 h-10 bg-navy-50 dark:bg-navy-700 rounded-full mx-auto mb-1 flex items-center justify-center">
+                                {match.homeTeam.logo ? (
+                                  <img 
+                                    src={match.homeTeam.logo} 
+                                    alt={match.homeTeam.name} 
+                                    className="w-8 h-8 object-contain rounded-full"
+                                  />
+                                ) : (
+                                  match.homeTeam.shortName.substring(0, 2)
+                                )}
+                              </div>
+                              <div className="text-sm font-medium truncate">{match.homeTeam.shortName}</div>
+                              <div className="text-xs text-muted-foreground">{match.homeTeam.record}</div>
+                            </div>
+                            
+                            <div className="text-center">
+                              <div className="text-xl font-bold">
+                                {match.score?.home} - {match.score?.away}
+                                <div className="text-xs text-muted-foreground mt-1">{match.score?.period}</div>
+                              </div>
+                            </div>
+                            
+                            <div className="text-center">
+                              <div className="w-10 h-10 bg-navy-50 dark:bg-navy-700 rounded-full mx-auto mb-1 flex items-center justify-center">
+                                {match.awayTeam.logo ? (
+                                  <img 
+                                    src={match.awayTeam.logo} 
+                                    alt={match.awayTeam.name} 
+                                    className="w-8 h-8 object-contain rounded-full"
+                                  />
+                                ) : (
+                                  match.awayTeam.shortName.substring(0, 2)
+                                )}
+                              </div>
+                              <div className="text-sm font-medium truncate">{match.awayTeam.shortName}</div>
+                              <div className="text-xs text-muted-foreground">{match.awayTeam.record}</div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 mt-2">
+                            {isPredictionCorrect(match) === true && (
+                              <Badge className="bg-green-500 text-white flex items-center gap-1">
+                                <Check className="w-4 h-4" /> Correct Pick
+                              </Badge>
+                            )}
+                            {isPredictionCorrect(match) === false && (
+                              <Badge className="bg-red-500 text-white flex items-center gap-1">
+                                <X className="w-4 h-4" /> Incorrect Pick
+                              </Badge>
+                            )}
+                            {isPredictionCorrect(match) === null && (
+                              <Badge className="bg-gray-200 text-gray-600">N/A</Badge>
+                            )}
+                            <span className="text-xs text-muted-foreground">
+                              Algo pick:
+                              <span className="font-bold ml-1 uppercase">
+                                {match.prediction?.recommended === "home"
+                                  ? match.homeTeam.shortName
+                                  : match.prediction?.recommended === "away"
+                                  ? match.awayTeam.shortName
+                                  : "Draw"}
+                              </span>
+                            </span>
+                            <span className="text-xs text-muted-foreground ml-2">{match.prediction?.confidence}%</span>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <Card>
+                    <CardContent className="pt-6 text-center">
+                      <p>No finished matches for this league.</p>
                     </CardContent>
                   </Card>
                 )}
