@@ -1,8 +1,6 @@
 
 import { Match, Team, League } from "@/types/sports";
-
-// ESPN API endpoints
-const ESPN_API_BASE = "https://site.api.espn.com/apis/site/v2/sports";
+import { SPORTSBOOK_LOGOS } from "./espnConstants";
 
 // Define interfaces for the ESPN API response
 interface ESPNEvent {
@@ -47,18 +45,12 @@ interface ESPNEvent {
   }>;
 }
 
-interface ESPNResponse {
+export interface ESPNResponse {
   events: ESPNEvent[];
 }
 
-const SPORTSBOOK_LOGOS = {
-  fanduel: "https://upload.wikimedia.org/wikipedia/en/3/3d/FanDuel_logo.svg",
-  draftkings: "https://upload.wikimedia.org/wikipedia/en/f/fd/DraftKings_logo.svg",
-  betmgm: "https://upload.wikimedia.org/wikipedia/commons/2/2f/BetMGM_logo.svg",
-};
-
 // Map ESPN data to our app's data model
-const mapESPNEventToMatch = (event: ESPNEvent, league: League): Match => {
+export const mapESPNEventToMatch = (event: ESPNEvent, league: League): Match => {
   const competition = event.competitions[0];
   const homeCompetitor = competition.competitors.find(c => c.homeAway === "home");
   const awayCompetitor = competition.competitors.find(c => c.homeAway === "away");
@@ -174,126 +166,4 @@ const mapESPNEventToMatch = (event: ESPNEvent, league: League): Match => {
     status,
     score,
   };
-};
-
-// Fetch events for a specific league
-export const fetchESPNEvents = async (league: League): Promise<Match[]> => {
-  try {
-    let endpoint = "";
-    
-    // Map our league types to ESPN API endpoints
-    switch (league) {
-      case "NBA":
-        endpoint = `${ESPN_API_BASE}/basketball/nba/scoreboard`;
-        break;
-      case "NFL":
-        endpoint = `${ESPN_API_BASE}/football/nfl/scoreboard`;
-        break;
-      case "MLB":
-        endpoint = `${ESPN_API_BASE}/baseball/mlb/scoreboard`;
-        break;
-      case "NHL":
-        endpoint = `${ESPN_API_BASE}/hockey/nhl/scoreboard`;
-        break;
-      case "SOCCER":
-        endpoint = `${ESPN_API_BASE}/soccer/eng.1/scoreboard`; // Premier League as default
-        break;
-      default:
-        throw new Error(`Unsupported league: ${league}`);
-    }
-    
-    console.log(`Fetching data from ESPN API: ${endpoint}`);
-    const response = await fetch(endpoint);
-    
-    if (!response.ok) {
-      throw new Error(`Failed to fetch ESPN data: ${response.status}`);
-    }
-    
-    const data: ESPNResponse = await response.json();
-    console.log("ESPN API Response:", data);
-    
-    // Map ESPN events to our Match type
-    return data.events.map(event => mapESPNEventToMatch(event, league));
-  } catch (error) {
-    console.error("Error fetching ESPN data:", error);
-    return [];
-  }
-};
-
-// Fetch events for all supported leagues
-export const fetchAllESPNEvents = async (): Promise<Match[]> => {
-  const leagues: League[] = ["NBA", "NFL", "MLB", "NHL", "SOCCER"];
-  const promises = leagues.map(fetchESPNEvents);
-  
-  try {
-    const results = await Promise.all(promises);
-    // Flatten the array of arrays into a single array
-    return results.flat();
-  } catch (error) {
-    console.error("Error fetching all ESPN data:", error);
-    return [];
-  }
-};
-
-// New function to fetch full season schedules
-export const fetchLeagueSchedule = async (league: League): Promise<Match[]> => {
-  try {
-    let endpoint = "";
-    
-    // Map our league types to ESPN schedule endpoints
-    switch (league) {
-      case "NBA":
-        endpoint = `${ESPN_API_BASE}/basketball/nba/schedule`;
-        break;
-      case "NFL":
-        endpoint = `${ESPN_API_BASE}/football/nfl/schedule`;
-        break;
-      case "MLB":
-        endpoint = `${ESPN_API_BASE}/baseball/mlb/schedule`;
-        break;
-      case "NHL":
-        endpoint = `${ESPN_API_BASE}/hockey/nhl/schedule`;
-        break;
-      case "SOCCER":
-        endpoint = `${ESPN_API_BASE}/soccer/eng.1/schedule`;
-        break;
-      default:
-        throw new Error(`Unsupported league: ${league}`);
-    }
-    
-    console.log(`Fetching schedule data from ESPN API: ${endpoint}`);
-    const response = await fetch(endpoint);
-    
-    if (!response.ok) {
-      throw new Error(`Failed to fetch ESPN schedule: ${response.status}`);
-    }
-    
-    const data = await response.json();
-    
-    // Process and return schedule data
-    // Note: ESPN schedule API has a different format than scoreboard API
-    // We'll need to convert it to our Match format
-    // This is a placeholder implementation
-    
-    // For now, we're using the same fetch as the scoreboard as ESPN doesn't
-    // provide full schedule API without authentication
-    return fetchESPNEvents(league);
-  } catch (error) {
-    console.error(`Error fetching ${league} schedule:`, error);
-    return [];
-  }
-};
-
-// Fetch all schedules for all leagues
-export const fetchAllSchedules = async (): Promise<Match[]> => {
-  const leagues: League[] = ["NBA", "NFL", "MLB", "NHL", "SOCCER"];
-  const promises = leagues.map(fetchLeagueSchedule);
-  
-  try {
-    const results = await Promise.all(promises);
-    return results.flat();
-  } catch (error) {
-    console.error("Error fetching all schedules:", error);
-    return [];
-  }
 };

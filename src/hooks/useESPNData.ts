@@ -1,7 +1,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { Match, League } from "@/types/sports";
-import { fetchESPNEvents, fetchAllESPNEvents, fetchLeagueSchedule, fetchAllSchedules } from "@/services/espnService";
+import { fetchESPNEvents, fetchAllESPNEvents, fetchLeagueSchedule, fetchAllSchedules } from "@/services/espnApi";
 import { useMemo } from "react";
 
 interface UseESPNDataOptions {
@@ -12,11 +12,10 @@ interface UseESPNDataOptions {
 
 export function useESPNData({ 
   league = "ALL", 
-  refreshInterval = 60000, // Default refresh every minute
+  refreshInterval = 60000,
   includeSchedule = false
 }: UseESPNDataOptions = {}) {
 
-  // Fetch data based on selected league and whether to include full schedule
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['espn-data', league, includeSchedule],
     queryFn: () => {
@@ -30,7 +29,6 @@ export function useESPNData({
     staleTime: refreshInterval,
   });
 
-  // Split matches into upcoming, live, and finished
   const { upcomingMatches, liveMatches, finishedMatches } = useMemo(() => {
     const live = data?.filter(match => match.status === "live") || [];
     const upcoming = data?.filter(match => match.status === "scheduled") || [];
