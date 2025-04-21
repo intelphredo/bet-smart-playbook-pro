@@ -1,8 +1,8 @@
-
 import { useState } from "react";
 import { useESPNData } from "./useESPNData";
 import { useMLBData } from "./useMLBData";
 import { DataSource, League, Match, DivisionStanding } from "@/types/sports";
+import { useActionNetworkData } from "./useActionNetworkData";
 
 interface UseSportsDataOptions {
   league?: League | "ALL";
@@ -63,16 +63,66 @@ export function useSportsData({
     includeStandings,
     teamId
   });
+
+  // New: Action Network
+  const {
+    allMatches: anMatches,
+    upcomingMatches: anUpcomingMatches,
+    liveMatches: anLiveMatches,
+    finishedMatches: anFinishedMatches,
+    isLoading: isLoadingAN,
+    error: anError,
+    refetch: refetchAN
+  } = useActionNetworkData({
+    league,
+    refreshInterval,
+    includeSchedule
+  });
   
   // Log matches for debugging
   console.log('ESPN upcoming matches:', espnUpcomingMatches.length);
   console.log('MLB upcoming matches:', mlbUpcomingMatches.length);
   
-  // Determine which data set to use
-  const baseMatches = dataSource === "ESPN" ? espnMatches : mlbMatches;
-  const baseUpcomingMatches = dataSource === "ESPN" ? espnUpcomingMatches : mlbUpcomingMatches;
-  const baseLiveMatches = dataSource === "ESPN" ? espnLiveMatches : mlbLiveMatches;
-  const baseFinishedMatches = dataSource === "ESPN" ? espnFinishedMatches : mlbFinishedMatches;
+  // Determine which data set to use, now with Action
+  let baseMatches, baseUpcomingMatches, baseLiveMatches, baseFinishedMatches, isLoading, error, refetchSchedule, divisionsStandings, isLoadingStandings, standingsError, fetchLiveGameData;
+  if (dataSource === "ACTION") {
+    baseMatches = anMatches;
+    baseUpcomingMatches = anUpcomingMatches;
+    baseLiveMatches = anLiveMatches;
+    baseFinishedMatches = anFinishedMatches;
+    isLoading = isLoadingAN;
+    error = anError;
+    refetchSchedule = refetchAN;
+    divisionsStandings = [];
+    isLoadingStandings = false;
+    standingsError = null;
+    fetchLiveGameData = undefined;
+  } else if (dataSource === "MLB") {
+    // ... MLB path as before ...
+    baseMatches = mlbMatches;
+    baseUpcomingMatches = mlbUpcomingMatches;
+    baseLiveMatches = mlbLiveMatches;
+    baseFinishedMatches = mlbFinishedMatches;
+    isLoading = isLoadingMLB;
+    error = mlbError;
+    refetchSchedule = refetchMLB;
+    divisionsStandings = divisionsStandings;
+    isLoadingStandings = isLoadingStandings;
+    standingsError = standingsError;
+    fetchLiveGameData = fetchLiveGameData;
+  } else { // ESPN default
+    baseMatches = espnMatches;
+    baseUpcomingMatches = espnUpcomingMatches;
+    baseLiveMatches = espnLiveMatches;
+    baseFinishedMatches = espnFinishedMatches;
+    isLoading = isLoadingESPN;
+    error = espnError;
+    refetchSchedule = refetchESPN;
+    divisionsStandings = [];
+    isLoadingStandings = false;
+    standingsError = null;
+    fetchLiveGameData = undefined;
+  }
   
   // Filter MLB-only data if ESPN is selected but league is MLB
   const allMatches = (() => {
@@ -109,9 +159,6 @@ export function useSportsData({
   }
   
   // Normalize the return structure between ESPN and MLB data sources
-  const isLoading = dataSource === "ESPN" ? isLoadingESPN : isLoadingMLB;
-  const error = dataSource === "ESPN" ? espnError : mlbError;
-  const refetchSchedule = dataSource === "ESPN" ? refetchESPN : refetchMLB;
   
   // For ESPN, return empty standings data since it doesn't provide that
   const normalizedDivisionsStandings = dataSource === "ESPN" ? [] : divisionsStandings;
@@ -121,16 +168,16 @@ export function useSportsData({
   return {
     dataSource,
     setDataSource,
-    upcomingMatches,
-    liveMatches,
-    finishedMatches,
-    allMatches,
+    upcomingMatches: baseUpcomingMatches,
+    liveMatches: baseLiveMatches,
+    finishedMatches: baseFinishedMatches,
+    allMatches: baseMatches,
     isLoading,
     error,
     refetchSchedule,
-    divisionsStandings: normalizedDivisionsStandings,
-    isLoadingStandings: normalizedIsLoadingStandings,
-    standingsError: normalizedStandingsError,
-    fetchLiveGameData: fetchLiveGameData
+    divisionsStandings,
+    isLoadingStandings,
+    standingsError,
+    fetchLiveGameData,
   };
 }
