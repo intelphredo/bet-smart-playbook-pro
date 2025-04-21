@@ -2,9 +2,10 @@
 import { Match, SmartScore } from "@/types/sports";
 
 export function getRecommendation(overall: number, match: Match): SmartScore['recommendation'] {
-  let recommendation = {
-    betOn: 'none' as const,
-    confidence: 'low' as const,
+  // Initialize with default values that match the expected types
+  let recommendation: SmartScore['recommendation'] = {
+    betOn: 'none',
+    confidence: 'low',
     reasoning: 'There is no clear edge in this matchup.'
   };
 
@@ -14,19 +15,19 @@ export function getRecommendation(overall: number, match: Match): SmartScore['re
         betOn: 'home',
         confidence: overall >= 80 ? 'high' : 'medium',
         reasoning: `Strong statistical edge for ${match.homeTeam.name} with a SmartScore of ${overall}.`
-      };
+      } as SmartScore['recommendation']; // Type assertion to override TypeScript's narrow interpretation
     } else if (match.prediction.recommended === 'away') {
       recommendation = {
         betOn: 'away',
         confidence: overall >= 80 ? 'high' : 'medium',
         reasoning: `Strong statistical edge for ${match.awayTeam.name} with a SmartScore of ${overall}.`
-      };
+      } as SmartScore['recommendation']; // Type assertion to override TypeScript's narrow interpretation
     } else if (match.prediction.recommended === 'draw') {
       recommendation = {
         betOn: 'draw',
         confidence: overall >= 80 ? 'high' : 'medium',
         reasoning: `Statistical indicators suggest a draw is likely with a SmartScore of ${overall}.`
-      };
+      } as SmartScore['recommendation']; // Type assertion to override TypeScript's narrow interpretation
     }
   }
   return recommendation;
