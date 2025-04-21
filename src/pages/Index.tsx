@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { League } from "@/types/sports";
 import NavBar from "@/components/NavBar";
@@ -26,7 +25,6 @@ const Index = () => {
   const [activeTab, setActiveTab] = useState("upcoming");
   const { toast } = useToast();
 
-  // Use our new ESPN data hook
   const { 
     upcomingMatches, 
     liveMatches, 
@@ -39,7 +37,6 @@ const Index = () => {
     refreshInterval: 60000 
   });
 
-  // Handle data refresh
   const handleRefreshData = () => {
     refetch();
     toast({
@@ -49,7 +46,6 @@ const Index = () => {
     });
   };
 
-  // Filter player props based on selected league
   const filteredProps = selectedLeague === "ALL"
     ? playerProps
     : playerProps.filter(prop => {
@@ -61,7 +57,6 @@ const Index = () => {
     ? arbitrageOpportunities
     : arbitrageOpportunities.filter(opportunity => opportunity.match.league === selectedLeague);
 
-  // Helper to determine if prediction was correct
   const isPredictionCorrect = (match: any) => {
     if (!match.prediction || !match.score) return null;
     const { recommended } = match.prediction;
@@ -77,7 +72,6 @@ const Index = () => {
       
       <div className="container px-4 py-6">
         <div className="flex flex-col space-y-6">
-          {/* Hero section */}
           <div className="text-center mb-4 animate-fade-in">
             <h1 className="text-3xl md:text-4xl font-bold mb-2">
               <span className="text-navy-500 dark:text-navy-200">Smart Betting.</span>{" "}
@@ -91,15 +85,12 @@ const Index = () => {
             </Button>
           </div>
           
-          {/* Stats Overview */}
           <div className="animate-slide-in">
             <StatsOverview />
           </div>
           
-          {/* New Confident Picks Section */}
           <ConfidentPicks />
           
-          {/* Arbitrage Opportunities */}
           <div className="space-y-4">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
               <div className="flex items-center">
@@ -120,7 +111,6 @@ const Index = () => {
             </PremiumContent>
           </div>
 
-          {/* Leagues and Matches */}
           <div className="space-y-4">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
               <div className="flex items-center gap-2">
@@ -153,12 +143,39 @@ const Index = () => {
               </Card>
             )}
             
-            <Tabs defaultValue="upcoming" value={activeTab} onValueChange={setActiveTab}>
+            <Tabs defaultValue="future" value={activeTab} onValueChange={setActiveTab}>
               <TabsList>
+                <TabsTrigger value="future">Future Games</TabsTrigger>
                 <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
                 <TabsTrigger value="live">Live</TabsTrigger>
                 <TabsTrigger value="finished">Finished</TabsTrigger>
               </TabsList>
+              
+              <TabsContent value="future" className="mt-4">
+                {isLoading ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {[1, 2, 3].map(i => (
+                      <Card key={i}>
+                        <CardContent className="p-12 flex justify-center items-center">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-navy-500" />
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : upcomingMatches.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {upcomingMatches.map(match => (
+                      <MatchCard key={match.id} match={match} />
+                    ))}
+                  </div>
+                ) : (
+                  <Card>
+                    <CardContent className="pt-6 text-center">
+                      <p>No future games for this league.</p>
+                    </CardContent>
+                  </Card>
+                )}
+              </TabsContent>
               
               <TabsContent value="upcoming" className="mt-4">
                 {isLoading ? (
@@ -232,7 +249,6 @@ const Index = () => {
                             <Badge variant="outline" className="text-xs font-normal bg-white dark:bg-navy-600">{match.league}</Badge>
                           </div>
                           <div className="text-xs text-muted-foreground">
-                            {/* Show start time or finished */}
                             Finished
                           </div>
                         </CardHeader>
@@ -318,7 +334,6 @@ const Index = () => {
             </Tabs>
           </div>
           
-          {/* Player Props */}
           <div className="space-y-4">
             <h2 className="text-2xl font-bold">Player Props</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -336,7 +351,6 @@ const Index = () => {
             </div>
           </div>
           
-          {/* Algorithms */}
           <div className="space-y-4 py-2">
             <h2 className="text-2xl font-bold">Winning Algorithms</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -346,7 +360,6 @@ const Index = () => {
             </div>
           </div>
           
-          {/* Subscribe section */}
           <Card className="bg-navy-500 text-white border-0">
             <CardContent className="p-6">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
