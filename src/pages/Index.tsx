@@ -10,7 +10,7 @@ import ConfidentPicks from "@/components/ConfidentPicks";
 import HeroHeader from "@/components/HeroHeader";
 import ArbitrageOpportunitiesSection from "@/components/ArbitrageOpportunitiesSection";
 import LiveESPNSection from "@/components/LiveESPNSection";
-import PlayerPropsSection from "@/components/PlayerPropsSection";
+// Removed import of PlayerPropsSection
 import AlgorithmsSection from "@/components/AlgorithmsSection";
 import PremiumSubscribeCard from "@/components/PremiumSubscribeCard";
 import PageFooter from "@/components/PageFooter";
@@ -115,7 +115,7 @@ const Index = () => {
             liveMatches={liveMatches}
             finishedMatches={finishedMatches}
           />
-          <PlayerPropsSection filteredProps={filteredProps} />
+          {/* PlayerPropsSection has been removed */}
           <AlgorithmsSection />
           <PremiumSubscribeCard />
         </div>
