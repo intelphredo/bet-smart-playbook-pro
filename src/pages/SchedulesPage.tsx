@@ -1,3 +1,4 @@
+
 import React from "react";
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -9,6 +10,7 @@ import { useSportsData } from "@/hooks/useSportsData";
 import { format, startOfDay, endOfDay, addDays, parseISO } from "date-fns";
 import { TeamAutocomplete } from "@/components/schedules/TeamAutocomplete";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 const SchedulesPage = () => {
   // State for filters
@@ -23,7 +25,7 @@ const SchedulesPage = () => {
   const [showWeekGames, setShowWeekGames] = useState(false);
   const [showFanDuelOddsOnly, setShowFanDuelOddsOnly] = useState(false);
 
-  // Get sports data
+  // Get sports data with forced refresh every minute
   const { 
     allMatches, 
     isLoading, 
@@ -35,8 +37,19 @@ const SchedulesPage = () => {
     league: selectedLeague,
     includeSchedule: true,
     includeStandings: view === "standings",
-    defaultSource: dataSource
+    defaultSource: dataSource,
+    refreshInterval: 60000  // Force refresh every 60 seconds
   });
+  
+  // Force a refetch when filters change
+  useEffect(() => {
+    refetchSchedule();
+    // Show toast to indicate data is refreshing
+    toast("Refreshing sports data...", {
+      description: `Getting the latest ${selectedLeague} games`,
+      duration: 2000
+    });
+  }, [selectedLeague, dataSource, refetchSchedule]);
   
   // Update data source
   const handleDataSourceChange = (source: DataSource) => {
@@ -47,22 +60,36 @@ const SchedulesPage = () => {
   const filteredMatches = (() => {
     let dateStart: Date;
     let dateEnd: Date;
+    
+    // Set date range based on selected view
     if (showWeekGames) {
       dateStart = startOfDay(selectedDate);
       dateEnd = endOfDay(addDays(selectedDate, 6)); // Next 7 days including today
+      console.log("Week view:", dateStart, dateEnd);
     } else if (showTomorrowGames) {
       const dateToUse = addDays(selectedDate, 1);
       dateStart = startOfDay(dateToUse);
       dateEnd = endOfDay(dateToUse);
+      console.log("Tomorrow view:", dateStart, dateEnd);
     } else {
       dateStart = startOfDay(selectedDate);
       dateEnd = endOfDay(selectedDate);
+      console.log("Today view:", dateStart, dateEnd);
     }
+    
+    console.log(`Filtering ${allMatches.length} matches with date range:`, 
+                dateStart.toISOString(), "to", dateEnd.toISOString());
+    
     return allMatches.filter(match => {
       try {
-        // Filter by date
+        // Parse match date
         const matchDate = parseISO(match.startTime);
+        console.log(`Match ${match.id} date:`, matchDate.toISOString(), 
+                   "In range:", matchDate >= dateStart && matchDate <= dateEnd);
+        
+        // Filter by date
         const isInDateRange = matchDate >= dateStart && matchDate <= dateEnd;
+        
         // Filter by search query
         const searchLower = searchQuery.toLowerCase();
         const matchesSearch = searchQuery === "" || 
@@ -70,16 +97,24 @@ const SchedulesPage = () => {
           match.awayTeam.name.toLowerCase().includes(searchLower);
 
         // Filter by FanDuel odds if option is enabled
-        const hasFanDuelOdds = !showFanDuelOddsOnly || 
-          (match.liveOdds && match.liveOdds.some(odd => 
-            odd.sportsbook.name.toLowerCase() === "fanduel"));
+        let hasFanDuelOdds = true;
+        if (showFanDuelOddsOnly) {
+          hasFanDuelOdds = match.liveOdds && 
+                          match.liveOdds.some(odd => 
+                            odd.sportsbook.name.toLowerCase() === "fanduel");
+          console.log(`Match ${match.id} FanDuel odds:`, hasFanDuelOdds);
+        }
+        
         return isInDateRange && matchesSearch && hasFanDuelOdds;
-      } catch {
+      } catch (e) {
+        console.error("Error filtering match:", e);
         return false;
       }
     });
   })();
 
+  console.log("Filtered matches count:", filteredMatches.length);
+  
   // Get a list of all matches for team suggestion
   const allMatchesForAutocomplete = allMatches || [];
 
@@ -151,6 +186,13 @@ const SchedulesPage = () => {
     setShowTomorrowGames(false);
   };
 
+  // Toggle FanDuel odds filter
+  const toggleFanDuelOddsFilter = () => {
+    setShowFanDuelOddsOnly(prev => !prev);
+    // Force data refresh when changing filter
+    setTimeout(refetchSchedule, 100);
+  };
+
   return (
     <div className="container py-6 max-w-7xl">
       <SchedulesHeader 
@@ -216,10 +258,10 @@ const SchedulesPage = () => {
         <Button 
           variant={showFanDuelOddsOnly ? "default" : "outline"}
           size="sm"
-          onClick={() => setShowFanDuelOddsOnly(!showFanDuelOddsOnly)}
+          onClick={toggleFanDuelOddsFilter}
           className="flex items-center gap-1"
         >
-          {showFanDuelOddsOnly ? "All Sportsbooks" : "FanDuel Odds Only"}
+          {showFanDuelOddsOnly ? "FanDuel Odds Only" : "All Sportsbooks"}
         </Button>
       </div>
       
@@ -240,7 +282,7 @@ const SchedulesPage = () => {
                       onClick={goToPreviousDay}
                       className="px-3 py-1 text-sm border rounded-md hover:bg-muted"
                     >
-                      Previous Day
+                      Previous {showWeekGames ? 'Week' : 'Day'}
                     </button>
                     <button 
                       onClick={goToToday}
@@ -252,7 +294,7 @@ const SchedulesPage = () => {
                       onClick={goToNextDay}
                       className="px-3 py-1 text-sm border rounded-md hover:bg-muted"
                     >
-                      Next Day
+                      Next {showWeekGames ? 'Week' : 'Day'}
                     </button>
                   </div>
                 </div>
