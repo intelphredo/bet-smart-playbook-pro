@@ -1,8 +1,10 @@
+
 import { PlayerProp, PropType } from "@/types/sports";
 import { 
   PlayerHistoricalData, 
   PlayerTrendAnalysis, 
-  TeamMatchupHistory 
+  TeamMatchupHistory,
+  PlayerStreak 
 } from "@/types/playerAnalytics";
 import { playerHistoricalData } from "@/data/playerHistoricalData";
 
