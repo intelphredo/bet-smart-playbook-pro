@@ -2,7 +2,7 @@ import { Match } from "@/types/sports";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { TrendingUp, Trophy, ChartLineUp } from "lucide-react";
+import { TrendingUp, Trophy, ChartLine } from "lucide-react";
 import { formatDistanceToNow, parseISO } from "date-fns";
 import LiveOdds from "./LiveOdds";
 import { SPORTSBOOK_LOGOS } from "@/utils/sportsbook";
@@ -192,7 +192,7 @@ const MatchCard = ({ match }: MatchCardProps) => {
             <Badge 
               className={`flex items-center gap-1 ${getSmartScoreBadgeColor()}`}
             >
-              <ChartLineUp className="h-3 w-3" />
+              <ChartLine className="h-3 w-3" />
               <span>SmartScore {match.smartScore!.overall}</span>
             </Badge>
           ) : (

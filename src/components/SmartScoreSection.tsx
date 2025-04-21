@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import SmartScoreCard from "./SmartScoreCard";
 import { calculateSmartScore, applySmartScores } from "@/utils/smartScoreCalculator";
-import { ChartLineUp } from "lucide-react";
+import { ChartLine } from "lucide-react";
 
 interface SmartScoreSectionProps {
   matches: Match[];
@@ -47,7 +47,7 @@ const SmartScoreSection = ({ matches }: SmartScoreSectionProps) => {
       </div>
       
       <div className="flex items-center gap-1 mb-4">
-        <ChartLineUp className="h-4 w-4 text-blue-500" />
+        <ChartLine className="h-4 w-4 text-blue-500" />
         <p className="text-sm text-muted-foreground">
           Our exclusive SmartScore™ algorithm analyzes multiple factors to identify the best betting opportunities
         </p>
