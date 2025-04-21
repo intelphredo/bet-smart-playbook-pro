@@ -13,7 +13,7 @@ interface UseESPNDataOptions {
 export function useESPNData({ 
   league = "ALL", 
   refreshInterval = 60000, // Default refresh every minute
-  includeSchedule = true // Changed default to true to always get full schedule
+  includeSchedule = false
 }: UseESPNDataOptions = {}) {
 
   // Fetch data based on selected league and whether to include full schedule
