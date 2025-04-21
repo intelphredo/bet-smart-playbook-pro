@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { League } from "@/types/sports";
 import NavBar from "@/components/NavBar";
@@ -8,7 +9,7 @@ import StatsOverview from "@/components/StatsOverview";
 import { algorithms } from "@/data/mockData";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import PlayerPropCard from "@/components/PlayerPropCard";
 import { playerProps } from "@/data/playerPropData";
 import ArbitrageCard from "@/components/ArbitrageCard";
