@@ -248,7 +248,7 @@ const LiveESPNSection = ({
                         <div className="text-xs text-muted-foreground">{match.awayTeam.record}</div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 mt-2">
+                    <div className="flex items-center gap-2 mt-2 flex-wrap">
                       {isPredictionCorrect(match) === true && (
                         <Badge className="bg-green-500 text-white flex items-center gap-1">
                           <Check className="w-4 h-4" /> Correct Pick
@@ -274,6 +274,13 @@ const LiveESPNSection = ({
                       </span>
                       <span className="text-xs text-muted-foreground ml-2">{match.prediction?.confidence}%</span>
                     </div>
+                    {/* Reasoning Section */}
+                    {match.smartScore?.recommendation?.reasoning && (
+                      <div className="mt-2 text-xs text-muted-foreground italic pl-1">
+                        <span className="font-semibold text-navy-600 dark:text-navy-200">Reason: </span>
+                        {match.smartScore.recommendation.reasoning}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               ))}
