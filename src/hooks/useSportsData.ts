@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useESPNData } from "./useESPNData";
 import { useMLBData } from "./useMLBData";
-import { DataSource, League, Match } from "@/types/sports";
+import { DataSource, League, Match, DivisionStanding } from "@/types/sports";
 
 interface UseSportsDataOptions {
   league?: League | "ALL";
@@ -29,14 +29,34 @@ export function useSportsData({
   const [dataSource, setDataSource] = useState<DataSource>(defaultSource);
   
   // Get ESPN data
-  const espnData = useESPNData({
+  const {
+    allMatches: espnMatches,
+    upcomingMatches: espnUpcomingMatches,
+    liveMatches: espnLiveMatches,
+    finishedMatches: espnFinishedMatches,
+    isLoading: isLoadingESPN,
+    error: espnError,
+    refetch: refetchESPN
+  } = useESPNData({
     league,
     refreshInterval,
     includeSchedule
   });
   
   // Get MLB data
-  const mlbData = useMLBData({
+  const {
+    allMatches: mlbMatches,
+    upcomingMatches: mlbUpcomingMatches,
+    liveMatches: mlbLiveMatches,
+    finishedMatches: mlbFinishedMatches,
+    isLoadingSchedule: isLoadingMLB,
+    scheduleError: mlbError,
+    refetchSchedule: refetchMLB,
+    divisionsStandings,
+    isLoadingStandings,
+    standingsError,
+    fetchLiveGameData
+  } = useMLBData({
     refreshInterval,
     includeTeams,
     includePlayerStats,
@@ -45,20 +65,38 @@ export function useSportsData({
   });
   
   // Determine which data set to use
-  const data = dataSource === "ESPN" ? espnData : mlbData;
+  const baseMatches = dataSource === "ESPN" ? espnMatches : mlbMatches;
+  const baseUpcomingMatches = dataSource === "ESPN" ? espnUpcomingMatches : mlbUpcomingMatches;
+  const baseLiveMatches = dataSource === "ESPN" ? espnLiveMatches : mlbLiveMatches;
+  const baseFinishedMatches = dataSource === "ESPN" ? espnFinishedMatches : mlbFinishedMatches;
   
   // Filter MLB-only data if ESPN is selected but league is MLB
-  const filteredData = (() => {
+  const allMatches = (() => {
     if (dataSource === "ESPN" && league === "MLB") {
-      return {
-        ...data,
-        allMatches: data.allMatches.filter(match => match.league === "MLB"),
-        upcomingMatches: data.upcomingMatches.filter(match => match.league === "MLB"),
-        liveMatches: data.liveMatches.filter(match => match.league === "MLB"),
-        finishedMatches: data.finishedMatches.filter(match => match.league === "MLB")
-      };
+      return baseMatches.filter(match => match.league === "MLB");
     }
-    return data;
+    return baseMatches;
+  })();
+  
+  const upcomingMatches = (() => {
+    if (dataSource === "ESPN" && league === "MLB") {
+      return baseUpcomingMatches.filter(match => match.league === "MLB");
+    }
+    return baseUpcomingMatches;
+  })();
+  
+  const liveMatches = (() => {
+    if (dataSource === "ESPN" && league === "MLB") {
+      return baseLiveMatches.filter(match => match.league === "MLB");
+    }
+    return baseLiveMatches;
+  })();
+  
+  const finishedMatches = (() => {
+    if (dataSource === "ESPN" && league === "MLB") {
+      return baseFinishedMatches.filter(match => match.league === "MLB");
+    }
+    return baseFinishedMatches;
   })();
   
   // If MLB is the selected league, prioritize MLB data source
@@ -66,9 +104,29 @@ export function useSportsData({
     setDataSource("MLB");
   }
   
+  // Normalize the return structure between ESPN and MLB data sources
+  const isLoading = dataSource === "ESPN" ? isLoadingESPN : isLoadingMLB;
+  const error = dataSource === "ESPN" ? espnError : mlbError;
+  const refetchSchedule = dataSource === "ESPN" ? refetchESPN : refetchMLB;
+  
+  // For ESPN, return empty standings data since it doesn't provide that
+  const normalizedDivisionsStandings = dataSource === "ESPN" ? [] : divisionsStandings;
+  const normalizedIsLoadingStandings = dataSource === "ESPN" ? false : isLoadingStandings;
+  const normalizedStandingsError = dataSource === "ESPN" ? null : standingsError;
+  
   return {
-    ...filteredData,
     dataSource,
-    setDataSource
+    setDataSource,
+    upcomingMatches,
+    liveMatches,
+    finishedMatches,
+    allMatches,
+    isLoading,
+    error,
+    refetchSchedule,
+    divisionsStandings: normalizedDivisionsStandings,
+    isLoadingStandings: normalizedIsLoadingStandings,
+    standingsError: normalizedStandingsError,
+    fetchLiveGameData: fetchLiveGameData
   };
 }
