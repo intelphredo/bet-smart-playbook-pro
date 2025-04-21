@@ -1,4 +1,3 @@
-
 import { League, Match } from "@/types/sports";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -34,6 +33,69 @@ const isPredictionCorrect = (match: any) => {
   return false;
 };
 
+function getPersonalizedOutcomeReasoning(match: any, isCorrect: boolean | null): string {
+  if (isCorrect === null) {
+    return "No prediction or score available to analyze outcome.";
+  }
+
+  const { prediction, smartScore, score } = match;
+  const team = prediction?.recommended === "home" ? match.homeTeam.shortName
+    : prediction?.recommended === "away" ? match.awayTeam.shortName
+    : prediction?.recommended === "draw" ? "Draw"
+    : "";
+
+  const pointsDiff = score
+    ? Math.abs(score.home - score.away)
+    : null;
+
+  const confidence = prediction?.confidence;
+  const smartScoreOverall = smartScore?.overall;
+
+  if (isCorrect) {
+    let base = `The model correctly identified ${team} as the likely result`;
+    if (confidence) {
+      base += ` with a confidence of ${confidence}%.`;
+    } else {
+      base += ".";
+    }
+    if (smartScoreOverall && smartScoreOverall >= 70) {
+      base += ` This pick was also supported by a high SmartScore™ (${smartScoreOverall}), indicating robust statistical alignment.`;
+    }
+    if (typeof pointsDiff === "number") {
+      if (pointsDiff === 0 && prediction?.recommended === "draw") {
+        base += " The prediction anticipated a very close match ending in a draw, which was correct.";
+      } else if (pointsDiff >= 10) {
+        base += ` The victory margin (${pointsDiff}) suggests the model capitalized on clear differences between the teams.`;
+      } else if (pointsDiff > 0) {
+        base += ` The narrow margin (${pointsDiff}) reflects the model's recognition of a tight matchup.`;
+      }
+    }
+    if (smartScore?.recommendation?.reasoning) {
+      base += ` Key factor: ${smartScore.recommendation.reasoning}`;
+    }
+    return base.trim();
+  } else {
+    let base = `The prediction (${team}`;
+    if (confidence) base += `, ${confidence}% confidence`;
+    base += ") did not match the actual result.";
+    if (smartScoreOverall) {
+      base += ` The SmartScore™ for this prediction was ${smartScoreOverall}.`;
+    }
+    if (typeof pointsDiff === "number") {
+      if (pointsDiff >= 10) {
+        base += " The large margin suggests there were influential factors (like injuries or unexpected events) not captured by the model.";
+      } else if (pointsDiff > 0) {
+        base += " The close score means the game could have gone either way, but a few key plays swung it.";
+      }
+    }
+    if (smartScore?.recommendation?.reasoning) {
+      base += ` Model rationale: ${smartScore.recommendation.reasoning}`;
+    }
+    base += " Future predictions may benefit from additional live or contextual data.";
+    return base.trim();
+  }
+}
+
 const LiveESPNSection = ({
   selectedLeague,
   setSelectedLeague,
@@ -46,7 +108,6 @@ const LiveESPNSection = ({
   liveMatches,
   finishedMatches,
 }: Props) => {
-  // Apply SmartScores to matches
   const [processedMatches, setProcessedMatches] = useState({
     upcoming: [] as Match[],
     live: [] as Match[],
@@ -57,7 +118,7 @@ const LiveESPNSection = ({
     setProcessedMatches({
       upcoming: applySmartScores(upcomingMatches),
       live: applySmartScores(liveMatches),
-      finished: finishedMatches, // No need for SmartScores on finished matches
+      finished: finishedMatches,
     });
   }, [upcomingMatches, liveMatches, finishedMatches]);
 
@@ -94,7 +155,6 @@ const LiveESPNSection = ({
         </Card>
       )}
 
-      {/* SmartScore Section */}
       {(processedMatches.upcoming.length > 0 || processedMatches.live.length > 0) && (
         <SmartScoreSection 
           matches={[...processedMatches.live, ...processedMatches.upcoming]} 
@@ -274,8 +334,7 @@ const LiveESPNSection = ({
                       </span>
                       <span className="text-xs text-muted-foreground ml-2">{match.prediction?.confidence}%</span>
                     </div>
-                    {/* Prediction Reasoning & Outcome Feedback */}
-                    <div className="mt-2 text-xs text-muted-foreground italic pl-1 space-y-0.5">
+                    <div className="mt-2 text-xs text-muted-foreground italic pl-1 space-y-1">
                       {match.smartScore?.recommendation?.reasoning ? (
                         <div>
                           <span className="font-semibold text-navy-600 dark:text-navy-200">
@@ -291,27 +350,30 @@ const LiveESPNSection = ({
                           Prediction based on statistical edge from available match data.
                         </div>
                       ) : null}
-                      {isPredictionCorrect(match) === true && (
-                        <div>
-                          <span className="font-semibold text-green-700 dark:text-green-400">
-                            Why Correct?{" "}
-                          </span>
-                          {match.smartScore?.recommendation?.reasoning
-                            ? match.smartScore.recommendation.reasoning
-                            : "The prediction aligned well with the actual outcome based on the assessed factors."}
-                        </div>
-                      )}
-                      {isPredictionCorrect(match) === false && (
-                        <div>
-                          <span className="font-semibold text-red-700 dark:text-red-400">
-                            Why Incorrect?{" "}
-                          </span>
-                          {match.smartScore?.recommendation?.reasoning
-                            ? match.smartScore.recommendation.reasoning +
-                              " However, unforeseen game events led to a different result."
-                            : "Despite the model's analysis, unexpected outcomes affected the pick."}
-                        </div>
-                      )}
+                      {(() => {
+                        const outcome = isPredictionCorrect(match);
+                        if (outcome === true) {
+                          return (
+                            <div>
+                              <span className="font-semibold text-green-700 dark:text-green-400">
+                                Why Correct?{" "}
+                              </span>
+                              {getPersonalizedOutcomeReasoning(match, true)}
+                            </div>
+                          );
+                        }
+                        if (outcome === false) {
+                          return (
+                            <div>
+                              <span className="font-semibold text-red-700 dark:text-red-400">
+                                Why Incorrect?{" "}
+                              </span>
+                              {getPersonalizedOutcomeReasoning(match, false)}
+                            </div>
+                          );
+                        }
+                        return null;
+                      })()}
                     </div>
                   </CardContent>
                 </Card>
