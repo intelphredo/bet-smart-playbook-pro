@@ -1,4 +1,5 @@
 
+
 export type League = 'NBA' | 'NFL' | 'MLB' | 'NHL' | 'SOCCER';
 
 export type PropType = 'points' | 'assists' | 'rebounds' | 'touchdowns' | 'goals' | 'saves' | 'shots' | 'hits';
@@ -44,6 +45,7 @@ export interface Match {
     away: number;
     period?: string;
   };
+  smartScore?: SmartScore;
 }
 
 export interface Team {
@@ -168,3 +170,22 @@ export interface User {
 }
 
 export type DataSource = 'ESPN' | 'MLB';
+
+export interface SmartScore {
+  overall: number;        // 0-100 overall smart score
+  value: number;          // 0-100 value rating
+  momentum: number;       // 0-100 momentum rating
+  injuries: number;       // 0-100 injury impact (higher is better - less impact)
+  weatherImpact: number;  // 0-100 weather impact (higher is better - less impact)
+  factors: {
+    key: string;
+    impact: 'positive' | 'negative' | 'neutral';
+    weight: number;       // 1-10
+    description: string;
+  }[];
+  recommendation?: {
+    betOn: 'home' | 'away' | 'draw' | 'over' | 'under' | 'none';
+    confidence: 'high' | 'medium' | 'low';
+    reasoning: string;
+  };
+}

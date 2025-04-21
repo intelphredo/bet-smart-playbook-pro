@@ -1,8 +1,9 @@
+
 import { Match } from "@/types/sports";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { TrendingUp, Trophy } from "lucide-react";
+import { TrendingUp, Trophy, Chart } from "lucide-react";
 import { formatDistanceToNow, parseISO } from "date-fns";
 import LiveOdds from "./LiveOdds";
 import { SPORTSBOOK_LOGOS } from "@/utils/sportsbook";
@@ -36,6 +37,16 @@ const MatchCard = ({ match }: MatchCardProps) => {
   };
 
   const showOddsComparison = match.liveOdds && match.liveOdds.length > 0;
+
+  const hasSmartScore = match.smartScore !== undefined;
+  
+  const getSmartScoreBadgeColor = () => {
+    if (!match.smartScore) return "bg-gray-500";
+    if (match.smartScore.overall >= 80) return "bg-green-500";
+    if (match.smartScore.overall >= 60) return "bg-yellow-500";
+    if (match.smartScore.overall >= 40) return "bg-blue-500";
+    return "bg-red-500";
+  };
 
   return (
     <Card className="match-card overflow-hidden">
@@ -177,10 +188,20 @@ const MatchCard = ({ match }: MatchCardProps) => {
                 : "Draw"
             }
           </Badge>
-          <div className="flex items-center text-xs gap-1">
-            <TrendingUp className="h-3 w-3 text-green-500" />
-            <span>{match.prediction.confidence}% confidence</span>
-          </div>
+          
+          {hasSmartScore ? (
+            <Badge 
+              className={`flex items-center gap-1 ${getSmartScoreBadgeColor()}`}
+            >
+              <Chart className="h-3 w-3" />
+              <span>SmartScore {match.smartScore!.overall}</span>
+            </Badge>
+          ) : (
+            <div className="flex items-center text-xs gap-1">
+              <TrendingUp className="h-3 w-3 text-green-500" />
+              <span>{match.prediction.confidence}% confidence</span>
+            </div>
+          )}
         </div>
       </CardContent>
       {match.liveOdds && match.liveOdds.length > 0 && (

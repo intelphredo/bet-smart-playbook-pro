@@ -1,6 +1,6 @@
 
 import { Match } from "@/types/sports";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import ScheduleTable from "@/components/ScheduleTable";
 import ScheduleCard from "@/components/ScheduleCard";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import {
   PaginationItem,
   PaginationLink 
 } from "@/components/ui/pagination";
+import { applySmartScores } from "@/utils/smartScoreCalculator";
 
 interface SchedulesResultsProps {
   filteredMatches: Match[];
@@ -29,11 +30,17 @@ const SchedulesResults = ({
   itemsPerPage
 }: SchedulesResultsProps) => {
   const [currentPage, setCurrentPage] = useState(1);
+  const [processedMatches, setProcessedMatches] = useState<Match[]>([]);
 
-  const totalPages = Math.ceil(filteredMatches.length / itemsPerPage);
+  useEffect(() => {
+    // Apply smart scores to matches
+    setProcessedMatches(applySmartScores(filteredMatches));
+  }, [filteredMatches]);
+
+  const totalPages = Math.ceil(processedMatches.length / itemsPerPage);
   const paginatedMatches = (() => {
     const start = (currentPage - 1) * itemsPerPage;
-    return filteredMatches.slice(start, start + itemsPerPage);
+    return processedMatches.slice(start, start + itemsPerPage);
   })();
 
   return (
@@ -52,7 +59,7 @@ const SchedulesResults = ({
         </div>
       ) : (
         <>
-          {filteredMatches.length === 0 ? (
+          {processedMatches.length === 0 ? (
             <div className="text-center p-12 border rounded-lg">
               <p className="text-xl font-medium text-muted-foreground">No scheduled games found</p>
               <p className="text-sm text-muted-foreground mt-1">
@@ -71,8 +78,8 @@ const SchedulesResults = ({
               </div>
               <div className="flex items-center justify-between mt-4">
                 <p className="text-sm text-muted-foreground">
-                  Showing <span className="font-medium">{Math.min(filteredMatches.length, itemsPerPage)}</span> of{" "}
-                  <span className="font-medium">{filteredMatches.length}</span> games
+                  Showing <span className="font-medium">{Math.min(processedMatches.length, itemsPerPage)}</span> of{" "}
+                  <span className="font-medium">{processedMatches.length}</span> games
                 </p>
                 {totalPages > 1 && (
                   <Pagination>
