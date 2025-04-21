@@ -1,31 +1,64 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { algorithmPerformanceData } from "@/data/algorithmPerformanceData";
 import React, { useState, useMemo } from "react";
 import LeagueStatsModal from "./LeagueStatsModal";
 import { useESPNData } from "@/hooks/useESPNData";
-import { getTopTeamPicks } from "@/utils/topTeamPickRecommendation";
 import { Match } from "@/types/sports";
+import { algorithmPerformanceData } from "@/data/algorithmPerformanceData";
+
+// Determine if a prediction was correct
+function isPredictionCorrect(match: Match): boolean | null {
+  if (!match.prediction || !match.score) return null;
+  const { recommended } = match.prediction;
+  if (recommended === "home" && match.score.home > match.score.away) return true;
+  if (recommended === "away" && match.score.away > match.score.home) return true;
+  if (recommended === "draw" && match.score.home === match.score.away) return true;
+  return false;
+}
+
+// Get unique league names from algorithmPerformanceData for display order
+const leagueNames = algorithmPerformanceData.map((d) => d.name);
 
 const StatsOverview = () => {
-  const data = algorithmPerformanceData;
-
   // Modal state
   const [selectedLeague, setSelectedLeague] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
 
-  // Get all ESPN matches with predictions
-  const { upcomingMatches, liveMatches } = useESPNData({ league: "ALL", refreshInterval: 60000 });
+  // Get all ESPN matches (for league buttons) and finished matches (for stats)
+  const { finishedMatches, upcomingMatches, liveMatches } = useESPNData({ league: "ALL", refreshInterval: 60000 });
+
+  // Compute league win rates and pick counts by analyzing finishedMatches
+  const leagueStats = useMemo(() => {
+    // Map for each league: { name, picks, winRate }
+    const stats: Record<string, { name: string; picks: number; wins: number; winRate: number }> = {};
+
+    // Only consider finished matches that have a prediction and league property
+    for (const match of finishedMatches || []) {
+      if (!match.league || !match.prediction) continue;
+      const league = match.league;
+      if (!stats[league]) stats[league] = { name: league, picks: 0, wins: 0, winRate: 0 };
+      stats[league].picks += 1;
+      if (isPredictionCorrect(match)) stats[league].wins += 1;
+    }
+    // Convert to array and calculate win rate (%) per league
+    return leagueNames.map((name) => {
+      const stat = stats[name] || { name, picks: 0, wins: 0, winRate: 0 };
+      stat.winRate = stat.picks > 0 ? Math.round((stat.wins / stat.picks) * 100) : 0;
+      return stat;
+    });
+  }, [finishedMatches]);
+
+  // All matches with predictions (for LeagueStatsModal)
   const allMatchesWithPred: Match[] = useMemo(
     () =>
-      [...(upcomingMatches || []), ...(liveMatches || [])].filter(
+      [...(upcomingMatches || []), ...(liveMatches || []), ...(finishedMatches || [])].filter(
         (m) => !!m.prediction && typeof m.prediction.confidence === "number"
       ),
-    [upcomingMatches, liveMatches]
+    [upcomingMatches, liveMatches, finishedMatches]
   );
 
-  // Helper: get matches for a league
+  // Get matches by league for LeagueStatsModal
   const getLeagueMatches = (leagueName: string): Match[] =>
     allMatchesWithPred.filter(
       (m) => m.league.toUpperCase() === leagueName.toUpperCase()
@@ -34,7 +67,7 @@ const StatsOverview = () => {
   // Modal info
   const leagueMeta =
     selectedLeague &&
-    data.find(
+    leagueStats.find(
       (d) => d.name.toUpperCase() === selectedLeague.toUpperCase()
     );
 
@@ -47,7 +80,7 @@ const StatsOverview = () => {
         <div className="h-[250px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
-              data={data}
+              data={leagueStats}
               margin={{
                 top: 5,
                 right: 30,
@@ -57,7 +90,7 @@ const StatsOverview = () => {
             >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />
-              <YAxis domain={[50, 80]} />
+              <YAxis domain={[0, 100]} tickFormatter={v => `${v}%`} />
               <Tooltip
                 formatter={(value, name) => [`${value}%`, "Win Rate"]}
                 labelFormatter={(value) => `${value} League`}
@@ -67,13 +100,15 @@ const StatsOverview = () => {
                 fill="#ffd700"
                 className="fill-gold-500 dark:fill-gold-400"
                 radius={[4, 4, 0, 0]}
+                // Animate only when stats change so it's smooth
+                isAnimationActive={true}
               />
             </BarChart>
           </ResponsiveContainer>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-4">
-          {data.map((item) => (
+          {leagueStats.map((item) => (
             <button
               type="button"
               key={item.name}
@@ -85,10 +120,10 @@ const StatsOverview = () => {
               aria-label={`Show ${item.name} picks and data`}
             >
               <div className="text-2xl font-bold text-navy-500 dark:text-navy-200 underline">
-                {item.winRate}%
+                {item.winRate ? `${item.winRate}%` : "--"}
               </div>
               <div className="text-xs text-muted-foreground">
-                {item.name} | {item.picks} picks
+                {item.name} | {item.picks} pick{item.picks !== 1 ? "s" : ""}
               </div>
             </button>
           ))}
@@ -107,4 +142,3 @@ const StatsOverview = () => {
 };
 
 export default StatsOverview;
-
