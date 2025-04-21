@@ -1,3 +1,4 @@
+
 export type League = 'NBA' | 'NFL' | 'MLB' | 'NHL' | 'SOCCER';
 
 export type PropType = 'points' | 'assists' | 'rebounds' | 'touchdowns' | 'goals' | 'saves' | 'shots' | 'hits';
@@ -37,7 +38,7 @@ export interface Match {
       away: number;
     };
   };
-  status: 'scheduled' | 'live' | 'finished';
+  status: 'scheduled' | 'pre' | 'live' | 'finished';
   score?: {
     home: number;
     away: number;
