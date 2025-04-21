@@ -29,10 +29,29 @@ export function useESPNData({
     staleTime: refreshInterval,
   });
 
+  // Log raw data for debugging
+  console.log('ESPN raw data length:', data?.length || 0);
+  
   const { upcomingMatches, liveMatches, finishedMatches } = useMemo(() => {
-    const live = data?.filter(match => match.status === "live") || [];
-    const upcoming = data?.filter(match => match.status === "scheduled") || [];
-    const finished = data?.filter(match => match.status === "finished") || [];
+    // Ensure data is an array before filtering
+    if (!Array.isArray(data)) {
+      console.log('ESPN data is not an array');
+      return { upcomingMatches: [], liveMatches: [], finishedMatches: [] };
+    }
+    
+    // Log match statuses for debugging
+    const statuses = data.map(match => match.status);
+    console.log('ESPN match statuses:', new Set(statuses));
+    
+    const live = data.filter(match => match.status === "live") || [];
+    // Consider both "scheduled" and "pre" as upcoming matches
+    const upcoming = data.filter(match => match.status === "scheduled" || match.status === "pre") || [];
+    const finished = data.filter(match => match.status === "finished") || [];
+    
+    console.log('ESPN parsed upcoming:', upcoming.length);
+    console.log('ESPN parsed live:', live.length);
+    console.log('ESPN parsed finished:', finished.length);
+    
     return { upcomingMatches: upcoming, liveMatches: live, finishedMatches: finished };
   }, [data]);
 

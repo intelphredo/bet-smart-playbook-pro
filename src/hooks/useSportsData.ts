@@ -64,6 +64,10 @@ export function useSportsData({
     teamId
   });
   
+  // Log matches for debugging
+  console.log('ESPN upcoming matches:', espnUpcomingMatches.length);
+  console.log('MLB upcoming matches:', mlbUpcomingMatches.length);
+  
   // Determine which data set to use
   const baseMatches = dataSource === "ESPN" ? espnMatches : mlbMatches;
   const baseUpcomingMatches = dataSource === "ESPN" ? espnUpcomingMatches : mlbUpcomingMatches;

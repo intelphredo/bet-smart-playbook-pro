@@ -5,7 +5,7 @@ import SchedulesHeader from "@/components/schedules/SchedulesHeader";
 import SchedulesFilterControls from "@/components/schedules/SchedulesFilterControls";
 import SchedulesTabContent from "@/components/schedules/SchedulesTabContent";
 import { useSportsData } from "@/hooks/useSportsData";
-import { format, startOfDay, endOfDay, addDays, parseISO } from "date-fns";
+import { format, startOfDay, endOfDay, addDays, parseISO, isValid } from "date-fns";
 import { toast } from "sonner";
 
 const SchedulesPage = () => {
@@ -24,6 +24,9 @@ const SchedulesPage = () => {
   // Get sports data with forced refresh every minute
   const { 
     allMatches, 
+    upcomingMatches,
+    liveMatches,
+    finishedMatches,
     isLoading, 
     error, 
     refetchSchedule, 
@@ -36,6 +39,12 @@ const SchedulesPage = () => {
     defaultSource: dataSource,
     refreshInterval: 60000  // Force refresh every 60 seconds
   });
+
+  // Log data for debugging
+  console.log('Total matches:', allMatches.length);
+  console.log('Upcoming matches:', upcomingMatches.length);
+  console.log('Live matches:', liveMatches.length);
+  console.log('Finished matches:', finishedMatches.length);
 
   useEffect(() => {
     refetchSchedule();
@@ -54,6 +63,7 @@ const SchedulesPage = () => {
   const filteredMatches = (() => {
     let dateStart: Date;
     let dateEnd: Date;
+    
     if (showWeekGames) {
       dateStart = startOfDay(selectedDate);
       dateEnd = endOfDay(addDays(selectedDate, 6));
@@ -65,28 +75,56 @@ const SchedulesPage = () => {
       dateStart = startOfDay(selectedDate);
       dateEnd = endOfDay(selectedDate);
     }
+    
+    console.log('Date range:', dateStart, 'to', dateEnd);
 
-    return allMatches.filter(match => {
+    // Start with all matches and display upcoming by default
+    const matchesToFilter = [...allMatches, ...upcomingMatches];
+    const uniqueMatches = Array.from(new Set(matchesToFilter.map(m => m.id)))
+      .map(id => matchesToFilter.find(m => m.id === id))
+      .filter(Boolean) as typeof matchesToFilter;
+
+    return uniqueMatches.filter(match => {
       try {
+        // Check if startTime exists and is valid
+        if (!match.startTime) {
+          console.warn('Match has no startTime:', match.id);
+          return false;
+        }
+        
         const matchDate = parseISO(match.startTime);
+        
+        // Validate the parsed date
+        if (!isValid(matchDate)) {
+          console.warn('Invalid date parsed:', match.startTime);
+          return false;
+        }
+        
         const isInDateRange = matchDate >= dateStart && matchDate <= dateEnd;
+        
+        // Search query filter
         const searchLower = searchQuery.toLowerCase();
         const matchesSearch = searchQuery === "" || 
           match.homeTeam.name.toLowerCase().includes(searchLower) ||
           match.awayTeam.name.toLowerCase().includes(searchLower);
 
+        // FanDuel odds filter
         let hasFanDuelOdds = true;
         if (showFanDuelOddsOnly) {
           hasFanDuelOdds = match.liveOdds && 
                           match.liveOdds.some(odd => 
                             odd.sportsbook.name.toLowerCase() === "fanduel");
         }
+        
         return isInDateRange && matchesSearch && hasFanDuelOdds;
       } catch (e) {
+        console.error('Error filtering match:', e);
         return false;
       }
     });
   })();
+  
+  console.log('Filtered matches:', filteredMatches.length);
 
   // For autocomplete suggestions
   const allMatchesForAutocomplete = allMatches || [];
@@ -143,14 +181,17 @@ const SchedulesPage = () => {
   const handleShowToday = () => {
     setShowTomorrowGames(false);
     setShowWeekGames(false);
+    setTimeout(refetchSchedule, 100);
   };
   const handleShowTomorrow = () => {
     setShowTomorrowGames(true);
     setShowWeekGames(false);
+    setTimeout(refetchSchedule, 100);
   };
   const handleShowWeek = () => {
     setShowWeekGames(true);
     setShowTomorrowGames(false);
+    setTimeout(refetchSchedule, 100);
   };
   const toggleFanDuelOddsFilter = () => {
     setShowFanDuelOddsOnly(prev => !prev);

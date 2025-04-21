@@ -71,12 +71,31 @@ export function useMLBData({
     enabled: includeStandings,
   });
 
+  // Log raw data for debugging
+  console.log('MLB raw schedule data length:', scheduleData?.length || 0);
+
   // Process the schedule data
   const { upcomingMatches, liveMatches, finishedMatches } = useMemo(() => {
+    // Ensure data is an array before filtering
+    if (!Array.isArray(scheduleData)) {
+      console.log('MLB data is not an array');
+      return { upcomingMatches: [], liveMatches: [], finishedMatches: [] };
+    }
+    
+    // Log match statuses for debugging
+    const statuses = scheduleData.map(match => match.status);
+    console.log('MLB match statuses:', new Set(statuses));
+    
     const matches = scheduleData || [];
     const live = matches.filter(match => match.status === "live") || [];
-    const upcoming = matches.filter(match => match.status === "scheduled") || [];
+    // Consider both "scheduled" and "pre" as upcoming matches
+    const upcoming = matches.filter(match => match.status === "scheduled" || match.status === "pre") || [];
     const finished = matches.filter(match => match.status === "finished") || [];
+    
+    console.log('MLB parsed upcoming:', upcoming.length);
+    console.log('MLB parsed live:', live.length);
+    console.log('MLB parsed finished:', finished.length);
+    
     return { upcomingMatches: upcoming, liveMatches: live, finishedMatches: finished };
   }, [scheduleData]);
 
