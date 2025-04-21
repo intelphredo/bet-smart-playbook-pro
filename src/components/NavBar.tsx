@@ -1,8 +1,9 @@
 
 import { useState, useEffect } from 'react';
+import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { Search, LogIn, UserPlus } from "lucide-react";
+import { Search, LogIn, UserPlus, Home } from "lucide-react";
 import { ModeToggle } from "./ModeToggle";
 import { 
   Dialog,
@@ -106,7 +107,12 @@ const NavBar = () => {
 
   return (
     <div className="border-b flex items-center justify-between px-4 h-16">
+      {/* Home Button at the left */}
       <div className="flex items-center space-x-2">
+        <Link to="/" className="mr-2 flex items-center hover:bg-accent rounded-md p-2 transition">
+          <Home className="h-6 w-6 text-navy-500 dark:text-navy-200" aria-label="Home" />
+          <span className="sr-only">Go to main screen</span>
+        </Link>
         <div className="font-bold text-2xl text-navy-500 flex items-center">
           <span className="mr-1 text-gold-500">Bet</span>Smart
         </div>
@@ -255,3 +261,4 @@ const NavBar = () => {
 };
 
 export default NavBar;
+
