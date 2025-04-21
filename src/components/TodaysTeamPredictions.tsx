@@ -1,12 +1,13 @@
 
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { useESPNData } from "@/hooks/useESPNData";
 import { Match } from "@/types/sports";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
-import { format, isToday, parseISO } from "date-fns";
+import { format, isToday, parseISO, addDays, isBefore, isAfter } from "date-fns";
+import { Button } from "./ui/button";
 
 /**
- * TodaysTeamPredictions - Displays a table of all matches happening today with their predictions.
+ * TodaysTeamPredictions - Displays a table of all matches happening today and upcoming week with their predictions.
  * You can reuse this component on any page: <TodaysTeamPredictions />
  */
 
@@ -19,52 +20,113 @@ function getPredictionDescription(match: Match) {
   return "-";
 }
 
-function isMatchToday(match: Match) {
-  // Some sources use either "scheduled" or "pre" for future games
+function isMatchInDateRange(match: Match, startDate: Date, endDate: Date) {
   try {
-    return isToday(parseISO(match.startTime));
+    const matchDate = parseISO(match.startTime);
+    return isAfter(matchDate, startDate) && isBefore(matchDate, endDate);
   } catch {
     return false;
   }
 }
 
 const TodaysTeamPredictions = () => {
-  const { allMatches, isLoading, error } = useESPNData({ league: "ALL", refreshInterval: 60000 });
+  const [showUpcomingWeek, setShowUpcomingWeek] = useState(true);
+  const { allMatches, isLoading, error } = useESPNData({ 
+    league: "ALL", 
+    refreshInterval: 60000,
+    includeSchedule: true 
+  });
 
-  // Get only today's matches
-  const todaysMatches: Match[] = useMemo(() => {
+  // Get today's and upcoming week's matches
+  const filteredMatches: Match[] = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const oneWeekLater = addDays(today, 7);
+    oneWeekLater.setHours(23, 59, 59, 999);
+    
     return (allMatches || [])
-      .filter(m => isMatchToday(m) && m.prediction)
+      .filter(m => {
+        if (showUpcomingWeek) {
+          // Show matches for the next 7 days
+          return isMatchInDateRange(m, today, oneWeekLater) && m.prediction;
+        } else {
+          // Show only today's matches
+          return isToday(parseISO(m.startTime)) && m.prediction;
+        }
+      })
       .sort((a, b) => (a.startTime > b.startTime ? 1 : -1)); // earliest first
-  }, [allMatches]);
+  }, [allMatches, showUpcomingWeek]);
+
+  const formatDate = (dateString: string) => {
+    try {
+      const date = parseISO(dateString);
+      return isToday(date) ? `Today, ${format(date, "h:mm a")}` : format(date, "EEE, MMM d, h:mm a");
+    } catch {
+      return dateString;
+    }
+  };
 
   if (isLoading) return <div>Loading predictions...</div>;
   if (error) return <div className="text-red-500">Error loading predictions</div>;
-  if (!todaysMatches.length) return <div>No team predictions for today yet.</div>;
+  if (!filteredMatches.length) return (
+    <div>
+      <h2 className="text-xl font-bold mb-2">{showUpcomingWeek ? "This Week's" : "Today's"} Team Predictions</h2>
+      <div className="flex gap-2 mb-4">
+        <Button 
+          variant={!showUpcomingWeek ? "default" : "outline"} 
+          onClick={() => setShowUpcomingWeek(false)}
+        >
+          Today Only
+        </Button>
+        <Button 
+          variant={showUpcomingWeek ? "default" : "outline"} 
+          onClick={() => setShowUpcomingWeek(true)}
+        >
+          Upcoming Week
+        </Button>
+      </div>
+      <div>No team predictions {showUpcomingWeek ? "for the upcoming week" : "for today"} yet.</div>
+    </div>
+  );
 
   return (
     <div className="overflow-x-auto mt-4">
-      <h2 className="text-xl font-bold mb-2">Today's Team Predictions</h2>
+      <h2 className="text-xl font-bold mb-2">{showUpcomingWeek ? "This Week's" : "Today's"} Team Predictions</h2>
+      <div className="flex gap-2 mb-4">
+        <Button 
+          variant={!showUpcomingWeek ? "default" : "outline"} 
+          onClick={() => setShowUpcomingWeek(false)}
+        >
+          Today Only
+        </Button>
+        <Button 
+          variant={showUpcomingWeek ? "default" : "outline"} 
+          onClick={() => setShowUpcomingWeek(true)}
+        >
+          Upcoming Week
+        </Button>
+      </div>
       <Table>
         <TableHeader>
           <TableRow>
             <TableHead>League</TableHead>
             <TableHead>Match</TableHead>
-            <TableHead>Start Time</TableHead>
+            <TableHead>Date & Time</TableHead>
             <TableHead>Prediction</TableHead>
             <TableHead>Confidence</TableHead>
             <TableHead>Projected Score</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {todaysMatches.map(match => (
+          {filteredMatches.map(match => (
             <TableRow key={match.id}>
               <TableCell>{match.league}</TableCell>
               <TableCell>
                 {match.homeTeam.shortName} vs {match.awayTeam.shortName}
               </TableCell>
               <TableCell>
-                {format(parseISO(match.startTime), "h:mm a")}
+                {formatDate(match.startTime)}
               </TableCell>
               <TableCell>
                 {getPredictionDescription(match)}
@@ -86,4 +148,3 @@ const TodaysTeamPredictions = () => {
 };
 
 export default TodaysTeamPredictions;
-
