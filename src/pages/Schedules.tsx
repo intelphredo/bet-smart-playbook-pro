@@ -48,6 +48,7 @@ const Schedules = () => {
   const { allMatches, isLoading, error, refetch } = useESPNData({
     league: selectedLeague,
     refreshInterval: 300000, // Every 5 minutes
+    includeSchedule: true, // Ensure we're getting the full schedule data
   });
 
   const navigateDate = (direction: 'prev' | 'next') => {
@@ -61,6 +62,32 @@ const Schedules = () => {
       else setCurrentDate(addDays(currentDate, 30));
     }
     setCurrentPage(1); // Reset to first page when changing dates
+  };
+
+  // Function to navigate to a specific date
+  const goToDate = (date: Date) => {
+    setCurrentDate(date);
+    setCurrentPage(1);
+  };
+
+  // Function to go to tomorrow
+  const goToTomorrow = () => {
+    const tomorrow = addDays(new Date(), 1);
+    setCurrentDate(tomorrow);
+    setCurrentView('day');
+    setCurrentPage(1);
+    toast({
+      title: "Showing tomorrow's schedule",
+      description: `Games for ${format(tomorrow, 'MMMM d, yyyy')}`,
+    });
+  };
+
+  // Function to go to today
+  const goToToday = () => {
+    const today = new Date();
+    setCurrentDate(today);
+    setCurrentView('day');
+    setCurrentPage(1);
   };
 
   const allTeams = useMemo(() => {
@@ -158,10 +185,25 @@ const Schedules = () => {
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
-                <div className="text-xl font-semibold">{getDateRangeLabel()}</div>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="min-w-[180px] justify-start">
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {getDateRangeLabel()}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={currentDate}
+                      onSelect={(date) => date && goToDate(date)}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
                 <Button
                   variant="outline"
-                  size="icon" 
+                  size="icon"
                   onClick={() => navigateDate('next')}
                   aria-label="Next date range"
                 >
@@ -169,6 +211,20 @@ const Schedules = () => {
                 </Button>
               </div>
               <div className="flex flex-wrap gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={goToToday}
+                  size="sm"
+                >
+                  Today
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={goToTomorrow}
+                  size="sm"
+                >
+                  Tomorrow
+                </Button>
                 <Button 
                   variant={currentView === 'day' ? "default" : "outline"}
                   onClick={() => setCurrentView('day')}
