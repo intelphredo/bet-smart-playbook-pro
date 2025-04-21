@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -21,6 +20,7 @@ const SchedulesPage = () => {
   const [isAutocompleteOpen, setIsAutocompleteOpen] = useState(false);
   const searchInputRef = React.useRef<HTMLInputElement>(null);
   const [showTomorrowGames, setShowTomorrowGames] = useState(false);
+  const [showWeekGames, setShowWeekGames] = useState(false);
   const [showFanDuelOddsOnly, setShowFanDuelOddsOnly] = useState(false);
 
   // Get sports data
@@ -45,17 +45,24 @@ const SchedulesPage = () => {
   
   // Filter matches by date, search query, and FanDuel odds
   const filteredMatches = (() => {
-    // Determine which date to use based on the toggle
-    const dateToUse = showTomorrowGames ? addDays(selectedDate, 1) : selectedDate;
-    const startDate = startOfDay(dateToUse);
-    const endDate = endOfDay(dateToUse);
-    
+    let dateStart: Date;
+    let dateEnd: Date;
+    if (showWeekGames) {
+      dateStart = startOfDay(selectedDate);
+      dateEnd = endOfDay(addDays(selectedDate, 6)); // Next 7 days including today
+    } else if (showTomorrowGames) {
+      const dateToUse = addDays(selectedDate, 1);
+      dateStart = startOfDay(dateToUse);
+      dateEnd = endOfDay(dateToUse);
+    } else {
+      dateStart = startOfDay(selectedDate);
+      dateEnd = endOfDay(selectedDate);
+    }
     return allMatches.filter(match => {
       try {
         // Filter by date
         const matchDate = parseISO(match.startTime);
-        const isInDateRange = matchDate >= startDate && matchDate <= endDate;
-        
+        const isInDateRange = matchDate >= dateStart && matchDate <= dateEnd;
         // Filter by search query
         const searchLower = searchQuery.toLowerCase();
         const matchesSearch = searchQuery === "" || 
@@ -66,14 +73,13 @@ const SchedulesPage = () => {
         const hasFanDuelOdds = !showFanDuelOddsOnly || 
           (match.liveOdds && match.liveOdds.some(odd => 
             odd.sportsbook.name.toLowerCase() === "fanduel"));
-        
         return isInDateRange && matchesSearch && hasFanDuelOdds;
       } catch {
         return false;
       }
     });
   })();
-  
+
   // Get a list of all matches for team suggestion
   const allMatchesForAutocomplete = allMatches || [];
 
@@ -99,25 +105,52 @@ const SchedulesPage = () => {
     setTimeout(() => setIsAutocompleteOpen(false), 120);
   };
 
-  // Format the date for display
-  const formattedDate = format(
-    showTomorrowGames ? addDays(selectedDate, 1) : selectedDate,
-    "EEEE, MMMM d, yyyy"
-  );
-  
-  // Navigation to previous/next dates
-  const goToPreviousDay = () => setSelectedDate(prev => addDays(prev, -1));
-  const goToNextDay = () => setSelectedDate(prev => addDays(prev, 1));
+  // Format the date for display (today, tomorrow, week)
+  let formattedDate;
+  if (showWeekGames) {
+    formattedDate = `${format(selectedDate, "EEE, MMM d")} – ${format(addDays(selectedDate, 6), "EEE, MMM d, yyyy")}`;
+  } else {
+    formattedDate = format(
+      showTomorrowGames ? addDays(selectedDate, 1) : selectedDate,
+      "EEEE, MMMM d, yyyy"
+    );
+  }
+
+  // Navigation to previous/next dates (disable or adjust when filtering by week)
+  const goToPreviousDay = () => {
+    if (showWeekGames) {
+      setSelectedDate(prev => addDays(prev, -7));
+    } else {
+      setSelectedDate(prev => addDays(prev, -1));
+    }
+  };
+  const goToNextDay = () => {
+    if (showWeekGames) {
+      setSelectedDate(prev => addDays(prev, 7));
+    } else {
+      setSelectedDate(prev => addDays(prev, 1));
+    }
+  };
   const goToToday = () => {
     setSelectedDate(new Date());
     setShowTomorrowGames(false);
+    setShowWeekGames(false);
   };
 
-  // Toggle between today and tomorrow
-  const toggleTomorrowGames = () => {
-    setShowTomorrowGames(prev => !prev);
+  // Toggle between today, tomorrow, week
+  const handleShowToday = () => {
+    setShowTomorrowGames(false);
+    setShowWeekGames(false);
   };
-  
+  const handleShowTomorrow = () => {
+    setShowTomorrowGames(true);
+    setShowWeekGames(false);
+  };
+  const handleShowWeek = () => {
+    setShowWeekGames(true);
+    setShowTomorrowGames(false);
+  };
+
   return (
     <div className="container py-6 max-w-7xl">
       <SchedulesHeader 
@@ -157,20 +190,27 @@ const SchedulesPage = () => {
       </div>
       
       <div className="mt-4 flex justify-between items-center max-w-md mx-auto">
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Button 
-            variant={!showTomorrowGames ? "default" : "outline"}
+            variant={!showTomorrowGames && !showWeekGames ? "default" : "outline"}
             size="sm"
-            onClick={() => setShowTomorrowGames(false)}
+            onClick={handleShowToday}
           >
             Today's Games
           </Button>
           <Button 
             variant={showTomorrowGames ? "default" : "outline"}
             size="sm"
-            onClick={() => setShowTomorrowGames(true)}
+            onClick={handleShowTomorrow}
           >
             Tomorrow's Games
+          </Button>
+          <Button
+            variant={showWeekGames ? "default" : "outline"}
+            size="sm"
+            onClick={handleShowWeek}
+          >
+            This Week's Games
           </Button>
         </div>
         <Button 
