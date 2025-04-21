@@ -274,13 +274,45 @@ const LiveESPNSection = ({
                       </span>
                       <span className="text-xs text-muted-foreground ml-2">{match.prediction?.confidence}%</span>
                     </div>
-                    {/* Reasoning Section */}
-                    {match.smartScore?.recommendation?.reasoning && (
-                      <div className="mt-2 text-xs text-muted-foreground italic pl-1">
-                        <span className="font-semibold text-navy-600 dark:text-navy-200">Reason: </span>
-                        {match.smartScore.recommendation.reasoning}
-                      </div>
-                    )}
+                    {/* Prediction Reasoning & Outcome Feedback */}
+                    <div className="mt-2 text-xs text-muted-foreground italic pl-1 space-y-0.5">
+                      {match.smartScore?.recommendation?.reasoning ? (
+                        <div>
+                          <span className="font-semibold text-navy-600 dark:text-navy-200">
+                            Reason:{" "}
+                          </span>
+                          {match.smartScore.recommendation.reasoning}
+                        </div>
+                      ) : match.prediction?.recommended ? (
+                        <div>
+                          <span className="font-semibold text-navy-600 dark:text-navy-200">
+                            Reason:{" "}
+                          </span>
+                          Prediction based on statistical edge from available match data.
+                        </div>
+                      ) : null}
+                      {isPredictionCorrect(match) === true && (
+                        <div>
+                          <span className="font-semibold text-green-700 dark:text-green-400">
+                            Why Correct?{" "}
+                          </span>
+                          {match.smartScore?.recommendation?.reasoning
+                            ? match.smartScore.recommendation.reasoning
+                            : "The prediction aligned well with the actual outcome based on the assessed factors."}
+                        </div>
+                      )}
+                      {isPredictionCorrect(match) === false && (
+                        <div>
+                          <span className="font-semibold text-red-700 dark:text-red-400">
+                            Why Incorrect?{" "}
+                          </span>
+                          {match.smartScore?.recommendation?.reasoning
+                            ? match.smartScore.recommendation.reasoning +
+                              " However, unforeseen game events led to a different result."
+                            : "Despite the model's analysis, unexpected outcomes affected the pick."}
+                        </div>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
               ))}
