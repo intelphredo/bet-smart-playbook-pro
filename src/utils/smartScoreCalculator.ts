@@ -7,8 +7,9 @@ import { calculateWeatherImpact } from "./smartScore/weatherFactors";
 import { calculateInjuryImpact } from "./smartScore/injuryFactors";
 import { calculateArbitrageImpact, hasArbitrageOpportunity } from "./smartScore/arbitrageFactors";
 import { generateSmartScoreRecommendation } from "./smartScoreRecommendation";
+import { applyPredictionValidation } from "./predictionValidator";
 
-// Add arbitrage to our weight factors
+// Updated weight factors with more balanced weights
 const WEIGHT_FACTORS = {
   MOMENTUM: 0.20,
   VALUE: 0.20,
@@ -74,9 +75,14 @@ export function calculateSmartScore(match: Match) {
 }
 
 // Update the applySmartScores function to enhance matches with smart scores
+// and validate predictions for bias detection
 export function applySmartScores(matches: Match[]): Match[] {
-  return matches.map(match => ({
+  // First, apply Smart Scores to all matches
+  const scoredMatches = matches.map(match => ({
     ...match,
     smartScore: calculateSmartScore(match),
   }));
+  
+  // Then, validate predictions for bias detection
+  return applyPredictionValidation(scoredMatches);
 }

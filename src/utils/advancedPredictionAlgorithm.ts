@@ -39,35 +39,37 @@ export function generateAdvancedPrediction(
   const homeTeamStrength = calculateTeamStrength(homeTeam, match.league);
   const awayTeamStrength = calculateTeamStrength(awayTeam, match.league);
   
-  // Base confidence calculation
-  let confidence = 50; // start neutral
+  // Base confidence calculation - START NEUTRAL at 50 (removed home team bias)
+  let confidence = 50;
   
   // Factor 1: Team strength difference
   const strengthDifference = homeTeamStrength.offense + homeTeamStrength.defense - 
                             awayTeamStrength.offense - awayTeamStrength.defense;
-  confidence += strengthDifference * 0.2; // weight the strength difference
+  confidence += strengthDifference * 0.25; // Increased weight for team strength
   
-  // Factor 2: Home field advantage (varies by league)
-  const homeAdvantage = getHomeAdvantage(match.league);
+  // Factor 2: Dynamic home field advantage (varies by league and team performance)
+  const homeAdvantage = getDynamicHomeAdvantage(match.league, homeTeam);
   confidence += homeAdvantage;
   
-  // Factor 3: Historical matchup data (if available)
+  // Factor 3: Historical matchup data (if available) - increased weight
   if (historicalData && historicalData.totalGames > 0) {
     const homeWinPct = historicalData.homeWins / historicalData.totalGames;
-    confidence += (homeWinPct * 100 - 50) * 0.15; // adjust confidence based on historical data
+    confidence += (homeWinPct * 100 - 50) * 0.25; // Increased weight for head-to-head
   }
   
-  // Factor 4: Momentum
-  confidence += (homeTeamStrength.momentum - awayTeamStrength.momentum) * 0.15;
+  // Factor 4: Momentum - incorporate recent form more heavily
+  const homeTeamMomentum = calculateMomentumScore(homeTeam);
+  const awayTeamMomentum = calculateMomentumScore(awayTeam);
+  confidence += (homeTeamMomentum - awayTeamMomentum) * 0.20;
   
-  // Determine recommended bet
+  // Determine recommended bet based on NEUTRAL stance
   const homeTeamFavored = confidence >= 50;
   const recommended = homeTeamFavored ? "home" : "away";
   
   // Adjust confidence to be within reasonable bounds
   confidence = Math.max(40, Math.min(85, Math.abs(confidence)));
   
-  // Project scores based on team strengths
+  // Project scores based on team strengths - balanced for both teams
   const projectedHomeScore = projectScore(homeTeamStrength, awayTeamStrength, true, match.league);
   const projectedAwayScore = projectScore(awayTeamStrength, homeTeamStrength, false, match.league);
   
@@ -85,8 +87,30 @@ export function generateAdvancedPrediction(
 }
 
 /**
+ * Calculate momentum score based on recent form
+ */
+function calculateMomentumScore(team: Team): number {
+  if (!team.recentForm || team.recentForm.length === 0) {
+    return 0;
+  }
+  
+  // Weight recent games more heavily
+  let momentumScore = 0;
+  const recentGames = [...team.recentForm].slice(0, Math.min(5, team.recentForm.length));
+  
+  // Give more weight to most recent games
+  recentGames.forEach((result, index) => {
+    const gameWeight = (recentGames.length - index) / recentGames.length; // More recent games have higher weight
+    momentumScore += result === 'W' ? (3 * gameWeight) : (-2 * gameWeight);
+  });
+  
+  return momentumScore;
+}
+
+/**
  * MLB-specific prediction algorithm
  * Emphasizes pitching matchups, statistical trends, and run differential
+ * Removes the home team bias
  */
 function generateMLBPrediction(
   match: Match,
@@ -104,36 +128,35 @@ function generateMLBPrediction(
   const homeRunDiff = calculateRunDifferential(homeRecord);
   const awayRunDiff = calculateRunDifferential(awayRecord);
   
-  // Start with baseline confidence slightly favoring home team (MLB home advantage is smaller)
-  let confidence = 51;
+  // Start with true neutral confidence (no home team bias)
+  let confidence = 50;
   
   // Factor 1: Team record strength (35% weight)
   if (homeRecord.games > 0 && awayRecord.games > 0) {
     const homeWinPct = homeRecord.wins / homeRecord.games;
     const awayWinPct = awayRecord.wins / awayRecord.games;
-    confidence += (homeWinPct - awayWinPct) * 20;
+    confidence += (homeWinPct - awayWinPct) * 25; // Balanced weighting
   }
   
   // Factor 2: Run differential (30% weight)
-  confidence += (homeRunDiff - awayRunDiff) * 0.1;
+  confidence += (homeRunDiff - awayRunDiff) * 0.15; // Balanced weighting
   
-  // Factor 3: Recent form (25% weight)
-  if (homeTeam.recentForm && awayTeam.recentForm) {
-    const homeRecentWins = calculateRecentWins(homeTeam.recentForm);
-    const awayRecentWins = calculateRecentWins(awayTeam.recentForm);
-    confidence += (homeRecentWins - awayRecentWins) * 5;
+  // Factor 3: Recent form - weighted by recency (25% weight)
+  const homeRecentForm = calculateWeightedRecentForm(homeTeam);
+  const awayRecentForm = calculateWeightedRecentForm(awayTeam);
+  confidence += (homeRecentForm - awayRecentForm) * 5;
+  
+  // Factor 4: Head-to-head history if available (15% weight)
+  if (historicalData && historicalData.totalGames > 2) {
+    const headToHeadAdvantage = (historicalData.homeWins / historicalData.totalGames) - 0.5;
+    confidence += headToHeadAdvantage * 15; // Give decent weight to head-to-head
   }
   
-  // Factor 4: Randomness factor for baseball (10% weight)
-  // Baseball has higher game-to-game variance than other sports
-  confidence += (Math.random() * 6) - 3;
+  // Factor 5: Small MLB home field advantage (much smaller than before)
+  confidence += 1.0; // Reduced from previous higher values
   
-  // Factor 5: Home field advantage (smaller in MLB)
-  confidence += 1.5;
-  
-  // Adjust confidence to more realistic MLB prediction ranges
-  // MLB has higher variance, so confidence should be more tempered
-  confidence = (confidence - 50) * 0.85 + 50;
+  // Factor 6: Randomness factor - baseball has high variance
+  confidence += (Math.random() * 4) - 2; // Small random factor to prevent ties
   
   // Determine recommended bet
   const homeTeamFavored = confidence >= 50;
@@ -142,13 +165,17 @@ function generateMLBPrediction(
   // Clamp confidence to reasonable values
   confidence = Math.max(45, Math.min(75, confidence));
   
-  // Project realistic baseball scores
-  const baseRunsHome = 4.2 + (homeRunDiff / 100);
-  const baseRunsAway = 4.0 + (awayRunDiff / 100);
+  // Project realistic baseball scores with no home team bias
+  const baseRuns = 4.1; // Neutral average (not favoring home team)
+  const homeRunFactor = homeRunDiff / 100;
+  const awayRunFactor = awayRunDiff / 100;
   
   const varianceFactor = 0.7; // baseball has high variance
-  const projectedHomeScore = Math.max(0, Math.round(baseRunsHome + (Math.random() * varianceFactor * 2 - varianceFactor)));
-  const projectedAwayScore = Math.max(0, Math.round(baseRunsAway + (Math.random() * varianceFactor * 2 - varianceFactor)));
+  const homeNoise = (Math.random() * varianceFactor * 2 - varianceFactor);
+  const awayNoise = (Math.random() * varianceFactor * 2 - varianceFactor);
+  
+  const projectedHomeScore = Math.max(0, Math.round(baseRuns + homeRunFactor + homeNoise));
+  const projectedAwayScore = Math.max(0, Math.round(baseRuns + awayRunFactor + awayNoise));
   
   // Update match prediction
   enhancedMatch.prediction = {
@@ -161,6 +188,26 @@ function generateMLBPrediction(
   };
   
   return enhancedMatch;
+}
+
+/**
+ * Calculate weighted recent form that emphasizes more recent games
+ */
+function calculateWeightedRecentForm(team: Team): number {
+  if (!team.recentForm || team.recentForm.length === 0) {
+    return 0;
+  }
+  
+  let weightedScore = 0;
+  const recentGames = [...team.recentForm].slice(0, Math.min(5, team.recentForm.length));
+  
+  // Give more weight to most recent games
+  recentGames.forEach((result, index) => {
+    const gameWeight = (recentGames.length - index) / recentGames.length;
+    weightedScore += result === 'W' ? gameWeight : -gameWeight;
+  });
+  
+  return weightedScore;
 }
 
 /**
@@ -220,13 +267,20 @@ function calculateTeamStrength(team: Team, league: League): TeamStrength {
     }
   }
   
-  // Adjust based on recent form if available
+  // Adjust based on recent form if available - with stronger emphasis
   if (team.recentForm && team.recentForm.length > 0) {
-    const recentWins = team.recentForm.filter(r => r === 'W').length;
-    const recentGames = team.recentForm.length;
-    const recentWinPct = recentWins / recentGames;
+    let recentWins = 0;
+    let weightSum = 0;
     
-    momentum += (recentWinPct * 100 - 50) * 0.8;
+    // Weight recent games more heavily
+    team.recentForm.forEach((result, index) => {
+      const weight = team.recentForm.length - index; // More recent games have higher weight
+      if (result === 'W') recentWins += weight;
+      weightSum += weight;
+    });
+    
+    const weightedWinPct = weightSum > 0 ? recentWins / weightSum : 0.5;
+    momentum += (weightedWinPct * 100 - 50) * 1.0; // Stronger emphasis on momentum
   }
   
   // Make sure values are within bounds
@@ -238,21 +292,41 @@ function calculateTeamStrength(team: Team, league: League): TeamStrength {
 }
 
 /**
- * Get home field advantage factor based on league
+ * Get dynamic home field advantage based on league and team performance
  */
-function getHomeAdvantage(league: League): number {
+function getDynamicHomeAdvantage(league: League, team: Team): number {
+  let baseAdvantage;
+  
+  // Base advantage by league
   switch (league) {
-    case 'NFL': return 3.5;  // NFL home advantage is significant
-    case 'NBA': return 3.0;  // NBA has moderate home advantage
-    case 'MLB': return 2.0;  // MLB has lower home advantage
-    case 'NHL': return 2.5;  // NHL has moderate home advantage
-    case 'SOCCER': return 4.0; // Soccer has significant home advantage
-    default: return 3.0;
+    case 'NFL': baseAdvantage = 2.5; // Reduced from previous value
+    case 'NBA': baseAdvantage = 2.0; // Reduced from previous value
+    case 'MLB': baseAdvantage = 1.0; // Significantly reduced from previous value
+    case 'NHL': baseAdvantage = 1.8; // Reduced from previous value
+    case 'SOCCER': baseAdvantage = 3.0; // Reduced from previous value
+    default: baseAdvantage = 2.0;
   }
+  
+  // Adjust based on team's home performance if available
+  // This would ideally use home/away split records, but we'll use recent form as proxy
+  if (team.recentForm && team.recentForm.length >= 3) {
+    const recentWins = calculateRecentWins(team.recentForm);
+    const recentWinPct = recentWins / team.recentForm.length;
+    
+    // Teams that have been winning get less home field advantage (already accounted for in their strength)
+    // Teams that have been losing get more home field advantage (regression to mean)
+    if (recentWinPct > 0.6) {
+      baseAdvantage *= 0.8; // Reduce HFA for hot teams
+    } else if (recentWinPct < 0.4) {
+      baseAdvantage *= 1.2; // Increase HFA for cold teams
+    }
+  }
+  
+  return baseAdvantage;
 }
 
 /**
- * Project score based on team strengths
+ * Project score based on team strengths - balanced approach
  */
 function projectScore(
   teamStrength: TeamStrength, 
@@ -265,7 +339,7 @@ function projectScore(
   switch (league) {
     case 'NBA': baseScore = 105; break; // Average NBA team score
     case 'NFL': baseScore = 24; break;  // Average NFL team score
-    case 'MLB': baseScore = 4.5; break; // Average MLB team score
+    case 'MLB': baseScore = 4.1; break; // Average MLB team score - slightly reduced
     case 'NHL': baseScore = 3; break;   // Average NHL team score
     case 'SOCCER': baseScore = 1.3; break; // Average soccer team score
     default: baseScore = 10;
@@ -274,14 +348,16 @@ function projectScore(
   // Calculate offensive vs defensive strength
   const offenseDefenseFactor = (teamStrength.offense - opponentStrength.defense) / 100;
   
-  // Add home advantage if applicable
-  const homeAdvantage = isHome ? getHomeAdvantage(league) / 10 : 0;
+  // Add home advantage if applicable - reduced impact
+  const homeAdvantage = isHome ? (getDynamicHomeAdvantage(league, { id: "", name: "", shortName: "" }) / 20) : 0;
   
-  // Calculate projected score
+  // Calculate projected score - fairly between teams
   let rawScore = baseScore * (1 + offenseDefenseFactor + homeAdvantage);
   
-  // Add some randomness
-  rawScore *= (1 + (Math.random() * 0.1 - 0.05));
+  // Add some randomness - give both teams similar randomness
+  const randomSeed = Date.now() + (isHome ? 1 : 0);
+  const pseudoRandom = Math.sin(randomSeed) * 0.5 + 0.5; // Generate value between 0-1
+  rawScore *= (0.95 + (pseudoRandom * 0.1)); // +/- 5% randomness
   
   // Round to appropriate precision based on league
   if (league === 'MLB' || league === 'NHL' || league === 'SOCCER') {
