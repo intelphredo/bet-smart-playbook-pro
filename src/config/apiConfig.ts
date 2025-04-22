@@ -1,10 +1,9 @@
-
 // API Configuration for sports data providers
 
 export const API_CONFIGS = {
   SPORTRADAR: {
     BASE_URL: 'https://api.sportradar.com/v1',
-    API_KEY: process.env.SPORTRADAR_API_KEY || 'your-api-key-here',
+    API_KEY: import.meta.env.VITE_SPORTRADAR_API_KEY || 'your-api-key-here',
     ENDPOINTS: {
       NFL: '/nfl/official/trial/v8/en/games/{{year}}/{{month}}/{{day}}/schedule.json',
       NBA: '/nba/trial/v8/en/games/{{year}}/{{month}}/{{day}}/schedule.json',
@@ -15,7 +14,7 @@ export const API_CONFIGS = {
   },
   ODDS_API: {
     BASE_URL: 'https://api.the-odds-api.com/v4',
-    API_KEY: process.env.ODDS_API_KEY || 'your-api-key-here',
+    API_KEY: import.meta.env.VITE_ODDS_API_KEY || 'your-api-key-here',
     ENDPOINTS: {
       ODDS: '/sports/{{sport}}/odds',
       SCORES: '/sports/{{sport}}/scores'
@@ -23,8 +22,8 @@ export const API_CONFIGS = {
   },
   BETFAIR: {
     BASE_URL: 'https://api.betfair.com/exchange/betting/rest/v1',
-    API_KEY: process.env.BETFAIR_API_KEY || 'your-api-key-here',
-    SESSION_TOKEN: process.env.BETFAIR_SESSION_TOKEN || '',
+    API_KEY: import.meta.env.VITE_BETFAIR_API_KEY || 'your-api-key-here',
+    SESSION_TOKEN: import.meta.env.VITE_BETFAIR_SESSION_TOKEN || '',
     ENDPOINTS: {
       LIST_EVENTS: '/listEvents',
       LIST_MARKET_CATALOGUE: '/listMarketCatalogue',
