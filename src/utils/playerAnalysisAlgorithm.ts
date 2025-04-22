@@ -1,3 +1,4 @@
+
 import { PlayerProp, PlayerTrendAnalysis } from "@/types";
 
 /**
@@ -142,4 +143,17 @@ function getOddsEdge(prop: PlayerProp, recommendation: 'over' | 'under'): number
   }
   
   return 0;
+}
+
+/**
+ * Gets most confident picks from a set of player props
+ */
+export function getMostConfidentPicks(props: PlayerProp[], confidenceThreshold: number = 70): PlayerTrendAnalysis[] {
+  // Analyze all props
+  const analyses = props.map(analyzePlayerProp);
+  
+  // Filter by confidence threshold and sort by confidence (descending)
+  return analyses
+    .filter(analysis => analysis.confidence >= confidenceThreshold)
+    .sort((a, b) => b.confidence - a.confidence);
 }

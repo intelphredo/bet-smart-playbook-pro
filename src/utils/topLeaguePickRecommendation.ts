@@ -1,6 +1,6 @@
 
 import { playerProps } from "@/data/playerPropData";
-import { PlayerTrendAnalysis } from "@/types/playerAnalytics";
+import { PlayerTrendAnalysis } from "@/types";
 import { getMostConfidentPicks } from "@/utils/playerAnalysisAlgorithm";
 import { algorithmPerformanceData } from "@/data/algorithmPerformanceData";
 

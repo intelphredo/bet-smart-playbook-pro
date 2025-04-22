@@ -20,7 +20,8 @@ export function useMatchVerification({ match, enabled = true }: UseMatchVerifica
       setIsLoading(true);
       setError(null);
       try {
-        const result = await verifyMatchData(match);
+        // Fixed to pass the required second argument (sources array)
+        const result = await verifyMatchData(match, [{ name: 'default', data: match }]);
         setVerification(result);
       } catch (e: any) {
         setError(e);

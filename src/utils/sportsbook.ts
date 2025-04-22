@@ -1,92 +1,98 @@
-import { Dictionary } from "@/types/utilities";
-import { Sportsbook } from "@/types";
 
-export const SPORTSBOOK_LOGOS: Dictionary<string> = {
-  draftkings: "https://sportsbook.draftkings.com/assets/US_NewDesign/content/navigation/DK_Sportsbook_logo.svg",
-  betmgm: "https://content.betmgm.com/content/dam/betmgm/core/images/logos/betmgm-logo.svg",
-  fanduel: "https://www.pngitem.com/pimgs/m/595-5957184_fanduel-logo-png-transparent-png.png",
-  "william-hill": "https://www.caesars.com/content/dam/william-hill/logos/wh-logo.svg",
-  "points-bet": "https://pbs.twimg.com/profile_images/1435349927915788291/ENlu0wOU_400x400.png",
-  "unibet": "https://logos-world.net/wp-content/uploads/2021/02/Unibet-Logo.png",
-  "888sport": "https://upload.wikimedia.org/wikipedia/fr/thumb/f/f4/888sport.svg/1200px-888sport.svg.png",
-  "betway": "https://www.digitaltveurope.com/files/2021/06/Betway-logo.jpg",
-  "bwin": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ae/Bwin.svg/2560px-Bwin.svg.png",
-  "coral": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/Coral_logo.svg/2560px-Coral_logo.svg.png",
-  "ladbrokes": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/33/Ladbrokes_Logo.svg/2560px-Ladbrokes_Logo.svg.png",
-  "paddy-power": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/bc/Paddy_Power_Logo.svg/2560px-Paddy_Power_Logo.svg.png",
-  "sky-bet": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Sky_Bet_logo.svg/2560px-Sky_Bet_logo.svg.png",
-  "betfair": "https://upload.wikimedia.org/wikipedia/en/thumb/b/b0/Betfair_logo.svg/1200px-Betfair_logo.svg.png",
-  "sporting-bet": "https://www.yogonet.com/storage/news/images/cover/2020072117172978779.jpg",
-  "williamhill": "https://www.caesars.com/content/dam/william-hill/logos/wh-logo.svg",
-  "caesars": "https://www.covers.com/sites/covers.com/files/Caesars-Sportsbook-Covers.png",
-  "fox-bet": "https://www.compare.bet/img/uploads/bookmakers/logos_normal/fox-bet-logo.png",
-  "betrivers": "https://www.yogonet.com/storage/news/images/cover/2021030317471848791.jpg",
-  "borgata": "https://www.casino.org/news/wp-content/uploads/2022/02/Borgata-Sports-Logo.png",
-  "circasports": "https://www.vegas.com/wp-content/uploads/2021/09/circa-sports-logo.png",
-  "superbook": "https://superbook.com/wp-content/uploads/2023/01/superbook-sports-logo.svg",
-  "wynnbet": "https://cms. WynnBET .com/wp-content/uploads/2021/07/WynnBET _logos_Horizontal_DarkBG.svg",
-  "thescore": "https://www.thescore.bet/cms/dist/img/logos/theScoreBet_logo_horizontal.svg",
-  "betfred": "https://www.casino.org/news/wp-content/uploads/2022/02/Betfred-Sports-Logo.png",
-  "golden-nugget": "https://www.yogonet.com/storage/news/images/cover/2021072817502491491.png",
-  "tipico": "https://logos-world.net/wp-content/uploads/2023/08/Tipico-Logo.png",
-  "playup": "https://playup.com/wp-content/uploads/2022/03/PlayUp_Logo.svg",
-  "betonline": "https://www.sportsbettingny.com/wp-content/uploads/2023/03/betonline-logo.png",
-  " Bovada": "https://www.sportsbettingny.com/wp-content/uploads/2023/03/bovada-logo.png",
-  "gtbets": "https://www.safestbettingsites.com/wp-content/uploads/2019/08/gtbets-logo.png",
-  "intertops": "https://www.safestbettingsites.com/wp-content/uploads/2019/08/intertops-logo.png",
-  "jazzsports": "https://www.safestbettingsites.com/wp-content/uploads/2020/07/jazzsports-logo.png",
-  "sportsinteraction": "https://www.online-casinos.ca/wp-content/uploads/2019/07/sports-interaction-logo.png",
-  "powerplay": "https://www.online-casinos.ca/wp-content/uploads/2020/06/powerplay-sportsbook-logo.png",
-  "northstarbets": "https://www.online-casinos.ca/wp-content/uploads/2022/05/northstar-bets-logo.png",
-  "coolbet": "https://www.online-casinos.ca/wp-content/uploads/2020/06/coolbet-logo.png",
-  "unibet-ca": "https://www.online-casinos.ca/wp-content/uploads/2019/07/unibet-logo.png",
-  "bet99": "https://www.online-casinos.ca/wp-content/uploads/2020/06/bet99-logo.png",
-  "comeon": "https://www.online-casinos.ca/wp-content/uploads/2020/06/comeon-logo.png",
-  "leovegas": "https://www.online-casinos.ca/wp-content/uploads/2019/07/leovegas-logo.png",
-  "betano": "https://logovector.net/wp-content/uploads/2023/10/betano-logo-logovector.net_.png",
+import { Sportsbook } from "@/types";
+import { SportsbookLogos, BetLinkBuilder } from "@/types/utilities";
+
+export const SPORTSBOOK_LOGOS: SportsbookLogos = {
+  "draftkings": "/sportsbooks/draftkings-logo.png",
+  "fanduel": "/sportsbooks/fanduel-logo.png",
+  "betmgm": "/sportsbooks/betmgm-logo.png",
+  "caesars": "/sportsbooks/caesars-logo.png",
+  "pointsbet": "/sportsbooks/pointsbet-logo.png",
+  "espnbet": "/sportsbooks/espnbet-logo.png",
+  "bet365": "/sportsbooks/bet365-logo.png",
+  "betrivers": "/sportsbooks/betrivers-logo.png"
 };
 
-export const SPORTSBOOK_NAMES: Dictionary<string> = {
-  draftkings: "DraftKings",
-  betmgm: "BetMGM",
-  fanduel: "FanDuel",
-  "william-hill": "William Hill",
-  "points-bet": "PointsBet",
-  unibet: "Unibet",
-  "888sport": "888sport",
-  betway: "Betway",
-  bwin: "Bwin",
-  coral: "Coral",
-  ladbrokes: "Ladbrokes",
-  "paddy-power": "Paddy Power",
-  "sky-bet": "Sky Bet",
-  betfair: "Betfair",
-  "sporting-bet": "Sporting Bet",
-  williamhill: "William Hill",
-  caesars: "Caesars",
-  "fox-bet": "Fox Bet",
-  betrivers: "BetRivers",
-  borgata: "Borgata",
-  circasports: "Circa Sports",
-  superbook: "Superbook",
-  wynnbet: "WynnBet",
-  thescore: "theScore",
-  betfred: "Betfred",
-  "golden-nugget": "Golden Nugget",
-  tipico: "Tipico",
-  playup: "PlayUp",
-  betonline: "BetOnline",
-  Bovada: "Bovada",
-  gtbets: "GTbets",
-  intertops: "Intertops",
-  jazzsports: "JazzSports",
-  sportsinteraction: "Sports Interaction",
-  powerplay: "PowerPlay",
-  northstarbets: "NorthStarBets",
-  coolbet: "Coolbet",
-  "unibet-ca": "Unibet CA",
-  bet99: "Bet99",
-  comeon: "ComeOn",
-  leovegas: "LeoVegas",
-  betano: "Betano",
+export const SPORTSBOOKS: Sportsbook[] = [
+  {
+    id: "draftkings",
+    name: "DraftKings",
+    logo: SPORTSBOOK_LOGOS.draftkings,
+    isAvailable: true,
+    bonusOffer: "$1,000 No Sweat Bet",
+    rating: 4.8
+  },
+  {
+    id: "fanduel",
+    name: "FanDuel",
+    logo: SPORTSBOOK_LOGOS.fanduel,
+    isAvailable: true,
+    bonusOffer: "$1,000 No Sweat First Bet",
+    rating: 4.9
+  },
+  {
+    id: "betmgm",
+    name: "BetMGM",
+    logo: SPORTSBOOK_LOGOS.betmgm,
+    isAvailable: true,
+    bonusOffer: "$1,500 First Bet Offer",
+    rating: 4.6
+  },
+  {
+    id: "caesars",
+    name: "Caesars",
+    logo: SPORTSBOOK_LOGOS.caesars,
+    isAvailable: true,
+    bonusOffer: "$1,000 First Bet on Caesars",
+    rating: 4.5
+  },
+  {
+    id: "pointsbet",
+    name: "PointsBet",
+    logo: SPORTSBOOK_LOGOS.pointsbet,
+    isAvailable: true,
+    bonusOffer: "2 Risk Free Bets up to $2,000",
+    rating: 4.3
+  },
+  {
+    id: "espnbet",
+    name: "ESPNBet",
+    logo: SPORTSBOOK_LOGOS.espnbet,
+    isAvailable: true,
+    bonusOffer: "$1,000 First Bet Reset",
+    rating: 4.4
+  },
+  {
+    id: "bet365",
+    name: "Bet365",
+    logo: SPORTSBOOK_LOGOS.bet365,
+    isAvailable: false,
+    bonusOffer: "Bet $5, Get $150 in Bonus Bets",
+    rating: 4.7
+  },
+  {
+    id: "betrivers",
+    name: "BetRivers",
+    logo: SPORTSBOOK_LOGOS.betrivers,
+    isAvailable: false,
+    bonusOffer: "2nd Chance Bet up to $500",
+    rating: 4.2
+  }
+];
+
+export const getBetLink: BetLinkBuilder = (sportsbookId, matchId) => {
+  // This would be integrated with actual deep linking to the sportsbooks
+  // For demo purposes, just returns a placeholder URL
+  const baseLinks: {[key: string]: string} = {
+    "draftkings": "https://sportsbook.draftkings.com/event/",
+    "fanduel": "https://sportsbook.fanduel.com/event/",
+    "betmgm": "https://sports.betmgm.com/en/sports/events/",
+    "caesars": "https://sportsbook.caesars.com/event/",
+    "pointsbet": "https://pointsbet.com/sports/event/",
+    "espnbet": "https://espnbet.com/event/",
+    "bet365": "https://www.bet365.com/event/",
+    "betrivers": "https://betrivers.com/event/"
+  };
+  
+  return baseLinks[sportsbookId] ? `${baseLinks[sportsbookId]}${matchId}` : null;
 };
