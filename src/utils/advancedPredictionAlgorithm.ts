@@ -13,6 +13,11 @@ interface TeamStrength {
 }
 
 /**
+ * In-memory prediction cache (does NOT persist between reloads)
+ */
+const predictionCache: Map<string, Match> = new Map();
+
+/**
  * Advanced prediction algorithm that considers multiple factors:
  * - Historical matchup data
  * - Team strengths (offense/defense)
@@ -20,18 +25,27 @@ interface TeamStrength {
  * - Recent form
  * - Injuries
  * - Weather conditions
+ * 
+ * Predictions are locked/cached per match by id, preventing fluctuation on re-calculation.
  */
 export function generateAdvancedPrediction(
   match: Match, 
   historicalData?: HistoricalData
 ): Match {
+  // Lock prediction: if we've already generated it for this match id, return the cached value
+  if (predictionCache.has(match.id)) {
+    return predictionCache.get(match.id)!;
+  }
+
   const enhancedMatch = { ...match };
   const homeTeam = match.homeTeam;
   const awayTeam = match.awayTeam;
   
   // Use MLB-specific prediction logic for baseball games
   if (match.league === 'MLB') {
-    return generateMLBPrediction(match, historicalData);
+    const result = generateMLBPrediction(match, historicalData);
+    predictionCache.set(match.id, result);
+    return result;
   }
   
   // Calculate team strengths based on available data
@@ -82,6 +96,9 @@ export function generateAdvancedPrediction(
     }
   };
   
+  // Add to cache (lock the prediction)
+  predictionCache.set(match.id, enhancedMatch);
+
   return enhancedMatch;
 }
 
@@ -115,6 +132,11 @@ function generateMLBPrediction(
   match: Match,
   historicalData?: HistoricalData
 ): Match {
+  // Lock prediction: if already generated for this id, return cached
+  if (predictionCache.has(match.id)) {
+    return predictionCache.get(match.id)!;
+  }
+
   const enhancedMatch = { ...match };
   const homeTeam = match.homeTeam;
   const awayTeam = match.awayTeam;
@@ -185,6 +207,9 @@ function generateMLBPrediction(
       away: projectedAwayScore
     }
   };
+
+  // Add to cache (lock the prediction)
+  predictionCache.set(match.id, enhancedMatch);
   
   return enhancedMatch;
 }
