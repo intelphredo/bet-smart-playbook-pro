@@ -1,3 +1,5 @@
+
+import { useState, useEffect } from "react";
 import { League, Match } from "@/types/sports";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -7,6 +9,7 @@ import LiveMatchesTab from "./LiveESPNTabs/LiveMatchesTab";
 import FinishedMatchesTab from "./LiveESPNTabs/FinishedMatchesTab";
 import LiveESPNHeader from "./LiveESPNHeader";
 import SmartScoreSection from "./SmartScoreSection";
+import { applySmartScores } from "@/utils/smartScoreCalculator";
 
 interface Props {
   selectedLeague: League | "ALL";
