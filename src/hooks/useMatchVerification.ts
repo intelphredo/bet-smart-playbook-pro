@@ -1,6 +1,6 @@
 
 import { useMemo } from "react";
-import { Match, DataSource } from "@/types/sports";
+import { Match, DataSource, DataVerificationResult } from "@/types/sports";
 import { verifyMatchData } from "@/utils/dataVerification";
 
 export function useMatchVerification(
@@ -21,7 +21,7 @@ export function useMatchVerification(
           confidenceScore: 100,
           lastUpdated: lastRefreshTime,
           sources: [dataSource]
-        }
+        } as DataVerificationResult
       }));
     }
 

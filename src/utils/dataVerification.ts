@@ -1,16 +1,5 @@
 
-import { Match } from "@/types/sports";
-
-export interface DataVerificationResult {
-  isVerified: boolean;
-  confidenceScore: number;
-  lastUpdated: string;
-  sources: string[];
-  discrepancies?: {
-    field: string;
-    values: Record<string, any>;
-  }[];
-}
+import { Match, DataVerificationResult } from "@/types/sports";
 
 export function verifyMatchData(match: Match, sources: { name: string; data: Match }[]): DataVerificationResult {
   const result: DataVerificationResult = {
