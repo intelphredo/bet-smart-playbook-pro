@@ -1,6 +1,7 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 import { 
   Sheet, 
   SheetContent, 
@@ -23,12 +24,31 @@ const PremiumContent = ({
   title = "Premium Feature", 
   description = "This feature is only available to premium subscribers."
 }: PremiumContentProps) => {
-  const [isPremium, setIsPremium] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const { user, profile } = useAuth();
+  const navigate = useNavigate();
   const { toast } = useToast();
 
-  const handleUpgrade = () => {
-    setIsPremium(true);
+  const handleUpgrade = async () => {
+    if (!user) {
+      navigate("/auth");
+      return;
+    }
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({ subscription_status: "premium" })
+      .eq("id", user.id);
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to upgrade to premium. Please try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsOpen(false);
     toast({
       title: "Welcome to Premium! 🎉",
@@ -36,7 +56,7 @@ const PremiumContent = ({
     });
   };
   
-  if (isPremium) {
+  if (profile?.subscription_status === "premium") {
     return <>{children}</>;
   }
   
@@ -53,7 +73,7 @@ const PremiumContent = ({
         <Sheet open={isOpen} onOpenChange={setIsOpen}>
           <SheetTrigger asChild>
             <Button className="bg-gold-500 hover:bg-gold-600 text-navy-900 group-hover:scale-105 transition-transform">
-              Unlock Premium
+              {user ? "Unlock Premium" : "Sign In to Unlock"}
             </Button>
           </SheetTrigger>
           <SheetContent>
@@ -91,7 +111,7 @@ const PremiumContent = ({
                   onClick={handleUpgrade} 
                   className="w-full bg-gold-500 hover:bg-gold-600 text-navy-900"
                 >
-                  Start Free Trial
+                  {user ? "Start Free Trial" : "Sign In to Start"}
                 </Button>
                 
                 <p className="text-center text-sm text-muted-foreground">

@@ -1,104 +1,18 @@
-
-import { useState, useEffect } from 'react';
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Search, LogIn, UserPlus, Home } from "lucide-react";
 import { ModeToggle } from "./ModeToggle";
-import { 
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
-
-const loginSchema = z.object({
-  email: z.string().email({ message: "Please enter a valid email address." }),
-  password: z.string().min(6, { message: "Password must be at least 6 characters." }),
-});
-
-type LoginFormValues = z.infer<typeof loginSchema>;
 
 const NavBar = () => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [showLoginModal, setShowLoginModal] = useState(false);
-  const [showSignupModal, setShowSignupModal] = useState(false);
-  const [username, setUsername] = useState<string | null>(null);
+  const { user, profile } = useAuth();
+  const navigate = useNavigate();
   const { toast } = useToast();
   
-  // Check if user is already logged in
-  useEffect(() => {
-    const storedUsername = localStorage.getItem('username');
-    if (storedUsername) {
-      setIsLoggedIn(true);
-      setUsername(storedUsername);
-    }
-  }, []);
-
-  const form = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-    },
-  });
-
-  const handleLogin = (values: LoginFormValues) => {
-    // In a real app, you would validate credentials with a backend
-    // For now, we'll simulate a successful login
-    setIsLoggedIn(true);
-    
-    // Extract username from email (before the @)
-    const extractedUsername = values.email.split('@')[0];
-    setUsername(extractedUsername);
-    
-    // Store in localStorage for persistence
-    localStorage.setItem('username', extractedUsername);
-    
-    // Close the modal
-    setShowLoginModal(false);
-    
-    // Show success toast
-    toast({
-      title: "Login Successful",
-      description: `Welcome back, ${extractedUsername}!`,
-    });
-  };
-
-  const handleSignup = (values: LoginFormValues) => {
-    // In a real app, you would create a new account in a backend
-    setIsLoggedIn(true);
-    
-    // Extract username from email
-    const extractedUsername = values.email.split('@')[0];
-    setUsername(extractedUsername);
-    
-    // Store in localStorage for persistence
-    localStorage.setItem('username', extractedUsername);
-    
-    // Close the modal
-    setShowSignupModal(false);
-    
-    // Show success toast
-    toast({
-      title: "Account Created",
-      description: "Your account has been created successfully!",
-    });
-  };
-
-  const handleLogout = () => {
-    setIsLoggedIn(false);
-    setUsername(null);
-    localStorage.removeItem('username');
-    
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     toast({
       title: "Logged Out",
       description: "You have been logged out successfully.",
@@ -133,9 +47,12 @@ const NavBar = () => {
         
         <ModeToggle />
         
-        {isLoggedIn ? (
+        {user ? (
           <div className="flex items-center space-x-4">
-            <span className="hidden md:block text-sm font-medium">Hello, {username}</span>
+            {profile?.subscription_status === "premium" && (
+              <span className="hidden md:block text-sm font-medium text-gold-500">Premium Member</span>
+            )}
+            <span className="hidden md:block text-sm font-medium">Hello, {user.email}</span>
             <Button variant="outline" size="sm" onClick={handleLogout}>Log Out</Button>
           </div>
         ) : (
@@ -143,7 +60,7 @@ const NavBar = () => {
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={() => setShowLoginModal(true)}
+              onClick={() => navigate("/auth")}
               className="flex items-center gap-2"
             >
               <LogIn className="h-4 w-4" />
@@ -151,7 +68,7 @@ const NavBar = () => {
             </Button>
             <Button 
               size="sm" 
-              onClick={() => setShowSignupModal(true)}
+              onClick={() => navigate("/auth")}
               className="flex items-center gap-2"
             >
               <UserPlus className="h-4 w-4" />
@@ -160,106 +77,8 @@ const NavBar = () => {
           </div>
         )}
       </div>
-
-      {/* Login Dialog */}
-      <Dialog open={showLoginModal} onOpenChange={setShowLoginModal}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Login to BetSmart</DialogTitle>
-            <DialogDescription>
-              Enter your credentials below to access your account.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleLogin)} className="space-y-4 py-4">
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input placeholder="you@example.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <DialogFooter>
-                <Button type="submit" className="w-full">Log In</Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
-      
-      {/* Signup Dialog */}
-      <Dialog open={showSignupModal} onOpenChange={setShowSignupModal}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Create your BetSmart account</DialogTitle>
-            <DialogDescription>
-              Join BetSmart today to get personalized betting recommendations.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSignup)} className="space-y-4 py-4">
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input placeholder="you@example.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <DialogFooter>
-                <Button type="submit" className="w-full">Create Account</Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
 
 export default NavBar;
-
-// NOTE: src/components/NavBar.tsx is getting very long and should be refactored into smaller files and components for maintainability.
