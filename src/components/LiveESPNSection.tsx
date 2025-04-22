@@ -9,6 +9,7 @@ import LiveMatchesTab from "./LiveESPNTabs/LiveMatchesTab";
 import FinishedMatchesTab from "./LiveESPNTabs/FinishedMatchesTab";
 import LiveESPNHeader from "./LiveESPNHeader";
 import SmartScoreSection from "./SmartScoreSection";
+import PremiumContent from "./PremiumContent";
 import { applySmartScores } from "@/utils/smartScoreCalculator";
 
 interface Props {
