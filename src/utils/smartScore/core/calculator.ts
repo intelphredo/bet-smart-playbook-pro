@@ -1,4 +1,3 @@
-
 import { Match } from "@/types/sports";
 import { calculateMomentumImpact } from "../factors/momentumFactors";
 import { calculateOddsMovementImpact } from "../factors/oddsMovementFactors";
@@ -9,7 +8,6 @@ import { calculateArbitrageImpact, hasArbitrageOpportunity } from "../factors/ar
 import { generateSmartScoreRecommendation } from "../recommendations/smartScoreRecommendation";
 import { applyPredictionValidation } from "../validation/predictionValidator";
 
-// Updated weight factors with more balanced weights
 const WEIGHT_FACTORS = {
   MOMENTUM: 0.20,
   VALUE: 0.20,
@@ -20,7 +18,6 @@ const WEIGHT_FACTORS = {
 };
 
 export function calculateSmartScore(match: Match) {
-  // Calculate component impacts
   const { momentumScore, momentumFactors } = calculateMomentumImpact(match);
   const { valueScore, valueFactors } = calculateValueImpact(match);
   const { adjustedValueScore: oddsMovementScore, oddsFactors: oddsMovementFactors } = calculateOddsMovementImpact(match);
@@ -28,7 +25,6 @@ export function calculateSmartScore(match: Match) {
   const { injuriesScore, injuryFactors } = calculateInjuryImpact(match);
   const { arbitrageScore, arbitrageFactors } = calculateArbitrageImpact(match);
   
-  // Calculate weighted score
   const overallScore = (
     momentumScore * WEIGHT_FACTORS.MOMENTUM +
     valueScore * WEIGHT_FACTORS.VALUE +
@@ -38,7 +34,6 @@ export function calculateSmartScore(match: Match) {
     arbitrageScore * WEIGHT_FACTORS.ARBITRAGE
   );
   
-  // Generate recommendation with both match and overall score
   const recommendation = generateSmartScoreRecommendation(
     match, 
     overallScore, 
@@ -52,7 +47,6 @@ export function calculateSmartScore(match: Match) {
     }
   );
   
-  // Highlight arbitrage opportunity if available
   const hasArbitrage = hasArbitrageOpportunity(match);
   
   return {
@@ -78,15 +72,11 @@ export function calculateSmartScore(match: Match) {
   };
 }
 
-// Update the applySmartScores function to enhance matches with smart scores
-// and validate predictions for bias detection
 export function applySmartScores(matches: Match[]): Match[] {
-  // First, apply Smart Scores to all matches
   const scoredMatches = matches.map(match => ({
     ...match,
-    smartScore: calculateSmartScore(match),
+    smartScore: calculateSmartScore(match)
   }));
   
-  // Then, validate predictions for bias detection
   return applyPredictionValidation(scoredMatches);
 }
