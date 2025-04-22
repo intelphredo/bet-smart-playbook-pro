@@ -9,7 +9,7 @@ import {
   SheetTitle, 
   SheetTrigger 
 } from "@/components/ui/sheet";
-import { Lock } from "lucide-react";
+import { Lock, Crown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface PremiumContentProps {
@@ -28,13 +28,11 @@ const PremiumContent = ({
   const { toast } = useToast();
 
   const handleUpgrade = () => {
-    // Simulate premium upgrade
     setIsPremium(true);
     setIsOpen(false);
     toast({
-      title: "Premium Unlocked 🎉",
-      description: "You now have access to all premium features!",
-      variant: "default"  // Changed from "success" to "default"
+      title: "Welcome to Premium! 🎉",
+      description: "You now have access to all premium features. Enjoy!",
     });
   };
   
@@ -43,18 +41,18 @@ const PremiumContent = ({
   }
   
   return (
-    <div className="relative">
-      <div className="filter blur-sm pointer-events-none">
+    <div className="relative group">
+      <div className="filter blur-sm pointer-events-none transition-all duration-200">
         {children}
       </div>
-      <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/30 rounded-lg">
-        <Lock className="h-8 w-8 mb-2 text-gold-500" />
+      <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/30 backdrop-blur-sm rounded-lg transition-all duration-200">
+        <Crown className="h-8 w-8 mb-2 text-gold-500" />
         <h3 className="text-lg font-bold text-white mb-1">{title}</h3>
         <p className="text-sm text-white/80 mb-3 px-4 text-center">{description}</p>
         
         <Sheet open={isOpen} onOpenChange={setIsOpen}>
           <SheetTrigger asChild>
-            <Button className="bg-gold-500 hover:bg-gold-600 text-navy-900">
+            <Button className="bg-gold-500 hover:bg-gold-600 text-navy-900 group-hover:scale-105 transition-transform">
               Unlock Premium
             </Button>
           </SheetTrigger>
@@ -70,17 +68,17 @@ const PremiumContent = ({
                 <div className="bg-navy-50 dark:bg-navy-800 p-4 rounded-lg">
                   <h4 className="text-lg font-medium mb-2">Premium Plan</h4>
                   <ul className="space-y-2">
-                    <li className="flex items-center">
-                      <div className="mr-2 h-4 w-4 rounded-full bg-green-500" />
-                      Arbitrage Betting Opportunities
+                    <li className="flex items-center gap-2">
+                      <div className="h-4 w-4 rounded-full bg-green-500" />
+                      Smart Score Analysis
                     </li>
-                    <li className="flex items-center">
-                      <div className="mr-2 h-4 w-4 rounded-full bg-green-500" />
+                    <li className="flex items-center gap-2">
+                      <div className="h-4 w-4 rounded-full bg-green-500" />
                       Advanced Analytics
                     </li>
-                    <li className="flex items-center">
-                      <div className="mr-2 h-4 w-4 rounded-full bg-green-500" />
-                      Priority Customer Support
+                    <li className="flex items-center gap-2">
+                      <div className="h-4 w-4 rounded-full bg-green-500" />
+                      Priority Support
                     </li>
                   </ul>
                   <div className="mt-4">
@@ -93,8 +91,12 @@ const PremiumContent = ({
                   onClick={handleUpgrade} 
                   className="w-full bg-gold-500 hover:bg-gold-600 text-navy-900"
                 >
-                  Subscribe Now
+                  Start Free Trial
                 </Button>
+                
+                <p className="text-center text-sm text-muted-foreground">
+                  Try Premium free for 7 days. Cancel anytime.
+                </p>
               </div>
             </div>
           </SheetContent>

@@ -10,6 +10,7 @@ import FinishedMatchesTab from "./LiveESPNTabs/FinishedMatchesTab";
 import LiveESPNHeader from "./LiveESPNHeader";
 import SmartScoreSection from "./SmartScoreSection";
 import PremiumContent from "./PremiumContent";
+import PremiumSectionHeader from "./PremiumSectionHeader";
 import { applySmartScores } from "@/utils/smartScoreCalculator";
 
 interface Props {
@@ -71,14 +72,33 @@ const LiveESPNSection = ({
       )}
 
       {(processedMatches.upcoming.length > 0 || processedMatches.live.length > 0) && (
-        <PremiumContent
-          title="Smart Score Analysis"
-          description="Unlock our advanced Smart Score analysis to get deeper insights into matches."
-        >
-          <SmartScoreSection 
-            matches={[...processedMatches.live, ...processedMatches.upcoming]} 
-          />
-        </PremiumContent>
+        <>
+          <PremiumSectionHeader />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <PremiumContent
+              title="Smart Score Analysis"
+              description="Get detailed insights into matches with our advanced Smart Score analysis."
+            >
+              <SmartScoreSection 
+                matches={[...processedMatches.live, ...processedMatches.upcoming]} 
+              />
+            </PremiumContent>
+
+            <PremiumContent
+              title="Advanced Analytics"
+              description="Access advanced statistics and trends for better decision making."
+            >
+              <Card>
+                <CardContent className="p-4">
+                  <h3 className="text-lg font-semibold mb-2">Match Analytics</h3>
+                  <p className="text-muted-foreground">
+                    Unlock detailed statistics, historical data, and advanced metrics to improve your predictions.
+                  </p>
+                </CardContent>
+              </Card>
+            </PremiumContent>
+          </div>
+        </>
       )}
 
       <Tabs defaultValue="upcoming" value={activeTab} onValueChange={setActiveTab}>
