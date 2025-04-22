@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import React, { useState, useMemo } from "react";
@@ -8,6 +7,7 @@ import { Match } from "@/types/sports";
 import { algorithmPerformanceData } from "@/data/algorithmPerformanceData";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSportsData } from "@/hooks/useSportsData";
+import { Badge } from "@/components/ui/badge";
 
 // Determine if a prediction was correct
 function isPredictionCorrect(match: Match): boolean | null {
@@ -85,7 +85,14 @@ const StatsOverview = () => {
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-xl">Algorithm Performance</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-xl">Algorithm Performance</CardTitle>
+          {leagueStats[0]?.isFiltered && (
+            <Badge variant="outline" className="ml-2">
+              Filtered View
+            </Badge>
+          )}
+        </div>
       </CardHeader>
       <CardContent>
         {isLoading ? (
@@ -114,7 +121,10 @@ const StatsOverview = () => {
                   <XAxis dataKey="name" />
                   <YAxis domain={[0, 100]} tickFormatter={v => `${v}%`} />
                   <Tooltip
-                    formatter={(value, name) => [`${value}%`, "Win Rate"]}
+                    formatter={(value, name) => [
+                      `${value}%`,
+                      leagueStats[0]?.isFiltered ? "Filtered Win Rate" : "All-Time Win Rate"
+                    ]}
                     labelFormatter={(value) => `${value} League`}
                   />
                   <Bar
@@ -122,7 +132,6 @@ const StatsOverview = () => {
                     fill="#ffd700"
                     className="fill-gold-500 dark:fill-gold-400"
                     radius={[4, 4, 0, 0]}
-                    // Animate only when stats change so it's smooth
                     isAnimationActive={true}
                   />
                 </BarChart>
@@ -145,7 +154,8 @@ const StatsOverview = () => {
                     {item.winRate ? `${item.winRate}%` : "--"}
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    {item.name} | {item.picks} pick{item.picks !== 1 ? "s" : ""}
+                    {item.name} | {item.totalPicks} pick{item.totalPicks !== 1 ? "s" : ""}
+                    {item.isFiltered && " (filtered)"}
                   </div>
                 </button>
               ))}
