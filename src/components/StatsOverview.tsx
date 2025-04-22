@@ -3,7 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import React, { useState, useMemo } from "react";
 import LeagueStatsModal from "./LeagueStatsModal";
-import { useESPNData } from "@/hooks/useESPNData";
 import { Match } from "@/types/sports";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSportsData } from "@/hooks/useSportsData";
@@ -185,7 +184,7 @@ const StatsOverview = () => {
                     {item.winRate ? `${item.winRate}%` : "--"}
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    {item.name} | {item.picks || 0} pick{item.picks !== 1 ? "s" : ""}
+                    {item.name} | {item.totalPicks || item.picks || 0} pick{(item.totalPicks || item.picks) !== 1 ? "s" : ""}
                     {item.isFiltered && " (filtered)"}
                   </div>
                 </button>

@@ -2,6 +2,10 @@
 import { Match } from "@/types/sports";
 import MatchOutcomeBadges from "./MatchOutcomeBadges";
 import MatchOutcomeReasoning from "./MatchOutcomeReasoning";
+import { useUpdateAlgorithmResults } from "@/hooks/useUpdateAlgorithmResults";
+import { useSavePrediction } from "@/hooks/useSavePrediction";
+import { Button } from "./ui/button";
+import { useEffect, useState } from "react";
 
 /**
  * Utility function to determine prediction correctness
@@ -21,6 +25,33 @@ interface Props {
 
 const FinishedMatchInfo = ({ match }: Props) => {
   const correct = isPredictionCorrect(match);
+  const [isUpdated, setIsUpdated] = useState(false);
+  
+  // Get the mutation hooks
+  const savePrediction = useSavePrediction();
+  const updateResults = useUpdateAlgorithmResults();
+
+  // Auto-update for finished matches
+  useEffect(() => {
+    // Only update if the match has a prediction and score and is finished
+    if (match.status === "finished" && match.prediction && match.score && !isUpdated) {
+      updateResults.mutate(match, {
+        onSuccess: () => {
+          console.log(`Automatically updated results for match: ${match.id}`);
+          setIsUpdated(true);
+        }
+      });
+    }
+  }, [match, updateResults, isUpdated]);
+  
+  const handleSavePrediction = () => {
+    savePrediction.mutate(match);
+  };
+
+  const handleUpdateResults = () => {
+    updateResults.mutate(match);
+  };
+
   return (
     <div>
       <div className="flex items-center gap-2 mt-2 flex-wrap">
@@ -54,6 +85,29 @@ const FinishedMatchInfo = ({ match }: Props) => {
           </div>
         ) : null}
         <MatchOutcomeReasoning match={match} isCorrect={correct} />
+      </div>
+      
+      {/* Add manual update buttons for debugging */}
+      <div className="mt-3 flex flex-wrap gap-2 text-xs">
+        <Button 
+          size="sm" 
+          variant="outline" 
+          onClick={handleSavePrediction} 
+          disabled={savePrediction.isPending}
+        >
+          {savePrediction.isPending ? "Saving..." : "Save Prediction"}
+        </Button>
+        
+        {match.status === "finished" && (
+          <Button 
+            size="sm" 
+            variant="outline" 
+            onClick={handleUpdateResults}
+            disabled={updateResults.isPending}
+          >
+            {updateResults.isPending ? "Updating..." : "Update Result"}
+          </Button>
+        )}
       </div>
     </div>
   );

@@ -2,37 +2,103 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Match } from "@/types/sports";
+import { toast } from "sonner";
 
 export const useUpdateAlgorithmResults = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (match: Match) => {
-      if (!match.prediction || !match.score) return;
+      if (!match.prediction || !match.score) {
+        console.warn("Missing prediction or score data for match:", match.id);
+        return;
+      }
 
-      const isCorrect = (() => {
-        const { recommended } = match.prediction;
-        if (recommended === "home" && match.score.home > match.score.away) return true;
-        if (recommended === "away" && match.score.away > match.score.home) return true;
-        if (recommended === "draw" && match.score.home === match.score.away) return true;
-        return false;
-      })();
+      try {
+        console.log(`Updating prediction results for match ${match.id}`);
+        
+        const isCorrect = (() => {
+          const { recommended } = match.prediction;
+          if (recommended === "home" && match.score.home > match.score.away) return true;
+          if (recommended === "away" && match.score.away > match.score.home) return true;
+          if (recommended === "draw" && match.score.home === match.score.away) return true;
+          return false;
+        })();
 
-      const { error } = await supabase
-        .from("algorithm_predictions")
-        .update({
-          status: isCorrect ? 'win' : 'loss',
-          actual_score_home: match.score.home,
-          actual_score_away: match.score.away,
-          accuracy_rating: calculateAccuracyRating(match),
-          result_updated_at: new Date().toISOString()
-        })
-        .eq('match_id', match.id);
+        // Get the algorithm_id from the prediction if available, or use the one from the match
+        const algorithmId = match.prediction.algorithmId || "default-algorithm-id";
 
-      if (error) throw error;
+        // First check if a prediction exists for this match
+        const { data: existingPrediction, error: fetchError } = await supabase
+          .from("algorithm_predictions")
+          .select("id, status")
+          .eq("match_id", match.id)
+          .maybeSingle();
+
+        if (fetchError) {
+          console.error("Error fetching prediction:", fetchError);
+          throw fetchError;
+        }
+
+        if (existingPrediction) {
+          // Update existing prediction
+          console.log(`Updating existing prediction for match ${match.id}`);
+          
+          const { error } = await supabase
+            .from("algorithm_predictions")
+            .update({
+              status: isCorrect ? 'win' : 'loss',
+              actual_score_home: match.score.home,
+              actual_score_away: match.score.away,
+              accuracy_rating: calculateAccuracyRating(match),
+              result_updated_at: new Date().toISOString()
+            })
+            .eq('match_id', match.id);
+
+          if (error) {
+            console.error("Error updating prediction:", error);
+            throw error;
+          }
+        } else {
+          // Create new prediction with results
+          console.log(`Creating new prediction with results for match ${match.id}`);
+          
+          const { error } = await supabase
+            .from("algorithm_predictions")
+            .insert({
+              match_id: match.id,
+              league: match.league,
+              algorithm_id: algorithmId,
+              prediction: match.prediction.recommended,
+              confidence: match.prediction.confidence,
+              projected_score_home: match.prediction.projectedScore.home,
+              projected_score_away: match.prediction.projectedScore.away,
+              status: isCorrect ? 'win' : 'loss',
+              actual_score_home: match.score.home,
+              actual_score_away: match.score.away,
+              accuracy_rating: calculateAccuracyRating(match),
+              result_updated_at: new Date().toISOString()
+            });
+
+          if (error) {
+            console.error("Error creating prediction with results:", error);
+            throw error;
+          }
+        }
+        
+        console.log(`Successfully updated prediction results for match ${match.id}`);
+      } catch (error) {
+        console.error("Error in useUpdateAlgorithmResults:", error);
+        toast.error("Failed to update algorithm results");
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["algorithmPerformance"] });
+      toast.success("Algorithm results updated successfully");
+    },
+    onError: (error) => {
+      console.error("Mutation error in useUpdateAlgorithmResults:", error);
     }
   });
 };
