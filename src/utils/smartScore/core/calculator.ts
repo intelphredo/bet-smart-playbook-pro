@@ -36,9 +36,8 @@ export function calculateSmartScore(match: Match) {
   );
   
   const recommendation = generateSmartScoreRecommendation(
-    // Add the match context and overall score explicitly
     match, 
-    overallScore, 
+    overallScore,
     {
       momentum: momentumScore,
       value: valueScore,
