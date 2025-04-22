@@ -130,12 +130,12 @@ const SmartScoreCard = ({ match, showArbitrageAlert = false }: SmartScoreCardPro
           </div>
         </div>
         
-        {recommendation && recommendation.pick && (
+        {recommendation && recommendation.betOn && (
           <div className="mt-3 pt-2 border-t border-border">
             <div className="text-xs text-muted-foreground mb-0.5">Recommendation:</div>
             <div className="text-sm font-semibold">
-              {recommendation.pick} 
-              {recommendation.confidence && ` (${recommendation.confidence}% confidence)`}
+              {recommendation.betOn} 
+              {recommendation.confidence && ` (${recommendation.confidence} confidence)`}
             </div>
           </div>
         )}

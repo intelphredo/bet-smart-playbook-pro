@@ -22,7 +22,7 @@ export function calculateSmartScore(match: Match) {
   // Calculate component impacts
   const { momentumScore, momentumFactors } = calculateMomentumImpact(match);
   const { valueScore, valueFactors } = calculateValueImpact(match);
-  const { oddsMovementScore, oddsMovementFactors } = calculateOddsMovementImpact(match);
+  const { adjustedValueScore: oddsMovementScore, oddsFactors: oddsMovementFactors } = calculateOddsMovementImpact(match);
   const { weatherImpact, weatherFactors } = calculateWeatherImpact(match);
   const { injuriesScore, injuryFactors } = calculateInjuryImpact(match);
   const { arbitrageScore, arbitrageFactors } = calculateArbitrageImpact(match);

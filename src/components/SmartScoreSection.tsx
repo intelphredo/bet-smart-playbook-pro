@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import SmartScoreCard from "./SmartScoreCard";
 import { hasArbitrageOpportunity } from "@/utils/smartScore/arbitrageFactors";
 import { useToast } from "@/hooks/use-toast";
-import { AlertTriangle, ArrowTrendingUp } from "lucide-react";
+import { AlertTriangle, TrendingUp } from "lucide-react";
 
 interface Props {
   matches: Match[];
@@ -76,7 +76,7 @@ const SmartScoreSection = ({ matches }: Props) => {
         {topMatch && (
           <div className="mb-4">
             <h3 className="text-sm uppercase font-semibold text-muted-foreground mb-2 flex items-center">
-              <ArrowTrendingUp size={16} className="mr-1" />
+              <TrendingUp size={16} className="mr-1" />
               Top Rated Match
             </h3>
             <SmartScoreCard match={topMatch} showArbitrageAlert={true} />

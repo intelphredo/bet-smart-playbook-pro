@@ -1,5 +1,11 @@
-
 import { Match } from "@/types/sports";
+
+// Add function to match expected import in smartScoreCalculator.ts
+export function calculateOddsMovementImpact(match: Match) {
+  // Since the original function requires valueScore, we'll get that first
+  const { valueScore } = calculateValueImpact(match);
+  return calculateOddsMovementFactors(match, valueScore);
+}
 
 // Main odds movement factor calculator (cross-sport)
 export function calculateOddsMovementFactors(match: Match, valueScore: number) {
@@ -198,3 +204,6 @@ export function calculateMLBOddsMovementFactors(match: Match, valueScore: number
   }
   return { adjustedValueScore, oddsFactors };
 }
+
+// Import needed for the calculateOddsMovementImpact implementation
+import { calculateValueImpact } from "./valueFactors";

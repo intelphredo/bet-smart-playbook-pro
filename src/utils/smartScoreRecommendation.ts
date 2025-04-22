@@ -15,20 +15,29 @@ export function getRecommendation(overall: number, match: Match): SmartScore['re
         betOn: 'home',
         confidence: overall >= 80 ? 'high' : 'medium',
         reasoning: `Strong statistical edge for ${match.homeTeam.name} with a SmartScore of ${overall}.`
-      } as SmartScore['recommendation']; // Type assertion to override TypeScript's narrow interpretation
+      };
     } else if (match.prediction.recommended === 'away') {
       recommendation = {
         betOn: 'away',
         confidence: overall >= 80 ? 'high' : 'medium',
         reasoning: `Strong statistical edge for ${match.awayTeam.name} with a SmartScore of ${overall}.`
-      } as SmartScore['recommendation']; // Type assertion to override TypeScript's narrow interpretation
+      };
     } else if (match.prediction.recommended === 'draw') {
       recommendation = {
         betOn: 'draw',
         confidence: overall >= 80 ? 'high' : 'medium',
         reasoning: `Statistical indicators suggest a draw is likely with a SmartScore of ${overall}.`
-      } as SmartScore['recommendation']; // Type assertion to override TypeScript's narrow interpretation
+      };
     }
   }
   return recommendation;
+}
+
+// Add the missing function that smartScoreCalculator.ts expects
+export function generateSmartScoreRecommendation(
+  match: Match, 
+  overall: number, 
+  components: Record<string, number>
+): SmartScore['recommendation'] {
+  return getRecommendation(overall, match);
 }

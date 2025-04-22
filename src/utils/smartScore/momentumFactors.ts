@@ -1,6 +1,11 @@
 
 import { Match } from "@/types/sports";
 
+// Rename function to match expected import in smartScoreCalculator.ts
+export function calculateMomentumImpact(match: Match) {
+  return calculateMomentumFactors(match);
+}
+
 // Main momentum factor calculator (cross-sport)
 export function calculateMomentumFactors(match: Match) {
   if (match.league === "MLB") {

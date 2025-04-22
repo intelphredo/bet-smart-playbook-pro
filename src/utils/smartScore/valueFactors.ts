@@ -1,4 +1,3 @@
-
 import { Match } from "@/types/sports";
 
 // Main value factor calculator (cross-sport)
@@ -51,6 +50,11 @@ export function calculateValueFactor(match: Match) {
     }
   }
   return { valueScore, valueFactors };
+}
+
+// Add function to match expected import in smartScoreCalculator.ts
+export function calculateValueImpact(match: Match) {
+  return calculateValueFactor(match);
 }
 
 // MLB value factor

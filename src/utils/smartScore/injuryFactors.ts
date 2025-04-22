@@ -10,7 +10,7 @@ export function calculateInjuryImpact(match: Match) {
   // For now, let's simulate based on match data patterns
   
   // Check if any injury info is in the match description or notes
-  if (match.description && match.description.toLowerCase().includes("injur")) {
+  if (match.description !== undefined && match.description?.toLowerCase().includes("injur")) {
     injuriesScore -= 20;
     injuryFactors.push("Key injuries mentioned in match description");
   }

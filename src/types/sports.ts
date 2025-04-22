@@ -185,21 +185,28 @@ export type DataSource = 'ESPN' | 'MLB' | 'ACTION' | 'API';
 
 export interface SmartScore {
   overall: number;        // 0-100 overall smart score
-  value: number;          // 0-100 value rating
-  momentum: number;       // 0-100 momentum rating
-  injuries: number;       // 0-100 injury impact (higher is better - less impact)
-  weatherImpact: number;  // 0-100 weather impact (higher is better - less impact)
+  components: {
+    momentum: number;     // 0-100 momentum rating
+    value: number;        // 0-100 value rating
+    oddsMovement: number; // 0-100 odds movement rating
+    weather: number;      // 0-100 weather impact (higher is better - less impact)
+    injuries: number;     // 0-100 injury impact (higher is better - less impact)
+    arbitrage: number;    // 0-100 arbitrage rating
+  };
   factors: {
-    key: string;
-    impact: 'positive' | 'negative' | 'neutral';
-    weight: number;       // 1-10
-    description: string;
-  }[];
+    momentum: any[];
+    value: any[];
+    oddsMovement: any[];
+    weather: any[];
+    injuries: any[];
+    arbitrage: any[];
+  };
   recommendation?: {
     betOn: 'home' | 'away' | 'draw' | 'over' | 'under' | 'none';
     confidence: 'high' | 'medium' | 'low';
     reasoning: string;
   };
+  hasArbitrageOpportunity: boolean;
 }
 
 export interface MatchLineup {
