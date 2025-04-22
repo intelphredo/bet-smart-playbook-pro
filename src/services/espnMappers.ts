@@ -76,51 +76,25 @@ export const mapESPNEventToMatch = (event: ESPNEvent, league: League): Match => 
     record: awayRecord,
   };
   
-  const status = event.status.type.state === "in" ? "live" : 
-                 event.status.type.state === "post" ? "finished" : "scheduled";
+  // Enhanced status mapping
+  let status: Match["status"];
+  const eventState = event.status.type.state.toLowerCase();
   
+  if (eventState === "pre") {
+    status = "scheduled";
+  } else if (eventState === "in") {
+    status = "live";
+  } else if (eventState === "post") {
+    status = "finished";
+  } else {
+    console.log(`Unknown event state: ${eventState}, defaulting to scheduled`);
+    status = "scheduled";
+  }
+  
+  // Generate mock odds for upcoming games
   const baseHomeOdds = competition.odds?.[0] ? 1.8 : 1.9;
   const baseAwayOdds = competition.odds?.[0] ? 2.2 : 1.9;
   const baseDrawOdds = league === "SOCCER" ? 3.0 : undefined;
-
-  const liveOdds = [
-    {
-      sportsbook: {
-        id: "draftkings",
-        name: "DraftKings",
-        logo: SPORTSBOOK_LOGOS.draftkings,
-        isAvailable: true
-      },
-      homeWin: baseHomeOdds + (Math.random() * 0.2 - 0.1),
-      awayWin: baseAwayOdds + (Math.random() * 0.2 - 0.1),
-      draw: baseDrawOdds ? baseDrawOdds + (Math.random() * 0.3 - 0.15) : undefined,
-      updatedAt: new Date(Date.now() - 120000).toISOString() // 2 minutes ago
-    },
-    {
-      sportsbook: {
-        id: "betmgm",
-        name: "BetMGM",
-        logo: SPORTSBOOK_LOGOS.betmgm,
-        isAvailable: true
-      },
-      homeWin: baseHomeOdds + (Math.random() * 0.2 - 0.1),
-      awayWin: baseAwayOdds + (Math.random() * 0.2 - 0.1),
-      draw: baseDrawOdds ? baseDrawOdds + (Math.random() * 0.3 - 0.15) : undefined,
-      updatedAt: new Date(Date.now() - 180000).toISOString() // 3 minutes ago
-    },
-    {
-      sportsbook: {
-        id: "fanduel",
-        name: "FanDuel",
-        logo: SPORTSBOOK_LOGOS.fanduel,
-        isAvailable: true
-      },
-      homeWin: baseHomeOdds + (Math.random() * 0.2 - 0.1),
-      awayWin: baseAwayOdds + (Math.random() * 0.2 - 0.1),
-      draw: baseDrawOdds ? baseDrawOdds + (Math.random() * 0.3 - 0.15) : undefined,
-      updatedAt: new Date(Date.now() - 60000).toISOString() // 1 minute ago
-    }
-  ];
 
   const odds = {
     homeWin: baseHomeOdds,
@@ -134,6 +108,7 @@ export const mapESPNEventToMatch = (event: ESPNEvent, league: League): Match => 
     period: `Period ${event.status.period} - ${event.status.displayClock}`,
   } : undefined;
   
+  // Generate basic prediction for upcoming games
   const homeTeamFavored = odds.homeWin <= odds.awayWin;
   const confidence = homeTeamFavored ? 65 : 55;
   
@@ -144,7 +119,6 @@ export const mapESPNEventToMatch = (event: ESPNEvent, league: League): Match => 
     awayTeam,
     startTime: event.date,
     odds,
-    liveOdds,
     prediction: {
       recommended: homeTeamFavored ? "home" : "away",
       confidence,
@@ -155,5 +129,19 @@ export const mapESPNEventToMatch = (event: ESPNEvent, league: League): Match => 
     },
     status,
     score,
+    liveOdds: [
+      {
+        sportsbook: {
+          id: "draftkings",
+          name: "DraftKings",
+          logo: SPORTSBOOK_LOGOS.draftkings,
+          isAvailable: true
+        },
+        homeWin: baseHomeOdds + (Math.random() * 0.2 - 0.1),
+        awayWin: baseAwayOdds + (Math.random() * 0.2 - 0.1),
+        draw: baseDrawOdds ? baseDrawOdds + (Math.random() * 0.3 - 0.15) : undefined,
+        updatedAt: new Date(Date.now() - 120000).toISOString()
+      }
+    ]
   };
 };

@@ -1,4 +1,3 @@
-
 import { Match, League } from "@/types/sports";
 import { ESPN_API_BASE } from "./espnConstants";
 import { mapESPNEventToMatch, ESPNResponse } from "./espnMappers";
@@ -21,24 +20,45 @@ export const fetchESPNEvents = async (league: League): Promise<Match[]> => {
         endpoint = `${ESPN_API_BASE}/hockey/nhl/scoreboard`;
         break;
       case "SOCCER":
-        endpoint = `${ESPN_API_BASE}/soccer/eng.1/scoreboard`; // Premier League as default
+        endpoint = `${ESPN_API_BASE}/soccer/eng.1/scoreboard`;
         break;
       default:
         throw new Error(`Unsupported league: ${league}`);
     }
 
-    console.log(`Fetching data from ESPN API: ${endpoint}`);
-    const response = await fetch(endpoint);
+    console.log(`Fetching scoreboard data from ESPN API: ${endpoint}`);
+    const scoreboardResponse = await fetch(endpoint);
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch ESPN data: ${response.status}`);
+    if (!scoreboardResponse.ok) {
+      throw new Error(`Failed to fetch ESPN scoreboard data: ${scoreboardResponse.status}`);
     }
 
-    const data: ESPNResponse = await response.json();
-    console.log("ESPN API Response:", data);
+    const scoreboardData: ESPNResponse = await scoreboardResponse.json();
+    console.log("ESPN Scoreboard Response:", scoreboardData);
 
-    // Map ESPN events to our Match type
-    return data.events.map(event => mapESPNEventToMatch(event, league));
+    // Now fetch schedule data
+    const scheduleEndpoint = endpoint.replace('scoreboard', 'schedule');
+    console.log(`Fetching schedule data from ESPN API: ${scheduleEndpoint}`);
+    const scheduleResponse = await fetch(scheduleEndpoint);
+
+    if (!scheduleResponse.ok) {
+      console.warn(`Failed to fetch ESPN schedule data: ${scheduleResponse.status}, falling back to scoreboard only`);
+      return scoreboardData.events.map(event => mapESPNEventToMatch(event, league));
+    }
+
+    const scheduleData: ESPNResponse = await scheduleResponse.json();
+    console.log("ESPN Schedule Response:", scheduleData);
+
+    // Merge scoreboard and schedule data, avoiding duplicates
+    const allEvents = [...scoreboardData.events];
+    scheduleData.events.forEach(scheduleEvent => {
+      if (!allEvents.some(e => e.id === scheduleEvent.id)) {
+        allEvents.push(scheduleEvent);
+      }
+    });
+
+    // Map all events to matches
+    return allEvents.map(event => mapESPNEventToMatch(event, league));
   } catch (error) {
     console.error("Error fetching ESPN data:", error);
     return [];
