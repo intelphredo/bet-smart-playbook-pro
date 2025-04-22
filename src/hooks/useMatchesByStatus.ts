@@ -1,8 +1,22 @@
-
 import { useMemo } from "react";
 import { Match } from "@/types";
 
-export function useMatchesByStatus(allMatches: Match[]) {
+export interface MatchesByStatusResult {
+  baseMatches: Match[];
+  upcomingMatches: Match[];
+  liveMatches: Match[];
+  finishedMatches: Match[];
+  allMatches: Match[];
+  isLoading: boolean;
+  error: Error | null;
+  refetchSchedule: () => any;
+  selectedDivisionsStandings?: any;
+  selectedIsLoadingStandings?: boolean;
+  selectedStandingsError?: Error | null;
+  selectedFetchLiveGameData?: (gameId: string) => Promise<any>;
+}
+
+export function useMatchesByStatus(allMatches: Match[]): MatchesByStatusResult {
   return useMemo(() => {
     const upcomingMatches = allMatches.filter(m => m.status === "scheduled" || m.status === "pre");
     const liveMatches = allMatches.filter(m => m.status === "live");
@@ -17,7 +31,6 @@ export function useMatchesByStatus(allMatches: Match[]) {
   }, [allMatches]);
 }
 
-// Additional function to handle multiple data sources
 export function useMatchesByStatusMultiSource(
   dataSource: string,
   useExternalApis: boolean,
@@ -26,7 +39,6 @@ export function useMatchesByStatusMultiSource(
   mlbData: any,
   espnData: any
 ) {
-  // Determine which data source to use based on the dataSource parameter
   let baseMatches: Match[] = [];
   let isLoading = false;
   let error: Error | null = null;
@@ -55,10 +67,8 @@ export function useMatchesByStatusMultiSource(
       break;
   }
 
-  // Return the filtered matches based on status
   const { upcomingMatches, liveMatches, finishedMatches, allMatches } = useMatchesByStatus(baseMatches);
 
-  // Include additional properties based on the selected data source
   let additionalProps = {};
   if (dataSource === 'MLB') {
     additionalProps = {

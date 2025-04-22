@@ -1,4 +1,3 @@
-
 import { League } from './core';
 import { Team } from './team';
 
@@ -7,6 +6,8 @@ export interface Sportsbook {
   name: string;
   logo: string;
   isAvailable: boolean;
+  bonusOffer?: string;
+  rating?: number;
 }
 
 export interface LiveOdds {
