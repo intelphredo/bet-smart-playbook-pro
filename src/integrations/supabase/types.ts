@@ -11,44 +11,103 @@ export type Database = {
     Tables: {
       algorithm_predictions: {
         Row: {
+          accuracy_rating: number | null
+          actual_score_away: number | null
+          actual_score_home: number | null
           algorithm_id: string
           confidence: number
+          created_at: string | null
           id: string
           league: string
           match_id: string
           metadata: Json | null
           predicted_at: string
           prediction: string
+          projected_score_away: number | null
+          projected_score_home: number | null
           result_updated_at: string | null
           status: string
         }
         Insert: {
+          accuracy_rating?: number | null
+          actual_score_away?: number | null
+          actual_score_home?: number | null
           algorithm_id: string
           confidence: number
+          created_at?: string | null
           id?: string
           league: string
           match_id: string
           metadata?: Json | null
           predicted_at?: string
           prediction: string
+          projected_score_away?: number | null
+          projected_score_home?: number | null
           result_updated_at?: string | null
           status?: string
         }
         Update: {
+          accuracy_rating?: number | null
+          actual_score_away?: number | null
+          actual_score_home?: number | null
           algorithm_id?: string
           confidence?: number
+          created_at?: string | null
           id?: string
           league?: string
           match_id?: string
           metadata?: Json | null
           predicted_at?: string
           prediction?: string
+          projected_score_away?: number | null
+          projected_score_home?: number | null
           result_updated_at?: string | null
           status?: string
         }
         Relationships: [
           {
             foreignKeyName: "algorithm_predictions_algorithm_id_fkey"
+            columns: ["algorithm_id"]
+            isOneToOne: false
+            referencedRelation: "algorithms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      algorithm_stats: {
+        Row: {
+          algorithm_id: string | null
+          avg_confidence: number | null
+          correct_predictions: number | null
+          id: string
+          last_updated: string | null
+          league: string
+          total_predictions: number | null
+          win_rate: number | null
+        }
+        Insert: {
+          algorithm_id?: string | null
+          avg_confidence?: number | null
+          correct_predictions?: number | null
+          id?: string
+          last_updated?: string | null
+          league: string
+          total_predictions?: number | null
+          win_rate?: number | null
+        }
+        Update: {
+          algorithm_id?: string | null
+          avg_confidence?: number | null
+          correct_predictions?: number | null
+          id?: string
+          last_updated?: string | null
+          league?: string
+          total_predictions?: number | null
+          win_rate?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "algorithm_stats_algorithm_id_fkey"
             columns: ["algorithm_id"]
             isOneToOne: false
             referencedRelation: "algorithms"

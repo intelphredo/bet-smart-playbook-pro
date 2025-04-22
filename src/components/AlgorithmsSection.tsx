@@ -5,9 +5,33 @@ import { Link } from "react-router-dom";
 import { Calendar } from "lucide-react";
 import { useAlgorithmPerformance } from "@/hooks/useAlgorithmPerformance";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 const AlgorithmsSection = () => {
-  const { data: algorithms, isLoading, error } = useAlgorithmPerformance();
+  const { data: algorithms, isLoading, error, refetch } = useAlgorithmPerformance();
+
+  // Set up real-time subscription for algorithm predictions
+  useEffect(() => {
+    const channel = supabase
+      .channel('algorithm-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'algorithm_predictions'
+        },
+        () => {
+          refetch();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [refetch]);
 
   if (error) {
     return (
