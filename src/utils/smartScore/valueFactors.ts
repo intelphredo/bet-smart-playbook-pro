@@ -1,5 +1,4 @@
-
-import { Match } from "@/types/sports";
+import { Match } from "@/types";
 
 // Main value factor calculator (cross-sport)
 export function calculateValueFactor(match: Match) {

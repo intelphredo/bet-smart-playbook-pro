@@ -1,5 +1,4 @@
-
-import { Match } from "@/types/sports";
+import { Match } from "@/types";
 
 // Main odds movement factor calculator (cross-sport)
 export function calculateOddsMovementFactors(match: Match, valueScore: number) {

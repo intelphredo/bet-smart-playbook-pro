@@ -1,5 +1,4 @@
-
-import { Match } from "@/types/sports";
+import { Match } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { Check, X } from "lucide-react";
 

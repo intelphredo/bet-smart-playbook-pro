@@ -1,5 +1,4 @@
-
-import { Match } from "@/types/sports";
+import { Match } from "@/types";
 
 interface MatchOutcomeReasoningProps {
   match: Match;

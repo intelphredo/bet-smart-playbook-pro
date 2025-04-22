@@ -1,253 +1,92 @@
+import { Dictionary } from "@/types/utilities";
+import { Sportsbook } from "@/types";
 
-import { LiveOdds, Match, Sportsbook } from "@/types/sports";
-
-export const SPORTSBOOK_LOGOS = {
-  draftkings: "https://upload.wikimedia.org/wikipedia/en/f/fd/DraftKings_logo.svg",
-  betmgm: "https://upload.wikimedia.org/wikipedia/commons/2/2f/BetMGM_logo.svg",
-  caesars: "https://upload.wikimedia.org/wikipedia/commons/c/c6/Caesars_Entertainment_logo.svg",
-  pointsbet: "https://upload.wikimedia.org/wikipedia/en/c/c8/PointsBet_logo.svg",
-  fanduel: "https://upload.wikimedia.org/wikipedia/commons/8/83/FanDuel_logo.svg",
+export const SPORTSBOOK_LOGOS: Dictionary<string> = {
+  draftkings: "https://sportsbook.draftkings.com/assets/US_NewDesign/content/navigation/DK_Sportsbook_logo.svg",
+  betmgm: "https://content.betmgm.com/content/dam/betmgm/core/images/logos/betmgm-logo.svg",
+  fanduel: "https://www.pngitem.com/pimgs/m/595-5957184_fanduel-logo-png-transparent-png.png",
+  "william-hill": "https://www.caesars.com/content/dam/william-hill/logos/wh-logo.svg",
+  "points-bet": "https://pbs.twimg.com/profile_images/1435349927915788291/ENlu0wOU_400x400.png",
+  "unibet": "https://logos-world.net/wp-content/uploads/2021/02/Unibet-Logo.png",
+  "888sport": "https://upload.wikimedia.org/wikipedia/fr/thumb/f/f4/888sport.svg/1200px-888sport.svg.png",
+  "betway": "https://www.digitaltveurope.com/files/2021/06/Betway-logo.jpg",
+  "bwin": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ae/Bwin.svg/2560px-Bwin.svg.png",
+  "coral": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/Coral_logo.svg/2560px-Coral_logo.svg.png",
+  "ladbrokes": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/33/Ladbrokes_Logo.svg/2560px-Ladbrokes_Logo.svg.png",
+  "paddy-power": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/bc/Paddy_Power_Logo.svg/2560px-Paddy_Power_Logo.svg.png",
+  "sky-bet": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Sky_Bet_logo.svg/2560px-Sky_Bet_logo.svg.png",
+  "betfair": "https://upload.wikimedia.org/wikipedia/en/thumb/b/b0/Betfair_logo.svg/1200px-Betfair_logo.svg.png",
+  "sporting-bet": "https://www.yogonet.com/storage/news/images/cover/2020072117172978779.jpg",
+  "williamhill": "https://www.caesars.com/content/dam/william-hill/logos/wh-logo.svg",
+  "caesars": "https://www.covers.com/sites/covers.com/files/Caesars-Sportsbook-Covers.png",
+  "fox-bet": "https://www.compare.bet/img/uploads/bookmakers/logos_normal/fox-bet-logo.png",
+  "betrivers": "https://www.yogonet.com/storage/news/images/cover/2021030317471848791.jpg",
+  "borgata": "https://www.casino.org/news/wp-content/uploads/2022/02/Borgata-Sports-Logo.png",
+  "circasports": "https://www.vegas.com/wp-content/uploads/2021/09/circa-sports-logo.png",
+  "superbook": "https://superbook.com/wp-content/uploads/2023/01/superbook-sports-logo.svg",
+  "wynnbet": "https://cms. WynnBET .com/wp-content/uploads/2021/07/WynnBET _logos_Horizontal_DarkBG.svg",
+  "thescore": "https://www.thescore.bet/cms/dist/img/logos/theScoreBet_logo_horizontal.svg",
+  "betfred": "https://www.casino.org/news/wp-content/uploads/2022/02/Betfred-Sports-Logo.png",
+  "golden-nugget": "https://www.yogonet.com/storage/news/images/cover/2021072817502491491.png",
+  "tipico": "https://logos-world.net/wp-content/uploads/2023/08/Tipico-Logo.png",
+  "playup": "https://playup.com/wp-content/uploads/2022/03/PlayUp_Logo.svg",
+  "betonline": "https://www.sportsbettingny.com/wp-content/uploads/2023/03/betonline-logo.png",
+  " Bovada": "https://www.sportsbettingny.com/wp-content/uploads/2023/03/bovada-logo.png",
+  "gtbets": "https://www.safestbettingsites.com/wp-content/uploads/2019/08/gtbets-logo.png",
+  "intertops": "https://www.safestbettingsites.com/wp-content/uploads/2019/08/intertops-logo.png",
+  "jazzsports": "https://www.safestbettingsites.com/wp-content/uploads/2020/07/jazzsports-logo.png",
+  "sportsinteraction": "https://www.online-casinos.ca/wp-content/uploads/2019/07/sports-interaction-logo.png",
+  "powerplay": "https://www.online-casinos.ca/wp-content/uploads/2020/06/powerplay-sportsbook-logo.png",
+  "northstarbets": "https://www.online-casinos.ca/wp-content/uploads/2022/05/northstar-bets-logo.png",
+  "coolbet": "https://www.online-casinos.ca/wp-content/uploads/2020/06/coolbet-logo.png",
+  "unibet-ca": "https://www.online-casinos.ca/wp-content/uploads/2019/07/unibet-logo.png",
+  "bet99": "https://www.online-casinos.ca/wp-content/uploads/2020/06/bet99-logo.png",
+  "comeon": "https://www.online-casinos.ca/wp-content/uploads/2020/06/comeon-logo.png",
+  "leovegas": "https://www.online-casinos.ca/wp-content/uploads/2019/07/leovegas-logo.png",
+  "betano": "https://logovector.net/wp-content/uploads/2023/10/betano-logo-logovector.net_.png",
 };
 
-export const AVAILABLE_SPORTSBOOKS: Sportsbook[] = [
-  {
-    id: "draftkings",
-    name: "DraftKings",
-    logo: SPORTSBOOK_LOGOS.draftkings,
-    isAvailable: true
-  },
-  {
-    id: "betmgm",
-    name: "BetMGM",
-    logo: SPORTSBOOK_LOGOS.betmgm,
-    isAvailable: true
-  },
-  {
-    id: "caesars",
-    name: "Caesars",
-    logo: SPORTSBOOK_LOGOS.caesars,
-    isAvailable: true
-  },
-  {
-    id: "fanduel",
-    name: "FanDuel",
-    logo: SPORTSBOOK_LOGOS.fanduel,
-    isAvailable: true
-  },
-  {
-    id: "pointsbet",
-    name: "PointsBet",
-    logo: SPORTSBOOK_LOGOS.pointsbet,
-    isAvailable: true
-  }
-];
-
-/**
- * Formats American odds from decimal odds
- */
-export function formatAmericanOdds(decimalOdds: number): string {
-  if (decimalOdds >= 2) {
-    return `+${Math.round((decimalOdds - 1) * 100)}`;
-  } else {
-    return `-${Math.round(100 / (decimalOdds - 1))}`;
-  }
-}
-
-/**
- * Converts American odds to decimal odds
- */
-export function americanToDecimalOdds(americanOdds: number): number {
-  if (americanOdds >= 100) {
-    return 1 + (americanOdds / 100);
-  } else {
-    return 1 + (100 / Math.abs(americanOdds));
-  }
-}
-
-/**
- * Calculates implied probability from decimal odds
- */
-export function calculateImpliedProbability(decimalOdds: number): number {
-  return 1 / decimalOdds;
-}
-
-/**
- * Identifies if there's an arbitrage opportunity between bookmakers
- */
-export function identifyArbitrageOpportunity(match: Match): boolean {
-  if (!match.liveOdds || match.liveOdds.length < 2) return false;
-  
-  const bestHomeOdds = Math.max(...match.liveOdds.map(o => o.homeWin));
-  const bestAwayOdds = Math.max(...match.liveOdds.map(o => o.awayWin));
-  
-  const homeProbability = 1 / bestHomeOdds;
-  const awayProbability = 1 / bestAwayOdds;
-  
-  // If draw is available
-  if (match.liveOdds[0].draw !== undefined) {
-    const bestDrawOdds = Math.max(...match.liveOdds
-      .filter(o => o.draw !== undefined)
-      .map(o => o.draw as number));
-    
-    const drawProbability = 1 / bestDrawOdds;
-    const totalProbability = homeProbability + awayProbability + drawProbability;
-    
-    return totalProbability < 1; // Arbitrage opportunity exists if total probability is less than 1
-  }
-  
-  // Without draw
-  const totalProbability = homeProbability + awayProbability;
-  return totalProbability < 1;
-}
-
-/**
- * Calculate optimal arbitrage betting strategy
- */
-export function calculateArbitrageStrategy(match: Match) {
-  if (!match.liveOdds || match.liveOdds.length < 2) return null;
-  
-  // Find best odds for each outcome
-  const bestHomeOdds = {
-    value: Math.max(...match.liveOdds.map(o => o.homeWin)),
-    sportsbook: match.liveOdds.reduce((prev, current) => 
-      current.homeWin > prev.homeWin ? current : prev
-    ).sportsbook
-  };
-  
-  const bestAwayOdds = {
-    value: Math.max(...match.liveOdds.map(o => o.awayWin)),
-    sportsbook: match.liveOdds.reduce((prev, current) => 
-      current.awayWin > prev.awayWin ? current : prev
-    ).sportsbook
-  };
-  
-  let bestDrawOdds;
-  if (match.liveOdds[0].draw !== undefined) {
-    bestDrawOdds = {
-      value: Math.max(...match.liveOdds
-        .filter(o => o.draw !== undefined)
-        .map(o => o.draw as number)),
-      sportsbook: match.liveOdds
-        .filter(o => o.draw !== undefined)
-        .reduce((prev, current) => 
-          (current.draw as number) > (prev.draw as number) ? current : prev
-        ).sportsbook
-    };
-  }
-  
-  // Calculate implied probabilities
-  const homeProbability = 1 / bestHomeOdds.value;
-  const awayProbability = 1 / bestAwayOdds.value;
-  const drawProbability = bestDrawOdds ? 1 / bestDrawOdds.value : 0;
-  
-  const totalProbability = homeProbability + awayProbability + (bestDrawOdds ? drawProbability : 0);
-  
-  // Check if arbitrage exists
-  if (totalProbability >= 1) {
-    return null; // No arbitrage opportunity
-  }
-  
-  // Calculate optimal stakes (for $100 total investment)
-  const homeStake = (homeProbability / totalProbability) * 100;
-  const awayStake = (awayProbability / totalProbability) * 100;
-  const drawStake = bestDrawOdds ? (drawProbability / totalProbability) * 100 : 0;
-  
-  // Calculate guaranteed profit
-  const guaranteedProfitPercentage = ((1 / totalProbability) - 1) * 100;
-  
-  return {
-    isArbitrage: true,
-    totalProbability,
-    profitPercentage: guaranteedProfitPercentage,
-    stakes: [
-      {
-        outcome: 'home',
-        team: match.homeTeam.name,
-        sportsbook: bestHomeOdds.sportsbook.name,
-        odds: bestHomeOdds.value,
-        stake: homeStake,
-        return: homeStake * bestHomeOdds.value
-      },
-      {
-        outcome: 'away',
-        team: match.awayTeam.name,
-        sportsbook: bestAwayOdds.sportsbook.name,
-        odds: bestAwayOdds.value,
-        stake: awayStake,
-        return: awayStake * bestAwayOdds.value
-      },
-      ...(bestDrawOdds ? [{
-        outcome: 'draw',
-        team: 'Draw',
-        sportsbook: bestDrawOdds.sportsbook.name,
-        odds: bestDrawOdds.value,
-        stake: drawStake,
-        return: drawStake * bestDrawOdds.value
-      }] : [])
-    ]
-  };
-}
-
-/**
- * Analyze line movement trends across sportsbooks
- */
-export function analyzeLineMovements(match: Match) {
-  if (!match.liveOdds || match.liveOdds.length < 2) return null;
-  
-  try {
-    // Sort odds by timestamp
-    const sortedOdds = [...match.liveOdds].sort((a, b) => 
-      new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime()
-    );
-    
-    const firstOdds = sortedOdds[0];
-    const latestOdds = sortedOdds[sortedOdds.length - 1];
-    
-    // Calculate line movements
-    const homeMovement = latestOdds.homeWin - firstOdds.homeWin;
-    const awayMovement = latestOdds.awayWin - firstOdds.awayWin;
-    
-    // Calculate draw movement if it exists
-    let drawMovement = 0;
-    if (firstOdds.draw !== undefined && latestOdds.draw !== undefined) {
-      drawMovement = latestOdds.draw - firstOdds.draw;
-    }
-    
-    // Determine if there's significant movement (more than 5% change)
-    const isSignificantHome = Math.abs(homeMovement / firstOdds.homeWin) > 0.05;
-    const isSignificantAway = Math.abs(awayMovement / firstOdds.awayWin) > 0.05;
-    const isSignificantDraw = firstOdds.draw !== undefined && 
-      Math.abs(drawMovement / firstOdds.draw) > 0.05;
-    
-    return {
-      homeMovement: {
-        absolute: homeMovement,
-        percentage: (homeMovement / firstOdds.homeWin) * 100,
-        direction: homeMovement > 0 ? 'increasing' : homeMovement < 0 ? 'decreasing' : 'stable',
-        isSignificant: isSignificantHome
-      },
-      awayMovement: {
-        absolute: awayMovement,
-        percentage: (awayMovement / firstOdds.awayWin) * 100,
-        direction: awayMovement > 0 ? 'increasing' : awayMovement < 0 ? 'decreasing' : 'stable',
-        isSignificant: isSignificantAway
-      },
-      ...(firstOdds.draw !== undefined ? {
-        drawMovement: {
-          absolute: drawMovement,
-          percentage: (drawMovement / (firstOdds.draw as number)) * 100,
-          direction: drawMovement > 0 ? 'increasing' : drawMovement < 0 ? 'decreasing' : 'stable',
-          isSignificant: isSignificantDraw
-        }
-      } : {}),
-      timeframe: {
-        start: firstOdds.updatedAt,
-        end: latestOdds.updatedAt,
-        durationMs: new Date(latestOdds.updatedAt).getTime() - new Date(firstOdds.updatedAt).getTime()
-      }
-    };
-  } catch (error) {
-    console.error("Error analyzing line movements:", error);
-    return null;
-  }
-}
+export const SPORTSBOOK_NAMES: Dictionary<string> = {
+  draftkings: "DraftKings",
+  betmgm: "BetMGM",
+  fanduel: "FanDuel",
+  "william-hill": "William Hill",
+  "points-bet": "PointsBet",
+  unibet: "Unibet",
+  "888sport": "888sport",
+  betway: "Betway",
+  bwin: "Bwin",
+  coral: "Coral",
+  ladbrokes: "Ladbrokes",
+  "paddy-power": "Paddy Power",
+  "sky-bet": "Sky Bet",
+  betfair: "Betfair",
+  "sporting-bet": "Sporting Bet",
+  williamhill: "William Hill",
+  caesars: "Caesars",
+  "fox-bet": "Fox Bet",
+  betrivers: "BetRivers",
+  borgata: "Borgata",
+  circasports: "Circa Sports",
+  superbook: "Superbook",
+  wynnbet: "WynnBet",
+  thescore: "theScore",
+  betfred: "Betfred",
+  "golden-nugget": "Golden Nugget",
+  tipico: "Tipico",
+  playup: "PlayUp",
+  betonline: "BetOnline",
+  Bovada: "Bovada",
+  gtbets: "GTbets",
+  intertops: "Intertops",
+  jazzsports: "JazzSports",
+  sportsinteraction: "Sports Interaction",
+  powerplay: "PowerPlay",
+  northstarbets: "NorthStarBets",
+  coolbet: "Coolbet",
+  "unibet-ca": "Unibet CA",
+  bet99: "Bet99",
+  comeon: "ComeOn",
+  leovegas: "LeoVegas",
+  betano: "Betano",
+};

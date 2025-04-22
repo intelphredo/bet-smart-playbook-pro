@@ -1,6 +1,5 @@
-
 import { useEffect, useState } from "react";
-import { Match, League } from "@/types/sports";
+import { Match, League } from "@/types";
 import { mapActionNetworkGameToMatch, ActionNetworkResponse } from "@/services/actionNetworkMappers";
 
 interface UseActionNetworkDataOptions {

@@ -1,11 +1,10 @@
-
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Star } from 'lucide-react';
 import { getTopTeamPicks } from '@/utils/topTeamPickRecommendation';
 import ConfidentTeamPickList from './ConfidentTeamPickList';
 import { useESPNData } from '@/hooks/useESPNData';
-import { League } from "@/types/sports";
+import { League } from "@/types";
 
 const ConfidentPicks = () => {
   // Show top confident team pick PER LEAGUE -- live and upcoming matches (like main page)

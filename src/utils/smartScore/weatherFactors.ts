@@ -1,5 +1,4 @@
-
-import { Match } from "@/types/sports";
+import { Match } from "@/types";
 
 export function calculateWeatherImpact(match: Match) {
   let weatherImpact = 80;

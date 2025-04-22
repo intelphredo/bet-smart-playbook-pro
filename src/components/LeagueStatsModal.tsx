@@ -1,9 +1,8 @@
-
 import React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import ConfidentTeamPickCard from "./ConfidentTeamPickCard";
-import { Match } from "@/types/sports";
+import { Match } from "@/types";
 
 interface LeagueStatsModalProps {
   open: boolean;
@@ -44,4 +43,3 @@ const LeagueStatsModal = ({
 );
 
 export default LeagueStatsModal;
-

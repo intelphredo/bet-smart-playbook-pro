@@ -1,5 +1,4 @@
-
-import { ArbitrageOpportunity } from "@/types/sports";
+import { ArbitrageOpportunity } from "@/types";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Info } from "lucide-react";
@@ -106,4 +105,3 @@ const ArbitrageTable = ({ opportunity }: ArbitrageTableProps) => (
 );
 
 export default ArbitrageTable;
-

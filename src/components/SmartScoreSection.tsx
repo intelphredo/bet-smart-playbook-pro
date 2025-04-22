@@ -1,6 +1,5 @@
-
 import React from "react";
-import { Match } from "@/types/sports";
+import { Match } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import SmartScoreCard from "./SmartScoreCard";

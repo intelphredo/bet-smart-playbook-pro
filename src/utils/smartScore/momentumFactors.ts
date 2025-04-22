@@ -1,5 +1,4 @@
-
-import { Match } from "@/types/sports";
+import { Match } from "@/types";
 
 // Main momentum factor calculator (cross-sport)
 export function calculateMomentumFactors(match: Match) {

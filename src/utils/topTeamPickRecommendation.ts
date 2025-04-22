@@ -1,20 +1,31 @@
+import { groupBy } from "lodash";
+import { analyzeResults } from "./advancedPredictionAlgorithm";
+import { Match } from "@/types";
 
-import { algorithmPerformanceData } from "@/data/algorithmPerformanceData";
-import { Match } from "@/types/sports";
-
-// Helper: for a list of matches, get the one with the highest confidence for the selected league
-export const getTopTeamPicks = (matches: Match[]): Match[] => {
-  // We'll return top confident (highest `prediction.confidence`) match for each league in algorithmPerformanceData
-  const picks: Match[] = [];
-  for (const leagueObj of algorithmPerformanceData) {
-    const league = leagueObj.name.toUpperCase();
-    // filter matches where league matches
-    const leagueMatches = matches.filter(m => m.league.toUpperCase() === league && m.prediction && typeof m.prediction.confidence === "number");
-    if (leagueMatches.length > 0) {
-      // sort by confidence, descending
-      leagueMatches.sort((a, b) => (b.prediction?.confidence || 0) - (a.prediction?.confidence || 0));
-      picks.push(leagueMatches[0]);
+/**
+ * Get top team pick per league
+ */
+export function getTopTeamPicks(matches: Match[]) {
+  const byLeague = groupBy(matches, m => m.league);
+  const topPicks: Match[] = [];
+  for (const league in byLeague) {
+    const matchesInLeague = byLeague[league];
+    if (!matchesInLeague || matchesInLeague.length === 0) {
+      continue;
     }
+    // Sort by confidence, then smart score
+    const sorted = matchesInLeague.sort((a, b) => {
+      const confidenceA = a.prediction?.confidence || 0;
+      const confidenceB = b.prediction?.confidence || 0;
+      const smartScoreA = a.smartScore?.overall || 0;
+      const smartScoreB = b.smartScore?.overall || 0;
+      if (confidenceA !== confidenceB) {
+        return confidenceB - confidenceA; // Higher confidence first
+      } else {
+        return smartScoreB - smartScoreA; // Higher smartScore first
+      }
+    });
+    topPicks.push(sorted[0]);
   }
-  return picks;
-};
+  return topPicks;
+}

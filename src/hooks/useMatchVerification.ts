@@ -1,46 +1,39 @@
-
-import { useMemo } from "react";
-import { Match, DataSource, DataVerificationResult } from "@/types/sports";
+import { useState, useEffect } from "react";
 import { verifyMatchData } from "@/utils/dataVerification";
+import { Match, DataVerificationResult } from "@/types";
 
-export function useMatchVerification(
-  allMatches: Match[],
-  espnMatches: Match[],
-  apiMatches: Match[],
-  anMatches: Match[],
-  dataSource: DataSource | "ALL",
-  useExternalApis: boolean,
-  lastRefreshTime: string
-) {
-  const verifiedMatches = useMemo(() => {
-    if (!useExternalApis || dataSource !== "ALL") {
-      return allMatches.map(match => ({
-        ...match,
-        verification: {
-          isVerified: true,
-          confidenceScore: 100,
-          lastUpdated: lastRefreshTime,
-          sources: [dataSource]
-        } as DataVerificationResult
-      }));
-    }
+interface UseMatchVerificationOptions {
+  match: Match;
+  enabled?: boolean;
+}
 
-    return allMatches.map(match => {
-      const matchInSources = [
-        { name: "ESPN", data: espnMatches.find(m => m.id === match.id) },
-        { name: "API", data: apiMatches.find(m => m.id === match.id) },
-        { name: "ACTION", data: anMatches.find(m => m.id === match.id) }
-      ].filter(source => source.data) as { name: string; data: Match }[];
+export function useMatchVerification({ match, enabled = true }: UseMatchVerificationOptions) {
+  const [verification, setVerification] = useState<DataVerificationResult | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
 
-      const verification = verifyMatchData(match, matchInSources);
-      
-      return {
-        ...match,
-        verification,
-        lastUpdated: lastRefreshTime
-      };
-    });
-  }, [allMatches, espnMatches, apiMatches, anMatches, dataSource, useExternalApis, lastRefreshTime]);
+  useEffect(() => {
+    if (!enabled || !match) return;
 
-  return { verifiedMatches };
+    const verifyData = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const result = await verifyMatchData(match);
+        setVerification(result);
+      } catch (e: any) {
+        setError(e);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    verifyData();
+  }, [match, enabled]);
+
+  return {
+    verification,
+    isLoading,
+    error,
+  };
 }

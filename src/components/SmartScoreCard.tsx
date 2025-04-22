@@ -1,10 +1,9 @@
-
 import React from "react";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { ChartLine, Trophy, TrendingUp, Snowflake } from "lucide-react";
-import { Match, SmartScore } from "@/types/sports";
+import { Match, SmartScore } from "@/types";
 import { cn } from "@/lib/utils";
 
 interface SmartScoreCardProps {

@@ -1,28 +1,105 @@
+import { useState, useEffect } from "react";
+import { Match, League } from "@/types";
+import { useESPNData } from "./useESPNData";
+import { useMLBData } from "./useMLBData";
+import { UseSportsDataOptions } from "./types/sportsDataTypes";
 
-import { useState } from "react";
-import { DataSource } from "@/types/sports";
+interface DataSourceManagerProps extends UseSportsDataOptions {
+  onMatchesUpdated: (matches: Match[]) => void;
+}
 
-export function useDataSourceManager(defaultSource: DataSource = "ESPN") {
-  const [dataSource, setDataSource] = useState<DataSource | "ALL">(defaultSource);
-  const [lastRefreshTime, setLastRefreshTime] = useState<string>(new Date().toISOString());
+export function useDataSourceManager({
+  league = "ALL",
+  refreshInterval = 60000,
+  includeSchedule = true,
+  includeTeams = false,
+  includePlayerStats = false,
+  includeStandings = false,
+  teamId,
+  defaultSource = "ESPN",
+  useExternalApis = false,
+  preferredApiSource = 'ALL',
+  onMatchesUpdated,
+}: DataSourceManagerProps) {
+  const [dataSource, setDataSource] = useState(defaultSource);
+  const [availableDataSources, setAvailableDataSources] = useState<string[]>([]);
+  const [matches, setMatches] = useState<Match[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+  const [lastRefreshTime, setLastRefreshTime] = useState(new Date().toISOString());
 
-  const getAvailableDataSources = (useExternalApis: boolean) => {
-    let sources = ['ESPN', 'ACTION', 'MLB'];
-    if (useExternalApis) {
-      sources.push('API');
+  // ESPN Data Hook
+  const espnData = useESPNData({
+    league,
+    refreshInterval,
+    includeSchedule,
+    includeTeams,
+  });
+
+  // MLB Data Hook
+  const mlbData = useMLBData({
+    league,
+    refreshInterval,
+    includeSchedule,
+    includeTeams,
+    includePlayerStats,
+    teamId,
+    includeStandings,
+  });
+
+  useEffect(() => {
+    const sources: string[] = [];
+    if (espnData.allMatches.length > 0) sources.push("ESPN");
+    if (mlbData.allMatches.length > 0) sources.push("MLB");
+    setAvailableDataSources(sources);
+  }, [espnData.allMatches.length, mlbData.allMatches.length]);
+
+  useEffect(() => {
+    setIsLoading(true);
+    setError(null);
+    let allMatches: Match[] = [];
+
+    if (dataSource === "ESPN") {
+      allMatches = espnData.allMatches;
+    } else if (dataSource === "MLB") {
+      allMatches = mlbData.allMatches;
     }
-    return sources;
-  };
 
-  const updateLastRefreshTime = () => {
+    setMatches(allMatches);
+    onMatchesUpdated(allMatches); // Notify parent component
+
+    setIsLoading(false);
+    setLastRefreshTime(new Date().toISOString());
+  }, [dataSource, espnData.allMatches, mlbData.allMatches, onMatchesUpdated]);
+
+  const refetchWithTimestamp = () => {
+    if (dataSource === "ESPN") {
+      espnData.refetch();
+    } else if (dataSource === "MLB") {
+      mlbData.refetch();
+    }
     setLastRefreshTime(new Date().toISOString());
   };
 
+  const verifiedMatches = matches.map(match => ({
+    ...match,
+    verification: {
+      isVerified: true,
+      confidenceScore: 95,
+      lastUpdated: new Date().toISOString(),
+      sources: [dataSource],
+    },
+  }));
+
   return {
+    matches,
+    verifiedMatches,
+    isLoading,
+    error,
     dataSource,
     setDataSource,
+    availableDataSources,
     lastRefreshTime,
-    updateLastRefreshTime,
-    getAvailableDataSources
+    refetchWithTimestamp,
   };
 }

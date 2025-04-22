@@ -1,10 +1,9 @@
-
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { Info } from "lucide-react";
 import PremiumContent from "@/components/PremiumContent";
 import ArbitrageOpportunityCard from "@/components/ArbitrageOpportunityCard";
-import { ArbitrageOpportunity, League } from "@/types/sports";
+import { ArbitrageOpportunity, League } from "@/types";
 
 interface Props {
   selectedLeague: League | "ALL";

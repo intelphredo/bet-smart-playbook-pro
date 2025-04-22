@@ -1,5 +1,4 @@
-
-import { League, Match, BettingAlgorithm, PlayerProp, ArbitrageOpportunity } from "@/types/sports";
+import { League, Match, Team, LiveOdds, Sportsbook, DataVerificationResult, SmartScore } from "@/types";
 
 // Define sportsbooks first so we can use them in other declarations
 export const sportsbooks = [

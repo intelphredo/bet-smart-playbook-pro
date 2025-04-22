@@ -1,5 +1,4 @@
-
-import { Match, SmartScore } from "@/types/sports";
+import { Match, SmartScore } from "@/types";
 
 export function getRecommendation(overall: number, match: Match): SmartScore['recommendation'] {
   // Initialize with default values that match the expected types

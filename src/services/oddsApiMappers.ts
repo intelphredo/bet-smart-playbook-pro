@@ -1,5 +1,4 @@
-
-import { League, Match, Team, LiveOdds, Sportsbook } from "@/types/sports";
+import { Match, LiveOdds, League, Sportsbook } from "@/types";
 
 export const mapOddsApiToMatch = (oddsData: any[], scoresData: any[], league: League): Match[] => {
   try {

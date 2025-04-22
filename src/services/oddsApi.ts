@@ -1,6 +1,5 @@
-
 import { API_CONFIGS, DEFAULT_HEADERS, LEAGUE_MAPPINGS } from "@/config/apiConfig";
-import { League, Match } from "@/types/sports";
+import { League, Match } from "@/types";
 import { mapOddsApiToMatch } from "./oddsApiMappers";
 
 export const fetchOddsApiData = async (league: League): Promise<Match[]> => {

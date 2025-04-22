@@ -1,14 +1,15 @@
-
-import React, { useMemo, useState } from "react";
-import { useSportsData } from "@/hooks/useSportsData";
-import { applyAdvancedPredictions } from "@/utils/advancedPredictionAlgorithm";
-import { Match } from "@/types/sports";
+import React from "react";
+import { useESPNData } from "@/hooks/useESPNData";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Match } from "@/types";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { format, isToday, parseISO, addDays, startOfDay, endOfDay } from "date-fns";
 import { Button } from "./ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
+import { useSportsData } from "@/hooks/useSportsData";
+import { applyAdvancedPredictions } from "@/utils/advancedPredictionAlgorithm";
 
 /**
  * TodaysTeamPredictions - Displays a table of all matches happening today and upcoming week with their predictions.
@@ -37,8 +38,8 @@ function isMatchInDateRange(match: Match, startDate: Date, endDate: Date) {
 }
 
 const TodaysTeamPredictions = () => {
-  const [showUpcomingWeek, setShowUpcomingWeek] = useState(true);
-  const [dataProvider, setDataProvider] = useState<string>("ESPN");
+  const [showUpcomingWeek, setShowUpcomingWeek] = React.useState(true);
+  const [dataProvider, setDataProvider] = React.useState<string>("ESPN");
   
   const { 
     verifiedMatches: allMatches, 
@@ -65,11 +66,11 @@ const TodaysTeamPredictions = () => {
 
   console.log("Raw matches data:", allMatches);
 
-  const matchesWithPredictions = useMemo(() => {
+  const matchesWithPredictions = React.useMemo(() => {
     return applyAdvancedPredictions(allMatches || []);
   }, [allMatches]);
 
-  const filteredMatches: Match[] = useMemo(() => {
+  const filteredMatches: Match[] = React.useMemo(() => {
     const today = new Date();
     const oneWeekLater = addDays(today, 7);
     

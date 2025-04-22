@@ -1,5 +1,4 @@
-
-import { Match } from "@/types/sports";
+import { Match } from "@/types";
 import MatchOutcomeBadges from "./MatchOutcomeBadges";
 import MatchOutcomeReasoning from "./MatchOutcomeReasoning";
 

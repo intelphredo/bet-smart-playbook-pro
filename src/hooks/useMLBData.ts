@@ -1,160 +1,122 @@
-
-import { useQuery } from "@tanstack/react-query";
-import { fetchMLBSchedule, fetchMLBTeams, fetchMLBPlayerStats, fetchMLBStandings, fetchMLBLiveData } from "@/services/mlbApi";
-import { Match, Team, PlayerStats, DivisionStanding } from "@/types/sports";
-import { useMemo } from "react";
+import { useState, useEffect } from "react";
+import { fetchMLBSchedule, fetchMLBTeams, fetchMLBStandings, fetchMLBPlayerStats } from "@/services/mlbApi";
+import { Match, Team, League, PlayerStats } from "@/types";
 
 interface UseMLBDataOptions {
+  league?: League | "ALL";
   refreshInterval?: number;
+  includeSchedule?: boolean;
   includeTeams?: boolean;
   includePlayerStats?: boolean;
-  includeStandings?: boolean;
-  teamId?: string;
 }
 
 export function useMLBData({
+  league = "MLB",
   refreshInterval = 60000,
+  includeSchedule = true,
   includeTeams = false,
   includePlayerStats = false,
-  includeStandings = false,
-  teamId,
 }: UseMLBDataOptions = {}) {
-  // Fetch MLB schedule data
-  const {
-    data: scheduleData,
-    isLoading: isLoadingSchedule,
-    error: scheduleError,
-    refetch: refetchSchedule
-  } = useQuery({
-    queryKey: ['mlb-schedule'],
-    queryFn: fetchMLBSchedule,
-    refetchInterval: refreshInterval,
-    staleTime: refreshInterval,
-  });
+  const [allMatches, setAllMatches] = useState<Match[]>([]);
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [playerStats, setPlayerStats] = useState<PlayerStats[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingTeams, setIsLoadingTeams] = useState(false);
+  const [isLoadingStandings, setIsLoadingStandings] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+  const [standingsError, setStandingsError] = useState<Error | null>(null);
+  const [divisionsStandings, setDivisionsStandings] = useState<any>(null);
 
-  // Fetch MLB teams data if requested
-  const {
-    data: teamsData,
-    isLoading: isLoadingTeams,
-    error: teamsError
-  } = useQuery({
-    queryKey: ['mlb-teams'],
-    queryFn: fetchMLBTeams,
-    refetchInterval: refreshInterval,
-    staleTime: refreshInterval,
-    enabled: includeTeams,
-  });
-
-  // Fetch MLB player stats if requested and team ID is provided
-  const {
-    data: playerStatsData,
-    isLoading: isLoadingPlayerStats,
-    error: playerStatsError
-  } = useQuery({
-    queryKey: ['mlb-player-stats', teamId],
-    queryFn: () => teamId ? fetchMLBPlayerStats(teamId) : Promise.resolve([]),
-    refetchInterval: refreshInterval,
-    staleTime: refreshInterval,
-    enabled: includePlayerStats && !!teamId,
-  });
-
-  // Fetch MLB standings if requested
-  const {
-    data: standingsData,
-    isLoading: isLoadingStandings,
-    error: standingsError
-  } = useQuery({
-    queryKey: ['mlb-standings'],
-    queryFn: fetchMLBStandings,
-    refetchInterval: refreshInterval,
-    staleTime: refreshInterval,
-    enabled: includeStandings,
-  });
-
-  // Log raw data for debugging
-  console.log('MLB raw schedule data length:', scheduleData?.length || 0);
-
-  // Process the schedule data
-  const { upcomingMatches, liveMatches, finishedMatches } = useMemo(() => {
-    // Ensure data is an array before filtering
-    if (!Array.isArray(scheduleData)) {
-      console.log('MLB data is not an array');
-      return { upcomingMatches: [], liveMatches: [], finishedMatches: [] };
+  const fetchSchedule = async () => {
+    if (!includeSchedule) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+      const matches = await fetchMLBSchedule();
+      setAllMatches(matches);
+    } catch (e: any) {
+      setError(e);
+    } finally {
+      setIsLoading(false);
     }
-    
-    // Log match statuses for debugging
-    const statuses = scheduleData.map(match => match.status);
-    console.log('MLB match statuses:', new Set(statuses));
-    
-    const matches = scheduleData || [];
-    const live = matches.filter(match => match.status === "live") || [];
-    // Consider both "scheduled" and "pre" as upcoming matches
-    const upcoming = matches.filter(match => match.status === "scheduled" || match.status === "pre") || [];
-    const finished = matches.filter(match => match.status === "finished") || [];
-    
-    console.log('MLB parsed upcoming:', upcoming.length);
-    console.log('MLB parsed live:', live.length);
-    console.log('MLB parsed finished:', finished.length);
-    
-    return { upcomingMatches: upcoming, liveMatches: live, finishedMatches: finished };
-  }, [scheduleData]);
+  };
 
-  // Process standings data if available
-  const divisionsStandings = useMemo(() => {
-    if (!standingsData) return [];
-    
-    const standings: DivisionStanding[] = [];
-    
-    standingsData.records.forEach(record => {
-      const divisionStanding: DivisionStanding = {
-        divisionName: record.division.name,
-        teams: record.teamRecords.map(teamRecord => ({
-          team: {
-            id: teamRecord.team.id.toString(),
-            name: teamRecord.team.name,
-            shortName: teamRecord.team.abbreviation || teamRecord.team.name.substring(0, 3),
-            logo: `https://www.mlbstatic.com/team-logos/${teamRecord.team.id}.svg`,
-          },
-          wins: teamRecord.wins,
-          losses: teamRecord.losses,
-          winPercentage: teamRecord.winningPercentage,
-          gamesBack: teamRecord.divisionGamesBack,
-          streak: teamRecord.streak.streakCode,
-        }))
-      };
-      
-      standings.push(divisionStanding);
-    });
-    
-    return standings;
-  }, [standingsData]);
+  const fetchTeams = async () => {
+    if (!includeTeams) return;
+    setIsLoadingTeams(true);
+    setError(null);
+    try {
+      const teamsData = await fetchMLBTeams();
+      setTeams(teamsData);
+    } catch (e: any) {
+      setError(e);
+    } finally {
+      setIsLoadingTeams(false);
+    }
+  };
+
+  const fetchStandings = async () => {
+    setIsLoadingStandings(true);
+    setStandingsError(null);
+    try {
+      const standingsData = await fetchMLBStandings();
+      setDivisionsStandings(standingsData);
+    } catch (e: any) {
+      setStandingsError(e);
+    } finally {
+      setIsLoadingStandings(false);
+    }
+  };
+
+  const fetchPlayerStatistics = async () => {
+    if (!includePlayerStats) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+      // Fetch player stats for all teams (inefficient, but works for demo)
+      const allTeams = await fetchMLBTeams();
+      const allStats = await Promise.all(
+        allTeams.map(team => fetchMLBPlayerStats(team.id))
+      );
+      // Flatten the array of arrays into a single array
+      setPlayerStats(allStats.flat());
+    } catch (e: any) {
+      setError(e);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchSchedule();
+    if (includeTeams) {
+      fetchTeams();
+    }
+    if (includePlayerStats) {
+      fetchPlayerStatistics();
+    }
+    fetchStandings(); // Always fetch standings
+
+    if (refreshInterval) {
+      const id = setInterval(fetchSchedule, refreshInterval);
+      return () => clearInterval(id);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [league, includeSchedule, refreshInterval, includeTeams, includePlayerStats]);
 
   return {
-    // Schedule data
-    upcomingMatches,
-    liveMatches,
-    finishedMatches,
-    allMatches: scheduleData || [],
-    isLoadingSchedule,
-    scheduleError,
-    refetchSchedule,
-    
-    // Teams data
-    teams: teamsData || [],
+    allMatches,
+    teams,
+    playerStats,
+    upcomingMatches: allMatches.filter(m => m.status === "scheduled"),
+    liveMatches: allMatches.filter(m => m.status === "live"),
+    finishedMatches: allMatches.filter(m => m.status === "finished"),
+    isLoading,
+    error,
     isLoadingTeams,
-    teamsError,
-    
-    // Player stats data
-    playerStats: playerStatsData || [],
-    isLoadingPlayerStats,
-    playerStatsError,
-    
-    // Standings data
-    divisionsStandings,
     isLoadingStandings,
     standingsError,
-    
-    // Utility to fetch live game data
-    fetchLiveGameData: fetchMLBLiveData
+    divisionsStandings,
+    fetchLiveGameData: undefined,
   };
 }
