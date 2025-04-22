@@ -10,33 +10,70 @@ export const useSavePrediction = () => {
   return useMutation({
     mutationFn: async (match: Match) => {
       if (!match.prediction) {
-        console.warn("No prediction found for match:", match.id);
+        console.error("No prediction found for match:", match.id);
+        toast.error("No prediction data available to save");
         return;
       }
 
       try {
-        // Initialize algorithmId with a default value if not present
-        // In a real-world scenario, you would need to ensure this is populated correctly
-        const algorithmId = match.prediction.algorithmId || "default-algorithm-id";
+        // Get algorithm ID or use a default one if not present
+        const algorithmId = match.prediction.algorithmId || "default-algorithm";
         
         console.log(`Saving prediction for match ${match.id} with algorithm ${algorithmId}`);
+        console.log("Prediction data:", {
+          match_id: match.id,
+          league: match.league,
+          algorithm_id: algorithmId,
+          prediction: match.prediction.recommended,
+          confidence: match.prediction.confidence,
+          projected_scores: match.prediction.projectedScore
+        });
 
-        const { error } = await supabase
+        // First check if prediction already exists for this match
+        const { data: existingPrediction, error: checkError } = await supabase
           .from("algorithm_predictions")
-          .insert({
-            match_id: match.id,
-            league: match.league,
-            algorithm_id: algorithmId,
-            prediction: match.prediction.recommended,
-            confidence: match.prediction.confidence,
-            projected_score_home: match.prediction.projectedScore.home,
-            projected_score_away: match.prediction.projectedScore.away,
-            status: 'pending'
-          });
+          .select("id")
+          .eq("match_id", match.id)
+          .maybeSingle();
 
-        if (error) {
-          console.error("Error saving prediction:", error);
-          throw error;
+        if (checkError) {
+          console.error("Error checking for existing prediction:", checkError);
+          throw checkError;
+        }
+
+        if (existingPrediction) {
+          console.log(`Prediction for match ${match.id} already exists, updating`);
+          
+          const { error } = await supabase
+            .from("algorithm_predictions")
+            .update({
+              prediction: match.prediction.recommended,
+              confidence: match.prediction.confidence,
+              projected_score_home: match.prediction.projectedScore.home,
+              projected_score_away: match.prediction.projectedScore.away,
+              predicted_at: new Date().toISOString()
+            })
+            .eq("match_id", match.id);
+
+          if (error) throw error;
+        } else {
+          console.log(`Creating new prediction for match ${match.id}`);
+          
+          const { error } = await supabase
+            .from("algorithm_predictions")
+            .insert({
+              match_id: match.id,
+              league: match.league,
+              algorithm_id: algorithmId,
+              prediction: match.prediction.recommended,
+              confidence: match.prediction.confidence,
+              projected_score_home: match.prediction.projectedScore.home,
+              projected_score_away: match.prediction.projectedScore.away,
+              status: 'pending',
+              predicted_at: new Date().toISOString()
+            });
+
+          if (error) throw error;
         }
         
         console.log(`Successfully saved prediction for match ${match.id}`);
@@ -52,6 +89,7 @@ export const useSavePrediction = () => {
     },
     onError: (error) => {
       console.error("Mutation error in useSavePrediction:", error);
+      toast.error(`Failed to save prediction: ${error.message}`);
     }
   });
 };

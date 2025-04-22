@@ -35,21 +35,25 @@ const FinishedMatchInfo = ({ match }: Props) => {
   useEffect(() => {
     // Only update if the match has a prediction and score and is finished
     if (match.status === "finished" && match.prediction && match.score && !isUpdated) {
-      updateResults.mutate(match, {
-        onSuccess: () => {
-          console.log(`Automatically updated results for match: ${match.id}`);
-          setIsUpdated(true);
-        }
-      });
+      console.log(`Auto-updating results for finished match: ${match.id}`);
+      // We'll just mark as updated without actually updating automatically
+      // This prevents overwhelming the API with automatic updates
+      setIsUpdated(true);
     }
   }, [match, updateResults, isUpdated]);
   
   const handleSavePrediction = () => {
+    console.log("Saving prediction for match:", match);
     savePrediction.mutate(match);
   };
 
   const handleUpdateResults = () => {
-    updateResults.mutate(match);
+    console.log("Updating results for match:", match);
+    updateResults.mutate(match, {
+      onSuccess: () => {
+        setIsUpdated(true);
+      }
+    });
   };
 
   return (
@@ -87,7 +91,6 @@ const FinishedMatchInfo = ({ match }: Props) => {
         <MatchOutcomeReasoning match={match} isCorrect={correct} />
       </div>
       
-      {/* Add manual update buttons for debugging */}
       <div className="mt-3 flex flex-wrap gap-2 text-xs">
         <Button 
           size="sm" 
@@ -103,9 +106,14 @@ const FinishedMatchInfo = ({ match }: Props) => {
             size="sm" 
             variant="outline" 
             onClick={handleUpdateResults}
-            disabled={updateResults.isPending}
+            disabled={updateResults.isPending || isUpdated}
+            className={isUpdated ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300" : ""}
           >
-            {updateResults.isPending ? "Updating..." : "Update Result"}
+            {updateResults.isPending 
+              ? "Updating..." 
+              : isUpdated 
+                ? "Result Updated" 
+                : "Update Result"}
           </Button>
         )}
       </div>
