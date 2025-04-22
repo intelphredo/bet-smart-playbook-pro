@@ -1,9 +1,11 @@
+
 import { useState, useMemo, useEffect } from "react";
 import { useESPNData } from "./useESPNData";
 import { useMLBData } from "./useMLBData";
 import { useSportsApiData } from "./useSportsApiData";
 import { useActionNetworkData } from "./useActionNetworkData";
-import { DataSource, League } from "@/types/sports";
+import { DataSource, League, Match } from "@/types/sports";
+import { verifyMatchData } from "@/utils/dataVerification";
 
 interface UseSportsDataOptions {
   league?: League | "ALL";
@@ -30,7 +32,7 @@ export function useSportsData({
   useExternalApis = false,
   preferredApiSource = 'ALL'
 }: UseSportsDataOptions = {}) {
-  const [dataSource, setDataSource] = useState<DataSource>(defaultSource);
+  const [dataSource, setDataSource] = useState<DataSource | "ALL">(defaultSource);
   const [lastRefreshTime, setLastRefreshTime] = useState<string>(new Date().toISOString());
 
   const {

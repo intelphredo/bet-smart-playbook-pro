@@ -17,6 +17,17 @@ export interface LiveOdds {
   sportsbook: Sportsbook;
 }
 
+export interface DataVerificationResult {
+  isVerified: boolean;
+  confidenceScore: number;
+  lastUpdated: string;
+  sources: string[];
+  discrepancies?: {
+    field: string;
+    values: Record<string, any>;
+  }[];
+}
+
 export interface Match {
   id: string;
   league: League;
@@ -44,6 +55,8 @@ export interface Match {
     period?: string;
   };
   smartScore?: SmartScore;
+  verification?: DataVerificationResult;
+  lastUpdated?: string;
 }
 
 export interface Team {
