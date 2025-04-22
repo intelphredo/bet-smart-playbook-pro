@@ -5,11 +5,15 @@ import { Link } from "react-router-dom";
 import { Calendar } from "lucide-react";
 import { useAlgorithmPerformance } from "@/hooks/useAlgorithmPerformance";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import DateRangeFilter from "./DateRangeFilter";
 
 const AlgorithmsSection = () => {
-  const { data: algorithms, isLoading, error, refetch } = useAlgorithmPerformance();
+  const [dateRange, setDateRange] = useState<{ start?: Date; end?: Date }>({});
+  const { data: algorithms, isLoading, error, refetch } = useAlgorithmPerformance({
+    dateRange,
+  });
 
   // Set up real-time subscription for algorithm predictions
   useEffect(() => {
@@ -33,6 +37,10 @@ const AlgorithmsSection = () => {
     };
   }, [refetch]);
 
+  const resetDateFilter = () => {
+    setDateRange({});
+  };
+
   if (error) {
     return (
       <div className="space-y-4 py-2">
@@ -43,14 +51,21 @@ const AlgorithmsSection = () => {
 
   return (
     <div className="space-y-4 py-2">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center flex-wrap gap-4">
         <h2 className="text-2xl font-bold">Winning Algorithms</h2>
-        <Link to="/schedules">
-          <Button variant="outline" size="sm" className="flex items-center gap-2">
-            <Calendar className="h-4 w-4" />
-            <span>View Full Schedules</span>
-          </Button>
-        </Link>
+        <div className="flex items-center gap-4">
+          <DateRangeFilter
+            dateRange={dateRange}
+            onDateRangeChange={setDateRange}
+            onReset={resetDateFilter}
+          />
+          <Link to="/schedules">
+            <Button variant="outline" size="sm" className="flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
+              <span>View Full Schedules</span>
+            </Button>
+          </Link>
+        </div>
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
