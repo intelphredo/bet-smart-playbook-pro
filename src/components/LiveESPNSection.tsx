@@ -70,9 +70,14 @@ const LiveESPNSection = ({
       )}
 
       {(processedMatches.upcoming.length > 0 || processedMatches.live.length > 0) && (
-        <SmartScoreSection 
-          matches={[...processedMatches.live, ...processedMatches.upcoming]} 
-        />
+        <PremiumContent
+          title="Smart Score Analysis"
+          description="Unlock our advanced Smart Score analysis to get deeper insights into matches."
+        >
+          <SmartScoreSection 
+            matches={[...processedMatches.live, ...processedMatches.upcoming]} 
+          />
+        </PremiumContent>
       )}
 
       <Tabs defaultValue="upcoming" value={activeTab} onValueChange={setActiveTab}>
