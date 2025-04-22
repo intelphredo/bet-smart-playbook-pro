@@ -1,4 +1,3 @@
-
 import { Match, Team, League } from "@/types/sports";
 
 interface HistoricalData {
@@ -349,7 +348,12 @@ function projectScore(
   const offenseDefenseFactor = (teamStrength.offense - opponentStrength.defense) / 100;
   
   // Add home advantage if applicable - reduced impact
-  const homeAdvantage = isHome ? (getDynamicHomeAdvantage(league, { id: "", name: "", shortName: "" }) / 20) : 0;
+  const homeAdvantage = isHome ? (getDynamicHomeAdvantage(league, { 
+    id: "", 
+    name: "", 
+    shortName: "",
+    logo: "" // Adding the missing required 'logo' property
+  }) / 20) : 0;
   
   // Calculate projected score - fairly between teams
   let rawScore = baseScore * (1 + offenseDefenseFactor + homeAdvantage);
