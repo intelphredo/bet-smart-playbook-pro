@@ -1,11 +1,12 @@
+
 import React, { useMemo, useState } from "react";
-import { useESPNData } from "@/hooks/useESPNData";
 import { useSportsData } from "@/hooks/useSportsData";
 import { applyAdvancedPredictions } from "@/utils/advancedPredictionAlgorithm";
 import { Match } from "@/types/sports";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { format, isToday, parseISO, addDays, startOfDay, endOfDay } from "date-fns";
 import { Button } from "./ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 
 /**
  * TodaysTeamPredictions - Displays a table of all matches happening today and upcoming week with their predictions.
@@ -35,12 +36,22 @@ function isMatchInDateRange(match: Match, startDate: Date, endDate: Date) {
 
 const TodaysTeamPredictions = () => {
   const [showUpcomingWeek, setShowUpcomingWeek] = useState(true);
+  const [dataProvider, setDataProvider] = useState<string>("ESPN");
   
-  const { allMatches, isLoading, error } = useSportsData({ 
+  const { allMatches, isLoading, error, availableDataSources, setDataSource, dataSource } = useSportsData({ 
     league: "ALL", 
     refreshInterval: 60000,
-    includeSchedule: true 
+    includeSchedule: true,
+    useExternalApis: true,
+    defaultSource: dataProvider as any
   });
+
+  // Update the external data source when the dropdown changes
+  React.useEffect(() => {
+    if (dataProvider !== dataSource) {
+      setDataSource(dataProvider as any);
+    }
+  }, [dataProvider, dataSource, setDataSource]);
 
   console.log("Raw matches data:", allMatches);
 
@@ -93,10 +104,26 @@ const TodaysTeamPredictions = () => {
   };
 
   if (isLoading) return <div>Loading predictions...</div>;
-  if (error) return <div className="text-red-500">Error loading predictions</div>;
+  if (error) return <div className="text-red-500">Error loading predictions: {error.message}</div>;
   if (!filteredMatches.length) return (
     <div>
-      <h2 className="text-xl font-bold mb-2">{showUpcomingWeek ? "This Week's" : "Today's"} Team Predictions</h2>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-bold">{showUpcomingWeek ? "This Week's" : "Today's"} Team Predictions</h2>
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">Data Source:</span>
+          <Select value={dataProvider} onValueChange={setDataProvider}>
+            <SelectTrigger className="w-[140px]">
+              <SelectValue placeholder="Select source" />
+            </SelectTrigger>
+            <SelectContent>
+              {availableDataSources.map(source => (
+                <SelectItem key={source} value={source}>{source}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+      
       <div className="flex gap-2 mb-4">
         <Button 
           variant={!showUpcomingWeek ? "default" : "outline"} 
@@ -117,7 +144,23 @@ const TodaysTeamPredictions = () => {
 
   return (
     <div className="overflow-x-auto mt-4">
-      <h2 className="text-xl font-bold mb-2">{showUpcomingWeek ? "This Week's" : "Today's"} Team Predictions</h2>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-bold">{showUpcomingWeek ? "This Week's" : "Today's"} Team Predictions</h2>
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">Data Source:</span>
+          <Select value={dataProvider} onValueChange={setDataProvider}>
+            <SelectTrigger className="w-[140px]">
+              <SelectValue placeholder="Select source" />
+            </SelectTrigger>
+            <SelectContent>
+              {availableDataSources.map(source => (
+                <SelectItem key={source} value={source}>{source}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+      
       <div className="flex gap-2 mb-4">
         <Button 
           variant={!showUpcomingWeek ? "default" : "outline"} 
@@ -141,6 +184,7 @@ const TodaysTeamPredictions = () => {
             <TableHead>Prediction</TableHead>
             <TableHead>Confidence</TableHead>
             <TableHead>Projected Score</TableHead>
+            <TableHead>Data Source</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -163,6 +207,11 @@ const TodaysTeamPredictions = () => {
                 {match.prediction
                   ? `${match.prediction.projectedScore.home} - ${match.prediction.projectedScore.away}`
                   : "-"}
+              </TableCell>
+              <TableCell>
+                <span className="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900 rounded-full">
+                  {dataProvider}
+                </span>
               </TableCell>
             </TableRow>
           ))}

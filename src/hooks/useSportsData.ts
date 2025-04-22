@@ -2,8 +2,9 @@
 import { useState } from "react";
 import { useESPNData } from "./useESPNData";
 import { useMLBData } from "./useMLBData";
-import { DataSource, League } from "@/types/sports";
+import { useSportsApiData } from "./useSportsApiData";
 import { useActionNetworkData } from "./useActionNetworkData";
+import { DataSource, League } from "@/types/sports";
 
 interface UseSportsDataOptions {
   league?: League | "ALL";
@@ -14,6 +15,8 @@ interface UseSportsDataOptions {
   includeStandings?: boolean;
   teamId?: string;
   defaultSource?: DataSource;
+  useExternalApis?: boolean; // New option to use external APIs
+  preferredApiSource?: 'SPORTRADAR' | 'ODDSAPI' | 'ALL'; // New option for API preference
 }
 
 export function useSportsData({
@@ -24,7 +27,9 @@ export function useSportsData({
   includePlayerStats = false,
   includeStandings = false,
   teamId,
-  defaultSource = "ESPN"
+  defaultSource = "ESPN",
+  useExternalApis = false, // Default to false to maintain backward compatibility
+  preferredApiSource = 'ALL'
 }: UseSportsDataOptions = {}) {
   // State to track which data source to use
   const [dataSource, setDataSource] = useState<DataSource>(defaultSource);
@@ -80,15 +85,46 @@ export function useSportsData({
     includeSchedule
   });
   
+  // New: External Sports API Data (SportRadar, OddsAPI, etc.)
+  const {
+    allMatches: apiMatches,
+    upcomingMatches: apiUpcomingMatches,
+    liveMatches: apiLiveMatches,
+    finishedMatches: apiFinishedMatches,
+    isLoading: isLoadingApi,
+    error: apiError,
+    refetch: refetchApi
+  } = useSportsApiData({
+    league,
+    refreshInterval,
+    dataSource: preferredApiSource
+  });
+  
   // Log matches for debugging
   console.log('ESPN upcoming matches:', espnUpcomingMatches.length);
   console.log('MLB upcoming matches:', mlbUpcomingMatches.length);
+  if (useExternalApis) {
+    console.log('API upcoming matches:', apiUpcomingMatches.length);
+  }
   
-  // Determine which data set to use, now with Action
+  // Determine which data set to use
   let baseMatches, baseUpcomingMatches, baseLiveMatches, baseFinishedMatches, isLoading, error, refetchSchedule;
   let selectedDivisionsStandings, selectedIsLoadingStandings, selectedStandingsError, selectedFetchLiveGameData;
   
-  if (dataSource === "ACTION") {
+  if (useExternalApis && dataSource === "API") {
+    // Use External APIs data
+    baseMatches = apiMatches;
+    baseUpcomingMatches = apiUpcomingMatches;
+    baseLiveMatches = apiLiveMatches;
+    baseFinishedMatches = apiFinishedMatches;
+    isLoading = isLoadingApi;
+    error = apiError;
+    refetchSchedule = refetchApi;
+    selectedDivisionsStandings = [];
+    selectedIsLoadingStandings = false;
+    selectedStandingsError = null;
+    selectedFetchLiveGameData = undefined;
+  } else if (dataSource === "ACTION") {
     baseMatches = anMatches;
     baseUpcomingMatches = anUpcomingMatches;
     baseLiveMatches = anLiveMatches;
@@ -160,9 +196,16 @@ export function useSportsData({
     setDataSource("MLB");
   }
   
+  // Add API as a valid data source option
+  let availableDataSources = ['ESPN', 'ACTION', 'MLB'];
+  if (useExternalApis) {
+    availableDataSources.push('API');
+  }
+  
   return {
     dataSource,
     setDataSource,
+    availableDataSources,
     upcomingMatches,
     liveMatches,
     finishedMatches,
@@ -174,5 +217,7 @@ export function useSportsData({
     isLoadingStandings: selectedIsLoadingStandings,
     standingsError: selectedStandingsError,
     fetchLiveGameData: selectedFetchLiveGameData,
+    useExternalApis,
+    preferredApiSource
   };
 }

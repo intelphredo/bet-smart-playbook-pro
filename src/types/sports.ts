@@ -168,7 +168,7 @@ export interface User {
   lastLogin?: string;
 }
 
-export type DataSource = 'ESPN' | 'MLB' | 'ACTION';
+export type DataSource = 'ESPN' | 'MLB' | 'ACTION' | 'API';
 
 export interface SmartScore {
   overall: number;        // 0-100 overall smart score
@@ -186,5 +186,57 @@ export interface SmartScore {
     betOn: 'home' | 'away' | 'draw' | 'over' | 'under' | 'none';
     confidence: 'high' | 'medium' | 'low';
     reasoning: string;
+  };
+}
+
+export interface MatchLineup {
+  teamId: string;
+  players: {
+    playerId: string;
+    playerName: string;
+    position: string;
+    isStarter: boolean;
+    isInjured?: boolean;
+    injuryStatus?: string;
+  }[];
+}
+
+export interface MatchOddsTrend {
+  homeOdds: number[];
+  awayOdds: number[];
+  drawOdds?: number[];
+  timestamps: string[];
+}
+
+export interface MatchEnhanced extends Match {
+  lineups?: {
+    home: MatchLineup;
+    away: MatchLineup;
+  };
+  oddsTrend?: MatchOddsTrend;
+  weatherInfo?: {
+    temperature: string;
+    condition: string;
+    windSpeed: string;
+    precipitation: string;
+  };
+  venue?: {
+    name: string;
+    city: string;
+    country: string;
+    capacity: number;
+    surface: string;
+  };
+  headToHead?: {
+    lastMatches: {
+      date: string;
+      homeTeam: string;
+      awayTeam: string;
+      homeScore: number;
+      awayScore: number;
+    }[];
+    homeTeamWins: number;
+    awayTeamWins: number;
+    draws: number;
   };
 }
