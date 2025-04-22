@@ -1,5 +1,5 @@
 
-import { Match } from "@/types/sports";
+import { Match, DataSource } from "@/types/sports";
 
 interface MatchesByStatus {
   baseMatches: Match[];
