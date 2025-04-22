@@ -63,7 +63,9 @@ export const useAlgorithmPerformance = ({ dateRange }: UseAlgorithmPerformancePr
         }, {});
       }
 
-      return algorithms.map(algorithm => {
+      const results = [];
+      
+      for (const algorithm of algorithms) {
         // Use filtered stats if date range is active, otherwise use all-time stats
         const stats = dateRange?.start || dateRange?.end
           ? filteredStats[algorithm.id] || { total: 0, wins: 0, confidence_sum: 0 }
@@ -76,28 +78,33 @@ export const useAlgorithmPerformance = ({ dateRange }: UseAlgorithmPerformancePr
           ? stats.total > 0 ? Math.round((stats.wins / stats.total) * 100) : 0
           : stats.win_rate || 0;
 
-        // Get recent predictions for the W/L display
-        const { data: recentPredictions } = await supabase
-          .from("algorithm_predictions")
-          .select("status, predicted_at")
-          .eq("algorithm_id", algorithm.id)
-          .order("predicted_at", { ascending: false })
-          .limit(5);
+        // Get recent predictions for the W/L display - Using a separate async function
+        const fetchRecentPredictions = async (algorithmId) => {
+          const { data: recentPredictions } = await supabase
+            .from("algorithm_predictions")
+            .select("status, predicted_at")
+            .eq("algorithm_id", algorithmId)
+            .order("predicted_at", { ascending: false })
+            .limit(5);
+            
+          return (recentPredictions || [])
+            .map(p => p.status === 'win' ? 'W' : 'L');
+        };
 
-        const recentResults = (recentPredictions || [])
-          .map(p => p.status === 'win' ? 'W' : 'L');
+        const recentResults = await fetchRecentPredictions(algorithm.id);
 
-        return {
+        results.push({
           name: algorithm.name,
           description: algorithm.description,
           winRate,
           recentResults,
           totalPicks: isFiltered ? stats.total : stats.total_predictions,
           isFiltered
-        } as BettingAlgorithm & { isFiltered: boolean };
-      });
+        } as BettingAlgorithm & { isFiltered: boolean; totalPicks: number; });
+      }
+
+      return results;
     },
     refetchInterval: 60000 // Refetch every minute
   });
 };
-

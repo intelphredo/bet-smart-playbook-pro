@@ -1,13 +1,14 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import React, { useState, useMemo } from "react";
 import LeagueStatsModal from "./LeagueStatsModal";
 import { useESPNData } from "@/hooks/useESPNData";
 import { Match } from "@/types/sports";
-import { algorithmPerformanceData } from "@/data/algorithmPerformanceData";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSportsData } from "@/hooks/useSportsData";
 import { Badge } from "@/components/ui/badge";
+import { useAlgorithmPerformance } from "@/hooks/useAlgorithmPerformance";
 
 // Determine if a prediction was correct
 function isPredictionCorrect(match: Match): boolean | null {
@@ -19,20 +20,33 @@ function isPredictionCorrect(match: Match): boolean | null {
   return false;
 }
 
-// Get unique league names from algorithmPerformanceData for display order
-const leagueNames = algorithmPerformanceData.map((d) => d.name);
+// Define the type for algorithm stats with isFiltered and totalPicks properties
+interface LeagueStatItem {
+  name: string;
+  picks: number;
+  wins: number;
+  winRate: number;
+  isFiltered?: boolean;
+  totalPicks?: number;
+}
+
+// Get unique league names for display order
+const leagueNames = ["NBA", "NFL", "MLB", "NHL", "Soccer"];
 
 const StatsOverview = () => {
   // Modal state
   const [selectedLeague, setSelectedLeague] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
 
+  // Algorithm performance data from the hook
+  const { data: algorithmData, isLoading: isAlgorithmDataLoading } = useAlgorithmPerformance();
+
   // Get all matches using sportsData hook to include MLB-specific data
   const { 
     finishedMatches, 
     upcomingMatches, 
     liveMatches, 
-    isLoading 
+    isLoading: isSportsDataLoading 
   } = useSportsData({ 
     league: "ALL", 
     refreshInterval: 60000 
@@ -40,8 +54,20 @@ const StatsOverview = () => {
 
   // Compute league win rates and pick counts by analyzing finishedMatches
   const leagueStats = useMemo(() => {
-    // Map for each league: { name, picks, winRate }
-    const stats: Record<string, { name: string; picks: number; wins: number; winRate: number }> = {};
+    if (algorithmData && algorithmData.length > 0) {
+      // If we have algorithm data, use that instead of calculating from matches
+      return algorithmData.map(algo => ({
+        name: algo.name,
+        picks: algo.totalPicks || 0,
+        wins: Math.round((algo.winRate / 100) * (algo.totalPicks || 0)),
+        winRate: algo.winRate,
+        isFiltered: algo.isFiltered,
+        totalPicks: algo.totalPicks
+      }));
+    }
+
+    // Fallback: Calculate from matches if no algorithm data
+    const stats: Record<string, LeagueStatItem> = {};
 
     // Only consider finished matches that have a prediction and league property
     for (const match of finishedMatches || []) {
@@ -58,7 +84,9 @@ const StatsOverview = () => {
       stat.winRate = stat.picks > 0 ? Math.round((stat.wins / stat.picks) * 100) : 0;
       return stat;
     });
-  }, [finishedMatches]);
+  }, [finishedMatches, algorithmData]);
+
+  const isLoading = isSportsDataLoading || isAlgorithmDataLoading;
 
   // All matches with predictions (for LeagueStatsModal)
   const allMatchesWithPred: Match[] = useMemo(
@@ -82,12 +110,15 @@ const StatsOverview = () => {
       (d) => d.name.toUpperCase() === selectedLeague.toUpperCase()
     );
 
+  // Check if any stats are filtered
+  const hasFilteredStats = leagueStats.some(stat => stat.isFiltered);
+
   return (
     <Card>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-xl">Algorithm Performance</CardTitle>
-          {leagueStats[0]?.isFiltered && (
+          {hasFilteredStats && (
             <Badge variant="outline" className="ml-2">
               Filtered View
             </Badge>
@@ -123,7 +154,7 @@ const StatsOverview = () => {
                   <Tooltip
                     formatter={(value, name) => [
                       `${value}%`,
-                      leagueStats[0]?.isFiltered ? "Filtered Win Rate" : "All-Time Win Rate"
+                      hasFilteredStats ? "Filtered Win Rate" : "All-Time Win Rate"
                     ]}
                     labelFormatter={(value) => `${value} League`}
                   />
@@ -154,7 +185,7 @@ const StatsOverview = () => {
                     {item.winRate ? `${item.winRate}%` : "--"}
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    {item.name} | {item.totalPicks} pick{item.totalPicks !== 1 ? "s" : ""}
+                    {item.name} | {item.picks || 0} pick{item.picks !== 1 ? "s" : ""}
                     {item.isFiltered && " (filtered)"}
                   </div>
                 </button>
