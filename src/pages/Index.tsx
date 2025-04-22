@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { League } from "@/types/sports";
 import StatsOverview from "@/components/StatsOverview";
@@ -24,7 +23,6 @@ const Index = () => {
   const [sportCategoryFilter, setSportCategoryFilter] = useState<SportCategory | "ALL">("ALL");
   const { toast } = useToast();
 
-  // Use our enhanced sports data hook
   const {
     upcomingMatches,
     liveMatches,
@@ -50,14 +48,11 @@ const Index = () => {
     });
   };
 
-  // Filter arbitrage opportunities by selected league and team
   const filteredArbitrage = arbitrageOpportunities.filter(opportunity => {
-    // Filter by league
     if (selectedLeague !== "ALL" && opportunity.match.league !== selectedLeague) {
       return false;
     }
     
-    // Filter by team name if provided
     if (teamFilter && !(
       opportunity.match.homeTeam.toLowerCase().includes(teamFilter.toLowerCase()) || 
       opportunity.match.awayTeam.toLowerCase().includes(teamFilter.toLowerCase())
@@ -68,10 +63,8 @@ const Index = () => {
     return true;
   });
 
-  // Create real-time arbitrage opportunities from match data
   const realTimeArbs = [...upcomingMatches, ...liveMatches]
     .filter(match => {
-      // Apply team filter if active
       if (teamFilter && !(
         match.homeTeam.shortName.toLowerCase().includes(teamFilter.toLowerCase()) || 
         match.awayTeam.shortName.toLowerCase().includes(teamFilter.toLowerCase())
