@@ -1,6 +1,6 @@
 
 import { useMemo } from "react";
-import { Match, League } from "@/types/sports";
+import { Match, League } from "@/types";
 
 export function useLeagueData(
   matches: Match[],

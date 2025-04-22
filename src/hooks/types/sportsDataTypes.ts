@@ -1,5 +1,5 @@
 
-import { League, DataSource } from "@/types/sports";
+import { League, DataSource } from "@/types";
 
 export interface UseSportsDataOptions {
   league?: League | "ALL";

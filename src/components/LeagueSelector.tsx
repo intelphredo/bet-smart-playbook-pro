@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { League } from '@/types/sports';
+import { League } from '@/types';
 import { Button } from '@/components/ui/button';
 
 interface LeagueSelectorProps {

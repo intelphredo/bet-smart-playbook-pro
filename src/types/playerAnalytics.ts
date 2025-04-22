@@ -1,5 +1,5 @@
 
-import { PropType } from "./sports";
+import { PropType } from "./core";
 
 export interface PlayerHistoricalData {
   playerId: string;
