@@ -21,13 +21,13 @@ import { SportCategory } from "@/types/LeagueRegistry";
 interface AdvancedFiltersProps {
   tempFilters: {
     team: string;
-    sportCategory: string;
+    sportCategory: SportCategory | "ALL";
   };
   tempDateRange: {
     start?: Date;
     end?: Date;
   };
-  setTempFilters: (filters: { team: string; sportCategory: string }) => void;
+  setTempFilters: (filters: { team: string; sportCategory: SportCategory | "ALL" }) => void;
   setTempDateRange: (range: { start?: Date; end?: Date }) => void;
   onApplyFilters: () => void;
   sportCategories: string[];
@@ -69,7 +69,7 @@ const AdvancedFilters = ({
         </label>
         <Select
           value={tempFilters.sportCategory}
-          onValueChange={(value) => setTempFilters({...tempFilters, sportCategory: value})}
+          onValueChange={(value) => setTempFilters({...tempFilters, sportCategory: value as SportCategory | "ALL"})}
         >
           <SelectTrigger>
             <SelectValue placeholder="Select category" />

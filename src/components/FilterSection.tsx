@@ -78,7 +78,7 @@ const FilterSection = ({
     }
     setTempFilters({
       team: "",
-      sportCategory: "ALL"
+      sportCategory: "ALL" as const
     });
     setTempDateRange({});
     setIsAdvancedFiltersOpen(false);
@@ -132,7 +132,7 @@ const FilterSection = ({
         <AdvancedFilters
           tempFilters={tempFilters}
           tempDateRange={tempDateRange}
-          setTempFilters={setTempFilters}
+          setTempFilters={(filters) => setTempFilters(filters as { team: string; sportCategory: "ALL" | SportCategory })}
           setTempDateRange={setTempDateRange}
           onApplyFilters={applyAdvancedFilters}
           sportCategories={sportCategories}
