@@ -9,6 +9,77 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      algorithm_predictions: {
+        Row: {
+          algorithm_id: string
+          confidence: number
+          id: string
+          league: string
+          match_id: string
+          metadata: Json | null
+          predicted_at: string
+          prediction: string
+          result_updated_at: string | null
+          status: string
+        }
+        Insert: {
+          algorithm_id: string
+          confidence: number
+          id?: string
+          league: string
+          match_id: string
+          metadata?: Json | null
+          predicted_at?: string
+          prediction: string
+          result_updated_at?: string | null
+          status?: string
+        }
+        Update: {
+          algorithm_id?: string
+          confidence?: number
+          id?: string
+          league?: string
+          match_id?: string
+          metadata?: Json | null
+          predicted_at?: string
+          prediction?: string
+          result_updated_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "algorithm_predictions_algorithm_id_fkey"
+            columns: ["algorithm_id"]
+            isOneToOne: false
+            referencedRelation: "algorithms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      algorithms: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       injury_reports: {
         Row: {
           created_at: string
