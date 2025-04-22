@@ -10,6 +10,25 @@ interface UseAlgorithmPerformanceProps {
   };
 }
 
+// Define clear interfaces for our different stats types
+interface AllTimeStats {
+  total_predictions: number;
+  correct_predictions: number;
+  win_rate: number;
+  avg_confidence: number;
+}
+
+interface FilteredStats {
+  total: number;
+  wins: number;
+  confidence_sum: number;
+}
+
+// Helper function to check if we're dealing with filtered or all-time stats
+function isAllTimeStats(stats: AllTimeStats | FilteredStats): stats is AllTimeStats {
+  return 'total_predictions' in stats;
+}
+
 export const useAlgorithmPerformance = ({ dateRange }: UseAlgorithmPerformanceProps = {}) => {
   return useQuery({
     queryKey: ["algorithmPerformance", dateRange],
@@ -38,7 +57,7 @@ export const useAlgorithmPerformance = ({ dateRange }: UseAlgorithmPerformancePr
         }
 
         // If we have a date range, fetch filtered predictions
-        let filteredStats: Record<string, { total: number; wins: number; confidence_sum: number }> = {};
+        let filteredStats: Record<string, FilteredStats> = {};
         
         if (dateRange?.start || dateRange?.end) {
           console.log("Fetching filtered predictions for date range:", 
@@ -75,23 +94,33 @@ export const useAlgorithmPerformance = ({ dateRange }: UseAlgorithmPerformancePr
             if (pred.status === 'win') acc[pred.algorithm_id].wins++;
             acc[pred.algorithm_id].confidence_sum += pred.confidence;
             return acc;
-          }, {} as Record<string, { total: number; wins: number; confidence_sum: number }>);
+          }, {} as Record<string, FilteredStats>);
         }
 
         const results: Array<BettingAlgorithm & { isFiltered: boolean; totalPicks: number; }> = [];
         
         for (const algorithm of algorithms) {
           // Use filtered stats if date range is active, otherwise use all-time stats
-          const stats = dateRange?.start || dateRange?.end
+          const isFiltered = !!(dateRange?.start || dateRange?.end);
+          const algorithmStats = isFiltered
             ? filteredStats[algorithm.id] || { total: 0, wins: 0, confidence_sum: 0 }
             : algorithm.algorithm_stats?.[0] || { total_predictions: 0, correct_predictions: 0, win_rate: 0, avg_confidence: 0 };
+          
+          let winRate: number;
+          let totalPicks: number;
 
-          const isFiltered = !!(dateRange?.start || dateRange?.end);
-
-          // Calculate win rate based on whether we're using filtered or all-time stats
-          const winRate = isFiltered
-            ? stats.total > 0 ? Math.round((stats.wins / stats.total) * 100) : 0
-            : stats.win_rate || 0;
+          // Calculate win rate and total picks based on whether we're using filtered or all-time stats
+          if (isFiltered) {
+            // For filtered stats
+            const stats = algorithmStats as FilteredStats;
+            winRate = stats.total > 0 ? Math.round((stats.wins / stats.total) * 100) : 0;
+            totalPicks = stats.total;
+          } else {
+            // For all-time stats
+            const stats = algorithmStats as AllTimeStats;
+            winRate = stats.win_rate || 0;
+            totalPicks = stats.total_predictions || 0;
+          }
 
           // Get recent predictions for the W/L display
           const recentPredictions = async (algorithmId: string) => {
@@ -113,7 +142,7 @@ export const useAlgorithmPerformance = ({ dateRange }: UseAlgorithmPerformancePr
             description: algorithm.description,
             winRate,
             recentResults,
-            totalPicks: isFiltered ? stats.total : stats.total_predictions,
+            totalPicks,
             isFiltered
           });
         }
