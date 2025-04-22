@@ -1,11 +1,12 @@
-
-import { useState, useMemo, useEffect } from "react";
+import { useEffect } from "react";
 import { useESPNData } from "./useESPNData";
 import { useMLBData } from "./useMLBData";
 import { useSportsApiData } from "./useSportsApiData";
 import { useActionNetworkData } from "./useActionNetworkData";
 import { DataSource, League, Match } from "@/types/sports";
-import { verifyMatchData } from "@/utils/dataVerification";
+import { useDataSourceManager } from "./useDataSourceManager";
+import { useMatchVerification } from "./useMatchVerification";
+import { useMatchesByStatus } from "./useMatchesByStatus";
 
 interface UseSportsDataOptions {
   league?: League | "ALL";
@@ -32,8 +33,13 @@ export function useSportsData({
   useExternalApis = false,
   preferredApiSource = 'ALL'
 }: UseSportsDataOptions = {}) {
-  const [dataSource, setDataSource] = useState<DataSource | "ALL">(defaultSource);
-  const [lastRefreshTime, setLastRefreshTime] = useState<string>(new Date().toISOString());
+  const {
+    dataSource,
+    setDataSource,
+    lastRefreshTime,
+    updateLastRefreshTime,
+    getAvailableDataSources
+  } = useDataSourceManager(defaultSource);
 
   const {
     allMatches: espnMatches,
@@ -103,64 +109,42 @@ export function useSportsData({
     console.log('API upcoming matches:', apiUpcomingMatches.length);
   }
 
-  let baseMatches, baseUpcomingMatches, baseLiveMatches, baseFinishedMatches, isLoading, error, refetchSchedule;
-  let selectedDivisionsStandings, selectedIsLoadingStandings, selectedStandingsError, selectedFetchLiveGameData;
+  const {
+    baseMatches,
+    baseUpcomingMatches,
+    baseLiveMatches,
+    baseFinishedMatches,
+    isLoading,
+    error,
+    refetchSchedule,
+    selectedDivisionsStandings,
+    selectedIsLoadingStandings,
+    selectedStandingsError,
+    selectedFetchLiveGameData
+  } = useMatchesByStatus(
+    dataSource,
+    useExternalApis,
+    { allMatches: apiMatches, upcomingMatches: apiUpcomingMatches, liveMatches: apiLiveMatches, finishedMatches: apiFinishedMatches, isLoading: isLoadingApi, error: apiError, refetch: refetchApi },
+    { allMatches: anMatches, upcomingMatches: anUpcomingMatches, liveMatches: anLiveMatches, finishedMatches: anFinishedMatches, isLoading: isLoadingAN, error: anError, refetch: refetchAN },
+    { allMatches: mlbMatches, upcomingMatches: mlbUpcomingMatches, liveMatches: mlbLiveMatches, finishedMatches: mlbFinishedMatches, isLoadingSchedule: isLoadingMLB, scheduleError: mlbError, refetchSchedule: refetchMLB, divisionsStandings: mlbDivisionsStandings, isLoadingStandings: mlbIsLoadingStandings, standingsError: mlbStandingsError, fetchLiveGameData: mlbFetchLiveGameData },
+    { allMatches: espnMatches, upcomingMatches: espnUpcomingMatches, liveMatches: espnLiveMatches, finishedMatches: espnFinishedMatches, isLoading: isLoadingESPN, error: espnError, refetch: refetchESPN }
+  );
 
-  if (useExternalApis && dataSource === "API") {
-    baseMatches = apiMatches;
-    baseUpcomingMatches = apiUpcomingMatches;
-    baseLiveMatches = apiLiveMatches;
-    baseFinishedMatches = apiFinishedMatches;
-    isLoading = isLoadingApi;
-    error = apiError;
-    refetchSchedule = refetchApi;
-    selectedDivisionsStandings = [];
-    selectedIsLoadingStandings = false;
-    selectedStandingsError = null;
-    selectedFetchLiveGameData = undefined;
-  } else if (dataSource === "ACTION") {
-    baseMatches = anMatches;
-    baseUpcomingMatches = anUpcomingMatches;
-    baseLiveMatches = anLiveMatches;
-    baseFinishedMatches = anFinishedMatches;
-    isLoading = isLoadingAN;
-    error = anError;
-    refetchSchedule = refetchAN;
-    selectedDivisionsStandings = [];
-    selectedIsLoadingStandings = false;
-    selectedStandingsError = null;
-    selectedFetchLiveGameData = undefined;
-  } else if (dataSource === "MLB") {
-    baseMatches = mlbMatches;
-    baseUpcomingMatches = mlbUpcomingMatches;
-    baseLiveMatches = mlbLiveMatches;
-    baseFinishedMatches = mlbFinishedMatches;
-    isLoading = isLoadingMLB;
-    error = mlbError;
-    refetchSchedule = refetchMLB;
-    selectedDivisionsStandings = mlbDivisionsStandings;
-    selectedIsLoadingStandings = mlbIsLoadingStandings;
-    selectedStandingsError = mlbStandingsError;
-    selectedFetchLiveGameData = mlbFetchLiveGameData;
-  } else {
-    baseMatches = espnMatches;
-    baseUpcomingMatches = espnUpcomingMatches;
-    baseLiveMatches = espnLiveMatches;
-    baseFinishedMatches = espnFinishedMatches;
-    isLoading = isLoadingESPN;
-    error = espnError;
-    refetchSchedule = refetchESPN;
-    selectedDivisionsStandings = [];
-    selectedIsLoadingStandings = false;
-    selectedStandingsError = null;
-    selectedFetchLiveGameData = undefined;
-  }
+  const { verifiedMatches } = useMatchVerification(
+    baseMatches,
+    espnMatches,
+    apiMatches,
+    anMatches,
+    dataSource,
+    useExternalApis,
+    lastRefreshTime
+  );
 
   const allMatches = (() => {
     if (dataSource === "ESPN" && league === "MLB") {
-      return baseMatches.filter(match => match.league === "MLB");
+      return verifiedMatches.filter(match => match.league === "MLB");
     }
-    return baseMatches;
+    return verifiedMatches;
   })();
 
   const upcomingMatches = (() => {
@@ -188,44 +172,9 @@ export function useSportsData({
     setDataSource("MLB");
   }
 
-  let availableDataSources = ['ESPN', 'ACTION', 'MLB'];
-  if (useExternalApis) {
-    availableDataSources.push('API');
-  }
-
-  const verifiedMatches = useMemo(() => {
-    if (!useExternalApis || dataSource !== "ALL") {
-      return allMatches.map(match => ({
-        ...match,
-        verification: {
-          isVerified: true,
-          confidenceScore: 100,
-          lastUpdated: lastRefreshTime,
-          sources: [dataSource]
-        }
-      }));
-    }
-
-    return allMatches.map(match => {
-      const matchInSources = [
-        { name: "ESPN", data: espnMatches.find(m => m.id === match.id) },
-        { name: "API", data: apiMatches.find(m => m.id === match.id) },
-        { name: "ACTION", data: anMatches.find(m => m.id === match.id) }
-      ].filter(source => source.data) as { name: string; data: Match }[];
-
-      const verification = verifyMatchData(match, matchInSources);
-      
-      return {
-        ...match,
-        verification,
-        lastUpdated: lastRefreshTime
-      };
-    });
-  }, [allMatches, espnMatches, apiMatches, anMatches, dataSource, useExternalApis, lastRefreshTime]);
-
   const refetchWithTimestamp = async () => {
     await refetchSchedule();
-    setLastRefreshTime(new Date().toISOString());
+    updateLastRefreshTime();
   };
 
   useEffect(() => {
@@ -237,7 +186,7 @@ export function useSportsData({
   return {
     dataSource,
     setDataSource,
-    availableDataSources,
+    availableDataSources: getAvailableDataSources(useExternalApis),
     upcomingMatches,
     liveMatches,
     finishedMatches,
