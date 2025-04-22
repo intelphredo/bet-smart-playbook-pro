@@ -1,4 +1,5 @@
-import { Match, Team, League } from "@/types";
+
+import { League, Match, Team } from "@/types/sports";
 
 export const mapSportRadarToMatch = (data: any, league: League): Match[] => {
   try {

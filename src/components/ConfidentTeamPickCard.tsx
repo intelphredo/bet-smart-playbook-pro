@@ -1,8 +1,9 @@
+
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Trophy, ChartLine } from "lucide-react";
-import { Match } from "@/types";
+import { Match } from "@/types/sports";
 
 interface ConfidentTeamPickCardProps {
   match: Match;

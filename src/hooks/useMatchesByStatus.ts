@@ -1,107 +1,87 @@
-import { useMemo } from "react";
-import { Match } from "@/types";
 
-export interface MatchesByStatusResult {
+import { Match, DataSource } from "@/types/sports";
+
+interface MatchesByStatus {
   baseMatches: Match[];
-  upcomingMatches: Match[];
-  liveMatches: Match[];
-  finishedMatches: Match[];
-  allMatches: Match[];
+  baseUpcomingMatches: Match[];
+  baseLiveMatches: Match[];
+  baseFinishedMatches: Match[];
   isLoading: boolean;
-  error: Error | null;
-  refetchSchedule: () => any;
-  selectedDivisionsStandings?: any;
-  selectedIsLoadingStandings?: boolean;
-  selectedStandingsError?: Error | null;
-  selectedFetchLiveGameData?: (gameId: string) => Promise<any>;
+  error: any;
+  refetchSchedule: () => void;
+  selectedDivisionsStandings: any[];
+  selectedIsLoadingStandings: boolean;
+  selectedStandingsError: any;
+  selectedFetchLiveGameData?: () => void;
 }
 
-export function useMatchesByStatus(allMatches: Match[]): MatchesByStatusResult {
-  return useMemo(() => {
-    const upcomingMatches = allMatches.filter(m => m.status === "scheduled" || m.status === "pre");
-    const liveMatches = allMatches.filter(m => m.status === "live");
-    const finishedMatches = allMatches.filter(m => m.status === "finished");
-
-    return {
-      upcomingMatches,
-      liveMatches,
-      finishedMatches,
-      allMatches
-    };
-  }, [allMatches]);
-}
-
-export function useMatchesByStatusMultiSource(
-  dataSource: string,
+export function useMatchesByStatus(
+  dataSource: DataSource | "ALL",
   useExternalApis: boolean,
-  apiData: any,
-  anData: any,
-  mlbData: any,
-  espnData: any
-) {
-  let baseMatches: Match[] = [];
-  let isLoading = false;
-  let error: Error | null = null;
-  
-  switch(dataSource) {
-    case 'API':
-      baseMatches = apiData.allMatches;
-      isLoading = apiData.isLoading;
-      error = apiData.error;
-      break;
-    case 'ACTION':
-      baseMatches = anData.allMatches;
-      isLoading = anData.isLoading;
-      error = anData.error;
-      break;
-    case 'MLB':
-      baseMatches = mlbData.allMatches;
-      isLoading = mlbData.isLoadingSchedule;
-      error = mlbData.scheduleError;
-      break;
-    case 'ESPN':
-    default:
-      baseMatches = espnData.allMatches;
-      isLoading = espnData.isLoading;
-      error = espnData.error;
-      break;
-  }
-
-  const { upcomingMatches, liveMatches, finishedMatches, allMatches } = useMatchesByStatus(baseMatches);
-
-  let additionalProps = {};
-  if (dataSource === 'MLB') {
-    additionalProps = {
-      selectedDivisionsStandings: mlbData.divisionsStandings,
-      selectedIsLoadingStandings: mlbData.isLoadingStandings,
-      selectedStandingsError: mlbData.standingsError,
-      selectedFetchLiveGameData: mlbData.fetchLiveGameData,
+  apiMatches: any,
+  anMatches: any,
+  mlbMatches: any,
+  espnMatches: any
+): MatchesByStatus {
+  if (useExternalApis && dataSource === "API") {
+    return {
+      baseMatches: apiMatches.allMatches,
+      baseUpcomingMatches: apiMatches.upcomingMatches,
+      baseLiveMatches: apiMatches.liveMatches,
+      baseFinishedMatches: apiMatches.finishedMatches,
+      isLoading: apiMatches.isLoading,
+      error: apiMatches.error,
+      refetchSchedule: apiMatches.refetch,
+      selectedDivisionsStandings: [],
+      selectedIsLoadingStandings: false,
+      selectedStandingsError: null,
+      selectedFetchLiveGameData: undefined
     };
   }
 
-  const refetchSchedule = () => {
-    switch(dataSource) {
-      case 'API':
-        return apiData.refetch();
-      case 'ACTION':
-        return anData.refetch();
-      case 'MLB':
-        return mlbData.refetchSchedule();
-      case 'ESPN':
-      default:
-        return espnData.refetch();
-    }
-  };
+  if (dataSource === "ACTION") {
+    return {
+      baseMatches: anMatches.allMatches,
+      baseUpcomingMatches: anMatches.upcomingMatches,
+      baseLiveMatches: anMatches.liveMatches,
+      baseFinishedMatches: anMatches.finishedMatches,
+      isLoading: anMatches.isLoading,
+      error: anMatches.error,
+      refetchSchedule: anMatches.refetch,
+      selectedDivisionsStandings: [],
+      selectedIsLoadingStandings: false,
+      selectedStandingsError: null,
+      selectedFetchLiveGameData: undefined
+    };
+  }
+
+  if (dataSource === "MLB") {
+    return {
+      baseMatches: mlbMatches.allMatches,
+      baseUpcomingMatches: mlbMatches.upcomingMatches,
+      baseLiveMatches: mlbMatches.liveMatches,
+      baseFinishedMatches: mlbMatches.finishedMatches,
+      isLoading: mlbMatches.isLoadingSchedule,
+      error: mlbMatches.scheduleError,
+      refetchSchedule: mlbMatches.refetchSchedule,
+      selectedDivisionsStandings: mlbMatches.divisionsStandings,
+      selectedIsLoadingStandings: mlbMatches.isLoadingStandings,
+      selectedStandingsError: mlbMatches.standingsError,
+      selectedFetchLiveGameData: mlbMatches.fetchLiveGameData
+    };
+  }
 
   return {
-    baseMatches,
-    upcomingMatches,
-    liveMatches, 
-    finishedMatches,
-    allMatches,
-    isLoading,
-    error,
-    refetchSchedule,
-    ...additionalProps
+    baseMatches: espnMatches.allMatches,
+    baseUpcomingMatches: espnMatches.upcomingMatches,
+    baseLiveMatches: espnMatches.liveMatches,
+    baseFinishedMatches: espnMatches.finishedMatches,
+    isLoading: espnMatches.isLoading,
+    error: espnMatches.error,
+    refetchSchedule: espnMatches.refetch,
+    selectedDivisionsStandings: [],
+    selectedIsLoadingStandings: false,
+    selectedStandingsError: null,
+    selectedFetchLiveGameData: undefined
   };
 }

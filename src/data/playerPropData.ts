@@ -1,5 +1,5 @@
 
-import { PlayerProp } from "@/types";
+import { PlayerProp } from "@/types/sports";
 
 export const playerProps: PlayerProp[] = [
   {

@@ -1,4 +1,5 @@
-import { PlayerProp } from "@/types";
+
+import { PlayerProp } from "@/types/sports";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

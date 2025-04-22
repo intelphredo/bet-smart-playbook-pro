@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { League } from "@/types";
+import { League } from "@/types/sports";
 import StatsOverview from "@/components/StatsOverview";
 import { useESPNData } from "@/hooks/useESPNData";
 import { useToast } from "@/hooks/use-toast";

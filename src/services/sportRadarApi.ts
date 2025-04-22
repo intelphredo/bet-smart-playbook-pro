@@ -1,5 +1,6 @@
+
 import { API_CONFIGS, DEFAULT_HEADERS, LEAGUE_MAPPINGS } from "@/config/apiConfig";
-import { League, Match } from "@/types";
+import { League, Match } from "@/types/sports";
 import { mapSportRadarToMatch } from "./sportRadarMappers";
 
 // Helper to replace date placeholders in URL

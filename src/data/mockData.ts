@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Match, Team, League, LiveOdds, SmartScore, Sportsbook, ArbitrageOpportunity, BettingAlgorithm, PlayerProp } from "@/types";
+
+import { League, Match, BettingAlgorithm, PlayerProp, ArbitrageOpportunity } from "@/types/sports";
 
 // Define sportsbooks first so we can use them in other declarations
 export const sportsbooks = [

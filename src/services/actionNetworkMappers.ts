@@ -1,4 +1,5 @@
-import { Match, League, Team } from "@/types";
+
+import { Match, League, Team } from "@/types/sports";
 
 // Action Network sample API types (simplified for demo)
 interface ActionNetworkGame {

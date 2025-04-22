@@ -1,5 +1,5 @@
 
-import { League, Match, Team, PlayerStats } from "@/types";
+import { Match, Team, League, PlayerStats } from "@/types/sports";
 import { SPORTSBOOK_LOGOS } from "../utils/sportsbook";
 
 // Define interfaces for MLB API responses

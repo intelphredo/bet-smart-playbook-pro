@@ -1,4 +1,5 @@
-import { Match, Team, League } from "@/types";
+
+import { Match, Team, League } from "@/types/sports";
 import { SPORTSBOOK_LOGOS } from "../utils/sportsbook";
 
 interface ESPNEvent {

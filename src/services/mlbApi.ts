@@ -1,6 +1,6 @@
 
-import { League, Match, Team, PlayerStats } from "@/types";
-import { mapMLBGameToMatch, mapMLBTeamsResponse, mapMLBPlayerStats, MLBStandingsResponse, MLBGameResponse } from "./mlbMappers";
+import { League, Match, Team, PlayerStats } from "@/types/sports";
+import { mapMLBGameToMatch, mapMLBTeamsResponse, mapMLBPlayerStats, MLBGameResponse, MLBStandingsResponse } from "./mlbMappers";
 
 const MLB_API_BASE = "https://statsapi.mlb.com/api/v1";
 

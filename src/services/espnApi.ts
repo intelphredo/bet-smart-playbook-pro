@@ -1,4 +1,5 @@
-import { Match, League } from "@/types";
+
+import { Match, League } from "@/types/sports";
 import { ESPN_API_BASE } from "./espnConstants";
 import { mapESPNEventToMatch, ESPNResponse } from "./espnMappers";
 

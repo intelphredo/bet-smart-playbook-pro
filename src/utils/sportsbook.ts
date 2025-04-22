@@ -1,98 +1,253 @@
 
-import { Sportsbook } from "@/types";
-import { SportsbookLogos, BetLinkBuilder } from "@/types/utilities";
+import { LiveOdds, Match, Sportsbook } from "@/types/sports";
 
-export const SPORTSBOOK_LOGOS: SportsbookLogos = {
-  "draftkings": "/sportsbooks/draftkings-logo.png",
-  "fanduel": "/sportsbooks/fanduel-logo.png",
-  "betmgm": "/sportsbooks/betmgm-logo.png",
-  "caesars": "/sportsbooks/caesars-logo.png",
-  "pointsbet": "/sportsbooks/pointsbet-logo.png",
-  "espnbet": "/sportsbooks/espnbet-logo.png",
-  "bet365": "/sportsbooks/bet365-logo.png",
-  "betrivers": "/sportsbooks/betrivers-logo.png"
+export const SPORTSBOOK_LOGOS = {
+  draftkings: "https://upload.wikimedia.org/wikipedia/en/f/fd/DraftKings_logo.svg",
+  betmgm: "https://upload.wikimedia.org/wikipedia/commons/2/2f/BetMGM_logo.svg",
+  caesars: "https://upload.wikimedia.org/wikipedia/commons/c/c6/Caesars_Entertainment_logo.svg",
+  pointsbet: "https://upload.wikimedia.org/wikipedia/en/c/c8/PointsBet_logo.svg",
+  fanduel: "https://upload.wikimedia.org/wikipedia/commons/8/83/FanDuel_logo.svg",
 };
 
-export const SPORTSBOOKS: Sportsbook[] = [
+export const AVAILABLE_SPORTSBOOKS: Sportsbook[] = [
   {
     id: "draftkings",
     name: "DraftKings",
     logo: SPORTSBOOK_LOGOS.draftkings,
-    isAvailable: true,
-    bonusOffer: "$1,000 No Sweat Bet",
-    rating: 4.8
-  },
-  {
-    id: "fanduel",
-    name: "FanDuel",
-    logo: SPORTSBOOK_LOGOS.fanduel,
-    isAvailable: true,
-    bonusOffer: "$1,000 No Sweat First Bet",
-    rating: 4.9
+    isAvailable: true
   },
   {
     id: "betmgm",
     name: "BetMGM",
     logo: SPORTSBOOK_LOGOS.betmgm,
-    isAvailable: true,
-    bonusOffer: "$1,500 First Bet Offer",
-    rating: 4.6
+    isAvailable: true
   },
   {
     id: "caesars",
     name: "Caesars",
     logo: SPORTSBOOK_LOGOS.caesars,
-    isAvailable: true,
-    bonusOffer: "$1,000 First Bet on Caesars",
-    rating: 4.5
+    isAvailable: true
+  },
+  {
+    id: "fanduel",
+    name: "FanDuel",
+    logo: SPORTSBOOK_LOGOS.fanduel,
+    isAvailable: true
   },
   {
     id: "pointsbet",
     name: "PointsBet",
     logo: SPORTSBOOK_LOGOS.pointsbet,
-    isAvailable: true,
-    bonusOffer: "2 Risk Free Bets up to $2,000",
-    rating: 4.3
-  },
-  {
-    id: "espnbet",
-    name: "ESPNBet",
-    logo: SPORTSBOOK_LOGOS.espnbet,
-    isAvailable: true,
-    bonusOffer: "$1,000 First Bet Reset",
-    rating: 4.4
-  },
-  {
-    id: "bet365",
-    name: "Bet365",
-    logo: SPORTSBOOK_LOGOS.bet365,
-    isAvailable: false,
-    bonusOffer: "Bet $5, Get $150 in Bonus Bets",
-    rating: 4.7
-  },
-  {
-    id: "betrivers",
-    name: "BetRivers",
-    logo: SPORTSBOOK_LOGOS.betrivers,
-    isAvailable: false,
-    bonusOffer: "2nd Chance Bet up to $500",
-    rating: 4.2
+    isAvailable: true
   }
 ];
 
-export const getBetLink: BetLinkBuilder = (sportsbookId, matchId) => {
-  // This would be integrated with actual deep linking to the sportsbooks
-  // For demo purposes, just returns a placeholder URL
-  const baseLinks: {[key: string]: string} = {
-    "draftkings": "https://sportsbook.draftkings.com/event/",
-    "fanduel": "https://sportsbook.fanduel.com/event/",
-    "betmgm": "https://sports.betmgm.com/en/sports/events/",
-    "caesars": "https://sportsbook.caesars.com/event/",
-    "pointsbet": "https://pointsbet.com/sports/event/",
-    "espnbet": "https://espnbet.com/event/",
-    "bet365": "https://www.bet365.com/event/",
-    "betrivers": "https://betrivers.com/event/"
+/**
+ * Formats American odds from decimal odds
+ */
+export function formatAmericanOdds(decimalOdds: number): string {
+  if (decimalOdds >= 2) {
+    return `+${Math.round((decimalOdds - 1) * 100)}`;
+  } else {
+    return `-${Math.round(100 / (decimalOdds - 1))}`;
+  }
+}
+
+/**
+ * Converts American odds to decimal odds
+ */
+export function americanToDecimalOdds(americanOdds: number): number {
+  if (americanOdds >= 100) {
+    return 1 + (americanOdds / 100);
+  } else {
+    return 1 + (100 / Math.abs(americanOdds));
+  }
+}
+
+/**
+ * Calculates implied probability from decimal odds
+ */
+export function calculateImpliedProbability(decimalOdds: number): number {
+  return 1 / decimalOdds;
+}
+
+/**
+ * Identifies if there's an arbitrage opportunity between bookmakers
+ */
+export function identifyArbitrageOpportunity(match: Match): boolean {
+  if (!match.liveOdds || match.liveOdds.length < 2) return false;
+  
+  const bestHomeOdds = Math.max(...match.liveOdds.map(o => o.homeWin));
+  const bestAwayOdds = Math.max(...match.liveOdds.map(o => o.awayWin));
+  
+  const homeProbability = 1 / bestHomeOdds;
+  const awayProbability = 1 / bestAwayOdds;
+  
+  // If draw is available
+  if (match.liveOdds[0].draw !== undefined) {
+    const bestDrawOdds = Math.max(...match.liveOdds
+      .filter(o => o.draw !== undefined)
+      .map(o => o.draw as number));
+    
+    const drawProbability = 1 / bestDrawOdds;
+    const totalProbability = homeProbability + awayProbability + drawProbability;
+    
+    return totalProbability < 1; // Arbitrage opportunity exists if total probability is less than 1
+  }
+  
+  // Without draw
+  const totalProbability = homeProbability + awayProbability;
+  return totalProbability < 1;
+}
+
+/**
+ * Calculate optimal arbitrage betting strategy
+ */
+export function calculateArbitrageStrategy(match: Match) {
+  if (!match.liveOdds || match.liveOdds.length < 2) return null;
+  
+  // Find best odds for each outcome
+  const bestHomeOdds = {
+    value: Math.max(...match.liveOdds.map(o => o.homeWin)),
+    sportsbook: match.liveOdds.reduce((prev, current) => 
+      current.homeWin > prev.homeWin ? current : prev
+    ).sportsbook
   };
   
-  return baseLinks[sportsbookId] ? `${baseLinks[sportsbookId]}${matchId}` : null;
-};
+  const bestAwayOdds = {
+    value: Math.max(...match.liveOdds.map(o => o.awayWin)),
+    sportsbook: match.liveOdds.reduce((prev, current) => 
+      current.awayWin > prev.awayWin ? current : prev
+    ).sportsbook
+  };
+  
+  let bestDrawOdds;
+  if (match.liveOdds[0].draw !== undefined) {
+    bestDrawOdds = {
+      value: Math.max(...match.liveOdds
+        .filter(o => o.draw !== undefined)
+        .map(o => o.draw as number)),
+      sportsbook: match.liveOdds
+        .filter(o => o.draw !== undefined)
+        .reduce((prev, current) => 
+          (current.draw as number) > (prev.draw as number) ? current : prev
+        ).sportsbook
+    };
+  }
+  
+  // Calculate implied probabilities
+  const homeProbability = 1 / bestHomeOdds.value;
+  const awayProbability = 1 / bestAwayOdds.value;
+  const drawProbability = bestDrawOdds ? 1 / bestDrawOdds.value : 0;
+  
+  const totalProbability = homeProbability + awayProbability + (bestDrawOdds ? drawProbability : 0);
+  
+  // Check if arbitrage exists
+  if (totalProbability >= 1) {
+    return null; // No arbitrage opportunity
+  }
+  
+  // Calculate optimal stakes (for $100 total investment)
+  const homeStake = (homeProbability / totalProbability) * 100;
+  const awayStake = (awayProbability / totalProbability) * 100;
+  const drawStake = bestDrawOdds ? (drawProbability / totalProbability) * 100 : 0;
+  
+  // Calculate guaranteed profit
+  const guaranteedProfitPercentage = ((1 / totalProbability) - 1) * 100;
+  
+  return {
+    isArbitrage: true,
+    totalProbability,
+    profitPercentage: guaranteedProfitPercentage,
+    stakes: [
+      {
+        outcome: 'home',
+        team: match.homeTeam.name,
+        sportsbook: bestHomeOdds.sportsbook.name,
+        odds: bestHomeOdds.value,
+        stake: homeStake,
+        return: homeStake * bestHomeOdds.value
+      },
+      {
+        outcome: 'away',
+        team: match.awayTeam.name,
+        sportsbook: bestAwayOdds.sportsbook.name,
+        odds: bestAwayOdds.value,
+        stake: awayStake,
+        return: awayStake * bestAwayOdds.value
+      },
+      ...(bestDrawOdds ? [{
+        outcome: 'draw',
+        team: 'Draw',
+        sportsbook: bestDrawOdds.sportsbook.name,
+        odds: bestDrawOdds.value,
+        stake: drawStake,
+        return: drawStake * bestDrawOdds.value
+      }] : [])
+    ]
+  };
+}
+
+/**
+ * Analyze line movement trends across sportsbooks
+ */
+export function analyzeLineMovements(match: Match) {
+  if (!match.liveOdds || match.liveOdds.length < 2) return null;
+  
+  try {
+    // Sort odds by timestamp
+    const sortedOdds = [...match.liveOdds].sort((a, b) => 
+      new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime()
+    );
+    
+    const firstOdds = sortedOdds[0];
+    const latestOdds = sortedOdds[sortedOdds.length - 1];
+    
+    // Calculate line movements
+    const homeMovement = latestOdds.homeWin - firstOdds.homeWin;
+    const awayMovement = latestOdds.awayWin - firstOdds.awayWin;
+    
+    // Calculate draw movement if it exists
+    let drawMovement = 0;
+    if (firstOdds.draw !== undefined && latestOdds.draw !== undefined) {
+      drawMovement = latestOdds.draw - firstOdds.draw;
+    }
+    
+    // Determine if there's significant movement (more than 5% change)
+    const isSignificantHome = Math.abs(homeMovement / firstOdds.homeWin) > 0.05;
+    const isSignificantAway = Math.abs(awayMovement / firstOdds.awayWin) > 0.05;
+    const isSignificantDraw = firstOdds.draw !== undefined && 
+      Math.abs(drawMovement / firstOdds.draw) > 0.05;
+    
+    return {
+      homeMovement: {
+        absolute: homeMovement,
+        percentage: (homeMovement / firstOdds.homeWin) * 100,
+        direction: homeMovement > 0 ? 'increasing' : homeMovement < 0 ? 'decreasing' : 'stable',
+        isSignificant: isSignificantHome
+      },
+      awayMovement: {
+        absolute: awayMovement,
+        percentage: (awayMovement / firstOdds.awayWin) * 100,
+        direction: awayMovement > 0 ? 'increasing' : awayMovement < 0 ? 'decreasing' : 'stable',
+        isSignificant: isSignificantAway
+      },
+      ...(firstOdds.draw !== undefined ? {
+        drawMovement: {
+          absolute: drawMovement,
+          percentage: (drawMovement / (firstOdds.draw as number)) * 100,
+          direction: drawMovement > 0 ? 'increasing' : drawMovement < 0 ? 'decreasing' : 'stable',
+          isSignificant: isSignificantDraw
+        }
+      } : {}),
+      timeframe: {
+        start: firstOdds.updatedAt,
+        end: latestOdds.updatedAt,
+        durationMs: new Date(latestOdds.updatedAt).getTime() - new Date(firstOdds.updatedAt).getTime()
+      }
+    };
+  } catch (error) {
+    console.error("Error analyzing line movements:", error);
+    return null;
+  }
+}

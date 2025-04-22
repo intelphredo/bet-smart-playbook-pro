@@ -1,7 +1,7 @@
 
 import React from "react";
 import ConfidentTeamPickCard from "./ConfidentTeamPickCard";
-import { Match } from "@/types";
+import { Match } from "@/types/sports";
 
 interface ConfidentTeamPickListProps {
   picks: Match[];

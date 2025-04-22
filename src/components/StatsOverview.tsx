@@ -1,9 +1,10 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import React, { useState, useMemo } from "react";
 import LeagueStatsModal from "./LeagueStatsModal";
 import { useESPNData } from "@/hooks/useESPNData";
-import { Match } from "@/types";
+import { Match } from "@/types/sports";
 import { algorithmPerformanceData } from "@/data/algorithmPerformanceData";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSportsData } from "@/hooks/useSportsData";

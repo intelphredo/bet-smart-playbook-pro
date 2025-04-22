@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -87,6 +88,7 @@
   }
 }
 
+/* Enhanced element polish */
 @layer base {
   * {
     @apply border-border;
@@ -135,8 +137,13 @@
   }
 
   /* Headings: bolder, tighter spacing */
+  /* Fix: Removed .font-bold from the selector to avoid circular dependency */
   h1, h2, h3 {
     @apply font-bold tracking-tight;
+  }
+  /* Add separate styling for .font-bold */
+  .font-bold {
+    @apply tracking-tight;
   }
   h1 {
     font-size: 2.5rem;
@@ -171,6 +178,7 @@
   }
 }
 
+/* Extra subtle shimmer for "Premium"/"New" badges (optional, can remove if too much) */
 @layer base {
   .badge.bg-gold-500, .shadcn-badge.bg-gold-500 {
     animation: badge-glow 2s ease-in-out infinite alternate;

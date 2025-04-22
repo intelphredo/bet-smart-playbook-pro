@@ -1,4 +1,5 @@
-import { Match, DataVerificationResult } from "@/types";
+
+import { Match, DataVerificationResult } from "@/types/sports";
 
 export function verifyMatchData(match: Match, sources: { name: string; data: Match }[]): DataVerificationResult {
   const result: DataVerificationResult = {

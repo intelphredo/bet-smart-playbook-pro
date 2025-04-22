@@ -1,4 +1,5 @@
-import { ArbitrageOpportunity } from "@/types";
+
+import { ArbitrageOpportunity } from "@/types/sports";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -134,3 +135,4 @@ const ArbitrageOpportunityCard = ({ opportunity }: Props) => {
 };
 
 export default ArbitrageOpportunityCard;
+

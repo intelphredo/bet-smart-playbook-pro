@@ -1,4 +1,4 @@
-import { LiveOdds as LiveOddsType } from "@/types";
+import { LiveOdds as LiveOddsType } from "@/types/sports";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatDistanceToNow, parseISO } from "date-fns";

@@ -1,4 +1,5 @@
-import { ArbitrageOpportunity } from "@/types";
+
+import { ArbitrageOpportunity } from "@/types/sports";
 
 export const arbitrageOpportunities: ArbitrageOpportunity[] = [
   {

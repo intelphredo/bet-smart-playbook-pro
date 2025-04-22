@@ -1,135 +1,118 @@
 
-import { useState, useEffect } from "react";
-import { Match, League } from "@/types";
-import { fetchESPNEvents, fetchAllESPNEvents } from "@/services/espnApi";
-import { fetchOddsApiData, fetchAllOddsApiData } from "@/services/oddsApi";
-import { fetchSportRadarSchedule, fetchAllSportRadarSchedules } from "@/services/sportRadarApi";
-import { useDataSource } from "./useDataSourceManager";
-import { verifyMatches } from "./useMatchVerification";
+import { useQuery } from "@tanstack/react-query";
+import { Match, League } from "@/types/sports";
+import { fetchAllSportRadarSchedules, fetchSportRadarSchedule } from "@/services/sportRadarApi";
+import { fetchAllOddsApiData, fetchOddsApiData } from "@/services/oddsApi";
+import { useMemo } from "react";
 
 interface UseSportsApiDataOptions {
   league?: League | "ALL";
   refreshInterval?: number;
-  includeSchedule?: boolean;
-  defaultSource?: 'ESPN' | 'MLB' | 'ACTION' | 'API';
-  useExternalApis?: boolean;
-  preferredApiSource?: 'SPORTRADAR' | 'ODDSAPI' | 'ALL';
-  dataSource?: string;
+  dataSource?: 'SPORTRADAR' | 'ODDSAPI' | 'ALL';
 }
 
 export function useSportsApiData({
   league = "ALL",
   refreshInterval = 60000,
-  includeSchedule = true,
-  useExternalApis = true,
-  preferredApiSource = 'ALL',
-  dataSource: initialDataSource = 'API',
+  dataSource = 'ALL'
 }: UseSportsApiDataOptions = {}) {
-  const [allMatches, setAllMatches] = useState<Match[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
-  const [lastRefreshTime, setLastRefreshTime] = useState(new Date().toISOString());
-  const { dataSource, setDataSource, availableDataSources } = useDataSource(initialDataSource);
-  
-  // Apply verification to matches
-  const verifiedMatches = verifyMatches(allMatches, dataSource);
-  const verificationLoading = false;
-  const verificationError = null;
+  // Fetch SportRadar data if selected
+  const {
+    data: sportRadarData,
+    isLoading: isLoadingSportRadar,
+    error: sportRadarError,
+    refetch: refetchSportRadar
+  } = useQuery({
+    queryKey: ['sportradar-data', league],
+    queryFn: () => {
+      if (dataSource === 'ODDSAPI') return Promise.resolve([]); // Skip if not selected
+      return league === "ALL" ? fetchAllSportRadarSchedules() : fetchSportRadarSchedule(league as League);
+    },
+    refetchInterval: refreshInterval,
+    staleTime: refreshInterval,
+    enabled: dataSource !== 'ODDSAPI'
+  });
 
-  // Function to fetch data from external APIs based on preferred source
-  const fetchDataFromApis = async (): Promise<Match[]> => {
-    if (!useExternalApis) return [];
+  // Fetch OddsAPI data if selected
+  const {
+    data: oddsApiData,
+    isLoading: isLoadingOddsApi,
+    error: oddsApiError,
+    refetch: refetchOddsApi
+  } = useQuery({
+    queryKey: ['oddsapi-data', league],
+    queryFn: () => {
+      if (dataSource === 'SPORTRADAR') return Promise.resolve([]); // Skip if not selected
+      return league === "ALL" ? fetchAllOddsApiData() : fetchOddsApiData(league as League);
+    },
+    refetchInterval: refreshInterval,
+    staleTime: refreshInterval,
+    enabled: dataSource !== 'SPORTRADAR'
+  });
 
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      let matches: Match[] = [];
-
-      if (preferredApiSource === 'SPORTRADAR' || preferredApiSource === 'ALL') {
-        const sportRadarMatches = league === "ALL" ? await fetchAllSportRadarSchedules() : await fetchSportRadarSchedule(league);
-        matches = [...matches, ...sportRadarMatches];
-      }
-
-      if (preferredApiSource === 'ODDSAPI' || preferredApiSource === 'ALL') {
-        const oddsApiMatches = league === "ALL" ? await fetchAllOddsApiData() : await fetchOddsApiData(league);
-        matches = [...matches, ...oddsApiMatches];
-      }
-
-      return matches;
-    } catch (e: any) {
-      setError(e);
-      return [];
-    } finally {
-      setIsLoading(false);
+  // Merge data from all sources and filter for the selected league
+  const matches = useMemo(() => {
+    let allMatches: Match[] = [];
+    
+    // Add SportRadar data
+    if (sportRadarData && dataSource !== 'ODDSAPI') {
+      allMatches = [...allMatches, ...sportRadarData];
     }
-  };
-
-  // Function to fetch data from ESPN API
-  const fetchESPNData = async (): Promise<Match[]> => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      let matches: Match[] = [];
-
-      if (league === "ALL") {
-        matches = await fetchAllESPNEvents();
-      } else {
-        matches = await fetchESPNEvents(league);
-      }
-
-      return matches;
-    } catch (e: any) {
-      setError(e);
-      return [];
-    } finally {
-      setIsLoading(false);
+    
+    // Add OddsAPI data
+    if (oddsApiData && dataSource !== 'SPORTRADAR') {
+      allMatches = [...allMatches, ...oddsApiData];
     }
-  };
-
-  // Generic refetch function
-  const refetch = async () => {
-    if (!includeSchedule) return;
-
-    let matches: Match[] = [];
-
-    if (dataSource === "ESPN") {
-      matches = await fetchESPNData();
-    } else {
-      matches = await fetchDataFromApis();
+    
+    // Filter by league if not "ALL"
+    if (league !== "ALL") {
+      allMatches = allMatches.filter(match => match.league === league);
     }
+    
+    // Log the match count
+    console.log(`Combined API data: ${allMatches.length} matches`);
+    
+    return allMatches;
+  }, [sportRadarData, oddsApiData, league, dataSource]);
 
-    setAllMatches(matches);
-    setLastRefreshTime(new Date().toISOString());
-  };
+  // Sort matches by scheduled time
+  const sortedMatches = useMemo(() => {
+    return [...matches].sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+  }, [matches]);
 
-  // Refetch with timestamp to force refresh
-  const refetchWithTimestamp = () => {
-    setLastRefreshTime(new Date().toISOString());
-  };
-
-  useEffect(() => {
-    refetch(); // Initial fetch
-    if (refreshInterval) {
-      const intervalId = setInterval(refetch, refreshInterval);
-      return () => clearInterval(intervalId); // Clean up interval on unmount
+  // Separate matches by status
+  const { upcomingMatches, liveMatches, finishedMatches } = useMemo(() => {
+    if (!sortedMatches.length) {
+      return { upcomingMatches: [], liveMatches: [], finishedMatches: [] };
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [league, includeSchedule, refreshInterval, dataSource, lastRefreshTime]);
+    
+    const upcoming = sortedMatches.filter(match => match.status === "scheduled" || match.status === "pre");
+    const live = sortedMatches.filter(match => match.status === "live");
+    const finished = sortedMatches.filter(match => match.status === "finished");
+    
+    return { upcomingMatches: upcoming, liveMatches: live, finishedMatches: finished };
+  }, [sortedMatches]);
+
+  // Combine loading and error states
+  const isLoading = isLoadingSportRadar || isLoadingOddsApi;
+  const error = sportRadarError || oddsApiError;
+
+  // Combined refetch function
+  const refetch = () => {
+    if (dataSource !== 'ODDSAPI') refetchSportRadar();
+    if (dataSource !== 'SPORTRADAR') refetchOddsApi();
+  };
 
   return {
-    allMatches,
-    verifiedMatches,
+    allMatches: sortedMatches,
+    upcomingMatches,
+    liveMatches,
+    finishedMatches,
     isLoading,
     error,
-    verificationLoading,
-    verificationError,
     refetch,
-    refetchWithTimestamp,
-    lastRefreshTime,
     dataSource,
-    setDataSource,
-    availableDataSources
+    sportRadarData: sportRadarData || [],
+    oddsApiData: oddsApiData || []
   };
 }

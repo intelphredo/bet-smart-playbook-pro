@@ -1,4 +1,5 @@
-import { Match, SmartScore } from "@/types";
+
+import { Match, SmartScore } from "@/types/sports";
 import { 
   calculateValueFactor, 
   calculateMomentumFactors, 

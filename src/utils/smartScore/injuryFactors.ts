@@ -1,4 +1,5 @@
-import { Match } from "@/types";
+
+import { Match } from "@/types/sports";
 
 export function calculateInjuryImpact(match: Match) {
   let injuriesScore = 75;
