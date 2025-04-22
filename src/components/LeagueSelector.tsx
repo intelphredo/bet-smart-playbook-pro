@@ -35,13 +35,13 @@ const LeagueSelector = ({
           {showAllOption && (
             <Button
               key="all"
-              size={compact ? "xs" : "sm"}
+              size="sm"
               variant={selectedLeague === 'ALL' ? "default" : "outline"}
               className={`rounded-full transition-all ${
                 selectedLeague === 'ALL'
                   ? "bg-navy-500 text-white"
                   : "hover:bg-navy-50"
-              }`}
+              } ${compact ? "px-2 py-1 text-xs" : ""}`}
               onClick={() => onSelectLeague('ALL')}
             >
               All Sports
@@ -51,13 +51,13 @@ const LeagueSelector = ({
           {visibleLeagues.map((league) => (
             <Button
               key={league.id}
-              size={compact ? "xs" : "sm"}
+              size="sm"
               variant={selectedLeague === league.id ? "default" : "outline"}
               className={`rounded-full transition-all ${
                 selectedLeague === league.id
                   ? "bg-navy-500 text-white"
                   : "hover:bg-navy-50"
-              }`}
+              } ${compact ? "px-2 py-1 text-xs" : ""}`}
               onClick={() => onSelectLeague(league.id)}
             >
               {league.shortName || league.name}
