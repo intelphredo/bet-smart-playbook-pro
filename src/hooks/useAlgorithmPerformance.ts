@@ -29,7 +29,14 @@ export const useAlgorithmPerformance = () => {
       if (algorithmsError) throw algorithmsError;
 
       return algorithms.map(algorithm => {
-        const stats = algorithm.algorithm_stats?.[0] || {};
+        // Use optional chaining and provide default values to handle potential undefined stats
+        const stats = algorithm.algorithm_stats?.[0] || {
+          total_predictions: 0,
+          correct_predictions: 0,
+          win_rate: 0,
+          avg_confidence: 0
+        };
+        
         const recentPredictions = (algorithm.algorithm_predictions || [])
           .sort((a, b) => new Date(b.predicted_at).getTime() - new Date(a.predicted_at).getTime())
           .slice(0, 5)
