@@ -8,6 +8,23 @@ export function applyPredictionValidation(matches: Match[]): Match[] {
   return matches.map(validateMatchPrediction);
 }
 
+// Extend the prediction type to include validation
+interface ExtendedPrediction {
+  recommended: 'home' | 'away' | 'draw';
+  confidence: number;
+  projectedScore: {
+    home: number;
+    away: number;
+  };
+  algorithmId?: string;
+  validation?: {
+    biasDetected: boolean;
+    biasType: string | null;
+    validationScore: number;
+    notes: string[];
+  };
+}
+
 /**
  * Validate a single match prediction
  * Checks for common biases and adds validation metadata
@@ -21,9 +38,12 @@ function validateMatchPrediction(match: Match): Match {
   // Clone match to avoid mutation
   const validatedMatch = { ...match };
   
+  // Cast to extended prediction type to access validation property
+  const prediction = validatedMatch.prediction as ExtendedPrediction;
+  
   // Add validation metadata if not present
-  if (!validatedMatch.prediction.validation) {
-    validatedMatch.prediction.validation = {
+  if (!prediction.validation) {
+    prediction.validation = {
       biasDetected: false,
       biasType: null,
       validationScore: 100,
@@ -31,7 +51,7 @@ function validateMatchPrediction(match: Match): Match {
     };
   }
   
-  const validation = validatedMatch.prediction.validation;
+  const validation = prediction.validation;
   
   // Check for home team bias
   const homeTeamBias = detectHomeTeamBias(match);
