@@ -1,64 +1,100 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Match } from "@/types/sports";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import SmartScoreCard from "./SmartScoreCard";
-import { calculateSmartScore, applySmartScores } from "@/utils/smartScoreCalculator";
-import { ChartLine } from "lucide-react";
+import { hasArbitrageOpportunity } from "@/utils/smartScore/arbitrageFactors";
+import { useToast } from "@/hooks/use-toast";
+import { AlertTriangle, ArrowTrendingUp } from "lucide-react";
 
-interface SmartScoreSectionProps {
+interface Props {
   matches: Match[];
 }
 
-const SmartScoreSection = ({ matches }: SmartScoreSectionProps) => {
-  // Apply smart scores to matches if needed
-  const matchesWithScores = React.useMemo(() => {
-    return matches.map(match => {
-      if (!match.smartScore) {
-        return {
-          ...match,
-          smartScore: calculateSmartScore(match)
-        };
+const SmartScoreSection = ({ matches }: Props) => {
+  const { toast } = useToast();
+  const [alertedMatches, setAlertedMatches] = useState<Set<string>>(new Set());
+
+  // Filter matches to only include those with smart scores
+  const matchesWithScores = matches.filter(match => match.smartScore);
+
+  // Find top scoring match for display
+  const topMatch = matchesWithScores.length > 0
+    ? matchesWithScores.reduce((prev, current) => 
+        (current.smartScore?.overall || 0) > (prev.smartScore?.overall || 0) ? current : prev
+      )
+    : null;
+
+  // Check for arbitrage opportunities
+  React.useEffect(() => {
+    matches.forEach(match => {
+      if (match.smartScore?.hasArbitrageOpportunity && !alertedMatches.has(match.id)) {
+        // Show toast for arbitrage opportunity
+        toast({
+          title: "Arbitrage Opportunity Detected!",
+          description: `${match.homeTeam.shortName} vs ${match.awayTeam.shortName} has a potential arbitrage opportunity.`,
+          variant: "default",
+          duration: 6000,
+        });
+        
+        // Update the set of already alerted matches
+        setAlertedMatches(prev => new Set([...prev, match.id]));
       }
-      return match;
     });
-  }, [matches]);
+  }, [matches, toast, alertedMatches]);
 
-  // Filter for matches with high smart scores
-  const highValueMatches = React.useMemo(() => {
-    return matchesWithScores
-      .filter(match => match.smartScore && match.smartScore.overall >= 70)
-      .sort((a, b) => (b.smartScore?.overall || 0) - (a.smartScore?.overall || 0))
-      .slice(0, 3); // Take top 3
-  }, [matchesWithScores]);
+  // If no matches have smart scores, don't render this section
+  if (matchesWithScores.length === 0) return null;
 
-  if (highValueMatches.length === 0) {
-    return null;
-  }
+  // Count of arbitrage opportunities
+  const arbitrageCount = matches.filter(m => 
+    m.smartScore?.hasArbitrageOpportunity
+  ).length;
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <h2 className="text-2xl font-bold">Smart Score™ Analysis</h2>
-        <Badge className="bg-gradient-to-r from-blue-500 to-purple-600 text-white">
-          Premium
-        </Badge>
-      </div>
-      
-      <div className="flex items-center gap-1 mb-4">
-        <ChartLine className="h-4 w-4 text-blue-500" />
-        <p className="text-sm text-muted-foreground">
-          Our exclusive SmartScore™ algorithm analyzes multiple factors to identify the best betting opportunities
-        </p>
-      </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {highValueMatches.map(match => (
-          <SmartScoreCard key={match.id} match={match} />
-        ))}
-      </div>
-    </div>
+    <Card className="mb-6">
+      <CardHeader className="pb-2">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+          <h2 className="text-xl font-bold flex items-center gap-2">
+            SmartScore™ Analysis
+            {arbitrageCount > 0 && (
+              <Badge variant="destructive" className="ml-2">
+                <AlertTriangle size={14} className="mr-1" />
+                {arbitrageCount} Arbitrage Alert{arbitrageCount > 1 ? 's' : ''}
+              </Badge>
+            )}
+          </h2>
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="bg-muted">
+              AI-Powered Insights
+            </Badge>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {topMatch && (
+          <div className="mb-4">
+            <h3 className="text-sm uppercase font-semibold text-muted-foreground mb-2 flex items-center">
+              <ArrowTrendingUp size={16} className="mr-1" />
+              Top Rated Match
+            </h3>
+            <SmartScoreCard match={topMatch} showArbitrageAlert={true} />
+          </div>
+        )}
+        
+        {matchesWithScores.length > 1 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+            {matchesWithScores
+              .filter(m => m.id !== topMatch?.id)
+              .slice(0, 3)
+              .map(match => (
+                <SmartScoreCard key={match.id} match={match} showArbitrageAlert={true} />
+              ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 };
 

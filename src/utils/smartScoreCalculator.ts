@@ -1,83 +1,82 @@
 
-import { Match, SmartScore } from "@/types/sports";
-import { 
-  calculateValueFactor, 
-  calculateMomentumFactors, 
-  calculateOddsMovementFactors,
-  calculateInjuryImpact,
-  calculateWeatherImpact
-} from "./smartScoreFactors";
-import { getRecommendation } from "./smartScoreRecommendation";
+import { Match } from "@/types/sports";
+import { calculateMomentumImpact } from "./smartScore/momentumFactors";
+import { calculateOddsMovementImpact } from "./smartScore/oddsMovementFactors";
+import { calculateValueImpact } from "./smartScore/valueFactors";
+import { calculateWeatherImpact } from "./smartScore/weatherFactors";
+import { calculateInjuryImpact } from "./smartScore/injuryFactors";
+import { calculateArbitrageImpact, hasArbitrageOpportunity } from "./smartScore/arbitrageFactors";
+import { generateSmartScoreRecommendation } from "./smartScoreRecommendation";
 
-/**
- * Calculate SmartScore for a given match
- * 
- * This is a sophisticated algorithm that evaluates betting opportunities.
- * Relies on modular factor calculators.
- */
-export function calculateSmartScore(match: Match): SmartScore {
-  // Value and momentum calculations
-  const { valueScore: initialValue, valueFactors } = calculateValueFactor(match);
-  let valueScore = initialValue;
-  let factors = [...valueFactors];
+// Add arbitrage to our weight factors
+const WEIGHT_FACTORS = {
+  MOMENTUM: 0.20,
+  VALUE: 0.20,
+  ODDS_MOVEMENT: 0.20,
+  WEATHER: 0.15,
+  INJURIES: 0.15,
+  ARBITRAGE: 0.10
+};
 
-  const { momentumScore, momentumFactors } = calculateMomentumFactors(match);
-  factors = [...factors, ...momentumFactors];
-
-  // Odds movement
-  const { adjustedValueScore, oddsFactors } = calculateOddsMovementFactors(match, valueScore);
-  valueScore = adjustedValueScore;
-  factors = [...factors, ...oddsFactors];
-
-  // Injury and weather impacts
-  const { injuriesScore, injuryFactors } = calculateInjuryImpact(match);
+export function calculateSmartScore(match: Match) {
+  // Calculate component impacts
+  const { momentumScore, momentumFactors } = calculateMomentumImpact(match);
+  const { valueScore, valueFactors } = calculateValueImpact(match);
+  const { oddsMovementScore, oddsMovementFactors } = calculateOddsMovementImpact(match);
   const { weatherImpact, weatherFactors } = calculateWeatherImpact(match);
+  const { injuriesScore, injuryFactors } = calculateInjuryImpact(match);
+  const { arbitrageScore, arbitrageFactors } = calculateArbitrageImpact(match);
   
-  factors = [...factors, ...injuryFactors, ...weatherFactors];
-
-  // Calculate weights based on league
-  let valueWeight = 0.35;
-  let momentumWeight = 0.35;
-  let injuriesWeight = 0.15;
-  let weatherWeight = 0.15;
-  
-  // MLB-specific weight adjustments
-  if (match.league === 'MLB') {
-    // For baseball, value (odds analysis) is more important, momentum less so
-    valueWeight = 0.45;
-    momentumWeight = 0.25;
-    injuriesWeight = 0.15; // injuries to starting pitchers are important
-    weatherWeight = 0.15;  // weather can impact baseball significantly
-  }
-
-  // Compute overall - weighted average with league-specific adjustments
-  const overall = Math.round(
-    (valueScore * valueWeight) + 
-    (momentumScore * momentumWeight) + 
-    (injuriesScore * injuriesWeight) + 
-    (weatherImpact * weatherWeight)
+  // Calculate weighted score
+  const overallScore = (
+    momentumScore * WEIGHT_FACTORS.MOMENTUM +
+    valueScore * WEIGHT_FACTORS.VALUE +
+    oddsMovementScore * WEIGHT_FACTORS.ODDS_MOVEMENT +
+    weatherImpact * WEIGHT_FACTORS.WEATHER +
+    injuriesScore * WEIGHT_FACTORS.INJURIES +
+    arbitrageScore * WEIGHT_FACTORS.ARBITRAGE
   );
-
-  // Recommendation
-  const recommendation = getRecommendation(overall, match);
-
+  
+  // Generate recommendation
+  const recommendation = generateSmartScoreRecommendation(match, overallScore, {
+    momentumScore,
+    valueScore,
+    oddsMovementScore,
+    weatherImpact,
+    injuriesScore,
+    arbitrageScore
+  });
+  
+  // Highlight arbitrage opportunity if available
+  const hasArbitrage = hasArbitrageOpportunity(match);
+  
   return {
-    overall: Math.min(100, Math.max(0, overall)),
-    value: Math.min(100, Math.max(0, valueScore)),
-    momentum: Math.min(100, Math.max(0, momentumScore)),
-    injuries: Math.min(100, Math.max(0, injuriesScore)),
-    weatherImpact: Math.min(100, Math.max(0, weatherImpact)),
-    factors,
-    recommendation
+    overall: Math.round(overallScore),
+    components: {
+      momentum: momentumScore,
+      value: valueScore,
+      oddsMovement: oddsMovementScore,
+      weather: weatherImpact,
+      injuries: injuriesScore,
+      arbitrage: arbitrageScore
+    },
+    factors: {
+      momentum: momentumFactors,
+      value: valueFactors,
+      oddsMovement: oddsMovementFactors,
+      weather: weatherFactors,
+      injuries: injuryFactors,
+      arbitrage: arbitrageFactors
+    },
+    recommendation,
+    hasArbitrageOpportunity: hasArbitrage
   };
 }
 
-/**
- * Apply smart scores to a list of matches
- */
+// Update the applySmartScores function to enhance matches with smart scores
 export function applySmartScores(matches: Match[]): Match[] {
   return matches.map(match => ({
     ...match,
-    smartScore: calculateSmartScore(match)
+    smartScore: calculateSmartScore(match),
   }));
 }

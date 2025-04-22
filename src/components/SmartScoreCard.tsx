@@ -1,180 +1,154 @@
 
 import React from "react";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Match } from "@/types/sports";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { ChartLine, Trophy, TrendingUp, Snowflake } from "lucide-react";
-import { Match, SmartScore } from "@/types/sports";
-import { cn } from "@/lib/utils";
+import { 
+  AlertTriangle, 
+  ArrowBigUp, 
+  ArrowBigDown, 
+  Gauge, 
+  CloudRain, 
+  Activity,
+  DollarSign
+} from "lucide-react";
 
 interface SmartScoreCardProps {
   match: Match;
+  showArbitrageAlert?: boolean;
 }
 
-const SmartScoreCard = ({ match }: SmartScoreCardProps) => {
-  const smartScore = match.smartScore;
+const SmartScoreCard = ({ match, showArbitrageAlert = false }: SmartScoreCardProps) => {
+  if (!match.smartScore) return null;
   
-  if (!smartScore) {
-    return null;
-  }
+  const { 
+    overall, 
+    components,
+    recommendation,
+    hasArbitrageOpportunity
+  } = match.smartScore;
   
-  // Helper function to get color based on score
-  const getColorForScore = (score: number) => {
+  // Determine color based on score
+  const getScoreColor = (score: number) => {
     if (score >= 80) return "text-green-500";
-    if (score >= 60) return "text-amber-500";
-    if (score >= 40) return "text-blue-500";
+    if (score >= 65) return "text-blue-500";
+    if (score >= 50) return "text-yellow-500";
     return "text-red-500";
   };
   
-  // Helper function to get background color for progress bar
+  // Determine progress color
   const getProgressColor = (score: number) => {
     if (score >= 80) return "bg-green-500";
-    if (score >= 60) return "bg-amber-500";
-    if (score >= 40) return "bg-blue-500";
+    if (score >= 65) return "bg-blue-500";
+    if (score >= 50) return "bg-yellow-500";
     return "bg-red-500";
   };
   
-  // Helper function to determine confidence display
-  const getConfidenceDisplay = (confidence: 'high' | 'medium' | 'low') => {
-    switch (confidence) {
-      case 'high':
-        return {
-          text: "High Confidence",
-          bgColor: "bg-green-500"
-        };
-      case 'medium':
-        return {
-          text: "Medium Confidence",
-          bgColor: "bg-amber-500"
-        };
-      case 'low':
-        return {
-          text: "Low Confidence",
-          bgColor: "bg-red-500"
-        };
-    }
-  };
-  
-  const confidenceDisplay = smartScore.recommendation?.confidence
-    ? getConfidenceDisplay(smartScore.recommendation.confidence)
-    : { text: "No Recommendation", bgColor: "bg-gray-500" };
-  
   return (
-    <Card className="overflow-hidden border shadow-sm">
-      <CardHeader className="bg-navy-50 dark:bg-navy-700 p-4 pb-2">
-        <div className="flex justify-between items-center">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <ChartLine className="h-5 w-5 text-navy-600" />
-            SmartScore™ Analysis
-          </CardTitle>
-          <div className={cn(
-            "font-bold text-lg rounded-full w-12 h-12 flex items-center justify-center",
-            getColorForScore(smartScore.overall)
-          )}>
-            {smartScore.overall}
-          </div>
+    <Card className={`border ${hasArbitrageOpportunity && showArbitrageAlert ? 'border-red-300 shadow-md' : ''}`}>
+      <CardHeader className="flex flex-row items-center justify-between py-2 relative">
+        <h3 className="text-sm font-semibold">
+          {match.homeTeam.shortName} vs {match.awayTeam.shortName}
+        </h3>
+        <div className="flex items-center gap-1">
+          {hasArbitrageOpportunity && showArbitrageAlert && (
+            <Badge variant="destructive" className="flex items-center gap-1">
+              <AlertTriangle size={12} />
+              <span className="text-xs">Arbitrage</span>
+            </Badge>
+          )}
+          <Badge variant="outline" className={`${getScoreColor(overall)} border-none`}>
+            {overall}
+          </Badge>
         </div>
       </CardHeader>
-      <CardContent className="p-4 pt-4">
-        <div className="space-y-4">
-          <div>
-            <div className="flex justify-between mb-1">
-              <span className="text-sm">Value</span>
-              <span className={cn("text-sm font-medium", getColorForScore(smartScore.value))}>
-                {smartScore.value}
-              </span>
+      <CardContent className="pt-0 pb-3">
+        <Progress 
+          value={overall} 
+          className="h-1.5 mb-3"
+          indicatorClassName={getProgressColor(overall)}
+        />
+        
+        <div className="grid grid-cols-3 gap-1 mb-3">
+          <div className="text-center">
+            <div className="text-xs text-muted-foreground flex items-center justify-center">
+              <ArrowBigUp size={14} className="mr-0.5" />
+              <span>Momentum</span>
             </div>
-            <Progress value={smartScore.value} className="h-2" 
-              indicatorClassName={getProgressColor(smartScore.value)} />
-          </div>
-          
-          <div>
-            <div className="flex justify-between mb-1">
-              <span className="text-sm">Momentum</span>
-              <span className={cn("text-sm font-medium", getColorForScore(smartScore.momentum))}>
-                {smartScore.momentum}
-              </span>
+            <div className={`text-sm font-medium ${getScoreColor(components.momentum)}`}>
+              {Math.round(components.momentum)}
             </div>
-            <Progress value={smartScore.momentum} className="h-2"
-              indicatorClassName={getProgressColor(smartScore.momentum)} />
           </div>
-          
-          <div>
-            <div className="flex justify-between mb-1">
-              <span className="text-sm">Injuries Impact</span>
-              <span className={cn("text-sm font-medium", getColorForScore(smartScore.injuries))}>
-                {smartScore.injuries}
-              </span>
+          <div className="text-center">
+            <div className="text-xs text-muted-foreground flex items-center justify-center">
+              <Gauge size={14} className="mr-0.5" />
+              <span>Value</span>
             </div>
-            <Progress value={smartScore.injuries} className="h-2" 
-              indicatorClassName={getProgressColor(smartScore.injuries)} />
-          </div>
-          
-          <div>
-            <div className="flex justify-between mb-1">
-              <span className="text-sm">Weather</span>
-              <span className={cn("text-sm font-medium", getColorForScore(smartScore.weatherImpact))}>
-                {smartScore.weatherImpact}
-              </span>
+            <div className={`text-sm font-medium ${getScoreColor(components.value)}`}>
+              {Math.round(components.value)}
             </div>
-            <Progress value={smartScore.weatherImpact} className="h-2"
-              indicatorClassName={getProgressColor(smartScore.weatherImpact)} />
           </div>
-          
-          {/* Key Factors */}
-          <div className="pt-2">
-            <h4 className="text-sm font-medium mb-2">Key Factors</h4>
-            <div className="flex flex-wrap gap-2">
-              {smartScore.factors.slice(0, 3).map((factor) => (
-                <Badge 
-                  key={factor.key} 
-                  variant="outline" 
-                  className={cn(
-                    "flex items-center gap-1 font-normal",
-                    factor.impact === 'positive' ? "text-green-600 border-green-300" :
-                    factor.impact === 'negative' ? "text-red-600 border-red-300" :
-                    "text-blue-600 border-blue-300"
-                  )}
-                >
-                  {factor.impact === 'positive' && <TrendingUp className="h-3 w-3" />}
-                  {factor.impact === 'negative' && <Snowflake className="h-3 w-3" />}
-                  <span>{factor.description}</span>
-                </Badge>
-              ))}
+          <div className="text-center">
+            <div className="text-xs text-muted-foreground flex items-center justify-center">
+              <ArrowBigDown size={14} className="mr-0.5" />
+              <span>Odds Mvt</span>
+            </div>
+            <div className={`text-sm font-medium ${getScoreColor(components.oddsMovement)}`}>
+              {Math.round(components.oddsMovement)}
             </div>
           </div>
         </div>
-      </CardContent>
-      
-      {smartScore.recommendation && smartScore.recommendation.betOn !== 'none' && (
-        <CardFooter className="bg-gray-50 dark:bg-gray-800 p-4 border-t">
-          <div className="w-full">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-1">
-                <Trophy className="h-4 w-4 text-gold-500" />
-                <span className="font-medium">Recommendation</span>
-              </div>
-              <Badge className={confidenceDisplay.bgColor}>
-                {confidenceDisplay.text}
-              </Badge>
+        
+        <div className="grid grid-cols-3 gap-1">
+          <div className="text-center">
+            <div className="text-xs text-muted-foreground flex items-center justify-center">
+              <CloudRain size={14} className="mr-0.5" />
+              <span>Weather</span>
             </div>
-            
-            <div className="flex items-center gap-2">
-              <Badge 
-                variant="outline"
-                className="px-3 py-1 font-semibold text-lg capitalize"
-              >
-                {smartScore.recommendation.betOn === 'home' ? match.homeTeam.shortName :
-                 smartScore.recommendation.betOn === 'away' ? match.awayTeam.shortName :
-                 smartScore.recommendation.betOn}
-              </Badge>
-              <p className="text-sm text-muted-foreground">
-                {smartScore.recommendation.reasoning}
-              </p>
+            <div className={`text-sm font-medium ${getScoreColor(components.weather)}`}>
+              {Math.round(components.weather || 0)}
             </div>
           </div>
-        </CardFooter>
-      )}
+          <div className="text-center">
+            <div className="text-xs text-muted-foreground flex items-center justify-center">
+              <Activity size={14} className="mr-0.5" />
+              <span>Injuries</span>
+            </div>
+            <div className={`text-sm font-medium ${getScoreColor(components.injuries)}`}>
+              {Math.round(components.injuries || 0)}
+            </div>
+          </div>
+          <div className="text-center">
+            <div className="text-xs text-muted-foreground flex items-center justify-center">
+              <DollarSign size={14} className="mr-0.5" />
+              <span>Arbitrage</span>
+            </div>
+            <div className={`text-sm font-medium ${getScoreColor(components.arbitrage || 0)}`}>
+              {Math.round(components.arbitrage || 0)}
+            </div>
+          </div>
+        </div>
+        
+        {recommendation && recommendation.pick && (
+          <div className="mt-3 pt-2 border-t border-border">
+            <div className="text-xs text-muted-foreground mb-0.5">Recommendation:</div>
+            <div className="text-sm font-semibold">
+              {recommendation.pick} 
+              {recommendation.confidence && ` (${recommendation.confidence}% confidence)`}
+            </div>
+          </div>
+        )}
+        
+        {hasArbitrageOpportunity && showArbitrageAlert && (
+          <div className="mt-2 flex items-center">
+            <AlertTriangle size={14} className="text-red-500 mr-1" />
+            <span className="text-xs text-red-500">
+              Arbitrage opportunity detected
+            </span>
+          </div>
+        )}
+      </CardContent>
     </Card>
   );
 };
