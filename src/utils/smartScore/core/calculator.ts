@@ -22,16 +22,8 @@ export function calculateSmartScore(match: Match) {
   const { momentumScore, momentumFactors } = calculateMomentumImpact(match);
   const { valueScore, valueFactors } = calculateValueImpact(match);
   
-  // Add a configuration object for odds movement impact
-  const oddsConfig = {
-    valueScore, 
-    matchPrediction: match.prediction
-  };
-  
-  const { adjustedValueScore: oddsMovementScore, oddsFactors: oddsMovementFactors } = calculateOddsMovementImpact(
-    match, 
-    oddsConfig // Pass the configuration object
-  );
+  // Remove the configuration object and rely on the function's internal implementation
+  const { adjustedValueScore: oddsMovementScore, oddsFactors: oddsMovementFactors } = calculateOddsMovementImpact(match);
   
   const { weatherImpact, weatherFactors } = calculateWeatherImpact(match);
   const { injuriesScore, injuryFactors } = calculateInjuryImpact(match);
