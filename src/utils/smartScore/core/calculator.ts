@@ -1,3 +1,4 @@
+
 import { Match } from "@/types/sports";
 import { calculateMomentumImpact } from "../factors/momentumFactors";
 import { calculateOddsMovementImpact } from "../factors/oddsMovementFactors";
@@ -35,6 +36,7 @@ export function calculateSmartScore(match: Match) {
   );
   
   const recommendation = generateSmartScoreRecommendation(
+    // Add the match context and overall score explicitly
     match, 
     overallScore, 
     {
