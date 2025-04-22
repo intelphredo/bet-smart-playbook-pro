@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState } from "react";
 import { useSportsData } from "@/hooks/useSportsData";
 import { applyAdvancedPredictions } from "@/utils/advancedPredictionAlgorithm";
@@ -7,6 +6,8 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
 import { format, isToday, parseISO, addDays, startOfDay, endOfDay } from "date-fns";
 import { Button } from "./ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { Badge } from "@/components/ui/badge";
+import { formatDistanceToNow, parseISO } from "date-fns";
 
 /**
  * TodaysTeamPredictions - Displays a table of all matches happening today and upcoming week with their predictions.
@@ -38,12 +39,20 @@ const TodaysTeamPredictions = () => {
   const [showUpcomingWeek, setShowUpcomingWeek] = useState(true);
   const [dataProvider, setDataProvider] = useState<string>("ESPN");
   
-  const { allMatches, isLoading, error, availableDataSources, setDataSource, dataSource } = useSportsData({ 
+  const { 
+    verifiedMatches: allMatches, 
+    lastRefreshTime,
+    refetchWithTimestamp,
+    isLoading, 
+    error,
+    dataSource,
+    setDataSource,
+    availableDataSources
+  } = useSportsData({ 
     league: "ALL", 
     refreshInterval: 60000,
     includeSchedule: true,
-    useExternalApis: true,
-    defaultSource: dataProvider as any
+    useExternalApis: true
   });
 
   // Update the external data source when the dropdown changes
@@ -110,17 +119,12 @@ const TodaysTeamPredictions = () => {
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-bold">{showUpcomingWeek ? "This Week's" : "Today's"} Team Predictions</h2>
         <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Data Source:</span>
-          <Select value={dataProvider} onValueChange={setDataProvider}>
-            <SelectTrigger className="w-[140px]">
-              <SelectValue placeholder="Select source" />
-            </SelectTrigger>
-            <SelectContent>
-              {availableDataSources.map(source => (
-                <SelectItem key={source} value={source}>{source}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <span className="text-xs text-muted-foreground">
+            Last updated: {formatDistanceToNow(parseISO(lastRefreshTime), { addSuffix: true })}
+          </span>
+          <Button size="sm" onClick={refetchWithTimestamp}>
+            Refresh
+          </Button>
         </div>
       </div>
       
@@ -147,17 +151,12 @@ const TodaysTeamPredictions = () => {
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-bold">{showUpcomingWeek ? "This Week's" : "Today's"} Team Predictions</h2>
         <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Data Source:</span>
-          <Select value={dataProvider} onValueChange={setDataProvider}>
-            <SelectTrigger className="w-[140px]">
-              <SelectValue placeholder="Select source" />
-            </SelectTrigger>
-            <SelectContent>
-              {availableDataSources.map(source => (
-                <SelectItem key={source} value={source}>{source}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <span className="text-xs text-muted-foreground">
+            Last updated: {formatDistanceToNow(parseISO(lastRefreshTime), { addSuffix: true })}
+          </span>
+          <Button size="sm" onClick={refetchWithTimestamp}>
+            Refresh
+          </Button>
         </div>
       </div>
       
@@ -193,6 +192,15 @@ const TodaysTeamPredictions = () => {
               <TableCell>{match.league}</TableCell>
               <TableCell>
                 {match.homeTeam.shortName} vs {match.awayTeam.shortName}
+                {match.verification && (
+                  <Badge
+                    variant={match.verification.isVerified ? "default" : "destructive"}
+                    className="ml-2 text-xs"
+                    title={`Confidence: ${match.verification.confidenceScore}%\nSources: ${match.verification.sources.join(", ")}`}
+                  >
+                    {match.verification.isVerified ? "Verified" : "Unverified"}
+                  </Badge>
+                )}
               </TableCell>
               <TableCell>
                 {formatDate(match.startTime)}

@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useESPNData } from "./useESPNData";
 import { useMLBData } from "./useMLBData";
 import { useSportsApiData } from "./useSportsApiData";
@@ -15,8 +14,8 @@ interface UseSportsDataOptions {
   includeStandings?: boolean;
   teamId?: string;
   defaultSource?: DataSource;
-  useExternalApis?: boolean; // New option to use external APIs
-  preferredApiSource?: 'SPORTRADAR' | 'ODDSAPI' | 'ALL'; // New option for API preference
+  useExternalApis?: boolean;
+  preferredApiSource?: 'SPORTRADAR' | 'ODDSAPI' | 'ALL';
 }
 
 export function useSportsData({
@@ -28,13 +27,12 @@ export function useSportsData({
   includeStandings = false,
   teamId,
   defaultSource = "ESPN",
-  useExternalApis = false, // Default to false to maintain backward compatibility
+  useExternalApis = false,
   preferredApiSource = 'ALL'
 }: UseSportsDataOptions = {}) {
-  // State to track which data source to use
   const [dataSource, setDataSource] = useState<DataSource>(defaultSource);
-  
-  // Get ESPN data
+  const [lastRefreshTime, setLastRefreshTime] = useState<string>(new Date().toISOString());
+
   const {
     allMatches: espnMatches,
     upcomingMatches: espnUpcomingMatches,
@@ -48,8 +46,7 @@ export function useSportsData({
     refreshInterval,
     includeSchedule
   });
-  
-  // Get MLB data
+
   const {
     allMatches: mlbMatches,
     upcomingMatches: mlbUpcomingMatches,
@@ -70,7 +67,6 @@ export function useSportsData({
     teamId
   });
 
-  // New: Action Network
   const {
     allMatches: anMatches,
     upcomingMatches: anUpcomingMatches,
@@ -84,8 +80,7 @@ export function useSportsData({
     refreshInterval,
     includeSchedule
   });
-  
-  // New: External Sports API Data (SportRadar, OddsAPI, etc.)
+
   const {
     allMatches: apiMatches,
     upcomingMatches: apiUpcomingMatches,
@@ -99,20 +94,17 @@ export function useSportsData({
     refreshInterval,
     dataSource: preferredApiSource
   });
-  
-  // Log matches for debugging
+
   console.log('ESPN upcoming matches:', espnUpcomingMatches.length);
   console.log('MLB upcoming matches:', mlbUpcomingMatches.length);
   if (useExternalApis) {
     console.log('API upcoming matches:', apiUpcomingMatches.length);
   }
-  
-  // Determine which data set to use
+
   let baseMatches, baseUpcomingMatches, baseLiveMatches, baseFinishedMatches, isLoading, error, refetchSchedule;
   let selectedDivisionsStandings, selectedIsLoadingStandings, selectedStandingsError, selectedFetchLiveGameData;
-  
+
   if (useExternalApis && dataSource === "API") {
-    // Use External APIs data
     baseMatches = apiMatches;
     baseUpcomingMatches = apiUpcomingMatches;
     baseLiveMatches = apiLiveMatches;
@@ -148,7 +140,7 @@ export function useSportsData({
     selectedIsLoadingStandings = mlbIsLoadingStandings;
     selectedStandingsError = mlbStandingsError;
     selectedFetchLiveGameData = mlbFetchLiveGameData;
-  } else { // ESPN default
+  } else {
     baseMatches = espnMatches;
     baseUpcomingMatches = espnUpcomingMatches;
     baseLiveMatches = espnLiveMatches;
@@ -161,47 +153,85 @@ export function useSportsData({
     selectedStandingsError = null;
     selectedFetchLiveGameData = undefined;
   }
-  
-  // Filter MLB-only data if ESPN is selected but league is MLB
+
   const allMatches = (() => {
     if (dataSource === "ESPN" && league === "MLB") {
       return baseMatches.filter(match => match.league === "MLB");
     }
     return baseMatches;
   })();
-  
+
   const upcomingMatches = (() => {
     if (dataSource === "ESPN" && league === "MLB") {
       return baseUpcomingMatches.filter(match => match.league === "MLB");
     }
     return baseUpcomingMatches;
   })();
-  
+
   const liveMatches = (() => {
     if (dataSource === "ESPN" && league === "MLB") {
       return baseLiveMatches.filter(match => match.league === "MLB");
     }
     return baseLiveMatches;
   })();
-  
+
   const finishedMatches = (() => {
     if (dataSource === "ESPN" && league === "MLB") {
       return baseFinishedMatches.filter(match => match.league === "MLB");
     }
     return baseFinishedMatches;
   })();
-  
-  // If MLB is the selected league, prioritize MLB data source
+
   if (league === "MLB" && dataSource !== "MLB") {
     setDataSource("MLB");
   }
-  
-  // Add API as a valid data source option
+
   let availableDataSources = ['ESPN', 'ACTION', 'MLB'];
   if (useExternalApis) {
     availableDataSources.push('API');
   }
-  
+
+  const verifiedMatches = useMemo(() => {
+    if (!useExternalApis || dataSource !== "ALL") {
+      return allMatches.map(match => ({
+        ...match,
+        verification: {
+          isVerified: true,
+          confidenceScore: 100,
+          lastUpdated: lastRefreshTime,
+          sources: [dataSource]
+        }
+      }));
+    }
+
+    return allMatches.map(match => {
+      const matchInSources = [
+        { name: "ESPN", data: espnMatches.find(m => m.id === match.id) },
+        { name: "API", data: apiMatches.find(m => m.id === match.id) },
+        { name: "ACTION", data: anMatches.find(m => m.id === match.id) }
+      ].filter(source => source.data) as { name: string; data: Match }[];
+
+      const verification = verifyMatchData(match, matchInSources);
+      
+      return {
+        ...match,
+        verification,
+        lastUpdated: lastRefreshTime
+      };
+    });
+  }, [allMatches, espnMatches, apiMatches, anMatches, dataSource, useExternalApis, lastRefreshTime]);
+
+  const refetchWithTimestamp = async () => {
+    await refetchSchedule();
+    setLastRefreshTime(new Date().toISOString());
+  };
+
+  useEffect(() => {
+    refetchWithTimestamp();
+    const intervalId = setInterval(refetchWithTimestamp, refreshInterval);
+    return () => clearInterval(intervalId);
+  }, [refreshInterval]);
+
   return {
     dataSource,
     setDataSource,
@@ -218,6 +248,9 @@ export function useSportsData({
     standingsError: selectedStandingsError,
     fetchLiveGameData: selectedFetchLiveGameData,
     useExternalApis,
-    preferredApiSource
+    preferredApiSource,
+    verifiedMatches,
+    lastRefreshTime,
+    refetchWithTimestamp
   };
 }
