@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState } from "react";
 import { useESPNData } from "@/hooks/useESPNData";
 import { useSportsData } from "@/hooks/useSportsData";
@@ -25,7 +24,9 @@ function getPredictionDescription(match: Match) {
 function isMatchInDateRange(match: Match, startDate: Date, endDate: Date) {
   try {
     const matchDate = parseISO(match.startTime);
-    return !isBefore(matchDate, startDate) && !isAfter(matchDate, endDate);
+    startDate.setHours(0, 0, 0, 0);
+    endDate.setHours(23, 59, 59, 999);
+    return (matchDate >= startDate && matchDate <= endDate);
   } catch (err) {
     console.error("Error parsing match date:", err);
     return false;
@@ -35,23 +36,20 @@ function isMatchInDateRange(match: Match, startDate: Date, endDate: Date) {
 const TodaysTeamPredictions = () => {
   const [showUpcomingWeek, setShowUpcomingWeek] = useState(true);
   
-  // Use the combined sports data hook instead of just ESPN data
   const { allMatches, isLoading, error } = useSportsData({ 
     league: "ALL", 
     refreshInterval: 60000,
     includeSchedule: true 
   });
 
-  console.log("Total matches before filtering:", allMatches.length);
+  console.log("Total matches before filtering:", allMatches?.length || 0);
   
-  // Add predictions to matches that don't have them
   const matchesWithPredictions = useMemo(() => {
     return applyAdvancedPredictions(allMatches || []);
   }, [allMatches]);
   
   console.log("Matches with predictions:", matchesWithPredictions.length);
 
-  // Get today's and upcoming week's matches
   const filteredMatches: Match[] = useMemo(() => {
     const now = new Date();
     const today = new Date(now);
@@ -62,32 +60,34 @@ const TodaysTeamPredictions = () => {
     
     console.log("Date range:", today.toISOString(), "to", oneWeekLater.toISOString());
     
-    return matchesWithPredictions
-      .filter(m => {
-        if (!m.startTime) {
-          console.log("Match missing startTime:", m.id);
-          return false;
-        }
-        
-        try {
-          if (showUpcomingWeek) {
-            // Show matches for the next 7 days
-            const inRange = isMatchInDateRange(m, today, oneWeekLater);
-            if (inRange) console.log("Match in range:", m.homeTeam.shortName, "vs", m.awayTeam.shortName, parseISO(m.startTime).toISOString());
-            return inRange;
-          } else {
-            // Show only today's matches
-            return isToday(parseISO(m.startTime));
+    const filtered = matchesWithPredictions.filter(m => {
+      if (!m.startTime) {
+        console.log("Match missing startTime:", m.id);
+        return false;
+      }
+      
+      try {
+        if (showUpcomingWeek) {
+          const inRange = isMatchInDateRange(m, today, oneWeekLater);
+          if (inRange) {
+            console.log("Match in range:", m.homeTeam.shortName, "vs", m.awayTeam.shortName, 
+              "Start time:", new Date(m.startTime).toISOString());
           }
-        } catch (err) {
-          console.error("Error filtering match:", err);
-          return false;
+          return inRange;
+        } else {
+          return isToday(parseISO(m.startTime));
         }
-      })
-      .sort((a, b) => (new Date(a.startTime) > new Date(b.startTime) ? 1 : -1)); // earliest first
+      } catch (err) {
+        console.error("Error filtering match:", err, m);
+        return false;
+      }
+    });
+
+    filtered.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+    
+    console.log("Filtered matches count:", filtered.length);
+    return filtered;
   }, [matchesWithPredictions, showUpcomingWeek]);
-  
-  console.log("Filtered matches:", filteredMatches.length);
 
   const formatDate = (dateString: string) => {
     try {
