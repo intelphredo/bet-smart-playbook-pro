@@ -26,11 +26,11 @@ const DevToolsPanel = () => {
                     size="sm" 
                     onClick={() => console.log('Project State Snapshot', {
                       matches: {
-                        upcoming: window.__BetSmart?.upcomingMatches?.length,
-                        live: window.__BetSmart?.liveMatches?.length,
-                        finished: window.__BetSmart?.finishedMatches?.length
+                        upcoming: window.__BetSmart?.upcomingMatches?.length || 0,
+                        live: window.__BetSmart?.liveMatches?.length || 0,
+                        finished: window.__BetSmart?.finishedMatches?.length || 0
                       },
-                      algorithmPerformance: window.__BetSmart?.algorithmPerformance
+                      algorithmPerformance: window.__BetSmart?.algorithmPerformance || null
                     })}
                   >
                     <Bug className="h-4 w-4" />

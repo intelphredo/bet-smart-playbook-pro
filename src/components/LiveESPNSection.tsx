@@ -50,6 +50,13 @@ const LiveESPNSection = ({
       live: applySmartScores(liveMatches),
       finished: finishedMatches,
     });
+    
+    // Store processed matches in window.__BetSmart for debugging
+    if (typeof window !== 'undefined' && window.__BetSmart) {
+      window.__BetSmart.upcomingMatches = applySmartScores(upcomingMatches);
+      window.__BetSmart.liveMatches = applySmartScores(liveMatches);
+      window.__BetSmart.finishedMatches = finishedMatches;
+    }
   }, [upcomingMatches, liveMatches, finishedMatches]);
 
   return (
@@ -122,7 +129,7 @@ const LiveESPNSection = ({
         <TabsContent value="finished" className="mt-4">
           <FinishedMatchesTab 
             isLoading={isLoading} 
-            finishedMatches={finishedMatches} 
+            finishedMatches={processedMatches.finished} 
           />
         </TabsContent>
       </Tabs>
