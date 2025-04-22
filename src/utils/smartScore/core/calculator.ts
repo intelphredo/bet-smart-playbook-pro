@@ -38,15 +38,19 @@ export function calculateSmartScore(match: Match) {
     arbitrageScore * WEIGHT_FACTORS.ARBITRAGE
   );
   
-  // Generate recommendation
-  const recommendation = generateSmartScoreRecommendation(match, overallScore, {
-    momentumScore,
-    valueScore,
-    oddsMovementScore,
-    weatherImpact,
-    injuriesScore,
-    arbitrageScore
-  });
+  // Generate recommendation with both match and overall score
+  const recommendation = generateSmartScoreRecommendation(
+    match, 
+    overallScore, 
+    {
+      momentum: momentumScore,
+      value: valueScore,
+      oddsMovement: oddsMovementScore,
+      weather: weatherImpact,
+      injuries: injuriesScore,
+      arbitrage: arbitrageScore
+    }
+  );
   
   // Highlight arbitrage opportunity if available
   const hasArbitrage = hasArbitrageOpportunity(match);
