@@ -1,40 +1,81 @@
 
-import { useState } from 'react';
-import { League } from '@/types/sports';
 import { Button } from '@/components/ui/button';
+import { League } from '@/types/sports';
+import LeagueRegistry from '@/types/LeagueRegistry';
+import { useState } from 'react';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface LeagueSelectorProps {
-  selectedLeague: League | 'ALL';
-  onSelectLeague: (league: League | 'ALL') => void;
+  selectedLeague: League | string | 'ALL';
+  onSelectLeague: (league: League | string | 'ALL') => void;
+  showAllOption?: boolean;
+  maxDisplayedLeagues?: number;
+  compact?: boolean;
 }
 
-const leagues = [
-  { id: 'ALL', name: 'All Sports' },
-  { id: 'NBA', name: 'NBA' },
-  { id: 'NFL', name: 'NFL' },
-  { id: 'MLB', name: 'MLB' },
-  { id: 'NHL', name: 'NHL' },
-  { id: 'SOCCER', name: 'Soccer' }
-] as const;
-
-const LeagueSelector = ({ selectedLeague, onSelectLeague }: LeagueSelectorProps) => {
+const LeagueSelector = ({ 
+  selectedLeague, 
+  onSelectLeague,
+  showAllOption = true,
+  maxDisplayedLeagues = 6,
+  compact = false
+}: LeagueSelectorProps) => {
+  const [showMore, setShowMore] = useState(false);
+  
+  // Get leagues from registry
+  const registeredLeagues = LeagueRegistry.getActiveLeagues();
+  
+  // Determine which leagues to display
+  const visibleLeagues = showMore ? registeredLeagues : registeredLeagues.slice(0, maxDisplayedLeagues);
+  
   return (
-    <div className="flex flex-wrap items-center gap-2 py-2 animate-fade-in">
-      {leagues.map((league) => (
-        <Button
-          key={league.id}
-          size="sm"
-          variant={selectedLeague === league.id ? "default" : "outline"}
-          className={`rounded-full transition-all ${
-            selectedLeague === league.id
-              ? "bg-navy-500 text-white"
-              : "hover:bg-navy-50"
-          }`}
-          onClick={() => onSelectLeague(league.id as League | 'ALL')}
+    <div className="flex flex-col gap-2 animate-fade-in">
+      <ScrollArea className={compact ? "max-h-[200px]" : undefined}>
+        <div className="flex flex-wrap items-center gap-2 py-2">
+          {showAllOption && (
+            <Button
+              key="all"
+              size={compact ? "xs" : "sm"}
+              variant={selectedLeague === 'ALL' ? "default" : "outline"}
+              className={`rounded-full transition-all ${
+                selectedLeague === 'ALL'
+                  ? "bg-navy-500 text-white"
+                  : "hover:bg-navy-50"
+              }`}
+              onClick={() => onSelectLeague('ALL')}
+            >
+              All Sports
+            </Button>
+          )}
+          
+          {visibleLeagues.map((league) => (
+            <Button
+              key={league.id}
+              size={compact ? "xs" : "sm"}
+              variant={selectedLeague === league.id ? "default" : "outline"}
+              className={`rounded-full transition-all ${
+                selectedLeague === league.id
+                  ? "bg-navy-500 text-white"
+                  : "hover:bg-navy-50"
+              }`}
+              onClick={() => onSelectLeague(league.id)}
+            >
+              {league.shortName || league.name}
+            </Button>
+          ))}
+        </div>
+      </ScrollArea>
+      
+      {registeredLeagues.length > maxDisplayedLeagues && !showMore && !compact && (
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={() => setShowMore(true)}
+          className="self-start text-xs"
         >
-          {league.name}
+          + Show more leagues
         </Button>
-      ))}
+      )}
     </div>
   );
 };

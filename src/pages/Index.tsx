@@ -1,7 +1,7 @@
+
 import { useState } from "react";
 import { League } from "@/types/sports";
 import StatsOverview from "@/components/StatsOverview";
-import { useESPNData } from "@/hooks/useESPNData";
 import { useToast } from "@/hooks/use-toast";
 import { arbitrageOpportunities } from "@/data/arbitrageData";
 import ConfidentPicks from "@/components/ConfidentPicks";
@@ -13,41 +13,73 @@ import PremiumSubscribeCard from "@/components/PremiumSubscribeCard";
 import PageFooter from "@/components/PageFooter";
 import NavBar from "@/components/NavBar";
 import FilterSection from "@/components/FilterSection";
+import { useSportsData } from "@/hooks/useSportsData";
+import { SportCategory } from "@/types/LeagueRegistry";
 
 const Index = () => {
-  const [selectedLeague, setSelectedLeague] = useState<League | "ALL">("ALL");
+  const [selectedLeague, setSelectedLeague] = useState<League | string | "ALL">("ALL");
   const [activeTab, setActiveTab] = useState("upcoming");
+  const [teamFilter, setTeamFilter] = useState("");
+  const [dateRange, setDateRange] = useState<{start?: Date, end?: Date}>({});
+  const [sportCategoryFilter, setSportCategoryFilter] = useState<SportCategory | "ALL">("ALL");
   const { toast } = useToast();
 
+  // Use our enhanced sports data hook
   const {
     upcomingMatches,
     liveMatches,
     finishedMatches,
     isLoading,
     error,
-    refetch,
-  } = useESPNData({
-    league: selectedLeague,
+    refetchWithTimestamp,
+    dataSource,
+    setDataSource,
+    availableDataSources
+  } = useSportsData({
+    league: selectedLeague as any,
     refreshInterval: 60000,
+    useExternalApis: true,
   });
 
   const handleRefreshData = () => {
-    refetch();
+    refetchWithTimestamp();
     toast({
       title: "Refreshing data",
-      description: "Fetching the latest sports data from ESPN",
+      description: `Fetching the latest sports data from ${dataSource}`,
       variant: "default"
     });
   };
 
-  const filteredArbitrage =
-    selectedLeague === "ALL"
-      ? arbitrageOpportunities
-      : arbitrageOpportunities.filter(
-          (opportunity) => opportunity.match.league === selectedLeague
-        );
+  // Filter arbitrage opportunities by selected league and team
+  const filteredArbitrage = arbitrageOpportunities.filter(opportunity => {
+    // Filter by league
+    if (selectedLeague !== "ALL" && opportunity.match.league !== selectedLeague) {
+      return false;
+    }
+    
+    // Filter by team name if provided
+    if (teamFilter && !(
+      opportunity.match.homeTeam.toLowerCase().includes(teamFilter.toLowerCase()) || 
+      opportunity.match.awayTeam.toLowerCase().includes(teamFilter.toLowerCase())
+    )) {
+      return false;
+    }
+    
+    return true;
+  });
 
+  // Create real-time arbitrage opportunities from match data
   const realTimeArbs = [...upcomingMatches, ...liveMatches]
+    .filter(match => {
+      // Apply team filter if active
+      if (teamFilter && !(
+        match.homeTeam.shortName.toLowerCase().includes(teamFilter.toLowerCase()) || 
+        match.awayTeam.shortName.toLowerCase().includes(teamFilter.toLowerCase())
+      )) {
+        return false;
+      }
+      return true;
+    })
     .slice(0, 3)
     .map((match) => ({
       id: match.id,
@@ -76,6 +108,14 @@ const Index = () => {
 
   const arbitrageOpportunitiesToShow =
     realTimeArbs.length > 0 ? realTimeArbs : filteredArbitrage;
+    
+  const resetAllFilters = () => {
+    setSelectedLeague("ALL");
+    setActiveTab("upcoming");
+    setTeamFilter("");
+    setDateRange({});
+    setSportCategoryFilter("ALL");
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -88,18 +128,25 @@ const Index = () => {
             onLeagueChange={setSelectedLeague}
             activeTab={activeTab}
             onTabChange={setActiveTab}
+            teamFilter={teamFilter}
+            onTeamFilterChange={setTeamFilter}
+            dateRange={dateRange}
+            onDateRangeChange={setDateRange}
+            onReset={resetAllFilters}
+            sportCategoryFilter={sportCategoryFilter}
+            onSportCategoryChange={setSportCategoryFilter}
           />
           <div className="animate-slide-in">
             <StatsOverview />
           </div>
           <ConfidentPicks />
           <ArbitrageOpportunitiesSection
-            selectedLeague={selectedLeague}
+            selectedLeague={selectedLeague as any}
             arbitrageOpportunitiesToShow={arbitrageOpportunitiesToShow}
           />
           <LiveESPNSection
-            selectedLeague={selectedLeague}
-            setSelectedLeague={setSelectedLeague}
+            selectedLeague={selectedLeague as any}
+            setSelectedLeague={setSelectedLeague as any}
             activeTab={activeTab}
             setActiveTab={setActiveTab}
             isLoading={isLoading}
