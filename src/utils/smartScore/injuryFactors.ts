@@ -9,11 +9,8 @@ export function calculateInjuryImpact(match: Match) {
   // In a real implementation, this would check injury reports APIs
   // For now, let's simulate based on match data patterns
   
-  // Check if any injury info is in the match description or notes
-  if (match.description !== undefined && match.description?.toLowerCase().includes("injur")) {
-    injuriesScore -= 20;
-    injuryFactors.push("Key injuries mentioned in match description");
-  }
+  // Check if any injury info is in match data
+  // Since description property doesn't exist on Match type, we'll use other properties
   
   // Check for injury indicators in team records
   if (match.homeTeam.record && match.homeTeam.record.includes("L")) {
