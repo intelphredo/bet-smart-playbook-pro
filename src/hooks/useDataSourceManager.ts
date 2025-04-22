@@ -1,14 +1,58 @@
-import { useState, useEffect } from "react";
+
+import { useState, useEffect, createContext, useContext } from "react";
 import { Match, League } from "@/types";
 import { useESPNData } from "./useESPNData";
 import { useMLBData } from "./useMLBData";
 import { UseSportsDataOptions } from "./types/sportsDataTypes";
 
+// Create context for data source management
+const DataSourceContext = createContext<any>(null);
+
+export const useDataSourceContext = () => useContext(DataSourceContext);
+
 interface DataSourceManagerProps extends UseSportsDataOptions {
-  onMatchesUpdated: (matches: Match[]) => void;
+  onMatchesUpdated?: (matches: Match[]) => void;
 }
 
-export function useDataSourceManager({
+export function useDataSource(defaultSource: string = "ESPN") {
+  const [dataSource, setDataSource] = useState(defaultSource);
+  const [availableDataSources, setAvailableDataSources] = useState<string[]>(["ESPN", "MLB", "ACTION", "API"]);
+
+  return {
+    dataSource, 
+    setDataSource, 
+    availableDataSources
+  };
+}
+
+export function useDataSourceManager(defaultSource: string = "ESPN") {
+  const [dataSource, setDataSource] = useState(defaultSource);
+  const [lastRefreshTime, setLastRefreshTime] = useState(new Date().toISOString());
+
+  const updateLastRefreshTime = () => {
+    setLastRefreshTime(new Date().toISOString());
+  };
+
+  const getAvailableDataSources = (useExternalApis: boolean = false) => {
+    const sources = ["ESPN", "MLB"];
+    if (useExternalApis) {
+      sources.push("ACTION", "API");
+    }
+    return sources;
+  };
+
+  return {
+    dataSource,
+    setDataSource,
+    lastRefreshTime,
+    updateLastRefreshTime,
+    getAvailableDataSources
+  };
+}
+
+// Original DataSourceManager implementation kept for reference but not used directly
+// to avoid circular dependencies
+export function useDataSourceManagerOriginal({
   league = "ALL",
   refreshInterval = 60000,
   includeSchedule = true,
@@ -19,7 +63,7 @@ export function useDataSourceManager({
   defaultSource = "ESPN",
   useExternalApis = false,
   preferredApiSource = 'ALL',
-  onMatchesUpdated,
+  onMatchesUpdated = () => {},
 }: DataSourceManagerProps) {
   const [dataSource, setDataSource] = useState(defaultSource);
   const [availableDataSources, setAvailableDataSources] = useState<string[]>([]);
@@ -33,7 +77,6 @@ export function useDataSourceManager({
     league,
     refreshInterval,
     includeSchedule,
-    includeTeams,
   });
 
   // MLB Data Hook
@@ -41,10 +84,8 @@ export function useDataSourceManager({
     league,
     refreshInterval,
     includeSchedule,
-    includeTeams,
     includePlayerStats,
     teamId,
-    includeStandings,
   });
 
   useEffect(() => {

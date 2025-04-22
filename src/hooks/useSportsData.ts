@@ -4,13 +4,14 @@ import { useESPNData } from "./useESPNData";
 import { useMLBData } from "./useMLBData";
 import { useSportsApiData } from "./useSportsApiData";
 import { useActionNetworkData } from "./useActionNetworkData";
-import { useDataSourceManager } from "./useDataSourceManager";
-import { useMatchVerification } from "./useMatchVerification";
-import { useMatchesByStatus } from "./useMatchesByStatus";
+import { useDataSourceManager, useDataSource } from "./useDataSourceManager";
+import { verifyMatches } from "./useMatchVerification";
+import { useMatchesByStatus, useMatchesByStatusMultiSource } from "./useMatchesByStatus";
 import { useAutoRefresh } from "./useAutoRefresh";
 import { useLeagueData } from "./useLeagueData";
 import { useMatchFiltering } from "./useMatchFiltering";
 import { UseSportsDataOptions } from "./types/sportsDataTypes";
+import { Match } from "@/types";
 
 export function useSportsData({
   league = "ALL",
@@ -41,19 +42,18 @@ export function useSportsData({
 
   const {
     allMatches: mlbMatches,
-    isLoadingSchedule: isLoadingMLB,
-    scheduleError: mlbError,
-    refetchSchedule: refetchMLB,
+    isLoading: isLoadingMLB,
+    error: mlbError,
+    refetch: refetchMLB,
     divisionsStandings: mlbDivisionsStandings,
     isLoadingStandings: mlbIsLoadingStandings,
     standingsError: mlbStandingsError,
     fetchLiveGameData: mlbFetchLiveGameData
   } = useMLBData({
+    league,
     refreshInterval,
-    includeTeams,
-    includePlayerStats,
-    includeStandings,
-    teamId
+    includeSchedule,
+    includePlayerStats
   });
 
   const {
@@ -68,49 +68,58 @@ export function useSportsData({
     isLoading: isLoadingApi,
     error: apiError,
     refetch: refetchApi
-  } = useSportsApiData({ league, refreshInterval, dataSource: preferredApiSource });
+  } = useSportsApiData({ 
+    league, 
+    refreshInterval, 
+    preferredApiSource,
+    dataSource 
+  });
 
-  const {
-    baseMatches,
-    isLoading,
-    error,
-    refetchSchedule,
-    selectedDivisionsStandings,
-    selectedIsLoadingStandings,
-    selectedStandingsError,
-    selectedFetchLiveGameData
-  } = useMatchesByStatus(
+  // Get appropriate data based on selected data source
+  const multiSourceData = useMatchesByStatusMultiSource(
     dataSource,
     useExternalApis,
     { allMatches: apiMatches, isLoading: isLoadingApi, error: apiError, refetch: refetchApi },
     { allMatches: anMatches, isLoading: isLoadingAN, error: anError, refetch: refetchAN },
-    { allMatches: mlbMatches, isLoadingSchedule: isLoadingMLB, scheduleError: mlbError, refetchSchedule: refetchMLB, divisionsStandings: mlbDivisionsStandings, isLoadingStandings: mlbIsLoadingStandings, standingsError: mlbStandingsError, fetchLiveGameData: mlbFetchLiveGameData },
+    { 
+      allMatches: mlbMatches, 
+      isLoadingSchedule: isLoadingMLB, 
+      scheduleError: mlbError, 
+      refetchSchedule: refetchMLB, 
+      divisionsStandings: mlbDivisionsStandings, 
+      isLoadingStandings: mlbIsLoadingStandings, 
+      standingsError: mlbStandingsError, 
+      fetchLiveGameData: mlbFetchLiveGameData 
+    },
     { allMatches: espnMatches, isLoading: isLoadingESPN, error: espnError, refetch: refetchESPN }
   );
 
-  const { verifiedMatches } = useMatchVerification(
-    baseMatches,
-    espnMatches,
-    apiMatches,
-    anMatches,
-    dataSource,
-    useExternalApis,
-    lastRefreshTime
-  );
+  // Apply verification to all matches from the selected data source
+  const verifiedMatches = verifyMatches(multiSourceData.baseMatches || [], dataSource);
 
-  const filteredMatches = useLeagueData(verifiedMatches, league);
-  const { upcomingMatches, liveMatches, finishedMatches } = useMatchFiltering(filteredMatches);
+  // Filter based on selected league if needed
+  const filteredMatches = league === "ALL" ? 
+    verifiedMatches : 
+    verifiedMatches.filter(match => match.league === league);
 
+  // Get matches by status
+  const { upcomingMatches, liveMatches, finishedMatches } = useMatchesByStatus(filteredMatches);
+
+  // Refetch function that updates timestamp
   const refetchWithTimestamp = async () => {
-    await refetchSchedule();
+    await multiSourceData.refetchSchedule();
     updateLastRefreshTime();
   };
 
+  // Set up auto refresh if interval provided
   useAutoRefresh(refreshInterval, refetchWithTimestamp);
 
-  if (league === "MLB" && dataSource !== "MLB") {
-    setDataSource("MLB");
-  }
+  // Switch to MLB source if viewing MLB data
+  useEffect(() => {
+    if (league === "MLB" && dataSource !== "MLB") {
+      setDataSource("MLB");
+    }
+  }, [league, dataSource, setDataSource]);
 
   return {
     dataSource,
@@ -120,13 +129,13 @@ export function useSportsData({
     liveMatches,
     finishedMatches,
     allMatches: filteredMatches,
-    isLoading,
-    error,
-    refetchSchedule,
-    divisionsStandings: selectedDivisionsStandings,
-    isLoadingStandings: selectedIsLoadingStandings,
-    standingsError: selectedStandingsError,
-    fetchLiveGameData: selectedFetchLiveGameData,
+    isLoading: multiSourceData.isLoading,
+    error: multiSourceData.error,
+    refetchSchedule: multiSourceData.refetchSchedule,
+    divisionsStandings: multiSourceData.selectedDivisionsStandings,
+    isLoadingStandings: multiSourceData.selectedIsLoadingStandings,
+    standingsError: multiSourceData.selectedStandingsError,
+    fetchLiveGameData: multiSourceData.selectedFetchLiveGameData,
     useExternalApis,
     preferredApiSource,
     verifiedMatches,

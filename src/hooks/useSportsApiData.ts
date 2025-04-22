@@ -1,10 +1,11 @@
+
 import { useState, useEffect } from "react";
 import { Match, League } from "@/types";
 import { fetchESPNEvents, fetchAllESPNEvents } from "@/services/espnApi";
 import { fetchOddsApiData, fetchAllOddsApiData } from "@/services/oddsApi";
 import { fetchSportRadarSchedule, fetchAllSportRadarSchedules } from "@/services/sportRadarApi";
-import { useDataSourceContext } from "./useDataSourceManager";
-import { useMatchVerification } from "./useMatchVerification";
+import { useDataSource } from "./useDataSourceManager";
+import { verifyMatches } from "./useMatchVerification";
 
 interface UseSportsApiDataOptions {
   league?: League | "ALL";
@@ -13,6 +14,7 @@ interface UseSportsApiDataOptions {
   defaultSource?: 'ESPN' | 'MLB' | 'ACTION' | 'API';
   useExternalApis?: boolean;
   preferredApiSource?: 'SPORTRADAR' | 'ODDSAPI' | 'ALL';
+  dataSource?: string;
 }
 
 export function useSportsApiData({
@@ -21,13 +23,18 @@ export function useSportsApiData({
   includeSchedule = true,
   useExternalApis = true,
   preferredApiSource = 'ALL',
+  dataSource: initialDataSource = 'API',
 }: UseSportsApiDataOptions = {}) {
   const [allMatches, setAllMatches] = useState<Match[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [lastRefreshTime, setLastRefreshTime] = useState(new Date().toISOString());
-  const { dataSource, setDataSource, availableDataSources } = useDataSourceContext();
-  const { verifiedMatches, verificationLoading, verificationError } = useMatchVerification(allMatches);
+  const { dataSource, setDataSource, availableDataSources } = useDataSource(initialDataSource);
+  
+  // Apply verification to matches
+  const verifiedMatches = verifyMatches(allMatches, dataSource);
+  const verificationLoading = false;
+  const verificationError = null;
 
   // Function to fetch data from external APIs based on preferred source
   const fetchDataFromApis = async (): Promise<Match[]> => {
@@ -116,8 +123,8 @@ export function useSportsApiData({
     verifiedMatches,
     isLoading,
     error,
-		verificationLoading,
-		verificationError,
+    verificationLoading,
+    verificationError,
     refetch,
     refetchWithTimestamp,
     lastRefreshTime,

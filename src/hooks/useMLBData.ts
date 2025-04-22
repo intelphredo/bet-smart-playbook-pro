@@ -1,34 +1,36 @@
+
 import { useState, useEffect } from "react";
-import { fetchMLBSchedule, fetchMLBTeams, fetchMLBStandings, fetchMLBPlayerStats } from "@/services/mlbApi";
-import { Match, Team, League, PlayerStats } from "@/types";
+import { fetchMLBSchedule, fetchMLBTeams, fetchMLBPlayerStats, fetchMLBStandings } from "@/services/mlbApi";
+import { Match, League, Team, PlayerStats } from "@/types";
 
 interface UseMLBDataOptions {
   league?: League | "ALL";
   refreshInterval?: number;
   includeSchedule?: boolean;
-  includeTeams?: boolean;
   includePlayerStats?: boolean;
+  teamId?: string;
 }
 
 export function useMLBData({
   league = "MLB",
   refreshInterval = 60000,
   includeSchedule = true,
-  includeTeams = false,
   includePlayerStats = false,
+  teamId,
 }: UseMLBDataOptions = {}) {
   const [allMatches, setAllMatches] = useState<Match[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
   const [playerStats, setPlayerStats] = useState<PlayerStats[]>([]);
+  const [divisionsStandings, setDivisionsStandings] = useState<any>(null);
+  
   const [isLoading, setIsLoading] = useState(false);
-  const [isLoadingTeams, setIsLoadingTeams] = useState(false);
   const [isLoadingStandings, setIsLoadingStandings] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [standingsError, setStandingsError] = useState<Error | null>(null);
-  const [divisionsStandings, setDivisionsStandings] = useState<any>(null);
 
   const fetchSchedule = async () => {
     if (!includeSchedule) return;
+    
     setIsLoading(true);
     setError(null);
     try {
@@ -42,16 +44,11 @@ export function useMLBData({
   };
 
   const fetchTeams = async () => {
-    if (!includeTeams) return;
-    setIsLoadingTeams(true);
-    setError(null);
     try {
-      const teamsData = await fetchMLBTeams();
-      setTeams(teamsData);
+      const teams = await fetchMLBTeams();
+      setTeams(teams);
     } catch (e: any) {
-      setError(e);
-    } finally {
-      setIsLoadingTeams(false);
+      console.error("Error fetching MLB teams:", e);
     }
   };
 
@@ -59,8 +56,8 @@ export function useMLBData({
     setIsLoadingStandings(true);
     setStandingsError(null);
     try {
-      const standingsData = await fetchMLBStandings();
-      setDivisionsStandings(standingsData);
+      const standings = await fetchMLBStandings();
+      setDivisionsStandings(standings);
     } catch (e: any) {
       setStandingsError(e);
     } finally {
@@ -68,55 +65,72 @@ export function useMLBData({
     }
   };
 
-  const fetchPlayerStatistics = async () => {
-    if (!includePlayerStats) return;
-    setIsLoading(true);
-    setError(null);
+  const fetchStats = async () => {
+    if (!includePlayerStats || !teamId) return;
+    
     try {
-      // Fetch player stats for all teams (inefficient, but works for demo)
-      const allTeams = await fetchMLBTeams();
-      const allStats = await Promise.all(
-        allTeams.map(team => fetchMLBPlayerStats(team.id))
-      );
-      // Flatten the array of arrays into a single array
-      setPlayerStats(allStats.flat());
+      const stats = await fetchMLBPlayerStats(teamId);
+      setPlayerStats(stats);
     } catch (e: any) {
-      setError(e);
-    } finally {
-      setIsLoading(false);
+      console.error("Error fetching MLB player stats:", e);
+    }
+  };
+
+  const refetch = () => {
+    fetchSchedule();
+  };
+
+  const fetchLiveGameData = async (gameId: string): Promise<any> => {
+    try {
+      // Implementation would go here
+      return {};
+    } catch (e) {
+      console.error("Error fetching live game data:", e);
+      return null;
     }
   };
 
   useEffect(() => {
     fetchSchedule();
-    if (includeTeams) {
-      fetchTeams();
-    }
-    if (includePlayerStats) {
-      fetchPlayerStatistics();
-    }
-    fetchStandings(); // Always fetch standings
+    fetchTeams();
 
     if (refreshInterval) {
-      const id = setInterval(fetchSchedule, refreshInterval);
-      return () => clearInterval(id);
+      const intervalId = setInterval(fetchSchedule, refreshInterval);
+      return () => clearInterval(intervalId);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [league, includeSchedule, refreshInterval, includeTeams, includePlayerStats]);
+  }, [includeSchedule, refreshInterval]);
 
+  useEffect(() => {
+    fetchStandings();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (includePlayerStats && teamId) {
+      fetchStats();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [includePlayerStats, teamId]);
+
+  const upcomingMatches = allMatches.filter(m => m.status === "scheduled" || m.status === "pre");
+  const liveMatches = allMatches.filter(m => m.status === "live");
+  const finishedMatches = allMatches.filter(m => m.status === "finished");
+  
   return {
     allMatches,
     teams,
     playerStats,
-    upcomingMatches: allMatches.filter(m => m.status === "scheduled"),
-    liveMatches: allMatches.filter(m => m.status === "live"),
-    finishedMatches: allMatches.filter(m => m.status === "finished"),
+    upcomingMatches,
+    liveMatches,
+    finishedMatches,
     isLoading,
     error,
-    isLoadingTeams,
+    refetch,
+    refetchSchedule: refetch,
+    divisionsStandings,
     isLoadingStandings,
     standingsError,
-    divisionsStandings,
-    fetchLiveGameData: undefined,
+    fetchLiveGameData
   };
 }
