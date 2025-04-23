@@ -1,0 +1,141 @@
+
+/* === Cards, Buttons, Badges, Inputs, Forms, Headings, Animation === */
+@tailwind components;
+
+@layer base {
+  /* Card, match-card, auth-card glass polish */
+  .card, .match-card, .auth-card, .player-prop-card {
+    @apply transition-shadow transition-transform duration-200 ease-in-out;
+    border-radius: 1.1rem;
+    background-clip: padding-box;
+    backdrop-filter: blur(1.5px);
+    border: 1.5px solid hsla(220, 14%, 90%, 0.13);
+    background: linear-gradient(135deg, hsl(var(--card)), hsl(var(--secondary)/0.6));
+    box-shadow: 0 2px 14px 0 hsla(220, 40%, 34%, 0.11);
+    transition: box-shadow 0.2s, background-color var(--theme-transition), border-color var(--theme-transition), transform 0.19s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .card:hover,
+  .match-card:hover {
+    box-shadow: 0 6px 26px 0 hsla(220, 37%, 31%, 0.19);
+    transform: translateY(-3px) scale(1.018);
+    border-color: hsla(44, 100%, 60%, 0.18);
+  }
+  .dark .card, .dark .match-card, .dark .auth-card, .dark .player-prop-card {
+    background: linear-gradient(120deg, rgba(15, 23, 42, 0.82) 80%, rgba(34, 46, 78, 0.89) 100%);
+    box-shadow: 0 2px 16px 0 hsla(220, 65%, 8%, 0.28);
+    border-color: hsla(230, 22%, 36%, 0.17);
+    backdrop-filter: blur(4px);
+  }
+  .auth-card {
+    background: linear-gradient(135deg, hsl(var(--card)), hsl(var(--accent)/0.09));
+    border-color: hsla(44, 85%, 63%, 0.07);
+    box-shadow: 0 4px 28px 0 hsla(220, 36%, 45%, 0.17);
+  }
+  .dark .auth-card {
+    background: linear-gradient(120deg, rgba(15, 23, 42, 0.95) 75%, rgba(34, 46, 78, 0.955) 99%);
+    border-color: hsla(44, 58%, 48%, 0.09);
+    box-shadow: 0 8px 30px 0 hsla(240, 49%, 8%, 0.27);
+    backdrop-filter: blur(6px);
+  }
+  /* Button, .btn, .shadcn-btn variants */
+  button, .btn, .shadcn-btn {
+    @apply rounded-lg font-semibold shadow-md focus:ring-2 focus:ring-gold-300 focus:outline-none;
+    background: linear-gradient(90deg, #1641b5 0%, #1b76d1 100%);
+    @apply text-white;
+    box-shadow: 0 2px 7px 0 hsla(220, 44%, 20%, 0.07);
+    transition: box-shadow 0.18s, transform 0.18s, background-color 0.18s, background-position 0.18s;
+    font-size: 1rem;
+  }
+  button:hover, .btn:hover, .shadcn-btn:hover {
+    @apply bg-gold-500 text-navy-900;
+    filter: brightness(1.035);
+    transform: translateY(-1.5px) scale(1.04);
+    background: linear-gradient(90deg, #ffd700 0%, #ffe580 100%);
+    color: #0a2342;
+    box-shadow: 0 6px 18px 0 hsla(44, 99%, 55%, 0.28);
+  }
+  /* Badges */
+  .badge,
+  .shadcn-badge,
+  .bg-gold-500 {
+    @apply rounded-full px-3 py-1 font-semibold;
+    background: linear-gradient(90deg, #ffd700 0%, #ffe295 80%);
+    color: #564a1b;
+    box-shadow: 0 1px 4px 0 hsla(38, 99%, 68%, 0.12);
+    font-size: 0.95em;
+    letter-spacing: 0.025em;
+    transition: background-color var(--theme-transition), color var(--theme-transition);
+  }
+  .dark .badge,
+  .dark .shadcn-badge,
+  .dark .bg-gold-500 {
+    background: linear-gradient(90deg, #ffe98a 0%, #b19f56 99%);
+    color: #1f1e14;
+  }
+  .badge.bg-gold-500, .shadcn-badge.bg-gold-500 {
+    animation: badge-glow 2s ease-in-out infinite alternate;
+  }
+  @keyframes badge-glow {
+    from { box-shadow: 0 0 4px 0 #ffd70045; }
+    to { box-shadow: 0 0 12px 2.5px #ffe580bb; }
+  }
+  /* Inputs */
+  input, textarea, select {
+    @apply rounded-lg font-medium;
+    transition: border-color 0.16s, box-shadow 0.17s, background-color var(--theme-transition);
+    letter-spacing: 0.01em;
+  }
+  input:focus, textarea:focus, select:focus {
+    border-color: theme(colors.gold.400);
+    box-shadow: 0 0 0 2.5px hsla(44, 99%, 60%, 0.14);
+    background-color: hsla(44, 100%, 97%, 0.12);
+  }
+  .dark input, .dark textarea, .dark select {
+    background-color: hsla(220, 21%, 19%, 0.57);
+    color: #f3f3fa;
+    border-color: hsla(220, 55%, 69%, 0.12);
+  }
+  /* Forms */
+  .auth-form {
+    box-shadow: 0 4px 36px 0 hsla(220, 40%, 29%, 0.08);
+    padding: 2rem;
+    border-radius: 1.05rem;
+  }
+  .dark .auth-form {
+    box-shadow: 0 3px 18px 0 hsla(220, 54%, 11%, 0.14);
+    background: rgba(12,18,36,0.94);
+    border-color: hsla(44, 99%, 65%, 0.07);
+  }
+  /* Headings */
+  h1, h2, h3 {
+    @apply font-bold tracking-tight;
+    transition: color var(--theme-transition);
+    letter-spacing: -0.01em;
+  }
+  .font-bold {
+    @apply tracking-tight;
+  }
+  h1 {
+    font-size: 2.65rem;
+    margin-bottom: 0.22em;
+    line-height: 1.08;
+  }
+  h2 {
+    font-size: 1.85rem;
+    margin-bottom: 0.135em;
+  }
+  h3 {
+    font-size: 1.29rem;
+    margin-bottom: 0.1em;
+  }
+  /* Animation for load-in */
+  .animate-fade-in {
+    animation: fade-in 0.42s cubic-bezier(0.48,0.09,0.43,0.91) both;
+  }
+  @keyframes fade-in {
+    0% { opacity: 0; transform: translateY(22px) scale(0.97);}
+    92% { opacity: 0.99;}
+    100% { opacity: 1; transform: none;}
+  }
+}
+
