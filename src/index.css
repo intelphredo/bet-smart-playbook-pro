@@ -1,16 +1,308 @@
-/* ENTRYPOINT: Import split CSS files for global project styles */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* === Consolidated Imports === */
-@import './styles/theme.css';
-@import './styles/components.css';
-@import './styles/overrides.css';
+/* Add global font for polish */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
 
-/* Transitions on theme, color, etc */
+@layer base {
+  :root {
+    --background: 220 33% 99%;
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    --primary: 222 47% 25%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
+
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    --accent: 220 79% 56%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 222 84% 48%;
+
+    --radius: 0.5rem;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5% 26%;
+    --sidebar-primary: 240 6% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 5% 96%;
+    --sidebar-accent-foreground: 240 6% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217 91% 60%;
+    
+    /* Algorithm colors */
+    --algorithm-ml: 230 60% 55%;
+    --algorithm-value: 280 60% 55%;  
+    --algorithm-statistical: 190 60% 55%;
+    
+    /* Theme transition */
+    --theme-transition: 0s;
+  }
+
+  .dark {
+    --background: 222 47% 8%;
+    --foreground: 210 40% 98%;
+
+    --card: 222 47% 10%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222 47% 10%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 210 40% 98%;
+    --primary-foreground: 222 47% 11%;
+
+    --secondary: 217 33% 18%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217 33% 18%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 220 79% 56%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217 33% 18%;
+    --input: 217 33% 18%;
+    --ring: 213 27% 84%;
+    
+    --sidebar-background: 240 6% 10%;
+    --sidebar-foreground: 240 5% 96%;
+    --sidebar-primary: 224 76% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 4% 16%;
+    --sidebar-accent-foreground: 240 5% 96%;
+    --sidebar-border: 240 4% 16%;
+    --sidebar-ring: 217 91% 60%;
+    
+    /* Algorithm colors - darker variants */
+    --algorithm-ml: 230 50% 45%; 
+    --algorithm-value: 280 50% 45%;
+    --algorithm-statistical: 190 50% 45%;
+  }
+}
+
+/* Enhanced element polish */
+@layer base {
+  * {
+    @apply border-border;
+    font-family: 'Inter', system-ui, sans-serif;
+    outline-color: theme(colors.gold.500);
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    letter-spacing: 0.01em;
+    transition: background-color var(--theme-transition), color var(--theme-transition);
+  }
+
+  /* Cards: subtle shadow, smooth hover transition, gentle lift effect */
+  .card,
+  .match-card {
+    @apply transition-shadow transition-transform duration-200 ease-in-out;
+    box-shadow: 0 2px 10px 0 hsla(220, 40%, 40%, 0.08);
+    border-radius: 1rem;
+    transition: all 0.2s ease, background-color var(--theme-transition);
+  }
+  .card:hover,
+  .match-card:hover {
+    box-shadow: 0 6px 18px 0 hsla(220, 40%, 39%, 0.14);
+    transform: translateY(-2px) scale(1.015);
+  }
+
+  /* Buttons: richer hover color, shadow, rounded */
+  button, .btn, .shadcn-btn {
+    @apply rounded-lg focus:ring-2 focus:ring-gold-300 focus:outline-none;
+    transition: box-shadow 0.2s, transform 0.2s, background-color var(--theme-transition);
+    box-shadow: 0 1px 3px 0 hsla(44, 100%, 50%, 0.04);
+  }
+  button:hover, .btn:hover, .shadcn-btn:hover {
+    @apply bg-gold-500 text-navy-900;
+    filter: brightness(1.04);
+    transform: translateY(-1px) scale(1.05);
+  }
+
+  /* Badges: more modern, pill shape */
+  .badge,
+  .shadcn-badge,
+  .bg-gold-500 {
+    @apply rounded-full px-3 py-1 font-semibold;
+    box-shadow: 0 1px 3px 0 hsla(44, 100%, 60%, 0.05);
+    font-size: 0.97em;
+    letter-spacing: 0.02em;
+    transition: background-color var(--theme-transition), color var(--theme-transition);
+  }
+
+  /* Headings: bolder, tighter spacing */
+  /* Fix: Removed .font-bold from the selector to avoid circular dependency */
+  h1, h2, h3 {
+    @apply font-bold tracking-tight;
+    transition: color var(--theme-transition);
+  }
+  /* Add separate styling for .font-bold */
+  .font-bold {
+    @apply tracking-tight;
+  }
+  h1 {
+    font-size: 2.5rem;
+    margin-bottom: 0.2em;
+  }
+  h2 {
+    font-size: 1.85rem;
+    margin-bottom: 0.15em;
+  }
+  h3 {
+    font-size: 1.3rem;
+    margin-bottom: 0.12em;
+  }
+
+  /* Subtle glass effect for cards, especially in dark mode */
+  .card,
+  .match-card,
+  .player-prop-card {
+    @apply bg-white/90 dark:bg-navy-800/80;
+    backdrop-filter: blur(2px);
+    border: 1px solid hsla(220, 20%, 90%, 0.12);
+    transition: background-color var(--theme-transition), border-color var(--theme-transition);
+  }
+  
+  .dark .card,
+  .dark .match-card,
+  .dark .player-prop-card {
+    backdrop-filter: blur(4px);
+    border-color: hsla(220, 20%, 30%, 0.15);
+  }
+
+  /* Input focus: soft gold border, gentle shadow */
+  input, textarea, select {
+    @apply rounded-lg;
+    transition: border-color 0.2s, box-shadow 0.2s, background-color var(--theme-transition);
+  }
+  input:focus, textarea:focus, select:focus {
+    border-color: theme(colors.gold.400);
+    box-shadow: 0 0 0 2px hsla(44, 100%, 60%, 0.18);
+  }
+  
+  /* Dark mode specific adjustments */
+  .dark .card-header {
+    @apply bg-navy-900/50 border-b border-navy-700/50;
+  }
+  
+  .dark .nav-button {
+    @apply hover:bg-navy-700;
+  }
+  
+  /* Algorithm-specific theme colors */
+  .algorithm-ml {
+    color: hsl(var(--algorithm-ml));
+  }
+  
+  .algorithm-value {
+    color: hsl(var(--algorithm-value));
+  }
+  
+  .algorithm-statistical {
+    color: hsl(var(--algorithm-statistical));
+  }
+  
+  .dark .algorithm-card-ml {
+    background: linear-gradient(to right bottom, hsl(var(--background)), hsl(230, 30%, 15%));
+  }
+  
+  .dark .algorithm-card-value {
+    background: linear-gradient(to right bottom, hsl(var(--background)), hsl(280, 30%, 15%));
+  }
+  
+  .dark .algorithm-card-statistical {
+    background: linear-gradient(to right bottom, hsl(var(--background)), hsl(190, 30%, 15%));
+  }
+  
+  /* Dark mode optimized tables */
+  .dark table thead tr {
+    @apply bg-navy-900/50 border-navy-700;
+  }
+  
+  .dark table tbody tr {
+    @apply border-navy-800/50;
+  }
+  
+  .dark table tbody tr:hover {
+    @apply bg-navy-800/30;
+  }
+}
+
+/* --- Add styles to ensure dropdown menus have non-transparent background and correct z-index --- */
+@layer base {
+  .dropdown-menu, .dark .dropdown-menu, .dropdown-content, .dark .dropdown-content {
+    @apply bg-white dark:bg-navy-800 shadow-xl z-50;
+    opacity: 1 !important;
+    background-color: #fff !important;
+  }
+  .dark .dropdown-menu, .dark .dropdown-content {
+    background-color: #181e2a !important;
+  }
+  /* Ensure TooltipContent and popovers have z-index above normal content */
+  .tooltip-content, .popover-content, .dropdown-menu, .dropdown-content {
+    z-index: 50 !important;
+  }
+}
+/* --- END DROPDOWN ENHANCEMENTS --- */
+
+/* Extra subtle shimmer for "Premium"/"New" badges (optional, can remove if too much) */
+@layer base {
+  .badge.bg-gold-500, .shadcn-badge.bg-gold-500 {
+    animation: badge-glow 2s ease-in-out infinite alternate;
+  }
+  @keyframes badge-glow {
+    from { box-shadow: 0 0 4px 0 #ffd70033; }
+    to { box-shadow: 0 0 10px 2px #ffd70088; }
+  }
+  
+  /* Enhanced dark mode transitions */
+  .dark-mode-transition {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+  }
+  
+  /* Gradient text for dark mode */
+  .dark .gradient-text {
+    @apply bg-gradient-to-r from-blue-400 to-purple-500 text-transparent bg-clip-text;
+  }
+  
+  /* Card gradients for dark mode */
+  .dark .card-gradient {
+    background: linear-gradient(to bottom right, 
+      rgba(30, 41, 59, 0.8), 
+      rgba(15, 23, 42, 0.9)
+    );
+  }
+  
+  /* Smooth animations for chart transitions */
+  .recharts-wrapper {
+    transition: all 0.3s ease;
+  }
+}
+
+/* Theme transition helpers */
 .theme-transitioning * {
-  transition-duration: 0.29s !important;
+  transition-duration: 0.3s !important;
   transition-property: background-color, color, border-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter !important;
-  transition-timing-function: cubic-bezier(0.38, 0, 0.2, 1) !important;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
