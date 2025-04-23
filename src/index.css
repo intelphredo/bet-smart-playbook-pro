@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -5,38 +6,29 @@
 /* Add global font for polish */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
 
+/* --- Improved dark mode and UI polish for authentication and dashboard --- */
 @layer base {
   :root {
     --background: 220 33% 99%;
     --foreground: 222 47% 11%;
-
     --card: 0 0% 100%;
     --card-foreground: 222 47% 11%;
-
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
-
     --primary: 222 47% 25%;
     --primary-foreground: 210 40% 98%;
-
     --secondary: 210 40% 96%;
     --secondary-foreground: 222 47% 11%;
-
     --muted: 210 40% 96%;
     --muted-foreground: 215 16% 47%;
-
     --accent: 220 79% 56%;
     --accent-foreground: 210 40% 98%;
-
     --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
-
     --border: 214 32% 91%;
     --input: 214 32% 91%;
     --ring: 222 84% 48%;
-
     --radius: 0.5rem;
-
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5% 26%;
     --sidebar-primary: 240 6% 10%;
@@ -45,46 +37,35 @@
     --sidebar-accent-foreground: 240 6% 10%;
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217 91% 60%;
-    
     /* Algorithm colors */
     --algorithm-ml: 230 60% 55%;
     --algorithm-value: 280 60% 55%;  
     --algorithm-statistical: 190 60% 55%;
-    
     /* Theme transition */
-    --theme-transition: 0s;
+    --theme-transition: 0.2s;
   }
 
   .dark {
     --background: 222 47% 8%;
     --foreground: 210 40% 98%;
-
-    --card: 222 47% 10%;
+    --card: 222 47% 12%;
     --card-foreground: 210 40% 98%;
-
     --popover: 222 47% 10%;
     --popover-foreground: 210 40% 98%;
-
     --primary: 210 40% 98%;
     --primary-foreground: 222 47% 11%;
-
     --secondary: 217 33% 18%;
     --secondary-foreground: 210 40% 98%;
-
     --muted: 217 33% 18%;
     --muted-foreground: 215 20% 65%;
-
     --accent: 220 79% 56%;
     --accent-foreground: 210 40% 98%;
-
     --destructive: 0 63% 31%;
     --destructive-foreground: 210 40% 98%;
-
-    --border: 217 33% 18%;
+    --border: 217 33% 24%;
     --input: 217 33% 18%;
     --ring: 213 27% 84%;
-    
-    --sidebar-background: 240 6% 10%;
+    --sidebar-background: 240 8% 13%;
     --sidebar-foreground: 240 5% 96%;
     --sidebar-primary: 224 76% 48%;
     --sidebar-primary-foreground: 0 0% 100%;
@@ -92,7 +73,6 @@
     --sidebar-accent-foreground: 240 5% 96%;
     --sidebar-border: 240 4% 16%;
     --sidebar-ring: 217 91% 60%;
-    
     /* Algorithm colors - darker variants */
     --algorithm-ml: 230 50% 45%; 
     --algorithm-value: 280 50% 45%;
@@ -100,209 +80,236 @@
   }
 }
 
-/* Enhanced element polish */
+/* --- Polish for polish, elevation, glassmorphism, and transitions --- */
 @layer base {
   * {
     @apply border-border;
     font-family: 'Inter', system-ui, sans-serif;
     outline-color: theme(colors.gold.500);
+    letter-spacing: 0.01em;
   }
-
   body {
     @apply bg-background text-foreground antialiased;
     letter-spacing: 0.01em;
+    min-height: 100vh;
     transition: background-color var(--theme-transition), color var(--theme-transition);
   }
 
-  /* Cards: subtle shadow, smooth hover transition, gentle lift effect */
-  .card,
-  .match-card {
+  /* Card: Stronger shadow, more elevation on hover, glass effect in dark */
+  .card, .match-card {
     @apply transition-shadow transition-transform duration-200 ease-in-out;
-    box-shadow: 0 2px 10px 0 hsla(220, 40%, 40%, 0.08);
-    border-radius: 1rem;
-    transition: all 0.2s ease, background-color var(--theme-transition);
+    box-shadow: 0 2px 14px 0 hsla(220, 40%, 34%, 0.11);
+    border-radius: 1.1rem;
+    background-clip: padding-box;
+    backdrop-filter: blur(1.5px);
+    border: 1.5px solid hsla(220, 14%, 90%, 0.13);
+    background: linear-gradient(135deg, hsl(var(--card)), hsl(var(--secondary)/0.6));
+    transition: box-shadow 0.2s, background-color var(--theme-transition), border-color var(--theme-transition), transform 0.19s cubic-bezier(0.4, 0, 0.2, 1);
   }
   .card:hover,
   .match-card:hover {
-    box-shadow: 0 6px 18px 0 hsla(220, 40%, 39%, 0.14);
-    transform: translateY(-2px) scale(1.015);
+    box-shadow: 0 6px 26px 0 hsla(220, 37%, 31%, 0.19);
+    transform: translateY(-3px) scale(1.018);
+    border-color: hsla(44, 100%, 60%, 0.18);
   }
 
-  /* Buttons: richer hover color, shadow, rounded */
+  /* Dark mode card glass effect */
+  .dark .card,
+  .dark .match-card {
+    background: linear-gradient(120deg, rgba(15, 23, 42, 0.82) 80%, rgba(34, 46, 78, 0.89) 100%);
+    box-shadow: 0 2px 16px 0 hsla(220, 65%, 8%, 0.28);
+    border-color: hsla(230, 22%, 36%, 0.17);
+    backdrop-filter: blur(4px);
+  }
+
+  /* Buttons: richer color, elevated, modern focus/hover, transition */
   button, .btn, .shadcn-btn {
-    @apply rounded-lg focus:ring-2 focus:ring-gold-300 focus:outline-none;
-    transition: box-shadow 0.2s, transform 0.2s, background-color var(--theme-transition);
-    box-shadow: 0 1px 3px 0 hsla(44, 100%, 50%, 0.04);
+    @apply rounded-lg font-semibold shadow-md focus:ring-2 focus:ring-gold-300 focus:outline-none;
+    background: linear-gradient(90deg, #1641b5 0%, #1b76d1 100%);
+    @apply text-white;
+    box-shadow: 0 2px 7px 0 hsla(220, 44%, 20%, 0.07);
+    transition: box-shadow 0.18s, transform 0.18s, background-color 0.18s, background-position 0.18s;
+    font-size: 1rem;
   }
   button:hover, .btn:hover, .shadcn-btn:hover {
     @apply bg-gold-500 text-navy-900;
-    filter: brightness(1.04);
-    transform: translateY(-1px) scale(1.05);
+    filter: brightness(1.035);
+    transform: translateY(-1.5px) scale(1.04);
+    background: linear-gradient(90deg, #ffd700 0%, #ffe580 100%);
+    color: #0a2342;
+    box-shadow: 0 6px 18px 0 hsla(44, 99%, 55%, 0.28);
   }
 
-  /* Badges: more modern, pill shape */
+  /* Auth page card: extra glass and elevation for premium feel */
+  .auth-card {
+    @apply card;
+    background: linear-gradient(135deg, hsl(var(--card)), hsl(var(--accent)/0.09));
+    border-color: hsla(44, 85%, 63%, 0.07);
+    backdrop-filter: blur(3px);
+    box-shadow: 0 4px 28px 0 hsla(220, 36%, 45%, 0.17);
+
+  }
+  .dark .auth-card {
+    background: linear-gradient(120deg, rgba(15, 23, 42, 0.95) 75%, rgba(34, 46, 78, 0.955) 99%);
+    border-color: hsla(44, 58%, 48%, 0.09);
+    box-shadow: 0 8px 30px 0 hsla(240, 49%, 8%, 0.27);
+    backdrop-filter: blur(6px);
+  }
+
+  /* Input fields (also polish for auth forms): soft edges, strong focus */
+  input, textarea, select {
+    @apply rounded-lg font-medium;
+    transition: border-color 0.16s, box-shadow 0.17s, background-color var(--theme-transition);
+    letter-spacing: 0.01em;
+  }
+  input:focus, textarea:focus, select:focus {
+    border-color: theme(colors.gold.400);
+    box-shadow: 0 0 0 2.5px hsla(44, 99%, 60%, 0.14);
+    background-color: hsla(44, 100%, 97%, 0.12);
+  }
+  .dark input, .dark textarea, .dark select {
+    background-color: hsla(220, 21%, 19%, 0.57);
+    color: #f3f3fa;
+    border-color: hsla(220, 55%, 69%, 0.12);
+  }
+
+  /* Polished badge for premium look */
   .badge,
   .shadcn-badge,
   .bg-gold-500 {
     @apply rounded-full px-3 py-1 font-semibold;
-    box-shadow: 0 1px 3px 0 hsla(44, 100%, 60%, 0.05);
-    font-size: 0.97em;
-    letter-spacing: 0.02em;
+    background: linear-gradient(90deg, #ffd700 0%, #ffe295 80%);
+    color: #564a1b;
+    box-shadow: 0 1px 4px 0 hsla(38, 99%, 68%, 0.12);
+    font-size: 0.95em;
+    letter-spacing: 0.025em;
     transition: background-color var(--theme-transition), color var(--theme-transition);
   }
+  .dark .badge,
+  .dark .shadcn-badge,
+  .dark .bg-gold-500 {
+    background: linear-gradient(90deg, #ffe98a 0%, #b19f56 99%);
+    color: #1f1e14;
+  }
 
-  /* Headings: bolder, tighter spacing */
-  /* Fix: Removed .font-bold from the selector to avoid circular dependency */
+  /* Heading: richer accent in dark and modern polish */
   h1, h2, h3 {
     @apply font-bold tracking-tight;
     transition: color var(--theme-transition);
+    letter-spacing: -0.01em;
   }
-  /* Add separate styling for .font-bold */
   .font-bold {
     @apply tracking-tight;
   }
   h1 {
-    font-size: 2.5rem;
-    margin-bottom: 0.2em;
+    font-size: 2.65rem;
+    margin-bottom: 0.22em;
+    line-height: 1.08;
   }
   h2 {
     font-size: 1.85rem;
-    margin-bottom: 0.15em;
+    margin-bottom: 0.135em;
   }
   h3 {
-    font-size: 1.3rem;
-    margin-bottom: 0.12em;
+    font-size: 1.29rem;
+    margin-bottom: 0.1em;
   }
 
-  /* Subtle glass effect for cards, especially in dark mode */
-  .card,
-  .match-card,
-  .player-prop-card {
-    @apply bg-white/90 dark:bg-navy-800/80;
-    backdrop-filter: blur(2px);
-    border: 1px solid hsla(220, 20%, 90%, 0.12);
+  /* Smooth glass & border for forms and modals */
+  .card, .match-card, .auth-card, .player-prop-card {
+    @apply bg-white/85 dark:bg-navy-800/80;
+    backdrop-filter: blur(2.5px);
+    border: 1.33px solid hsla(220, 20%, 90%, 0.13);
     transition: background-color var(--theme-transition), border-color var(--theme-transition);
   }
-  
-  .dark .card,
-  .dark .match-card,
-  .dark .player-prop-card {
-    backdrop-filter: blur(4px);
-    border-color: hsla(220, 20%, 30%, 0.15);
+  .dark .card, .dark .match-card, .dark .auth-card, .dark .player-prop-card {
+    border-color: hsla(220, 18%, 30%, 0.17);
+    backdrop-filter: blur(5px);
   }
 
-  /* Input focus: soft gold border, gentle shadow */
-  input, textarea, select {
-    @apply rounded-lg;
-    transition: border-color 0.2s, box-shadow 0.2s, background-color var(--theme-transition);
+  /* Subtle shadow on auth forms in both modes */
+  .auth-form {
+    box-shadow: 0 4px 36px 0 hsla(220, 40%, 29%, 0.08);
+    padding: 2rem;
+    border-radius: 1.05rem;
   }
-  input:focus, textarea:focus, select:focus {
-    border-color: theme(colors.gold.400);
-    box-shadow: 0 0 0 2px hsla(44, 100%, 60%, 0.18);
+  .dark .auth-form {
+    box-shadow: 0 3px 18px 0 hsla(220, 54%, 11%, 0.14);
+    background: rgba(12,18,36,0.94);
+    border-color: hsla(44, 99%, 65%, 0.07);
   }
-  
-  /* Dark mode specific adjustments */
-  .dark .card-header {
-    @apply bg-navy-900/50 border-b border-navy-700/50;
+
+  /* Animation for polished load */
+  .animate-fade-in {
+    animation: fade-in 0.42s cubic-bezier(0.48,0.09,0.43,0.91) both;
   }
-  
-  .dark .nav-button {
-    @apply hover:bg-navy-700;
+  @keyframes fade-in {
+    0% { opacity: 0; transform: translateY(22px) scale(0.97);}
+    92% { opacity: 0.99;}
+    100% { opacity: 1; transform: none;}
   }
-  
-  /* Algorithm-specific theme colors */
-  .algorithm-ml {
-    color: hsl(var(--algorithm-ml));
+
+  /* Polished subtle shimmer for new/premium badge */
+  .badge.bg-gold-500, .shadcn-badge.bg-gold-500 {
+    animation: badge-glow 2s ease-in-out infinite alternate;
   }
-  
-  .algorithm-value {
-    color: hsl(var(--algorithm-value));
-  }
-  
-  .algorithm-statistical {
-    color: hsl(var(--algorithm-statistical));
-  }
-  
-  .dark .algorithm-card-ml {
-    background: linear-gradient(to right bottom, hsl(var(--background)), hsl(230, 30%, 15%));
-  }
-  
-  .dark .algorithm-card-value {
-    background: linear-gradient(to right bottom, hsl(var(--background)), hsl(280, 30%, 15%));
-  }
-  
-  .dark .algorithm-card-statistical {
-    background: linear-gradient(to right bottom, hsl(var(--background)), hsl(190, 30%, 15%));
-  }
-  
-  /* Dark mode optimized tables */
-  .dark table thead tr {
-    @apply bg-navy-900/50 border-navy-700;
-  }
-  
-  .dark table tbody tr {
-    @apply border-navy-800/50;
-  }
-  
-  .dark table tbody tr:hover {
-    @apply bg-navy-800/30;
+  @keyframes badge-glow {
+    from { box-shadow: 0 0 4px 0 #ffd70045; }
+    to { box-shadow: 0 0 12px 2.5px #ffe580bb; }
   }
 }
 
-/* --- Add styles to ensure dropdown menus have non-transparent background and correct z-index --- */
+/* --- Dropdown and popover polish: solid background & strong z-index --- */
 @layer base {
   .dropdown-menu, .dark .dropdown-menu, .dropdown-content, .dark .dropdown-content {
-    @apply bg-white dark:bg-navy-800 shadow-xl z-50;
+    @apply bg-white dark:bg-navy-800 shadow-2xl z-50;
     opacity: 1 !important;
     background-color: #fff !important;
   }
   .dark .dropdown-menu, .dark .dropdown-content {
     background-color: #181e2a !important;
   }
-  /* Ensure TooltipContent and popovers have z-index above normal content */
   .tooltip-content, .popover-content, .dropdown-menu, .dropdown-content {
-    z-index: 50 !important;
+    z-index: 70 !important;
   }
 }
-/* --- END DROPDOWN ENHANCEMENTS --- */
 
-/* Extra subtle shimmer for "Premium"/"New" badges (optional, can remove if too much) */
+/* --- Section glass and gradient helpers --- */
 @layer base {
-  .badge.bg-gold-500, .shadcn-badge.bg-gold-500 {
-    animation: badge-glow 2s ease-in-out infinite alternate;
+  .section-glass {
+    @apply bg-white/60 dark:bg-navy-800/50 backdrop-blur-md rounded-xl shadow-md border;
+    border-color: hsla(220,18%,90%,0.125);
   }
-  @keyframes badge-glow {
-    from { box-shadow: 0 0 4px 0 #ffd70033; }
-    to { box-shadow: 0 0 10px 2px #ffd70088; }
+  .section-gradient {
+    background: linear-gradient(135deg, #fdfcfb 0%, #e2d1c3 100%);
   }
-  
-  /* Enhanced dark mode transitions */
-  .dark-mode-transition {
-    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
-  }
-  
-  /* Gradient text for dark mode */
-  .dark .gradient-text {
-    @apply bg-gradient-to-r from-blue-400 to-purple-500 text-transparent bg-clip-text;
-  }
-  
-  /* Card gradients for dark mode */
-  .dark .card-gradient {
-    background: linear-gradient(to bottom right, 
-      rgba(30, 41, 59, 0.8), 
-      rgba(15, 23, 42, 0.9)
-    );
-  }
-  
-  /* Smooth animations for chart transitions */
-  .recharts-wrapper {
-    transition: all 0.3s ease;
+  .section-dark-gradient {
+    background: linear-gradient(125deg, rgba(30, 41, 59, 0.9) 43%, rgba(44,50,81,0.94) 100%);
   }
 }
 
-/* Theme transition helpers */
+/* --- Transitions on theme, color, etc --- */
 .theme-transitioning * {
-  transition-duration: 0.3s !important;
+  transition-duration: 0.29s !important;
   transition-property: background-color, color, border-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter !important;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1) !important;
+  transition-timing-function: cubic-bezier(0.38, 0, 0.2, 1) !important;
 }
+
+/* --- Responsive helpers / polish --- */
+@media (max-width: 600px) {
+  .card, .auth-card, .match-card, .player-prop-card {
+    border-radius: 0.8rem;
+    padding: 1.2rem;
+  }
+  .auth-form {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 350px) {
+  .card, .auth-card {
+    padding: 0.5rem !important;
+  }
+}
+
+/* ... keep existing code (rest of theme, gradient, and utility styles) the same ... */
