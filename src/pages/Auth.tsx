@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -12,24 +12,8 @@ export default function Auth() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLogin, setIsLogin] = useState(true);
-  const [session, setSession] = useState(null);
+  const [session, setSession] = useState(supabase.auth.getSession());
   const { toast } = useToast();
-
-  useEffect(() => {
-    // Set up the auth state change listener first!
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-    });
-
-    // Now get the existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
 
   if (session) {
     return <Navigate to="/" replace />;
@@ -38,28 +22,24 @@ export default function Auth() {
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    try {
-      let error, data;
-      if (isLogin) {
-        ({ error, data } = await supabase.auth.signInWithPassword({ email, password }));
-      } else {
-        ({ error, data } = await supabase.auth.signUp({ email, password }));
-      }
 
-      if (error) {
-        throw error;
-      }
+    try {
+      const { error } = isLogin 
+        ? await supabase.auth.signInWithPassword({ email, password })
+        : await supabase.auth.signUp({ email, password });
+
+      if (error) throw error;
+
       if (!isLogin) {
         toast({
           title: "Success!",
           description: "Please check your email to confirm your account.",
         });
       }
-      // For login/signup, session will update due to event handler above
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: "Error",
-        description: error?.message || "An error occurred",
+        description: error.message,
         variant: "destructive",
       });
     } finally {
@@ -73,8 +53,8 @@ export default function Auth() {
         <CardHeader>
           <CardTitle>{isLogin ? "Login" : "Sign Up"}</CardTitle>
           <CardDescription>
-            {isLogin
-              ? "Welcome back! Please login to your account."
+            {isLogin 
+              ? "Welcome back! Please login to your account." 
               : "Create an account to access premium features."}
           </CardDescription>
         </CardHeader>
@@ -85,7 +65,6 @@ export default function Auth() {
                 type="email"
                 placeholder="Email"
                 value={email}
-                autoComplete="email"
                 onChange={(e) => setEmail(e.target.value)}
                 required
               />
@@ -95,7 +74,6 @@ export default function Auth() {
                 type="password"
                 placeholder="Password"
                 value={password}
-                autoComplete="current-password"
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />
@@ -103,7 +81,8 @@ export default function Auth() {
             <Button
               type="submit"
               className="w-full"
-              disabled={loading}>
+              disabled={loading}
+            >
               {loading ? "Loading..." : isLogin ? "Login" : "Sign Up"}
             </Button>
           </form>
@@ -111,10 +90,9 @@ export default function Auth() {
             <button
               onClick={() => setIsLogin(!isLogin)}
               className="text-sm text-muted-foreground hover:text-primary"
-              type="button"
             >
-              {isLogin
-                ? "Don't have an account? Sign up"
+              {isLogin 
+                ? "Don't have an account? Sign up" 
                 : "Already have an account? Login"}
             </button>
           </div>
