@@ -1,5 +1,7 @@
+
 import React, { useMemo, useState } from "react";
 import { useSportsData } from "@/hooks/useSportsData";
+import { applyAllAlgorithmPredictions, applyAlgorithmPredictions, AlgorithmType, getAlgorithmNameFromId, ALGORITHM_IDS } from "@/utils/predictions/algorithms";
 import { applyAdvancedPredictions } from "@/utils/advancedPredictionAlgorithm";
 import { Match } from "@/types/sports";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
@@ -35,9 +37,17 @@ function isMatchInDateRange(match: Match, startDate: Date, endDate: Date) {
   }
 }
 
+// Algorithm options mapping
+const ALGORITHM_OPTIONS: { label: string; value: AlgorithmType; id: string }[] = [
+  { label: "ML Power Index", value: "ML_POWER_INDEX", id: ALGORITHM_IDS.ML_POWER_INDEX },
+  { label: "Value Pick Finder", value: "VALUE_PICK_FINDER", id: ALGORITHM_IDS.VALUE_PICK_FINDER },
+  { label: "Statistical Edge", value: "STATISTICAL_EDGE", id: ALGORITHM_IDS.STATISTICAL_EDGE },
+];
+
 const TodaysTeamPredictions = () => {
   const [showUpcomingWeek, setShowUpcomingWeek] = useState(true);
   const [dataProvider, setDataProvider] = useState<string>("ESPN");
+  const [selectedAlgorithm, setSelectedAlgorithm] = useState<AlgorithmType>("ML_POWER_INDEX");
   
   const { 
     verifiedMatches: allMatches, 
@@ -62,16 +72,14 @@ const TodaysTeamPredictions = () => {
     }
   }, [dataProvider, dataSource, setDataSource]);
 
-  // Apply advanced predictions to matches before using them
+  // Apply the selected algorithm to matches before using them
   const matchesWithPredictions = useMemo(() => {
-    // We must always run applyAdvancedPredictions, ensuring .prediction is populated
-    return applyAdvancedPredictions(allMatches || []);
-  }, [allMatches]);
+    return applyAlgorithmPredictions(allMatches || [], selectedAlgorithm);
+  }, [allMatches, selectedAlgorithm]);
 
   const filteredMatches: Match[] = useMemo(() => {
     const today = new Date();
     const oneWeekLater = addDays(today, 7);
-    
     const filtered = matchesWithPredictions.filter(m => {
       if (!m.startTime) return false;
       try {
@@ -85,7 +93,6 @@ const TodaysTeamPredictions = () => {
         return false;
       }
     });
-
     filtered.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
     return filtered;
   }, [matchesWithPredictions, showUpcomingWeek]);
@@ -129,6 +136,18 @@ const TodaysTeamPredictions = () => {
         >
           Upcoming Week
         </Button>
+        <div className="ml-auto flex items-center">
+          <Select value={selectedAlgorithm} onValueChange={value => setSelectedAlgorithm(value as AlgorithmType)}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="Select Algorithm" />
+            </SelectTrigger>
+            <SelectContent>
+              {ALGORITHM_OPTIONS.map(opt => (
+                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
       <div>No team predictions {showUpcomingWeek ? "for the upcoming week" : "for today"} yet.</div>
     </div>
@@ -161,6 +180,18 @@ const TodaysTeamPredictions = () => {
         >
           Upcoming Week
         </Button>
+        <div className="ml-auto flex items-center">
+          <Select value={selectedAlgorithm} onValueChange={value => setSelectedAlgorithm(value as AlgorithmType)}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="Select Algorithm" />
+            </SelectTrigger>
+            <SelectContent>
+              {ALGORITHM_OPTIONS.map(opt => (
+                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
       <Table>
         <TableHeader>
@@ -171,6 +202,7 @@ const TodaysTeamPredictions = () => {
             <TableHead>Prediction</TableHead>
             <TableHead>Confidence</TableHead>
             <TableHead>Projected Score</TableHead>
+            <TableHead>Algorithm</TableHead>
             <TableHead>Data Source</TableHead>
           </TableRow>
         </TableHeader>
@@ -206,6 +238,11 @@ const TodaysTeamPredictions = () => {
               </TableCell>
               <TableCell>
                 <span className="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900 rounded-full">
+                  {ALGORITHM_OPTIONS.find(algo => algo.value === selectedAlgorithm)?.label || "Unknown"}
+                </span>
+              </TableCell>
+              <TableCell>
+                <span className="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900 rounded-full">
                   {dataProvider}
                 </span>
               </TableCell>
@@ -218,3 +255,4 @@ const TodaysTeamPredictions = () => {
 };
 
 export default TodaysTeamPredictions;
+
