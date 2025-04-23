@@ -1,4 +1,3 @@
-
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import { Toaster } from "sonner";
@@ -19,18 +18,33 @@ const queryClient = new QueryClient({
 declare global {
   interface Window {
     __BetSmart?: {
+      logs: string[];
       upcomingMatches: any[];
       liveMatches: any[];
       finishedMatches: any[];
+      algorithmPerformance?: any;
+      addLog: (message: string) => void;
     };
   }
 }
 
+// Initialize the BetSmart global object
 if (typeof window !== "undefined") {
   window.__BetSmart = {
+    logs: [],
     upcomingMatches: [],
     liveMatches: [],
     finishedMatches: [],
+    algorithmPerformance: null,
+    addLog: function(message: string) {
+      if (this.logs) {
+        this.logs.push(`[${new Date().toISOString()}] ${message}`);
+        // Keep only last 100 logs
+        if (this.logs.length > 100) {
+          this.logs.shift();
+        }
+      }
+    }
   };
 }
 

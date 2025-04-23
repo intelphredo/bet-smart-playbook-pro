@@ -1,19 +1,14 @@
 import { Match } from "@/types/sports";
 
-interface BetSmartLogger {
-  logs: string[];
-  upcomingMatches?: Match[];
-  liveMatches?: Match[];
-  finishedMatches?: Match[];
-  algorithmPerformance?: any;
-  addLog: (message: string) => void;
-}
-
-// Initialize global logger
+// Initialize global logger if it doesn't exist
 if (typeof window !== 'undefined') {
   if (!window.__BetSmart) {
     window.__BetSmart = {
       logs: [],
+      upcomingMatches: [],
+      liveMatches: [],
+      finishedMatches: [],
+      algorithmPerformance: null,
       addLog: function(message: string) {
         this.logs.push(`[${new Date().toISOString()}] ${message}`);
         // Keep only last 100 logs
@@ -21,7 +16,7 @@ if (typeof window !== 'undefined') {
           this.logs.shift();
         }
       }
-    } as BetSmartLogger;
+    };
   }
 }
 

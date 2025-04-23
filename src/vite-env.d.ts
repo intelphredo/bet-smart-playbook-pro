@@ -17,9 +17,9 @@ import { Match } from "./types/sports";
 
 interface BetSmartLogger {
   logs: string[];
-  upcomingMatches?: Match[];
-  liveMatches?: Match[];
-  finishedMatches?: Match[];
+  upcomingMatches: Match[];
+  liveMatches: Match[];
+  finishedMatches: Match[];
   algorithmPerformance?: any;
   addLog: (message: string) => void;
 }
