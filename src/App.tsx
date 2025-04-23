@@ -1,37 +1,51 @@
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "@/hooks/useAuth";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
-import Auth from "./pages/Auth";
-import NotFound from "./pages/NotFound";
-import DevToolsPanel from "./components/DevToolsPanel";
-import ErrorBoundary from "./components/ErrorBoundary";
+import { Toaster } from "sonner";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import AlgorithmsComparison from "./pages/AlgorithmsComparison";
 
-const queryClient = new QueryClient();
+// Create a client
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      staleTime: 60 * 1000, // 1 minute
+    },
+  },
+});
 
-const App = () => (
-  <ErrorBoundary>
+// Add global variable for debugging
+declare global {
+  interface Window {
+    __BetSmart?: {
+      upcomingMatches: any[];
+      liveMatches: any[];
+      finishedMatches: any[];
+    };
+  }
+}
+
+if (typeof window !== "undefined") {
+  window.__BetSmart = {
+    upcomingMatches: [],
+    liveMatches: [],
+    finishedMatches: [],
+  };
+}
+
+function App() {
+  return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-            <DevToolsPanel />
-          </BrowserRouter>
-        </TooltipProvider>
-      </AuthProvider>
+      <Router>
+        <Routes>
+          <Route path="/" element={<Index />} />
+          <Route path="/algorithms" element={<AlgorithmsComparison />} />
+        </Routes>
+      </Router>
+      <Toaster richColors position="top-center" />
     </QueryClientProvider>
-  </ErrorBoundary>
-);
+  );
+}
 
 export default App;
