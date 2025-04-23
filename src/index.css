@@ -1,43 +1,32 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Add global font for polish */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+/* Add modern Google fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Playfair+Display:wght@700&display=swap');
 
 @layer base {
   :root {
     --background: 220 33% 99%;
     --foreground: 222 47% 11%;
-
     --card: 0 0% 100%;
     --card-foreground: 222 47% 11%;
-
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
-
     --primary: 222 47% 25%;
     --primary-foreground: 210 40% 98%;
-
     --secondary: 210 40% 96%;
     --secondary-foreground: 222 47% 11%;
-
     --muted: 210 40% 96%;
     --muted-foreground: 215 16% 47%;
-
     --accent: 220 79% 56%;
     --accent-foreground: 210 40% 98%;
-
     --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
-
     --border: 214 32% 91%;
     --input: 214 32% 91%;
     --ring: 222 84% 48%;
-
     --radius: 0.5rem;
-
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5% 26%;
     --sidebar-primary: 240 6% 10%;
@@ -51,32 +40,23 @@
   .dark {
     --background: 222 47% 8%;
     --foreground: 210 40% 98%;
-
     --card: 222 47% 10%;
     --card-foreground: 210 40% 98%;
-
     --popover: 222 47% 10%;
     --popover-foreground: 210 40% 98%;
-
     --primary: 210 40% 98%;
     --primary-foreground: 222 47% 11%;
-
     --secondary: 217 33% 18%;
     --secondary-foreground: 210 40% 98%;
-
     --muted: 217 33% 18%;
     --muted-foreground: 215 20% 65%;
-
     --accent: 220 79% 56%;
     --accent-foreground: 210 40% 98%;
-
     --destructive: 0 63% 31%;
     --destructive-foreground: 210 40% 98%;
-
     --border: 217 33% 18%;
     --input: 217 33% 18%;
     --ring: 213 27% 84%;
-    
     --sidebar-background: 240 6% 10%;
     --sidebar-foreground: 240 5% 96%;
     --sidebar-primary: 224 76% 48%;
@@ -88,11 +68,10 @@
   }
 }
 
-/* Enhanced element polish */
 @layer base {
   * {
     @apply border-border;
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: 'Inter', 'Playfair Display', system-ui, sans-serif;
     outline-color: theme(colors.gold.500);
   }
 
@@ -101,7 +80,16 @@
     letter-spacing: 0.01em;
   }
 
-  /* Cards: subtle shadow, smooth hover transition, gentle lift effect */
+  .card-gradient {
+    @apply bg-gradient-to-br from-gold-50 via-accentblue-50 to-navy-100 dark:from-navy-700 dark:via-navy-800 dark:to-navy-900;
+    background: linear-gradient(135deg, #fdfcfb 0%, #e2d1c3 100%);
+  }
+
+  .hero-gradient {
+    background: linear-gradient(90deg, #fdfcfb 0%, #e2d1c3 100%);
+    @apply bg-clip-text text-transparent font-playfair;
+  }
+
   .card,
   .match-card {
     @apply transition-shadow transition-transform duration-200 ease-in-out;
@@ -114,7 +102,6 @@
     transform: translateY(-2px) scale(1.015);
   }
 
-  /* Buttons: richer hover color, shadow, rounded */
   button, .btn, .shadcn-btn {
     @apply rounded-lg focus:ring-2 focus:ring-gold-300 focus:outline-none;
     transition: box-shadow 0.2s, transform 0.2s;
@@ -126,7 +113,6 @@
     transform: translateY(-1px) scale(1.05);
   }
 
-  /* Badges: more modern, pill shape */
   .badge,
   .shadcn-badge,
   .bg-gold-500 {
@@ -136,14 +122,8 @@
     letter-spacing: 0.02em;
   }
 
-  /* Headings: bolder, tighter spacing */
-  /* Fix: Removed .font-bold from the selector to avoid circular dependency */
   h1, h2, h3 {
     @apply font-bold tracking-tight;
-  }
-  /* Add separate styling for .font-bold */
-  .font-bold {
-    @apply tracking-tight;
   }
   h1 {
     font-size: 2.5rem;
@@ -158,7 +138,6 @@
     margin-bottom: 0.12em;
   }
 
-  /* Subtle glass effect for cards, especially in dark mode */
   .card,
   .match-card,
   .player-prop-card {
@@ -167,7 +146,6 @@
     border: 1px solid hsla(220, 20%, 90%, 0.12);
   }
 
-  /* Input focus: soft gold border, gentle shadow */
   input, textarea, select {
     @apply rounded-lg;
     transition: border-color 0.2s, box-shadow 0.2s;
@@ -178,7 +156,6 @@
   }
 }
 
-/* Extra subtle shimmer for "Premium"/"New" badges (optional, can remove if too much) */
 @layer base {
   .badge.bg-gold-500, .shadcn-badge.bg-gold-500 {
     animation: badge-glow 2s ease-in-out infinite alternate;

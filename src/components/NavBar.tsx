@@ -1,21 +1,21 @@
+
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ModeToggle } from "@/components/ModeToggle";
 import { useLocation } from "react-router-dom";
-import { LineChart, BarChart2, Home } from "lucide-react";
+import { Home } from "lucide-react";
 
 export default function NavBar() {
   const location = useLocation();
   const isActivePath = (path: string) => location.pathname === path;
 
   return (
-    <header className="bg-background border-b">
+    <header className="bg-background border-b shadow-sm">
       <div className="container flex justify-between items-center py-4">
-        <div className="font-bold text-2xl flex items-center">
-          <span className="text-primary mr-2">Bet</span>
+        <div className="font-bold text-2xl flex items-center hero-gradient">
+          <span className="mr-2 tracking-tighter font-playfair">Bet</span>
           <span>Smart</span>
         </div>
-
         <nav>
           <ul className="flex items-center space-x-1">
             <li>
@@ -37,7 +37,7 @@ export default function NavBar() {
                   size="sm" 
                   className="flex items-center gap-1"
                 >
-                  <BarChart2 size={16} />
+                  {/* Use Home for demonstration—replace with BarChart2 if needed */}
                   <span>Algorithms</span>
                 </Button>
               </Link>
