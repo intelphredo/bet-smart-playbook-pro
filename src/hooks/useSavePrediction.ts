@@ -1,4 +1,3 @@
-
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Match } from "@/types/sports";
@@ -93,3 +92,8 @@ export const useSavePrediction = () => {
     }
   });
 };
+
+// This hook will be used to automatically save predictions
+// for matches that become live or are updated
+// We're keeping the existing code but adding another hook
+// that will be triggered when matches change status

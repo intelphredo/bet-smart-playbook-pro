@@ -1,5 +1,5 @@
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { useSportsData } from "@/hooks/useSportsData";
 import { applyAllAlgorithmPredictions, applyAlgorithmPredictions, AlgorithmType, getAlgorithmNameFromId, ALGORITHM_IDS } from "@/utils/predictions/algorithms";
 import { applyAdvancedPredictions } from "@/utils/advancedPredictionAlgorithm";
@@ -10,6 +10,8 @@ import { Button } from "./ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 /**
  * TodaysTeamPredictions - Displays a table of all matches happening today and upcoming week with their predictions.
@@ -44,10 +46,17 @@ const ALGORITHM_OPTIONS: { label: string; value: AlgorithmType; id: string }[] =
   { label: "Statistical Edge", value: "STATISTICAL_EDGE", id: ALGORITHM_IDS.STATISTICAL_EDGE },
 ];
 
+// Determine if a match is live or finished
+function isMatchLiveOrFinished(match: Match): boolean {
+  return match.status === 'live' || match.status === 'finished';
+}
+
 const TodaysTeamPredictions = () => {
   const [showUpcomingWeek, setShowUpcomingWeek] = useState(true);
   const [dataProvider, setDataProvider] = useState<string>("ESPN");
   const [selectedAlgorithm, setSelectedAlgorithm] = useState<AlgorithmType>("ML_POWER_INDEX");
+  const [cachedPredictions, setCachedPredictions] = useState<Record<string, any>>({});
+  const [isCacheLoading, setIsCacheLoading] = useState(true);
   
   const { 
     verifiedMatches: allMatches, 
@@ -72,10 +81,86 @@ const TodaysTeamPredictions = () => {
     }
   }, [dataProvider, dataSource, setDataSource]);
 
-  // Apply the selected algorithm to matches before using them
+  // Fetch cached predictions from Supabase
+  useEffect(() => {
+    async function fetchCachedPredictions() {
+      setIsCacheLoading(true);
+      try {
+        // Get the algorithm ID for the current selected algorithm
+        const algorithmId = ALGORITHM_OPTIONS.find(a => a.value === selectedAlgorithm)?.id;
+        
+        if (!algorithmId) {
+          console.error("No algorithm ID found for:", selectedAlgorithm);
+          setIsCacheLoading(false);
+          return;
+        }
+        
+        const { data, error } = await supabase
+          .from("algorithm_predictions")
+          .select("*")
+          .eq("algorithm_id", algorithmId);
+          
+        if (error) {
+          console.error("Error fetching cached predictions:", error);
+          toast.error("Failed to load saved predictions");
+          setIsCacheLoading(false);
+          return;
+        }
+        
+        // Create a map of match_id -> prediction
+        const predictionMap: Record<string, any> = {};
+        data?.forEach(pred => {
+          predictionMap[pred.match_id] = {
+            recommended: pred.prediction,
+            confidence: pred.confidence,
+            algorithmId: pred.algorithm_id,
+            projectedScore: {
+              home: pred.projected_score_home,
+              away: pred.projected_score_away
+            }
+          };
+        });
+        
+        setCachedPredictions(predictionMap);
+      } catch (err) {
+        console.error("Error in fetchCachedPredictions:", err);
+      } finally {
+        setIsCacheLoading(false);
+      }
+    }
+    
+    fetchCachedPredictions();
+  }, [selectedAlgorithm]);
+
+  // Apply the selected algorithm to matches before using them, using cached predictions for live/finished games
   const matchesWithPredictions = useMemo(() => {
-    return applyAlgorithmPredictions(allMatches || [], selectedAlgorithm);
-  }, [allMatches, selectedAlgorithm]);
+    if (!allMatches || allMatches.length === 0) return [];
+    
+    // First, apply the algorithm predictions to get a base set
+    const predictedMatches = applyAlgorithmPredictions(allMatches, selectedAlgorithm);
+    
+    // For each match, if it's live/finished, use the cached prediction if available
+    return predictedMatches.map(match => {
+      // If the match is live or finished, and we have a cached prediction for it, use that
+      if (isMatchLiveOrFinished(match) && cachedPredictions[match.id]) {
+        return {
+          ...match,
+          prediction: cachedPredictions[match.id]
+        };
+      }
+      
+      // For upcoming matches, we can use the calculated prediction
+      // But let's also check if we have a cached prediction for consistency
+      if (cachedPredictions[match.id]) {
+        return {
+          ...match,
+          prediction: cachedPredictions[match.id]
+        };
+      }
+      
+      return match;
+    });
+  }, [allMatches, selectedAlgorithm, cachedPredictions]);
 
   const filteredMatches: Match[] = useMemo(() => {
     const today = new Date();
@@ -107,7 +192,9 @@ const TodaysTeamPredictions = () => {
     }
   };
 
-  if (isLoading) return <div>Loading predictions...</div>;
+  const isLoadingData = isLoading || isCacheLoading;
+
+  if (isLoadingData) return <div>Loading predictions...</div>;
   if (error) return <div className="text-red-500">Error loading predictions: {error.message}</div>;
   if (!filteredMatches.length) return (
     <div>
@@ -203,6 +290,7 @@ const TodaysTeamPredictions = () => {
             <TableHead>Confidence</TableHead>
             <TableHead>Projected Score</TableHead>
             <TableHead>Algorithm</TableHead>
+            <TableHead>Status</TableHead>
             <TableHead>Data Source</TableHead>
           </TableRow>
         </TableHeader>
@@ -242,6 +330,14 @@ const TodaysTeamPredictions = () => {
                 </span>
               </TableCell>
               <TableCell>
+                <Badge 
+                  variant={isMatchLiveOrFinished(match) ? "default" : "outline"}
+                  className={isMatchLiveOrFinished(match) ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300" : ""}
+                >
+                  {isMatchLiveOrFinished(match) ? "Locked" : "Upcoming"}
+                </Badge>
+              </TableCell>
+              <TableCell>
                 <span className="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900 rounded-full">
                   {dataProvider}
                 </span>
@@ -255,4 +351,3 @@ const TodaysTeamPredictions = () => {
 };
 
 export default TodaysTeamPredictions;
-
