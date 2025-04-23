@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { League } from "@/types/sports";
 import StatsOverview from "@/components/StatsOverview";
@@ -111,26 +112,29 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background bg-gradient-to-br from-card via-secondary to-gold-50">
       <NavBar />
       <div className="container px-4 py-6">
         <div className="flex flex-col space-y-6">
           <HeroHeader />
-          <FilterSection
-            selectedLeague={selectedLeague}
-            onLeagueChange={setSelectedLeague}
-            activeTab={activeTab}
-            onTabChange={setActiveTab}
-            teamFilter={teamFilter}
-            onTeamFilterChange={setTeamFilter}
-            dateRange={dateRange}
-            onDateRangeChange={setDateRange}
-            onReset={resetAllFilters}
-            sportCategoryFilter={sportCategoryFilter}
-            onSportCategoryChange={setSportCategoryFilter}
-          />
-          <div className="animate-slide-in">
-            <StatsOverview />
+          {/* Example of major card polish */}
+          <div className="card-gradient rounded-2xl shadow-lg p-2">
+            <FilterSection
+              selectedLeague={selectedLeague}
+              onLeagueChange={setSelectedLeague}
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
+              teamFilter={teamFilter}
+              onTeamFilterChange={setTeamFilter}
+              dateRange={dateRange}
+              onDateRangeChange={setDateRange}
+              onReset={resetAllFilters}
+              sportCategoryFilter={sportCategoryFilter}
+              onSportCategoryChange={setSportCategoryFilter}
+            />
+            <div className="animate-slide-in">
+              <StatsOverview />
+            </div>
           </div>
           <ConfidentPicks />
           <ArbitrageOpportunitiesSection

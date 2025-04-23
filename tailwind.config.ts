@@ -1,4 +1,3 @@
-
 import type { Config } from "tailwindcss";
 
 export default {
@@ -19,6 +18,9 @@ export default {
 			}
 		},
 		extend: {
+			fontFamily: {
+				playfair: ['"Playfair Display"', 'serif'],
+			},
 			colors: {
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
@@ -75,7 +77,6 @@ export default {
 					700: '#061528',
 					800: '#040e1a',
 					900: '#02070d',
-					950: '#010408',
 				},
 				gold: {
 					DEFAULT: '#ffd700',
@@ -89,7 +90,6 @@ export default {
 					700: '#ac9000',
 					800: '#887001',
 					900: '#705c00',
-					950: '#3a2e00',
 				},
 				accentblue: {
 					DEFAULT: '#4f8cff',
@@ -103,13 +103,7 @@ export default {
 					700: '#17449c',
 					800: '#162a56',
 					900: '#0f1528',
-					950: '#071022',
 				},
-				algorithm: {
-					ml: 'hsl(var(--algorithm-ml))',
-					value: 'hsl(var(--algorithm-value))',
-					statistical: 'hsl(var(--algorithm-statistical))',
-				}
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
@@ -153,22 +147,13 @@ export default {
 						opacity: '1',
 						transform: 'translateX(0)'
 					}
-				},
-				'theme-fade': {
-					'0%': {
-						opacity: '0.5',
-					},
-					'100%': {
-						opacity: '1',
-					}
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out',
 				'fade-in': 'fade-in 0.3s ease-out',
-				'slide-in': 'slide-in 0.3s ease-out',
-				'theme-transition': 'theme-fade 0.5s ease-out'
+				'slide-in': 'slide-in 0.3s ease-out'
 			}
 		}
 	},
