@@ -1,10 +1,12 @@
 
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
 import { Toaster } from "sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import AlgorithmsComparison from "./pages/AlgorithmsComparison";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import Auth from "./pages/Auth";
+import { AuthProvider } from "@/hooks/useAuth";
 
 // Create a client
 const queryClient = new QueryClient({
@@ -50,17 +52,43 @@ if (typeof window !== "undefined") {
   };
 }
 
+// Protected route component to redirect unauthenticated users
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const { session, loading } = useAuth();
+  
+  if (loading) {
+    return <div className="flex items-center justify-center h-screen">Loading...</div>;
+  }
+  
+  if (!session) {
+    return <Navigate to="/auth" replace />;
+  }
+  
+  return <>{children}</>;
+};
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <Router>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/algorithms" element={<AlgorithmsComparison />} />
-          </Routes>
-        </Router>
-        <Toaster richColors position="top-center" />
+        <AuthProvider>
+          <Router>
+            <Routes>
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/" element={
+                <ProtectedRoute>
+                  <Index />
+                </ProtectedRoute>
+              } />
+              <Route path="/algorithms" element={
+                <ProtectedRoute>
+                  <AlgorithmsComparison />
+                </ProtectedRoute>
+              } />
+            </Routes>
+          </Router>
+          <Toaster richColors position="top-center" />
+        </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );
