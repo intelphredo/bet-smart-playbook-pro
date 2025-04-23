@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState } from "react";
 import { useSportsData } from "@/hooks/useSportsData";
 import { applyAdvancedPredictions } from "@/utils/advancedPredictionAlgorithm";
@@ -63,9 +62,9 @@ const TodaysTeamPredictions = () => {
     }
   }, [dataProvider, dataSource, setDataSource]);
 
-  console.log("Raw matches data:", allMatches);
-
+  // Apply advanced predictions to matches before using them
   const matchesWithPredictions = useMemo(() => {
+    // We must always run applyAdvancedPredictions, ensuring .prediction is populated
     return applyAdvancedPredictions(allMatches || []);
   }, [allMatches]);
 
@@ -73,33 +72,21 @@ const TodaysTeamPredictions = () => {
     const today = new Date();
     const oneWeekLater = addDays(today, 7);
     
-    console.log("Filtering matches between:", format(today, 'yyyy-MM-dd HH:mm:ss'), 
-      "and", format(oneWeekLater, 'yyyy-MM-dd HH:mm:ss'));
-
     const filtered = matchesWithPredictions.filter(m => {
-      if (!m.startTime) {
-        console.log("Match missing startTime:", m);
-        return false;
-      }
-
+      if (!m.startTime) return false;
       try {
         const matchDate = parseISO(m.startTime);
-        console.log("Checking match:", m.homeTeam.shortName, "vs", m.awayTeam.shortName, 
-          "Date:", format(matchDate, 'yyyy-MM-dd HH:mm:ss'));
-        
         if (showUpcomingWeek) {
           return isMatchInDateRange(m, today, oneWeekLater);
         } else {
           return isToday(matchDate);
         }
       } catch (err) {
-        console.error("Error processing match:", err, m);
         return false;
       }
     });
 
     filtered.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
-    console.log("Filtered matches:", filtered.length, "matches found");
     return filtered;
   }, [matchesWithPredictions, showUpcomingWeek]);
 
