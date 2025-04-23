@@ -4,10 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, ChartLine, Zap, Calculator, Brain } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 
 interface AlgorithmCardProps {
-  algorithm: BettingAlgorithm;
+  algorithm: BettingAlgorithm & { totalPicks: number; isFiltered: boolean };
 }
 
 const AlgorithmCard = ({ algorithm }: AlgorithmCardProps) => {
@@ -51,22 +51,24 @@ const AlgorithmCard = ({ algorithm }: AlgorithmCardProps) => {
             {icon}
             {algorithm.name}
           </CardTitle>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Badge
-                variant="outline"
-                className="bg-navy-500 text-white border-none dark:bg-navy-600 dark:text-navy-50"
-              >
-                {algorithm.winRate}% Win
-              </Badge>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p className="text-xs">
-                Based on {algorithm.totalPicks || 0} predictions
-                {algorithm.isFiltered && " (filtered view)"}
-              </p>
-            </TooltipContent>
-          </Tooltip>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge
+                  variant="outline"
+                  className="bg-navy-500 text-white border-none dark:bg-navy-600 dark:text-navy-50"
+                >
+                  {algorithm.winRate}% Win
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="text-xs">
+                  Based on {algorithm.totalPicks || 0} predictions
+                  {algorithm.isFiltered && " (filtered view)"}
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
       </CardHeader>
       <CardContent className="p-4 bg-slate-50/50 dark:bg-navy-900/20">
@@ -106,3 +108,4 @@ const AlgorithmCard = ({ algorithm }: AlgorithmCardProps) => {
 };
 
 export default AlgorithmCard;
+

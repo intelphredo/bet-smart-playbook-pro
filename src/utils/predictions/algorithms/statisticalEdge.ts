@@ -1,4 +1,3 @@
-
 import { Match } from "@/types/sports";
 import { generateAdvancedPrediction } from "../core/predictionEngine";
 import { calculateWeatherImpact } from "../../smartScore/factors/weatherFactors";
@@ -106,42 +105,30 @@ function applyStatisticalEdgeAdjustments(match: Match): number {
  * Rest advantage is a significant situational factor across all sports
  */
 function calculateRestAdvantage(match: Match): number {
-  // In a real implementation, we would have actual rest days data
-  // For now, we'll estimate based on schedule data if available
-  
-  if (!match.homeTeam.schedule || !match.awayTeam.schedule) {
-    return 0; // No schedule data available
-  }
-  
-  // Calculate days since last game
-  const calculateRestDays = (team: typeof match.homeTeam) => {
-    if (!team.schedule || !team.schedule.previousGame) return 3; // Default to average rest
-
-    const lastGameDate = new Date(team.schedule.previousGame.date);
-    const matchDate = new Date(match.startTime);
+  // Use previousGame from team object if available
+  const getRestDays = (team: any, matchDateISOString: string) => {
+    if (!team?.previousGame?.date) return 3; // Fallback
+    const lastGameDate = new Date(team.previousGame.date);
+    const matchDate = new Date(matchDateISOString);
     const diffTime = Math.abs(matchDate.getTime() - lastGameDate.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return Math.min(7, diffDays); // Cap at 7 days
+    return Math.min(7, diffDays);
   };
-  
-  const homeRestDays = calculateRestDays(match.homeTeam);
-  const awayRestDays = calculateRestDays(match.awayTeam);
-  
+
+  const homeRestDays = getRestDays(match.homeTeam, match.startTime);
+  const awayRestDays = getRestDays(match.awayTeam, match.startTime);
+
   // Calculate rest advantage
   const restAdvantage = homeRestDays - awayRestDays;
-  
+
   // Significant rest advantage has proven statistical impact
-  // >=2 days advantage is significant in most sports
   if (Math.abs(restAdvantage) >= 2) {
-    // Rest advantage favors home team
     if (restAdvantage > 0 && match.prediction?.recommended === 'home') {
-      return restAdvantage * 1.5; // Stronger impact for home team with rest
+      return restAdvantage * 1.5;
     }
-    // Rest advantage favors away team
     else if (restAdvantage < 0 && match.prediction?.recommended === 'away') {
       return Math.abs(restAdvantage) * 1.5;
     }
-    // Rest advantage contradicts our prediction
     else if (restAdvantage > 0 && match.prediction?.recommended === 'away') {
       return -restAdvantage * 1.3;
     }
@@ -149,7 +136,7 @@ function calculateRestAdvantage(match: Match): number {
       return restAdvantage * 1.3;
     }
   }
-  
+
   return 0;
 }
 
