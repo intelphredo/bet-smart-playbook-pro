@@ -12,17 +12,19 @@ const MatchOutcomeBadges = ({ match, isCorrect }: Props) => {
   return (
     <>
       {isCorrect === true && (
-        <Badge className="bg-green-500 text-white flex items-center gap-1">
+        <Badge className="bg-green-500 hover:bg-green-600 text-white flex items-center gap-1 shadow-lg animate-fade-in">
           <Check className="w-4 h-4" /> Correct Pick
         </Badge>
       )}
       {isCorrect === false && (
-        <Badge className="bg-red-500 text-white flex items-center gap-1">
+        <Badge className="bg-destructive hover:bg-destructive/90 text-destructive-foreground flex items-center gap-1 shadow-lg animate-fade-in">
           <X className="w-4 h-4" /> Incorrect Pick
         </Badge>
       )}
       {isCorrect === null && (
-        <Badge className="bg-gray-200 text-gray-600">N/A</Badge>
+        <Badge variant="secondary" className="shadow-sm">
+          Pending
+        </Badge>
       )}
     </>
   );

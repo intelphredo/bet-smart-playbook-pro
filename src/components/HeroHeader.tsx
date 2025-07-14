@@ -1,17 +1,35 @@
 
 import { Button } from "@/components/ui/button";
+import { Sparkles, TrendingUp } from "lucide-react";
 
 const HeroHeader = () => (
-  <div className="text-center mb-4 animate-fade-in">
-    <h1 className="text-3xl md:text-5xl font-bold mb-2 hero-gradient">
-      Smart Betting.<span className="inline-block"> Live ESPN Data.</span>
-    </h1>
-    <p className="text-lg md:text-xl text-muted-foreground mb-4 max-w-2xl mx-auto">
-      Real-time sports data from ESPN with data-driven predictions to maximize your winning potential.
+  <div className="text-center mb-8 animate-fade-in">
+    <div className="flex items-center justify-center gap-2 mb-4">
+      <Sparkles className="w-8 h-8 text-primary animate-pulse" />
+      <h1 className="text-4xl md:text-6xl font-bold hero-gradient">
+        Smart Betting
+      </h1>
+      <TrendingUp className="w-8 h-8 text-primary animate-pulse" />
+    </div>
+    <p className="text-xl md:text-2xl text-muted-foreground mb-6 max-w-3xl mx-auto leading-relaxed">
+      Real-time sports data from ESPN with AI-powered predictions to maximize your winning potential
     </p>
-    <Button size="lg" className="bg-gold-500 hover:bg-gold-600 text-navy-900 shadow-gold-200/50 shadow-xl font-semibold uppercase tracking-wider px-8 py-3 rounded-xl transition-transform duration-200 hover:scale-105">
-      Get Started
-    </Button>
+    <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+      <Button 
+        variant="premium" 
+        size="lg" 
+        className="font-semibold uppercase tracking-wider px-8 py-4 text-lg"
+      >
+        Get Started Free
+      </Button>
+      <Button 
+        variant="outline" 
+        size="lg"
+        className="font-medium px-8 py-4"
+      >
+        View Live Data
+      </Button>
+    </div>
   </div>
 );
 

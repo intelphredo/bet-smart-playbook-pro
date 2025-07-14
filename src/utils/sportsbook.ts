@@ -2,11 +2,11 @@
 import { LiveOdds, Match, Sportsbook } from "@/types/sports";
 
 export const SPORTSBOOK_LOGOS = {
-  draftkings: "https://upload.wikimedia.org/wikipedia/en/f/fd/DraftKings_logo.svg",
-  betmgm: "https://upload.wikimedia.org/wikipedia/commons/2/2f/BetMGM_logo.svg",
-  caesars: "https://upload.wikimedia.org/wikipedia/commons/c/c6/Caesars_Entertainment_logo.svg",
-  pointsbet: "https://upload.wikimedia.org/wikipedia/en/c/c8/PointsBet_logo.svg",
-  fanduel: "https://upload.wikimedia.org/wikipedia/commons/8/83/FanDuel_logo.svg",
+  draftkings: "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=400&h=400&fit=crop&crop=center",
+  betmgm: "https://images.unsplash.com/photo-1518770660439-4636190af475?w=400&h=400&fit=crop&crop=center", 
+  caesars: "https://images.unsplash.com/photo-1487058792275-0ad4aaf24ca7?w=400&h=400&fit=crop&crop=center",
+  pointsbet: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=400&h=400&fit=crop&crop=center",
+  fanduel: "https://images.unsplash.com/photo-1605810230434-7631ac76ec81?w=400&h=400&fit=crop&crop=center",
 };
 
 export const AVAILABLE_SPORTSBOOKS: Sportsbook[] = [

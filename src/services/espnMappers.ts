@@ -310,15 +310,15 @@ const createFallbackMatch = (league: League): Match => {
     id: "home-team",
     name: `${league} Home Team`,
     shortName: "HOME",
-    logo: "https://via.placeholder.com/150",
+    logo: "https://images.unsplash.com/photo-1472396961693-142e6e269027?w=400&h=400&fit=crop&crop=center",
     record: "0-0",
   };
-  
+
   const awayTeam: Team = {
     id: "away-team",
     name: `${league} Away Team`,
     shortName: "AWAY",
-    logo: "https://via.placeholder.com/150",
+    logo: "https://images.unsplash.com/photo-1500673922987-e212871fec22?w=400&h=400&fit=crop&crop=center",
     record: "0-0",
   };
   

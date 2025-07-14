@@ -45,31 +45,39 @@ const MatchCard = ({ match }: MatchCardProps) => {
   };
 
   return (
-    <Card className="match-card overflow-hidden">
-      <CardHeader className="p-3 bg-navy-50 dark:bg-navy-700 flex flex-row justify-between items-center space-y-0">
+    <Card className="match-card overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1 border-border/50 bg-card/95 backdrop-blur-sm">
+      <CardHeader className="p-4 bg-card/80 backdrop-blur-sm border-b border-border/30 flex flex-row justify-between items-center space-y-0">
         <div className="flex items-center space-x-2">
-          <Badge variant="outline" className="text-xs font-normal bg-white dark:bg-navy-600">
+          <Badge variant="outline" className="text-xs font-medium bg-background/90 border-primary/20 text-primary">
             {match.league}
           </Badge>
           {match.status === "live" && (
-            <Badge className="bg-red-500 text-white animate-pulse">LIVE</Badge>
+            <Badge className="bg-destructive text-destructive-foreground animate-pulse shadow-sm">
+              ● LIVE
+            </Badge>
           )}
         </div>
-        <div className="text-xs text-muted-foreground">
+        <div className="text-xs text-muted-foreground font-medium">
           {formatTime(match.startTime)}
         </div>
       </CardHeader>
-      <CardContent className="p-4">
-        <div className="grid grid-cols-3 gap-2 items-center mb-4">
+      <CardContent className="p-6">
+        <div className="grid grid-cols-3 gap-4 items-center mb-6">
           <MatchParticipant team={match.homeTeam} />
           <div className="text-center">
             {match.status === "live" ? (
-              <div className="text-xl font-bold">
-                {match.score?.home} - {match.score?.away}
-                <div className="text-xs text-muted-foreground mt-1">{match.score?.period}</div>
+              <div className="space-y-1">
+                <div className="text-2xl font-bold text-foreground tracking-tight">
+                  {match.score?.home} - {match.score?.away}
+                </div>
+                <div className="text-xs text-muted-foreground bg-accent/50 px-2 py-1 rounded-full inline-block">
+                  {match.score?.period}
+                </div>
               </div>
             ) : (
-              <div className="text-xs text-muted-foreground">vs</div>
+              <div className="text-sm text-muted-foreground font-medium bg-accent/30 px-3 py-1 rounded-full">
+                vs
+              </div>
             )}
           </div>
           <MatchParticipant team={match.awayTeam} />
