@@ -112,7 +112,7 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background bg-gradient-to-br from-card via-secondary to-gold-50">
+    <div className="min-h-screen bg-gradient-to-br from-background via-secondary/30 to-accent/10">
       <NavBar />
       <div className="container px-4 py-6">
         <div className="flex flex-col space-y-6">

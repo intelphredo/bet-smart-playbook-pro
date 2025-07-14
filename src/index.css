@@ -81,8 +81,9 @@
   }
 
   .card-gradient {
-    @apply bg-gradient-to-br from-gold-50 via-accentblue-50 to-navy-100 dark:from-navy-700 dark:via-navy-800 dark:to-navy-900;
-    background: linear-gradient(135deg, #fdfcfb 0%, #e2d1c3 100%);
+    background: linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--secondary)) 50%, hsl(var(--accent) / 0.1) 100%);
+    backdrop-filter: blur(8px);
+    border: 1px solid hsl(var(--border) / 0.5);
   }
 
   .hero-gradient {
@@ -103,14 +104,13 @@
   }
 
   button, .btn, .shadcn-btn {
-    @apply rounded-lg focus:ring-2 focus:ring-gold-300 focus:outline-none;
-    transition: box-shadow 0.2s, transform 0.2s;
-    box-shadow: 0 1px 3px 0 hsla(44, 100%, 50%, 0.04);
+    @apply rounded-lg focus:ring-2 focus:ring-ring focus:outline-none;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 1px 3px hsl(var(--primary) / 0.1);
   }
   button:hover, .btn:hover, .shadcn-btn:hover {
-    @apply bg-gold-500 text-navy-900;
-    filter: brightness(1.04);
-    transform: translateY(-1px) scale(1.05);
+    box-shadow: 0 4px 12px hsl(var(--primary) / 0.15);
+    transform: translateY(-1px);
   }
 
   .badge,
@@ -141,9 +141,9 @@
   .card,
   .match-card,
   .player-prop-card {
-    @apply bg-white/90 dark:bg-navy-700/70;
-    backdrop-filter: blur(2px);
-    border: 1px solid hsla(220, 20%, 90%, 0.12);
+    @apply bg-card/95 border-border/50;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 4px 16px hsl(var(--primary) / 0.08);
   }
 
   input, textarea, select {

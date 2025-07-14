@@ -44,7 +44,25 @@ const AlgorithmsSection = () => {
   if (error) {
     return (
       <div className="space-y-4 py-2">
-        <div className="text-red-500">Error loading algorithm data</div>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-2xl font-bold">Winning Algorithms</h2>
+        </div>
+        <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+          <div className="flex items-center gap-2 text-destructive">
+            <span className="text-sm font-medium">Unable to load algorithm data</span>
+          </div>
+          <p className="text-sm text-muted-foreground mt-1">
+            Please check your connection and try again.
+          </p>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => refetch()} 
+            className="mt-3"
+          >
+            Retry
+          </Button>
+        </div>
       </div>
     );
   }
