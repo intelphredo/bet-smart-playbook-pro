@@ -71,18 +71,49 @@ export function generateAdvancedPrediction(
   // Adjust confidence to be within reasonable bounds
   confidence = Math.max(40, Math.min(85, Math.abs(confidence)));
   
+  // Calculate true probability (confidence / 100)
+  const trueProbability = confidence / 100;
+  
+  // Calculate implied fair odds
+  const impliedOdds = 1 / trueProbability;
+  
+  // Get current bookmaker odds for the recommended outcome
+  const bookmakerOdds = recommended === 'home' ? match.odds.homeWin : match.odds.awayWin;
+  
+  // Calculate Expected Value (EV)
+  const b = bookmakerOdds - 1;
+  const p = trueProbability;
+  const q = 1 - p;
+  const expectedValue = (p * b) - q;
+  const evPercentage = expectedValue * 100;
+  
+  // Calculate Kelly Criterion (using 1/4 Kelly for safety)
+  let kellyFraction = 0;
+  let kellyStakeUnits = 0;
+  if (expectedValue > 0) {
+    const fullKelly = ((b * p) - q) / b;
+    kellyFraction = Math.max(0, fullKelly * 0.25); // 1/4 Kelly
+    kellyStakeUnits = kellyFraction * 100; // Assuming 100 units bankroll
+  }
+  
   // Project scores based on team strengths - balanced for both teams
   const projectedHomeScore = projectScore(homeTeamStrength, awayTeamStrength, true, match.league);
   const projectedAwayScore = projectScore(awayTeamStrength, homeTeamStrength, false, match.league);
   
-  // Update match prediction
+  // Update match prediction with sharp betting metrics
   enhancedMatch.prediction = {
     recommended,
     confidence: Math.round(confidence),
     projectedScore: {
       home: projectedHomeScore,
       away: projectedAwayScore
-    }
+    },
+    trueProbability,
+    impliedOdds: Math.round(impliedOdds * 100) / 100,
+    expectedValue: Math.round(expectedValue * 10000) / 10000,
+    evPercentage: Math.round(evPercentage * 100) / 100,
+    kellyFraction: Math.round(kellyFraction * 10000) / 10000,
+    kellyStakeUnits: Math.round(kellyStakeUnits * 100) / 100
   };
   
   // Cache the prediction (lock it)

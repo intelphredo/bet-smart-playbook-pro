@@ -48,7 +48,16 @@ export interface Match {
       home: number;
       away: number;
     };
-    algorithmId?: string; // Added algorithmId as optional
+    algorithmId?: string;
+    // Sharp betting metrics
+    trueProbability?: number;      // Model's true win probability (0-1)
+    impliedOdds?: number;          // Fair odds based on true probability
+    expectedValue?: number;        // EV as decimal
+    evPercentage?: number;         // EV as percentage
+    kellyFraction?: number;        // Recommended Kelly stake (0-1)
+    kellyStakeUnits?: number;      // Recommended stake in units
+    clvPercentage?: number;        // Closing Line Value percentage
+    beatClosingLine?: boolean;     // Did prediction beat closing line
   };
   status: 'scheduled' | 'pre' | 'live' | 'finished';
   score?: {

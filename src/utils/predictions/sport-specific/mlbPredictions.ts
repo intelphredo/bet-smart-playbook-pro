@@ -93,6 +93,23 @@ export function generateMLBPrediction(
   // Clamp confidence to reasonable values
   confidence = Math.max(45, Math.min(75, confidence));
   
+  // Calculate sharp betting metrics
+  const trueProbability = confidence / 100;
+  const impliedOdds = 1 / trueProbability;
+  const bookmakerOdds = recommended === 'home' ? match.odds.homeWin : match.odds.awayWin;
+  const b = bookmakerOdds - 1;
+  const p = trueProbability;
+  const q = 1 - p;
+  const expectedValue = (p * b) - q;
+  const evPercentage = expectedValue * 100;
+  let kellyFraction = 0;
+  let kellyStakeUnits = 0;
+  if (expectedValue > 0) {
+    const fullKelly = ((b * p) - q) / b;
+    kellyFraction = Math.max(0, fullKelly * 0.25);
+    kellyStakeUnits = kellyFraction * 100;
+  }
+  
   // Project realistic baseball scores with no home team bias
   const baseRuns = 4.1; // Neutral average (not favoring home team)
   const homeRunFactor = homeRunDiff / 100;
@@ -105,14 +122,21 @@ export function generateMLBPrediction(
   const projectedHomeScore = Math.max(0, Math.round(baseRuns + homeRunFactor + homeNoise));
   const projectedAwayScore = Math.max(0, Math.round(baseRuns + awayRunFactor + awayNoise));
   
-  // Update match prediction
+  // Update match prediction with sharp metrics
   enhancedMatch.prediction = {
     recommended,
     confidence: Math.round(confidence),
     projectedScore: {
       home: projectedHomeScore,
       away: projectedAwayScore
-    }
+    },
+    algorithmId: 'mlb-specialized',
+    trueProbability,
+    impliedOdds: Math.round(impliedOdds * 100) / 100,
+    expectedValue: Math.round(expectedValue * 10000) / 10000,
+    evPercentage: Math.round(evPercentage * 100) / 100,
+    kellyFraction: Math.round(kellyFraction * 10000) / 10000,
+    kellyStakeUnits: Math.round(kellyStakeUnits * 100) / 100
   };
 
   // Add to cache (lock the prediction)

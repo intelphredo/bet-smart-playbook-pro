@@ -7,6 +7,7 @@ import MatchParticipant from "./MatchCard/MatchParticipant";
 import OddsComparisonTable from "./MatchCard/OddsComparisonTable";
 import PredictedOddsRow from "./MatchCard/PredictedOddsRow";
 import MatchCardFooter from "./MatchCard/MatchCardFooter";
+import BettingMetrics from "./BettingMetrics";
 
 interface MatchCardProps {
   match: any;
@@ -84,6 +85,7 @@ const MatchCard = ({ match }: MatchCardProps) => {
         </div>
         <OddsComparisonTable match={match} formatOdds={formatOdds} />
         <PredictedOddsRow match={match} formatOdds={formatOdds} />
+        <BettingMetrics match={match} />
         <MatchCardFooter 
           match={match} 
           getBadgeColor={getBadgeColor} 
