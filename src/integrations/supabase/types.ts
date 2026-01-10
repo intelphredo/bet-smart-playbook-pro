@@ -7,391 +7,14 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.1"
+  }
   public: {
     Tables: {
-      algorithm_predictions: {
-        Row: {
-          accuracy_rating: number | null
-          actual_score_away: number | null
-          actual_score_home: number | null
-          algorithm_id: string
-          confidence: number
-          created_at: string | null
-          id: string
-          league: string
-          match_id: string
-          metadata: Json | null
-          predicted_at: string
-          prediction: string
-          projected_score_away: number | null
-          projected_score_home: number | null
-          result_updated_at: string | null
-          status: string
-        }
-        Insert: {
-          accuracy_rating?: number | null
-          actual_score_away?: number | null
-          actual_score_home?: number | null
-          algorithm_id: string
-          confidence: number
-          created_at?: string | null
-          id?: string
-          league: string
-          match_id: string
-          metadata?: Json | null
-          predicted_at?: string
-          prediction: string
-          projected_score_away?: number | null
-          projected_score_home?: number | null
-          result_updated_at?: string | null
-          status?: string
-        }
-        Update: {
-          accuracy_rating?: number | null
-          actual_score_away?: number | null
-          actual_score_home?: number | null
-          algorithm_id?: string
-          confidence?: number
-          created_at?: string | null
-          id?: string
-          league?: string
-          match_id?: string
-          metadata?: Json | null
-          predicted_at?: string
-          prediction?: string
-          projected_score_away?: number | null
-          projected_score_home?: number | null
-          result_updated_at?: string | null
-          status?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "algorithm_predictions_algorithm_id_fkey"
-            columns: ["algorithm_id"]
-            isOneToOne: false
-            referencedRelation: "algorithms"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      algorithm_stats: {
-        Row: {
-          algorithm_id: string | null
-          avg_confidence: number | null
-          correct_predictions: number | null
-          id: string
-          last_updated: string | null
-          league: string
-          total_predictions: number | null
-          win_rate: number | null
-        }
-        Insert: {
-          algorithm_id?: string | null
-          avg_confidence?: number | null
-          correct_predictions?: number | null
-          id?: string
-          last_updated?: string | null
-          league: string
-          total_predictions?: number | null
-          win_rate?: number | null
-        }
-        Update: {
-          algorithm_id?: string | null
-          avg_confidence?: number | null
-          correct_predictions?: number | null
-          id?: string
-          last_updated?: string | null
-          league?: string
-          total_predictions?: number | null
-          win_rate?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "algorithm_stats_algorithm_id_fkey"
-            columns: ["algorithm_id"]
-            isOneToOne: false
-            referencedRelation: "algorithms"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      algorithms: {
-        Row: {
-          created_at: string
-          description: string
-          id: string
-          name: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          description: string
-          id?: string
-          name: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          description?: string
-          id?: string
-          name?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      injury_reports: {
-        Row: {
-          created_at: string
-          details: string | null
-          expected_return: string | null
-          id: string
-          player_external_id: string
-          player_name: string
-          status: string
-          team_id: string | null
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          details?: string | null
-          expected_return?: string | null
-          id?: string
-          player_external_id: string
-          player_name: string
-          status: string
-          team_id?: string | null
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          details?: string | null
-          expected_return?: string | null
-          id?: string
-          player_external_id?: string
-          player_name?: string
-          status?: string
-          team_id?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "injury_reports_team_id_fkey"
-            columns: ["team_id"]
-            isOneToOne: false
-            referencedRelation: "teams"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      matches: {
-        Row: {
-          away_score: number | null
-          away_team_id: string | null
-          created_at: string
-          external_id: string
-          home_score: number | null
-          home_team_id: string | null
-          id: string
-          sport: Database["public"]["Enums"]["sport_type"]
-          start_time: string
-          status: string
-          updated_at: string
-          venue: string | null
-        }
-        Insert: {
-          away_score?: number | null
-          away_team_id?: string | null
-          created_at?: string
-          external_id: string
-          home_score?: number | null
-          home_team_id?: string | null
-          id?: string
-          sport: Database["public"]["Enums"]["sport_type"]
-          start_time: string
-          status?: string
-          updated_at?: string
-          venue?: string | null
-        }
-        Update: {
-          away_score?: number | null
-          away_team_id?: string | null
-          created_at?: string
-          external_id?: string
-          home_score?: number | null
-          home_team_id?: string | null
-          id?: string
-          sport?: Database["public"]["Enums"]["sport_type"]
-          start_time?: string
-          status?: string
-          updated_at?: string
-          venue?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "matches_away_team_id_fkey"
-            columns: ["away_team_id"]
-            isOneToOne: false
-            referencedRelation: "teams"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "matches_home_team_id_fkey"
-            columns: ["home_team_id"]
-            isOneToOne: false
-            referencedRelation: "teams"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      odds: {
-        Row: {
-          away_odds: number | null
-          bookmaker: string
-          created_at: string
-          draw_odds: number | null
-          home_odds: number | null
-          id: string
-          last_updated: string
-          match_id: string | null
-        }
-        Insert: {
-          away_odds?: number | null
-          bookmaker: string
-          created_at?: string
-          draw_odds?: number | null
-          home_odds?: number | null
-          id?: string
-          last_updated?: string
-          match_id?: string | null
-        }
-        Update: {
-          away_odds?: number | null
-          bookmaker?: string
-          created_at?: string
-          draw_odds?: number | null
-          home_odds?: number | null
-          id?: string
-          last_updated?: string
-          match_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "odds_match_id_fkey"
-            columns: ["match_id"]
-            isOneToOne: false
-            referencedRelation: "matches"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      player_stats: {
-        Row: {
-          created_at: string
-          id: string
-          match_id: string | null
-          player_external_id: string
-          player_name: string
-          stats: Json
-          team_id: string | null
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          match_id?: string | null
-          player_external_id: string
-          player_name: string
-          stats?: Json
-          team_id?: string | null
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          match_id?: string | null
-          player_external_id?: string
-          player_name?: string
-          stats?: Json
-          team_id?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "player_stats_match_id_fkey"
-            columns: ["match_id"]
-            isOneToOne: false
-            referencedRelation: "matches"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "player_stats_team_id_fkey"
-            columns: ["team_id"]
-            isOneToOne: false
-            referencedRelation: "teams"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      profiles: {
-        Row: {
-          created_at: string | null
-          id: string
-          is_trial_used: boolean | null
-          subscription_period_end: string | null
-          subscription_status: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          id: string
-          is_trial_used?: boolean | null
-          subscription_period_end?: string | null
-          subscription_status?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          is_trial_used?: boolean | null
-          subscription_period_end?: string | null
-          subscription_status?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
-      teams: {
-        Row: {
-          created_at: string
-          external_id: string
-          id: string
-          logo_url: string | null
-          name: string
-          short_name: string | null
-          sport: Database["public"]["Enums"]["sport_type"]
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          external_id: string
-          id?: string
-          logo_url?: string | null
-          name: string
-          short_name?: string | null
-          sport: Database["public"]["Enums"]["sport_type"]
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          external_id?: string
-          id?: string
-          logo_url?: string | null
-          name?: string
-          short_name?: string | null
-          sport?: Database["public"]["Enums"]["sport_type"]
-          updated_at?: string
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Views: {
       [_ in never]: never
@@ -400,7 +23,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      sport_type: "football" | "basketball" | "baseball" | "hockey" | "soccer"
+      [_ in never]: never
     }
     CompositeTypes: {
       [_ in never]: never
@@ -408,21 +31,25 @@ export type Database = {
   }
 }
 
-type DefaultSchema = Database[Extract<keyof Database, "public">]
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
     ? R
@@ -440,14 +67,16 @@ export type Tables<
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Insert: infer I
     }
     ? I
@@ -463,14 +92,16 @@ export type TablesInsert<
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Update: infer U
     }
     ? U
@@ -486,14 +117,16 @@ export type TablesUpdate<
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
-> = DefaultSchemaEnumNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
     ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
     : never
@@ -501,22 +134,22 @@ export type Enums<
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
     : never = never,
-> = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
 
 export const Constants = {
   public: {
-    Enums: {
-      sport_type: ["football", "basketball", "baseball", "hockey", "soccer"],
-    },
+    Enums: {},
   },
 } as const
