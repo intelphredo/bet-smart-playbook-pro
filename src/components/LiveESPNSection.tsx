@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { League, Match } from "@/types/sports";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,7 +11,10 @@ import LiveESPNHeader from "./LiveESPNHeader";
 import SmartScoreSection from "./SmartScoreSection";
 import PremiumContent from "./PremiumContent";
 import PremiumSectionHeader from "./PremiumSectionHeader";
+import FavoritesTab from "./FavoritesTab";
 import { applySmartScores } from "@/utils/smartScoreCalculator";
+import { usePreferences } from "@/hooks/usePreferences";
+import { Star } from "lucide-react";
 
 interface DataSourceInfo {
   source: "live" | "mock";
@@ -56,6 +59,7 @@ const LiveESPNSection = ({
   dataSource,
   oddsApiStatus,
 }: Props) => {
+  const { preferences } = usePreferences();
   const [processedMatches, setProcessedMatches] = useState({
     upcoming: [] as Match[],
     live: [] as Match[],
@@ -76,6 +80,22 @@ const LiveESPNSection = ({
       window.__BetSmart.finishedMatches = finishedMatches;
     }
   }, [upcomingMatches, liveMatches, finishedMatches]);
+
+  const allMatches = useMemo(() => [
+    ...processedMatches.upcoming,
+    ...processedMatches.live,
+    ...processedMatches.finished,
+  ], [processedMatches]);
+
+  const favoritesCount = preferences.favorites.matches.length + 
+    allMatches.filter(match => {
+      const homeTeam = match.homeTeam?.shortName || match.homeTeam?.name || "";
+      const awayTeam = match.awayTeam?.shortName || match.awayTeam?.name || "";
+      return preferences.favorites.teams.some(team => 
+        homeTeam.toLowerCase().includes(team.toLowerCase()) ||
+        awayTeam.toLowerCase().includes(team.toLowerCase())
+      ) && !preferences.favorites.matches.includes(match.id);
+    }).length;
 
   return (
     <div className="space-y-4">
@@ -130,10 +150,22 @@ const LiveESPNSection = ({
 
       <Tabs defaultValue="upcoming" value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
+          <TabsTrigger value="favorites" className="flex items-center gap-1.5">
+            <Star className="h-3.5 w-3.5" />
+            Favorites
+            {favoritesCount > 0 && (
+              <span className="ml-1 px-1.5 py-0.5 text-xs bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 rounded-full">
+                {favoritesCount}
+              </span>
+            )}
+          </TabsTrigger>
           <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
           <TabsTrigger value="live">Live</TabsTrigger>
           <TabsTrigger value="finished">Finished</TabsTrigger>
         </TabsList>
+        <TabsContent value="favorites" className="mt-4">
+          <FavoritesTab allMatches={allMatches} />
+        </TabsContent>
         <TabsContent value="upcoming" className="mt-4">
           <UpcomingGamesTab 
             isLoading={isLoading} 

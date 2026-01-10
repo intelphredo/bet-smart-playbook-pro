@@ -15,6 +15,7 @@ import ScenarioBadges from "./ScenarioAnalysis/ScenarioBadges";
 import { SocialFactorsCard } from "./SocialIntelligence/SocialFactorsCard";
 import MatchSourceBadge, { MatchDataSource } from "./MatchCard/MatchSourceBadge";
 import OddsLineChart from "./OddsLineChart";
+import FavoriteButton from "./FavoriteButton";
 
 interface MatchCardProps {
   match: any;
@@ -64,9 +65,16 @@ const MatchCard = ({ match }: MatchCardProps) => {
   const hasAdvancedMetrics = match.prediction?.evPercentage || match.prediction?.kellyStakeUnits || match.prediction?.clvPercentage;
 
   return (
-    <Card className="match-card overflow-hidden border-border/50 bg-card/95 backdrop-blur-sm">
+    <Card className="match-card overflow-hidden border-border/50 bg-card/95 backdrop-blur-sm relative">
+      {/* Favorite Button - Positioned Absolutely */}
+      <FavoriteButton 
+        type="match" 
+        id={match.id} 
+        className="absolute top-2 right-2 z-10" 
+      />
+      
       {/* Compact Header */}
-      <CardHeader className="p-3 bg-card/80 backdrop-blur-sm border-b border-border/30 flex flex-row justify-between items-center space-y-0">
+      <CardHeader className="p-3 bg-card/80 backdrop-blur-sm border-b border-border/30 flex flex-row justify-between items-center space-y-0 pr-10">
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="text-xs font-medium bg-background/90 border-primary/20 text-primary h-5 px-2">
             {match.league}
