@@ -199,6 +199,7 @@ export type Database = {
           email: string | null
           full_name: string | null
           id: string
+          preferences: Json | null
           subscription_status: string
           updated_at: string
         }
@@ -208,6 +209,7 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id: string
+          preferences?: Json | null
           subscription_status?: string
           updated_at?: string
         }
@@ -217,6 +219,7 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          preferences?: Json | null
           subscription_status?: string
           updated_at?: string
         }
@@ -389,8 +392,17 @@ export type Database = {
     }
     Functions: {
       cleanup_old_odds_history: { Args: never; Returns: undefined }
+      get_user_preferences: { Args: { user_id_param: string }; Returns: Json }
       manual_record_odds: { Args: never; Returns: Json }
       trigger_record_odds: { Args: never; Returns: undefined }
+      update_user_preference: {
+        Args: {
+          new_value: Json
+          preference_path: string[]
+          user_id_param: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never

@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { ModeToggle } from "@/components/ModeToggle";
 import { MobileNav } from "@/components/MobileNav";
 import { SkipLink } from "@/components/ui/skip-link";
-import { Home, BarChart2, BookOpen, Shield, Wallet, Trophy, AlertTriangle, History } from "lucide-react";
+import { Home, BarChart2, BookOpen, Shield, Wallet, Trophy, AlertTriangle, History, Settings } from "lucide-react";
 import BetSlipDrawer from "@/components/BetSlip/BetSlipDrawer";
 
 const navItems = [
@@ -14,7 +14,7 @@ const navItems = [
   { path: "/scenarios", label: "Scenarios", icon: BookOpen },
   { path: "/bankroll", label: "Bankroll", icon: Wallet },
   { path: "/bet-history", label: "Bets", icon: History },
-  { path: "/creator", label: "Creator", icon: Shield },
+  { path: "/settings", label: "Settings", icon: Settings },
 ];
 
 export default function NavBar() {
