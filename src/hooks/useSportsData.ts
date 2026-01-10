@@ -9,6 +9,7 @@ import { useDataSourceManager } from "./useDataSourceManager";
 import { useMatchVerification } from "./useMatchVerification";
 import { useMatchesByStatus } from "./useMatchesByStatus";
 import { getESPNDataStatus } from "@/services/espnApi";
+import { isSameGame, dedupeMatches } from "@/utils/teamMatching";
 
 interface UseSportsDataOptions {
   league?: League | "ALL";
@@ -157,26 +158,53 @@ export function useSportsData({
     return verifiedMatches;
   })();
 
-  const upcomingMatches = (() => {
+  // Combine ESPN/base matches with Odds API matches for better coverage
+  const upcomingMatches = useMemo(() => {
+    let base = baseUpcomingMatches;
     if (dataSource === "ESPN" && league === "MLB") {
-      return baseUpcomingMatches.filter(match => match.league === "MLB");
+      base = base.filter(match => match.league === "MLB");
     }
-    return baseUpcomingMatches;
-  })();
+    
+    // Add Odds API upcoming matches that aren't in base data
+    const oddsUpcoming = oddsApiMatches.filter(m => m.status === "scheduled");
+    const combined = [...base, ...oddsUpcoming];
+    
+    return dedupeMatches(combined);
+  }, [baseUpcomingMatches, oddsApiMatches, dataSource, league]);
 
-  const liveMatches = (() => {
+  const liveMatches = useMemo(() => {
+    let base = baseLiveMatches;
     if (dataSource === "ESPN" && league === "MLB") {
-      return baseLiveMatches.filter(match => match.league === "MLB");
+      base = base.filter(match => match.league === "MLB");
     }
-    return baseLiveMatches;
-  })();
+    
+    // Add Odds API live matches that aren't in base data
+    const oddsLive = oddsApiMatches.filter(m => m.status === "live");
+    const combined = [...base, ...oddsLive];
+    
+    console.log('=== Live Games Debug ===');
+    console.log('ESPN/Base live:', base.length);
+    console.log('Odds API live:', oddsLive.length);
+    console.log('Combined before dedup:', combined.length);
+    
+    const deduped = dedupeMatches(combined);
+    console.log('Combined after dedup:', deduped.length);
+    
+    return deduped;
+  }, [baseLiveMatches, oddsApiMatches, dataSource, league]);
 
-  const finishedMatches = (() => {
+  const finishedMatches = useMemo(() => {
+    let base = baseFinishedMatches;
     if (dataSource === "ESPN" && league === "MLB") {
-      return baseFinishedMatches.filter(match => match.league === "MLB");
+      base = base.filter(match => match.league === "MLB");
     }
-    return baseFinishedMatches;
-  })();
+    
+    // Add Odds API finished matches that aren't in base data
+    const oddsFinished = oddsApiMatches.filter(m => m.status === "finished");
+    const combined = [...base, ...oddsFinished];
+    
+    return dedupeMatches(combined);
+  }, [baseFinishedMatches, oddsApiMatches, dataSource, league]);
 
   if (league === "MLB" && dataSource !== "MLB") {
     setDataSource("MLB");

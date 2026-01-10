@@ -139,6 +139,22 @@ const mapOddsEventToMatch = (event: OddsApiEvent): Match => {
   // Calculate confidence based on odds difference
   const confidence = Math.min(0.85, Math.max(0.5, 1 - Math.abs((1 / bestHomeOdds) - (1 / bestAwayOdds))));
 
+  // Improved status detection based on time
+  const startTime = new Date(event.commence_time);
+  const now = new Date();
+  const hoursAfterStart = (now.getTime() - startTime.getTime()) / (1000 * 60 * 60);
+  
+  let status: 'scheduled' | 'live' | 'finished';
+  if (startTime > now) {
+    status = "scheduled";
+  } else if (hoursAfterStart < 4) {
+    // Assume game is live if within 4 hours of start
+    status = "live";
+  } else {
+    // Assume finished after 4 hours
+    status = "finished";
+  }
+
   return {
     id: event.id,
     homeTeam: {
@@ -156,7 +172,7 @@ const mapOddsEventToMatch = (event: OddsApiEvent): Match => {
       record: "",
     },
     startTime: event.commence_time,
-    status: new Date(event.commence_time) > new Date() ? "scheduled" : "live",
+    status,
     league: (event.league || mapSportKeyToLeague(event.sport_key)) as League,
     odds: {
       homeWin: bestHomeOdds || 1.9,
