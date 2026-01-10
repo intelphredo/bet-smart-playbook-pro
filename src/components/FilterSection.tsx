@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Filter, X } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Filter, X, ChevronDown, ChevronUp } from "lucide-react";
 import { League } from "@/types/sports";
 import { SportCategory } from "@/types/LeagueRegistry";
 import LeagueRegistry from "@/types/LeagueRegistry";
@@ -9,6 +10,7 @@ import MatchStatusFilter from "./filters/MatchStatusFilter";
 import AdvancedFilters from "./filters/AdvancedFilters";
 import ActiveFilters from "./filters/ActiveFilters";
 import DataSourceFilter, { DataViewSource } from "./filters/DataSourceFilter";
+import { Badge } from "@/components/ui/badge";
 
 interface FilterSectionProps {
   selectedLeague: League | string | "ALL";
@@ -42,6 +44,7 @@ const FilterSection = ({
   onDataViewSourceChange
 }: FilterSectionProps) => {
   const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState(false);
+  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
   const [tempDateRange, setTempDateRange] = useState<{start?: Date, end?: Date}>({});
   const [tempFilters, setTempFilters] = useState({
     team: teamFilter || "",
@@ -53,6 +56,15 @@ const FilterSection = ({
   const sportCategories = Array.from(
     new Set(leagues.map(league => league.category))
   );
+
+  // Count active filters
+  const activeFilterCount = [
+    selectedLeague !== "ALL",
+    teamFilter !== "",
+    dateRange?.start || dateRange?.end,
+    sportCategoryFilter !== "ALL",
+    dataViewSource !== "combined"
+  ].filter(Boolean).length;
 
   const applyAdvancedFilters = () => {
     if (onTeamFilterChange && tempFilters.team !== teamFilter) {
@@ -89,32 +101,8 @@ const FilterSection = ({
     setIsAdvancedFiltersOpen(false);
   };
 
-  return (
-    <div className="flex flex-col gap-3 p-4 bg-background border rounded-lg mb-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <Filter className="h-4 w-4" />
-          <span className="font-medium">Filters:</span>
-        </div>
-        
-        <div className="flex ml-auto gap-2">
-          {onDataViewSourceChange && (
-            <DataSourceFilter 
-              value={dataViewSource} 
-              onChange={onDataViewSourceChange} 
-            />
-          )}
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-8 px-2 lg:px-3"
-            onClick={() => setIsAdvancedFiltersOpen(!isAdvancedFiltersOpen)}
-          >
-            {isAdvancedFiltersOpen ? "Hide Advanced Filters" : "Advanced Filters"}
-          </Button>
-        </div>
-      </div>
-      
+  const filterContent = (
+    <>
       <div className="flex flex-wrap gap-3">
         <LeagueFilter
           selectedLeague={selectedLeague}
@@ -127,15 +115,17 @@ const FilterSection = ({
           onTabChange={onTabChange}
         />
         
-        {/* Reset Button */}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={resetFilters}
-          className="ml-auto"
-        >
-          <X className="h-4 w-4 mr-1" /> Reset
-        </Button>
+        {/* Reset Button - show when filters active */}
+        {activeFilterCount > 0 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={resetFilters}
+            className="ml-auto h-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+          >
+            <X className="h-4 w-4 mr-1" /> Reset ({activeFilterCount})
+          </Button>
+        )}
       </div>
       
       {/* Advanced Filters Section */}
@@ -162,6 +152,88 @@ const FilterSection = ({
         onDateRangeChange={onDateRangeChange}
         onSportCategoryChange={onSportCategoryChange}
       />
+    </>
+  );
+
+  return (
+    <div className="filter-section mb-4 fade-in">
+      {/* Desktop layout */}
+      <div className="hidden md:flex flex-col gap-3">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            <span className="font-medium text-sm">Filters</span>
+            {activeFilterCount > 0 && (
+              <Badge variant="secondary" className="h-5 px-1.5 text-xs">
+                {activeFilterCount}
+              </Badge>
+            )}
+          </div>
+          
+          <div className="flex gap-2">
+            {onDataViewSourceChange && (
+              <DataSourceFilter 
+                value={dataViewSource} 
+                onChange={onDataViewSourceChange} 
+              />
+            )}
+            <Button
+              size="sm"
+              variant={isAdvancedFiltersOpen ? "secondary" : "ghost"}
+              className="h-8 px-3 text-xs"
+              onClick={() => setIsAdvancedFiltersOpen(!isAdvancedFiltersOpen)}
+            >
+              {isAdvancedFiltersOpen ? "Hide Advanced" : "Advanced"}
+            </Button>
+          </div>
+        </div>
+        {filterContent}
+      </div>
+
+      {/* Mobile layout - collapsible */}
+      <div className="md:hidden">
+        <Collapsible open={isMobileFiltersOpen} onOpenChange={setIsMobileFiltersOpen}>
+          <div className="flex items-center justify-between">
+            <CollapsibleTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-9 px-3 gap-2">
+                <Filter className="h-4 w-4" />
+                <span className="font-medium">Filters</span>
+                {activeFilterCount > 0 && (
+                  <Badge variant="secondary" className="h-5 px-1.5 text-xs">
+                    {activeFilterCount}
+                  </Badge>
+                )}
+                {isMobileFiltersOpen ? (
+                  <ChevronUp className="h-4 w-4" />
+                ) : (
+                  <ChevronDown className="h-4 w-4" />
+                )}
+              </Button>
+            </CollapsibleTrigger>
+            
+            <div className="flex gap-2">
+              {onDataViewSourceChange && (
+                <DataSourceFilter 
+                  value={dataViewSource} 
+                  onChange={onDataViewSourceChange} 
+                />
+              )}
+            </div>
+          </div>
+          
+          <CollapsibleContent className="pt-3 space-y-3">
+            <Button
+              size="sm"
+              variant={isAdvancedFiltersOpen ? "secondary" : "outline"}
+              className="w-full h-8 text-xs"
+              onClick={() => setIsAdvancedFiltersOpen(!isAdvancedFiltersOpen)}
+            >
+              {isAdvancedFiltersOpen ? "Hide Advanced Filters" : "Show Advanced Filters"}
+            </Button>
+            {filterContent}
+          </CollapsibleContent>
+        </Collapsible>
+      </div>
     </div>
   );
 };

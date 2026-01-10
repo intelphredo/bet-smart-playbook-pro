@@ -15,8 +15,8 @@ import {
   BarChart2, 
   BookOpen, 
   Wallet, 
-  Shield,
-  X
+  History,
+  Settings
 } from "lucide-react";
 import { useState } from "react";
 
@@ -27,7 +27,8 @@ const navItems = [
   { path: "/algorithms", label: "Algorithms", icon: BarChart2 },
   { path: "/scenarios", label: "Scenarios", icon: BookOpen },
   { path: "/bankroll", label: "Bankroll", icon: Wallet },
-  { path: "/creator", label: "Creator", icon: Shield },
+  { path: "/bet-history", label: "Bet History", icon: History },
+  { path: "/settings", label: "Settings", icon: Settings },
 ];
 
 export function MobileNav() {

@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Match, LiveOdds } from "@/types/sports";
+import { Match } from "@/types/sports";
 
 export interface OddsHistoryPoint {
   timestamp: string;
@@ -15,16 +15,29 @@ export interface OddsHistory {
   history: OddsHistoryPoint[];
 }
 
-export function useOddsHistory(match: Match) {
+export function useOddsHistory(match: Match, enabled: boolean = false) {
   const [history, setHistory] = useState<OddsHistoryPoint[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [hasRealData, setHasRealData] = useState(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const hasFetchedRef = useRef(false);
 
   // Fetch real odds history from database
   const fetchHistory = useCallback(async () => {
-    if (!match.id) return;
+    if (!match.id || !enabled) return;
+    
+    // Prevent duplicate fetches
+    if (hasFetchedRef.current) return;
+    hasFetchedRef.current = true;
 
+    // Cancel any in-flight request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    
+    abortControllerRef.current = new AbortController();
     setIsLoading(true);
+    
     try {
       const { data, error } = await supabase
         .from("odds_history")
@@ -32,10 +45,14 @@ export function useOddsHistory(match: Match) {
         .eq("match_id", match.id)
         .eq("market_type", "moneyline")
         .order("recorded_at", { ascending: true })
-        .limit(100);
+        .limit(100)
+        .abortSignal(abortControllerRef.current.signal);
 
       if (error) {
-        console.error("Error fetching odds history:", error);
+        // Don't log abort errors - they're expected
+        if (error.message !== 'AbortError: signal is aborted without reason') {
+          console.error("Error fetching odds history:", error);
+        }
         setHasRealData(false);
         return;
       }
@@ -54,17 +71,35 @@ export function useOddsHistory(match: Match) {
       } else {
         setHasRealData(false);
       }
-    } catch (error) {
+    } catch (error: any) {
+      // Ignore abort errors
+      if (error?.name === 'AbortError') return;
       console.error("Error fetching odds history:", error);
       setHasRealData(false);
     } finally {
       setIsLoading(false);
     }
-  }, [match.id]);
+  }, [match.id, enabled]);
 
   useEffect(() => {
-    fetchHistory();
-  }, [fetchHistory]);
+    if (enabled) {
+      fetchHistory();
+    }
+    
+    return () => {
+      // Cleanup: abort any in-flight request
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [fetchHistory, enabled]);
+
+  // Reset fetch status when match changes
+  useEffect(() => {
+    hasFetchedRef.current = false;
+    setHistory([]);
+    setHasRealData(false);
+  }, [match.id]);
 
   // Generate simulated historical data for demo when no real data exists
   const getChartData = useCallback(() => {
@@ -150,6 +185,11 @@ export function useOddsHistory(match: Match) {
     return trends;
   }, [getChartData]);
 
+  const refetch = useCallback(() => {
+    hasFetchedRef.current = false;
+    fetchHistory();
+  }, [fetchHistory]);
+
   return {
     history,
     chartData: getChartData(),
@@ -157,6 +197,6 @@ export function useOddsHistory(match: Match) {
     hasRealData,
     isLoading,
     movementTrends: getMovementTrends,
-    refetch: fetchHistory,
+    refetch,
   };
 }
