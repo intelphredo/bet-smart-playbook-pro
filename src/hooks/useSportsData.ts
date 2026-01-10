@@ -3,7 +3,8 @@ import { useESPNData } from "./useESPNData";
 import { useMLBData } from "./useMLBData";
 import { useSportsApiData } from "./useSportsApiData";
 import { useActionNetworkData } from "./useActionNetworkData";
-import { DataSource, League, Match } from "@/types/sports";
+import { useOddsApi } from "./useOddsApi";
+import { DataSource, League, Match, LiveOdds } from "@/types/sports";
 import { useDataSourceManager } from "./useDataSourceManager";
 import { useMatchVerification } from "./useMatchVerification";
 import { useMatchesByStatus } from "./useMatchesByStatus";
@@ -104,8 +105,16 @@ export function useSportsData({
     dataSource: preferredApiSource
   });
 
+  // Fetch real odds from The Odds API
+  const {
+    matches: oddsApiMatches,
+    isLoading: isLoadingOdds,
+    isError: isOddsError,
+  } = useOddsApi(league);
+
   console.log('ESPN upcoming matches:', espnUpcomingMatches.length);
   console.log('MLB upcoming matches:', mlbUpcomingMatches.length);
+  console.log('Odds API matches:', oddsApiMatches.length);
   if (useExternalApis) {
     console.log('API upcoming matches:', apiUpcomingMatches.length);
   }
@@ -184,16 +193,49 @@ export function useSportsData({
     return () => clearInterval(intervalId);
   }, [refreshInterval]);
 
+  // Merge ESPN matches with Odds API data for real sportsbook odds
+  const matchesWithOdds = useMemo(() => {
+    if (!oddsApiMatches.length) return allMatches;
+    
+    return allMatches.map(match => {
+      // Find matching odds data by team names
+      const oddsMatch = oddsApiMatches.find(om => {
+        const homeMatch = om.homeTeam.name.toLowerCase().includes(match.homeTeam.name.toLowerCase().split(' ').pop() || '') ||
+                          match.homeTeam.name.toLowerCase().includes(om.homeTeam.name.toLowerCase().split(' ').pop() || '');
+        const awayMatch = om.awayTeam.name.toLowerCase().includes(match.awayTeam.name.toLowerCase().split(' ').pop() || '') ||
+                          match.awayTeam.name.toLowerCase().includes(om.awayTeam.name.toLowerCase().split(' ').pop() || '');
+        return homeMatch && awayMatch;
+      });
+
+      if (oddsMatch && oddsMatch.liveOdds) {
+        return {
+          ...match,
+          liveOdds: oddsMatch.liveOdds,
+          odds: oddsMatch.odds,
+        };
+      }
+      return match;
+    });
+  }, [allMatches, oddsApiMatches]);
+
   // Get ESPN data status for the DataSourceBadge
   const espnDataStatus = useMemo(() => {
     const status = getESPNDataStatus();
     return {
       source: status.source,
       lastUpdated: status.lastUpdated,
-      gamesLoaded: allMatches.length,
+      gamesLoaded: matchesWithOdds.length,
       errors: status.errors
     };
-  }, [allMatches.length, lastRefreshTime]);
+  }, [matchesWithOdds.length, lastRefreshTime]);
+
+  // Odds API status
+  const oddsApiStatus = useMemo(() => ({
+    isLoading: isLoadingOdds,
+    isError: isOddsError,
+    matchCount: oddsApiMatches.length,
+    hasData: oddsApiMatches.length > 0,
+  }), [isLoadingOdds, isOddsError, oddsApiMatches.length]);
 
   return {
     dataSource,
@@ -202,7 +244,7 @@ export function useSportsData({
     upcomingMatches,
     liveMatches,
     finishedMatches,
-    allMatches,
+    allMatches: matchesWithOdds,
     isLoading,
     error,
     refetchSchedule,
@@ -215,6 +257,8 @@ export function useSportsData({
     verifiedMatches,
     lastRefreshTime,
     refetchWithTimestamp,
-    espnDataStatus
+    espnDataStatus,
+    oddsApiStatus,
+    oddsApiMatches,
   };
 }

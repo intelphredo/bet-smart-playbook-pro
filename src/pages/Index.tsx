@@ -34,7 +34,8 @@ const Index = () => {
     dataSource,
     setDataSource,
     availableDataSources,
-    espnDataStatus
+    espnDataStatus,
+    oddsApiStatus
   } = useSportsData({
     league: selectedLeague as any,
     refreshInterval: 60000,
@@ -170,6 +171,7 @@ const Index = () => {
               liveMatches={liveMatches}
               finishedMatches={finishedMatches}
               dataSource={espnDataStatus}
+              oddsApiStatus={oddsApiStatus}
             />
           </section>
           

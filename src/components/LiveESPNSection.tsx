@@ -20,6 +20,13 @@ interface DataSourceInfo {
   errors?: string[];
 }
 
+interface OddsApiStatus {
+  isLoading: boolean;
+  isError: boolean;
+  matchCount: number;
+  hasData: boolean;
+}
+
 interface Props {
   selectedLeague: League | "ALL";
   setSelectedLeague: (v: League | "ALL") => void;
@@ -32,6 +39,7 @@ interface Props {
   liveMatches: Match[];
   finishedMatches: Match[];
   dataSource?: DataSourceInfo;
+  oddsApiStatus?: OddsApiStatus;
 }
 
 const LiveESPNSection = ({
@@ -46,6 +54,7 @@ const LiveESPNSection = ({
   liveMatches,
   finishedMatches,
   dataSource,
+  oddsApiStatus,
 }: Props) => {
   const [processedMatches, setProcessedMatches] = useState({
     upcoming: [] as Match[],
@@ -76,6 +85,7 @@ const LiveESPNSection = ({
         isLoading={isLoading}
         handleRefreshData={handleRefreshData}
         dataSource={dataSource}
+        oddsApiStatus={oddsApiStatus}
       />
 
       {error && (

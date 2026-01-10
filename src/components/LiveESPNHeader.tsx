@@ -1,8 +1,7 @@
-
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
 import LeagueSelector from "@/components/LeagueSelector";
-import DataSourceBadge, { DataSourceInfo } from "./DataSourceBadge";
+import DataSourceBadge, { DataSourceInfo, OddsApiStatus } from "./DataSourceBadge";
 
 interface Props {
   selectedLeague: any;
@@ -10,6 +9,7 @@ interface Props {
   isLoading: boolean;
   handleRefreshData: () => void;
   dataSource?: DataSourceInfo;
+  oddsApiStatus?: OddsApiStatus;
 }
 
 const LiveESPNHeader = ({
@@ -18,6 +18,7 @@ const LiveESPNHeader = ({
   isLoading,
   handleRefreshData,
   dataSource,
+  oddsApiStatus,
 }: Props) => (
   <div className="flex flex-col gap-4">
     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
@@ -26,6 +27,7 @@ const LiveESPNHeader = ({
         {dataSource && (
           <DataSourceBadge 
             dataSource={dataSource} 
+            oddsApiStatus={oddsApiStatus}
             compact 
           />
         )}
@@ -51,6 +53,7 @@ const LiveESPNHeader = ({
     {dataSource && !dataSource.source && (
       <DataSourceBadge 
         dataSource={dataSource} 
+        oddsApiStatus={oddsApiStatus}
         onRefresh={handleRefreshData}
         isRefreshing={isLoading}
       />
