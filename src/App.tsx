@@ -9,9 +9,12 @@ import ScenarioGuide from "./pages/ScenarioGuide";
 import BankrollManager from "./pages/BankrollManager";
 import Standings from "./pages/Standings";
 import Injuries from "./pages/Injuries";
+import BetHistory from "./pages/BetHistory";
+import Auth from "./pages/Auth";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/useAuth";
 import { OddsFormatProvider } from "@/contexts/OddsFormatContext";
+import { BetSlipProvider } from "@/components/BetSlip/BetSlipContext";
 
 // Create a client
 const queryClient = new QueryClient({
@@ -62,20 +65,24 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <OddsFormatProvider>
-          <TooltipProvider>
-            <Router>
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/standings" element={<Standings />} />
-                <Route path="/injuries" element={<Injuries />} />
-                <Route path="/algorithms" element={<AlgorithmsComparison />} />
-                <Route path="/creator" element={<CreatorDashboard />} />
-                <Route path="/scenarios" element={<ScenarioGuide />} />
-                <Route path="/bankroll" element={<BankrollManager />} />
-              </Routes>
-            </Router>
-            <Toaster richColors position="top-center" />
-          </TooltipProvider>
+          <BetSlipProvider>
+            <TooltipProvider>
+              <Router>
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/standings" element={<Standings />} />
+                  <Route path="/injuries" element={<Injuries />} />
+                  <Route path="/algorithms" element={<AlgorithmsComparison />} />
+                  <Route path="/creator" element={<CreatorDashboard />} />
+                  <Route path="/scenarios" element={<ScenarioGuide />} />
+                  <Route path="/bankroll" element={<BankrollManager />} />
+                  <Route path="/bet-history" element={<BetHistory />} />
+                  <Route path="/auth" element={<Auth />} />
+                </Routes>
+              </Router>
+              <Toaster richColors position="top-center" />
+            </TooltipProvider>
+          </BetSlipProvider>
         </OddsFormatProvider>
       </AuthProvider>
     </QueryClientProvider>

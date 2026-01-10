@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { ModeToggle } from "@/components/ModeToggle";
 import { MobileNav } from "@/components/MobileNav";
 import { SkipLink } from "@/components/ui/skip-link";
-import { Home, BarChart2, BookOpen, Shield, Wallet, Trophy, AlertTriangle } from "lucide-react";
+import { Home, BarChart2, BookOpen, Shield, Wallet, Trophy, AlertTriangle, History } from "lucide-react";
+import BetSlipDrawer from "@/components/BetSlip/BetSlipDrawer";
 
 const navItems = [
   { path: "/", label: "Home", icon: Home },
@@ -12,6 +13,7 @@ const navItems = [
   { path: "/algorithms", label: "Algorithms", icon: BarChart2 },
   { path: "/scenarios", label: "Scenarios", icon: BookOpen },
   { path: "/bankroll", label: "Bankroll", icon: Wallet },
+  { path: "/bet-history", label: "Bets", icon: History },
   { path: "/creator", label: "Creator", icon: Shield },
 ];
 
@@ -60,12 +62,16 @@ export default function NavBar() {
                 );
               })}
               <li className="ml-2">
+                <BetSlipDrawer />
+              </li>
+              <li className="ml-1">
                 <ModeToggle />
               </li>
             </ul>
           </nav>
           
           <div className="flex items-center gap-2 md:hidden">
+            <BetSlipDrawer />
             <ModeToggle />
           </div>
         </div>
