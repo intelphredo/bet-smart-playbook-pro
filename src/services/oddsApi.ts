@@ -1,56 +1,85 @@
-
-import { API_CONFIGS, DEFAULT_HEADERS, LEAGUE_MAPPINGS } from "@/config/apiConfig";
+import { supabase } from "@/integrations/supabase/client";
 import { League, Match } from "@/types/sports";
 import { mapOddsApiToMatch } from "./oddsApiMappers";
 
+/**
+ * Fetches odds data for a specific league via the secure edge function.
+ * All API calls go through the backend to protect the API key.
+ */
 export const fetchOddsApiData = async (league: League): Promise<Match[]> => {
   try {
-    const { BASE_URL, API_KEY, ENDPOINTS } = API_CONFIGS.ODDS_API;
-    const sportKey = LEAGUE_MAPPINGS[league].ODDS_API;
+    console.log(`Fetching OddsAPI data for ${league} via edge function`);
     
-    if (!sportKey) {
-      throw new Error(`No sport key defined for league: ${league}`);
+    const { data, error } = await supabase.functions.invoke('fetch-odds', {
+      body: null,
+      headers: {},
+    });
+
+    // Add league as query param by invoking with custom URL
+    const url = new URL(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fetch-odds`);
+    url.searchParams.set("league", league);
+    
+    const response = await fetch(url.toString(), {
+      headers: {
+        "Authorization": `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Edge function error: ${response.status} - ${response.statusText}`);
     }
+
+    const result = await response.json();
     
-    const oddsUrl = `${BASE_URL}${ENDPOINTS.ODDS.replace('{{sport}}', sportKey)}?apiKey=${API_KEY}&regions=us&markets=h2h,spreads,totals`;
-    const scoresUrl = `${BASE_URL}${ENDPOINTS.SCORES.replace('{{sport}}', sportKey)}?apiKey=${API_KEY}&daysFrom=1`;
-    
-    console.log(`Fetching OddsAPI data for ${league}`);
-    
-    // Fetch both odds and scores in parallel
-    const [oddsResponse, scoresResponse] = await Promise.all([
-      fetch(oddsUrl, { headers: DEFAULT_HEADERS }),
-      fetch(scoresUrl, { headers: DEFAULT_HEADERS })
-    ]);
-    
-    if (!oddsResponse.ok) {
-      throw new Error(`OddsAPI Error (odds): ${oddsResponse.status} - ${oddsResponse.statusText}`);
+    if (!result.success) {
+      throw new Error(result.error || "Failed to fetch odds data");
     }
+
+    console.log(`OddsAPI data received for ${league} - ${result.events?.length || 0} events`);
     
-    if (!scoresResponse.ok) {
-      throw new Error(`OddsAPI Error (scores): ${scoresResponse.status} - ${scoresResponse.statusText}`);
-    }
+    // Filter events to the requested league and map to Match type
+    const leagueEvents = result.events?.filter((e: any) => e.league === league) || [];
     
-    const oddsData = await oddsResponse.json();
-    const scoresData = await scoresResponse.json();
-    
-    console.log(`OddsAPI data received for ${league} - odds events: ${oddsData.length}, scores events: ${scoresData.length}`);
-    
-    // Map to our Match type and merge odds with scores
-    return mapOddsApiToMatch(oddsData, scoresData, league);
+    // Map raw events to our Match type using existing mapper
+    return mapOddsApiToMatch(leagueEvents, [], league);
   } catch (error) {
     console.error(`Error fetching OddsAPI data for ${league}:`, error);
     return [];
   }
 };
 
+/**
+ * Fetches odds data for all leagues via the secure edge function.
+ */
 export const fetchAllOddsApiData = async (): Promise<Match[]> => {
-  const leagues: League[] = ["NFL", "NBA", "MLB", "NHL", "SOCCER"];
-  const promises = leagues.map(fetchOddsApiData);
-  
   try {
-    const results = await Promise.all(promises);
-    return results.flat();
+    console.log("Fetching all OddsAPI data via edge function");
+    
+    const url = new URL(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fetch-odds`);
+    url.searchParams.set("league", "ALL");
+    
+    const response = await fetch(url.toString(), {
+      headers: {
+        "Authorization": `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Edge function error: ${response.status} - ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    
+    if (!result.success) {
+      throw new Error(result.error || "Failed to fetch odds data");
+    }
+
+    console.log(`OddsAPI data received - ${result.totalEvents} total events`);
+    
+    // Map raw events to our Match type
+    return mapOddsApiToMatch(result.events || [], [], "NFL");
   } catch (error) {
     console.error("Error fetching all OddsAPI data:", error);
     return [];

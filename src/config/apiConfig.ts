@@ -117,9 +117,11 @@ export const API_CONFIGS = {
       MLB: { PRESEASON: 'PRE', REGULAR: 'REG', POSTSEASON: 'PST' }
     }
   },
+  // Note: Odds API calls now go through the secure edge function (fetch-odds)
+  // The API key is stored as a server-side secret, not exposed to the client
   ODDS_API: {
+    // These are kept for reference but not used directly - all calls go through edge function
     BASE_URL: 'https://api.the-odds-api.com/v4',
-    API_KEY: import.meta.env.VITE_ODDS_API_KEY || '',
     ENDPOINTS: {
       ODDS: '/sports/{{sport}}/odds',
       SCORES: '/sports/{{sport}}/scores',
