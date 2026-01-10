@@ -12,7 +12,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp, Database, RefreshCw, Loader2 } from "lucide-react";
 import { Match } from "@/types/sports";
 import { useOddsHistory, OddsHistoryPoint } from "@/hooks/useOddsHistory";
 import { format } from "date-fns";
@@ -39,7 +39,14 @@ const SPORTSBOOK_COLORS: Record<string, string> = {
 const OddsLineChart = ({ match, expanded: initialExpanded = false }: OddsLineChartProps) => {
   const [expanded, setExpanded] = useState(initialExpanded);
   const [selectedBetType, setSelectedBetType] = useState<"home" | "away" | "draw">("home");
-  const { chartData, hasHistory } = useOddsHistory(match);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const { chartData, hasHistory, hasRealData, isLoading, refetch } = useOddsHistory(match);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await refetch();
+    setIsRefreshing(false);
+  };
 
   // Get unique sportsbooks
   const sportsbooks = useMemo(() => {
@@ -109,25 +116,51 @@ const OddsLineChart = ({ match, expanded: initialExpanded = false }: OddsLineCha
           <CardTitle className="text-sm font-medium flex items-center gap-2">
             <TrendingUp className="h-4 w-4 text-primary" />
             Line Movement
-          </CardTitle>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={() => setExpanded(!expanded)}
-            className="h-7 px-2"
-          >
-            {expanded ? (
-              <>
-                <ChevronUp className="h-4 w-4 mr-1" />
-                Collapse
-              </>
+            {hasRealData ? (
+              <Badge variant="outline" className="text-xs gap-1 ml-2 bg-green-500/10 text-green-600 border-green-500/20">
+                <Database className="h-3 w-3" />
+                Live Data
+              </Badge>
             ) : (
-              <>
-                <ChevronDown className="h-4 w-4 mr-1" />
-                Expand
-              </>
+              <Badge variant="outline" className="text-xs gap-1 ml-2">
+                Simulated
+              </Badge>
             )}
-          </Button>
+          </CardTitle>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleRefresh}
+              disabled={isRefreshing || isLoading}
+              className="h-7 w-7 p-0"
+              title="Refresh data"
+            >
+              {isRefreshing || isLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4" />
+              )}
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => setExpanded(!expanded)}
+              className="h-7 px-2"
+            >
+              {expanded ? (
+                <>
+                  <ChevronUp className="h-4 w-4 mr-1" />
+                  Collapse
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="h-4 w-4 mr-1" />
+                  Expand
+                </>
+              )}
+            </Button>
+          </div>
         </div>
         
         {/* Bet type selector */}
@@ -246,7 +279,10 @@ const OddsLineChart = ({ match, expanded: initialExpanded = false }: OddsLineCha
 
           {/* Summary */}
           <div className="mt-3 text-xs text-muted-foreground text-center">
-            Showing odds movement over the last 6 hours • Updates every minute
+            {hasRealData 
+              ? "Showing real odds history • Updates every 15 minutes"
+              : "Showing simulated odds movement • Real data will appear after recording starts"
+            }
           </div>
         </CardContent>
       )}
