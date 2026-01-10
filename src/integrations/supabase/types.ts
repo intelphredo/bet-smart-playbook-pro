@@ -126,6 +126,72 @@ export type Database = {
         }
         Relationships: []
       }
+      odds_history: {
+        Row: {
+          away_odds: number | null
+          created_at: string | null
+          draw_odds: number | null
+          home_odds: number | null
+          id: string
+          league: string | null
+          market_type: string
+          match_id: string
+          match_title: string | null
+          over_odds: number | null
+          recorded_at: string | null
+          sportsbook_id: string
+          sportsbook_name: string
+          spread_away: number | null
+          spread_away_odds: number | null
+          spread_home: number | null
+          spread_home_odds: number | null
+          total_line: number | null
+          under_odds: number | null
+        }
+        Insert: {
+          away_odds?: number | null
+          created_at?: string | null
+          draw_odds?: number | null
+          home_odds?: number | null
+          id?: string
+          league?: string | null
+          market_type?: string
+          match_id: string
+          match_title?: string | null
+          over_odds?: number | null
+          recorded_at?: string | null
+          sportsbook_id: string
+          sportsbook_name: string
+          spread_away?: number | null
+          spread_away_odds?: number | null
+          spread_home?: number | null
+          spread_home_odds?: number | null
+          total_line?: number | null
+          under_odds?: number | null
+        }
+        Update: {
+          away_odds?: number | null
+          created_at?: string | null
+          draw_odds?: number | null
+          home_odds?: number | null
+          id?: string
+          league?: string | null
+          market_type?: string
+          match_id?: string
+          match_title?: string | null
+          over_odds?: number | null
+          recorded_at?: string | null
+          sportsbook_id?: string
+          sportsbook_name?: string
+          spread_away?: number | null
+          spread_away_odds?: number | null
+          spread_home?: number | null
+          spread_home_odds?: number | null
+          total_line?: number | null
+          under_odds?: number | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -296,7 +362,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      cleanup_old_odds_history: { Args: never; Returns: undefined }
     }
     Enums: {
       [_ in never]: never
