@@ -8,10 +8,12 @@ import { useBetSlip } from './BetSlipContext';
 import { useAuth } from '@/hooks/useAuth';
 import BetSlipItem from './BetSlipItem';
 import { useNavigate } from 'react-router-dom';
+import { isDevMode } from '@/utils/devMode';
 
 export default function BetSlipDrawer() {
   const { betSlip, clearBetSlip, stats } = useBetSlip();
   const { user } = useAuth();
+  const devMode = isDevMode();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -19,6 +21,8 @@ export default function BetSlipDrawer() {
     // Assume $10 default stake for display
     return sum + (10 * item.odds);
   }, 0);
+
+  const showContent = user || devMode;
 
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -41,10 +45,15 @@ export default function BetSlipDrawer() {
             {betSlip.length > 0 && (
               <Badge variant="secondary">{betSlip.length} selections</Badge>
             )}
+            {devMode && (
+              <Badge variant="outline" className="ml-2 text-xs bg-yellow-500/10 text-yellow-600 border-yellow-500/30">
+                Dev Mode
+              </Badge>
+            )}
           </SheetTitle>
         </SheetHeader>
 
-        {!user && (
+        {!showContent && (
           <div className="flex flex-col items-center justify-center py-8 space-y-4">
             <AlertCircle className="h-12 w-12 text-muted-foreground" />
             <p className="text-sm text-muted-foreground text-center">
@@ -54,7 +63,7 @@ export default function BetSlipDrawer() {
           </div>
         )}
 
-        {user && betSlip.length === 0 && (
+        {showContent && betSlip.length === 0 && (
           <div className="flex flex-col items-center justify-center py-12 space-y-4">
             <Receipt className="h-16 w-16 text-muted-foreground/50" />
             <p className="text-muted-foreground text-center">
@@ -64,7 +73,7 @@ export default function BetSlipDrawer() {
           </div>
         )}
 
-        {user && betSlip.length > 0 && (
+        {showContent && betSlip.length > 0 && (
           <>
             <ScrollArea className="flex-1 -mx-6 px-6">
               <div className="space-y-3 py-4">
@@ -109,7 +118,7 @@ export default function BetSlipDrawer() {
           </>
         )}
 
-        {user && stats && (
+        {showContent && stats && (
           <div className="border-t mt-4 pt-4">
             <h4 className="text-sm font-medium mb-3">Your Stats</h4>
             <div className="grid grid-cols-3 gap-2 text-center">
