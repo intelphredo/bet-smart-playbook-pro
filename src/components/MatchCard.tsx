@@ -1,6 +1,10 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { formatDistanceToNow, parseISO } from "date-fns";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import LiveOdds from "./LiveOdds";
 import MatchParticipant from "./MatchCard/MatchParticipant";
 import OddsComparisonTable from "./MatchCard/OddsComparisonTable";
@@ -17,6 +21,8 @@ interface MatchCardProps {
 }
 
 const MatchCard = ({ match }: MatchCardProps) => {
+  const [showDetails, setShowDetails] = useState(false);
+
   const formatTime = (timeString: string) => {
     try {
       const date = parseISO(timeString);
@@ -45,9 +51,7 @@ const MatchCard = ({ match }: MatchCardProps) => {
 
   // Determine data source for this match
   const getMatchSource = (): MatchDataSource => {
-    // If match has id starting with ESPN patterns or has team logos, it's from ESPN
     const isFromEspn = match.homeTeam?.logo && match.homeTeam.logo.length > 0;
-    // If match has liveOdds with sportsbook data, it has Odds API data
     const hasOddsData = match.liveOdds && match.liveOdds.length > 0;
     
     if (isFromEspn && hasOddsData) return "combined";
@@ -57,35 +61,39 @@ const MatchCard = ({ match }: MatchCardProps) => {
   
   const matchSource = getMatchSource();
   const hasOddsData = match.liveOdds && match.liveOdds.length > 0;
+  const hasAdvancedMetrics = match.prediction?.evPercentage || match.prediction?.kellyStakeUnits || match.prediction?.clvPercentage;
 
   return (
-    <Card className="match-card overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1 border-border/50 bg-card/95 backdrop-blur-sm">
-      <CardHeader className="p-4 bg-card/80 backdrop-blur-sm border-b border-border/30 flex flex-row justify-between items-center space-y-0">
-        <div className="flex items-center space-x-2">
-          <Badge variant="outline" className="text-xs font-medium bg-background/90 border-primary/20 text-primary">
+    <Card className="match-card overflow-hidden border-border/50 bg-card/95 backdrop-blur-sm">
+      {/* Compact Header */}
+      <CardHeader className="p-3 bg-card/80 backdrop-blur-sm border-b border-border/30 flex flex-row justify-between items-center space-y-0">
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="text-xs font-medium bg-background/90 border-primary/20 text-primary h-5 px-2">
             {match.league}
           </Badge>
           {match.status === "live" && (
-            <Badge className="bg-destructive text-destructive-foreground animate-pulse shadow-sm">
+            <Badge className="bg-destructive text-destructive-foreground animate-pulse h-5 px-2 text-xs">
               ● LIVE
             </Badge>
           )}
           <MatchSourceBadge source={matchSource} hasOddsData={hasOddsData} />
         </div>
-        <div className="text-xs text-muted-foreground font-medium">
+        <span className="text-xs text-muted-foreground font-medium">
           {formatTime(match.startTime)}
-        </div>
+        </span>
       </CardHeader>
-      <CardContent className="p-6">
-        <div className="grid grid-cols-3 gap-4 items-center mb-6">
+
+      <CardContent className="p-4">
+        {/* Team matchup - more compact */}
+        <div className="grid grid-cols-3 gap-3 items-center mb-4">
           <MatchParticipant team={match.homeTeam} />
           <div className="text-center">
             {match.status === "live" ? (
-              <div className="space-y-1">
-                <div className="text-2xl font-bold text-foreground tracking-tight">
+              <div className="space-y-0.5">
+                <div className="text-xl font-bold text-foreground tracking-tight">
                   {match.score?.home} - {match.score?.away}
                 </div>
-                <div className="text-xs text-muted-foreground bg-accent/50 px-2 py-1 rounded-full inline-block">
+                <div className="text-xs text-muted-foreground bg-accent/50 px-2 py-0.5 rounded-full inline-block">
                   {match.score?.period}
                 </div>
               </div>
@@ -98,25 +106,57 @@ const MatchCard = ({ match }: MatchCardProps) => {
           <MatchParticipant team={match.awayTeam} />
         </div>
         
-        {/* Scenario Detection Badges */}
-        <ScenarioBadges match={match} maxBadges={3} />
+        {/* Scenario Detection Badges - show max 2 */}
+        <ScenarioBadges match={match} maxBadges={2} />
         
+        {/* Core odds info */}
         <OddsComparisonTable match={match} />
         <PredictedOddsRow match={match} />
-        <BettingMetrics match={match} />
         
-        {/* Social Intelligence */}
-        <SocialFactorsCard match={match} compact />
+        {/* Footer with SmartScore */}
         <MatchCardFooter 
           match={match} 
           getBadgeColor={getBadgeColor} 
           getSmartScoreBadgeColor={getSmartScoreBadgeColor} 
         />
+
+        {/* Expandable Advanced Section */}
+        {(hasAdvancedMetrics || hasOddsData) && (
+          <Collapsible open={showDetails} onOpenChange={setShowDetails}>
+            <CollapsibleTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="w-full mt-3 h-8 text-xs text-muted-foreground hover:text-foreground"
+              >
+                {showDetails ? (
+                  <>
+                    <ChevronUp className="h-4 w-4 mr-1" />
+                    Hide Details
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="h-4 w-4 mr-1" />
+                    Show More Details
+                  </>
+                )}
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-3 mt-3">
+              <BettingMetrics match={match} />
+              <SocialFactorsCard match={match} compact />
+            </CollapsibleContent>
+          </Collapsible>
+        )}
       </CardContent>
-      {match.liveOdds && match.liveOdds.length > 0 && (
+
+      {/* Odds Chart and Live Odds - outside card content for better separation */}
+      {hasOddsData && (
         <>
           <OddsLineChart match={match} />
-          <LiveOdds odds={match.liveOdds} />
+          <div className="px-4 pb-4">
+            <LiveOdds odds={match.liveOdds} />
+          </div>
         </>
       )}
     </Card>

@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Home, Trophy, AlertTriangle, BarChart2, Wallet, BookOpen } from "lucide-react";
+import { Home, Trophy, AlertTriangle, BarChart2, Wallet, BookOpen, History, Settings } from "lucide-react";
 
 const footerLinks = [
   { path: "/", label: "Home", icon: Home },
@@ -8,6 +8,8 @@ const footerLinks = [
   { path: "/algorithms", label: "Algorithms", icon: BarChart2 },
   { path: "/bankroll", label: "Bankroll", icon: Wallet },
   { path: "/scenarios", label: "Scenarios", icon: BookOpen },
+  { path: "/bet-history", label: "Bet History", icon: History },
+  { path: "/settings", label: "Settings", icon: Settings },
 ];
 
 const PageFooter = () => (

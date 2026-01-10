@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import {
   LineChart,
   Line,
@@ -40,7 +40,9 @@ const OddsLineChart = ({ match, expanded: initialExpanded = false }: OddsLineCha
   const [expanded, setExpanded] = useState(initialExpanded);
   const [selectedBetType, setSelectedBetType] = useState<"home" | "away" | "draw">("home");
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const { chartData, hasHistory, hasRealData, isLoading, refetch } = useOddsHistory(match);
+  
+  // Only fetch data when expanded (lazy loading)
+  const { chartData, hasHistory, hasRealData, isLoading, refetch } = useOddsHistory(match, expanded);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -98,7 +100,8 @@ const OddsLineChart = ({ match, expanded: initialExpanded = false }: OddsLineCha
     return result;
   }, [chartData, sportsbooks, selectedBetType]);
 
-  if (!hasHistory || !match.liveOdds || match.liveOdds.length === 0) {
+  // Don't render if no odds data available
+  if (!match.liveOdds || match.liveOdds.length === 0) {
     return null;
   }
 
@@ -110,38 +113,20 @@ const OddsLineChart = ({ match, expanded: initialExpanded = false }: OddsLineCha
   };
 
   return (
-    <Card className="mt-4 bg-card/50 border-border/50">
-      <CardHeader className="p-4 pb-2">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-sm font-medium flex items-center gap-2">
-            <TrendingUp className="h-4 w-4 text-primary" />
-            Line Movement
-            {hasRealData ? (
-              <Badge variant="outline" className="text-xs gap-1 ml-2 bg-green-500/10 text-green-600 border-green-500/20">
-                <Database className="h-3 w-3" />
-                Live Data
-              </Badge>
-            ) : (
-              <Badge variant="outline" className="text-xs gap-1 ml-2">
-                Simulated
-              </Badge>
-            )}
-          </CardTitle>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleRefresh}
-              disabled={isRefreshing || isLoading}
-              className="h-7 w-7 p-0"
-              title="Refresh data"
-            >
-              {isRefreshing || isLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <RefreshCw className="h-4 w-4" />
+    <div className="px-4 pb-4">
+      <Card className="bg-card/50 border-border/50">
+        <CardHeader className="p-3 pb-2">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-primary" />
+              Line Movement
+              {expanded && hasRealData && (
+                <Badge variant="outline" className="text-xs gap-1 ml-2 bg-green-500/10 text-green-600 border-green-500/20">
+                  <Database className="h-3 w-3" />
+                  Live
+                </Badge>
               )}
-            </Button>
+            </CardTitle>
             <Button 
               variant="ghost" 
               size="sm" 
@@ -151,142 +136,157 @@ const OddsLineChart = ({ match, expanded: initialExpanded = false }: OddsLineCha
               {expanded ? (
                 <>
                   <ChevronUp className="h-4 w-4 mr-1" />
-                  Collapse
+                  Hide
                 </>
               ) : (
                 <>
                   <ChevronDown className="h-4 w-4 mr-1" />
-                  Expand
+                  Show Chart
                 </>
               )}
             </Button>
           </div>
-        </div>
+        </CardHeader>
         
-        {/* Bet type selector */}
-        <div className="flex gap-2 mt-2">
-          <Button
-            variant={selectedBetType === "home" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setSelectedBetType("home")}
-            className="h-7 text-xs"
-          >
-            {match.homeTeam.shortName}
-          </Button>
-          <Button
-            variant={selectedBetType === "away" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setSelectedBetType("away")}
-            className="h-7 text-xs"
-          >
-            {match.awayTeam.shortName}
-          </Button>
-          {hasDrawOdds && (
-            <Button
-              variant={selectedBetType === "draw" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setSelectedBetType("draw")}
-              className="h-7 text-xs"
-            >
-              Draw
-            </Button>
-          )}
-        </div>
-      </CardHeader>
-      
-      {expanded && (
-        <CardContent className="p-4 pt-2">
-          {/* Trend badges */}
-          <div className="flex flex-wrap gap-2 mb-3">
-            {sportsbooks.map(sportsbook => {
-              const trend = trends[sportsbook];
-              if (!trend) return null;
-              
-              return (
-                <Badge 
-                  key={sportsbook}
-                  variant="outline" 
-                  className="text-xs gap-1"
-                  style={{ borderColor: SPORTSBOOK_COLORS[sportsbook] || "#888" }}
+        {expanded && (
+          <CardContent className="p-3 pt-0">
+            {/* Bet type selector */}
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex gap-1.5">
+                <Button
+                  variant={selectedBetType === "home" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedBetType("home")}
+                  className="h-6 text-xs px-2"
                 >
-                  <span 
-                    className="w-2 h-2 rounded-full" 
-                    style={{ backgroundColor: SPORTSBOOK_COLORS[sportsbook] || "#888" }}
-                  />
-                  {sportsbook}
-                  {trend.direction === "up" && <TrendingUp className="h-3 w-3 text-green-500" />}
-                  {trend.direction === "down" && <TrendingDown className="h-3 w-3 text-red-500" />}
-                  {trend.direction === "stable" && <Minus className="h-3 w-3 text-muted-foreground" />}
-                  <span className={
-                    trend.change > 0 ? "text-green-500" : 
-                    trend.change < 0 ? "text-red-500" : 
-                    "text-muted-foreground"
-                  }>
-                    {trend.change > 0 ? "+" : ""}{trend.change.toFixed(2)}
-                  </span>
-                </Badge>
-              );
-            })}
-          </div>
+                  {match.homeTeam.shortName}
+                </Button>
+                <Button
+                  variant={selectedBetType === "away" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedBetType("away")}
+                  className="h-6 text-xs px-2"
+                >
+                  {match.awayTeam.shortName}
+                </Button>
+                {hasDrawOdds && (
+                  <Button
+                    variant={selectedBetType === "draw" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setSelectedBetType("draw")}
+                    className="h-6 text-xs px-2"
+                  >
+                    Draw
+                  </Button>
+                )}
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleRefresh}
+                disabled={isRefreshing || isLoading}
+                className="h-6 w-6 p-0"
+                title="Refresh data"
+              >
+                {isRefreshing || isLoading ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-3.5 w-3.5" />
+                )}
+              </Button>
+            </div>
 
-          {/* Chart */}
-          <div className="h-[200px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={transformedData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-border/30" />
-                <XAxis 
-                  dataKey="timestamp" 
-                  tickFormatter={(value) => format(new Date(value), "HH:mm")}
-                  className="text-xs"
-                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }}
-                />
-                <YAxis 
-                  domain={["auto", "auto"]}
-                  tickFormatter={formatOddsLabel}
-                  className="text-xs"
-                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }}
-                  width={45}
-                />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: "hsl(var(--card))", 
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: "8px",
-                    fontSize: "12px"
-                  }}
-                  labelFormatter={(value) => format(new Date(value), "MMM d, HH:mm")}
-                  formatter={(value: number, name: string) => [formatOddsLabel(value), name]}
-                />
-                <Legend 
-                  wrapperStyle={{ fontSize: "11px" }}
-                  iconSize={8}
-                />
-                {sportsbooks.map((sportsbook) => (
-                  <Line
-                    key={sportsbook}
-                    type="monotone"
-                    dataKey={sportsbook}
-                    name={sportsbook}
-                    stroke={SPORTSBOOK_COLORS[sportsbook] || "#888"}
-                    strokeWidth={2}
-                    dot={{ r: 3 }}
-                    activeDot={{ r: 5 }}
-                  />
-                ))}
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+            {/* Trend badges - compact */}
+            {hasHistory && (
+              <div className="flex flex-wrap gap-1.5 mb-3">
+                {sportsbooks.slice(0, 4).map(sportsbook => {
+                  const trend = trends[sportsbook];
+                  if (!trend) return null;
+                  
+                  return (
+                    <Badge 
+                      key={sportsbook}
+                      variant="outline" 
+                      className="text-xs gap-1 py-0.5"
+                      style={{ borderColor: SPORTSBOOK_COLORS[sportsbook] || "#888" }}
+                    >
+                      <span 
+                        className="w-1.5 h-1.5 rounded-full" 
+                        style={{ backgroundColor: SPORTSBOOK_COLORS[sportsbook] || "#888" }}
+                      />
+                      {sportsbook.slice(0, 8)}
+                      {trend.direction === "up" && <TrendingUp className="h-3 w-3 text-green-500" />}
+                      {trend.direction === "down" && <TrendingDown className="h-3 w-3 text-red-500" />}
+                      {trend.direction === "stable" && <Minus className="h-3 w-3 text-muted-foreground" />}
+                    </Badge>
+                  );
+                })}
+              </div>
+            )}
 
-          {/* Summary */}
-          <div className="mt-3 text-xs text-muted-foreground text-center">
-            {hasRealData 
-              ? "Showing real odds history • Updates every 15 minutes"
-              : "Showing simulated odds movement • Real data will appear after recording starts"
-            }
-          </div>
-        </CardContent>
-      )}
-    </Card>
+            {/* Chart */}
+            {hasHistory ? (
+              <div className="h-[160px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={transformedData} margin={{ top: 5, right: 5, left: -10, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-border/30" />
+                    <XAxis 
+                      dataKey="timestamp" 
+                      tickFormatter={(value) => format(new Date(value), "HH:mm")}
+                      tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 9 }}
+                    />
+                    <YAxis 
+                      domain={["auto", "auto"]}
+                      tickFormatter={formatOddsLabel}
+                      tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 9 }}
+                      width={40}
+                    />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: "hsl(var(--card))", 
+                        border: "1px solid hsl(var(--border))",
+                        borderRadius: "8px",
+                        fontSize: "11px"
+                      }}
+                      labelFormatter={(value) => format(new Date(value), "MMM d, HH:mm")}
+                      formatter={(value: number, name: string) => [formatOddsLabel(value), name]}
+                    />
+                    {sportsbooks.map((sportsbook) => (
+                      <Line
+                        key={sportsbook}
+                        type="monotone"
+                        dataKey={sportsbook}
+                        name={sportsbook}
+                        stroke={SPORTSBOOK_COLORS[sportsbook] || "#888"}
+                        strokeWidth={2}
+                        dot={{ r: 2 }}
+                        activeDot={{ r: 4 }}
+                      />
+                    ))}
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="h-[100px] flex items-center justify-center text-sm text-muted-foreground">
+                {isLoading ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  "No historical data available"
+                )}
+              </div>
+            )}
+
+            {/* Summary */}
+            <div className="mt-2 text-xs text-muted-foreground text-center">
+              {hasRealData 
+                ? "Live odds • Updates every 15 min"
+                : "Simulated movement"
+              }
+            </div>
+          </CardContent>
+        )}
+      </Card>
+    </div>
   );
 };
 
