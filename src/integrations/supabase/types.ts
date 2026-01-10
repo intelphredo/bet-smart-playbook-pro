@@ -14,7 +14,148 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      algorithm_predictions: {
+        Row: {
+          accuracy_rating: number | null
+          actual_score_away: number | null
+          actual_score_home: number | null
+          algorithm_id: string | null
+          confidence: number | null
+          id: string
+          league: string | null
+          match_id: string
+          predicted_at: string
+          prediction: string | null
+          projected_score_away: number | null
+          projected_score_home: number | null
+          result_updated_at: string | null
+          status: string
+        }
+        Insert: {
+          accuracy_rating?: number | null
+          actual_score_away?: number | null
+          actual_score_home?: number | null
+          algorithm_id?: string | null
+          confidence?: number | null
+          id?: string
+          league?: string | null
+          match_id: string
+          predicted_at?: string
+          prediction?: string | null
+          projected_score_away?: number | null
+          projected_score_home?: number | null
+          result_updated_at?: string | null
+          status?: string
+        }
+        Update: {
+          accuracy_rating?: number | null
+          actual_score_away?: number | null
+          actual_score_home?: number | null
+          algorithm_id?: string | null
+          confidence?: number | null
+          id?: string
+          league?: string | null
+          match_id?: string
+          predicted_at?: string
+          prediction?: string | null
+          projected_score_away?: number | null
+          projected_score_home?: number | null
+          result_updated_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "algorithm_predictions_algorithm_id_fkey"
+            columns: ["algorithm_id"]
+            isOneToOne: false
+            referencedRelation: "algorithms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      algorithm_stats: {
+        Row: {
+          algorithm_id: string
+          avg_confidence: number
+          correct_predictions: number
+          total_predictions: number
+          win_rate: number
+        }
+        Insert: {
+          algorithm_id: string
+          avg_confidence?: number
+          correct_predictions?: number
+          total_predictions?: number
+          win_rate?: number
+        }
+        Update: {
+          algorithm_id?: string
+          avg_confidence?: number
+          correct_predictions?: number
+          total_predictions?: number
+          win_rate?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "algorithm_stats_algorithm_id_fkey"
+            columns: ["algorithm_id"]
+            isOneToOne: true
+            referencedRelation: "algorithms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      algorithms: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+          subscription_status: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id: string
+          subscription_status?: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          subscription_status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
