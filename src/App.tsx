@@ -10,11 +10,13 @@ import BankrollManager from "./pages/BankrollManager";
 import Standings from "./pages/Standings";
 import Injuries from "./pages/Injuries";
 import BetHistory from "./pages/BetHistory";
+import Settings from "./pages/Settings";
 import Auth from "./pages/Auth";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/useAuth";
 import { OddsFormatProvider } from "@/contexts/OddsFormatContext";
 import { BetSlipProvider } from "@/components/BetSlip/BetSlipContext";
+import { PreferencesProvider } from "@/hooks/usePreferences";
 
 // Create a client
 const queryClient = new QueryClient({
@@ -64,26 +66,29 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <OddsFormatProvider>
-          <BetSlipProvider>
-            <TooltipProvider>
-              <Router>
-                <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/standings" element={<Standings />} />
-                  <Route path="/injuries" element={<Injuries />} />
-                  <Route path="/algorithms" element={<AlgorithmsComparison />} />
-                  <Route path="/creator" element={<CreatorDashboard />} />
-                  <Route path="/scenarios" element={<ScenarioGuide />} />
-                  <Route path="/bankroll" element={<BankrollManager />} />
-                  <Route path="/bet-history" element={<BetHistory />} />
-                  <Route path="/auth" element={<Auth />} />
-                </Routes>
-              </Router>
-              <Toaster richColors position="top-center" />
-            </TooltipProvider>
-          </BetSlipProvider>
-        </OddsFormatProvider>
+        <PreferencesProvider>
+          <OddsFormatProvider>
+            <BetSlipProvider>
+              <TooltipProvider>
+                <Router>
+                  <Routes>
+                    <Route path="/" element={<Index />} />
+                    <Route path="/standings" element={<Standings />} />
+                    <Route path="/injuries" element={<Injuries />} />
+                    <Route path="/algorithms" element={<AlgorithmsComparison />} />
+                    <Route path="/creator" element={<CreatorDashboard />} />
+                    <Route path="/scenarios" element={<ScenarioGuide />} />
+                    <Route path="/bankroll" element={<BankrollManager />} />
+                    <Route path="/bet-history" element={<BetHistory />} />
+                    <Route path="/settings" element={<Settings />} />
+                    <Route path="/auth" element={<Auth />} />
+                  </Routes>
+                </Router>
+                <Toaster richColors position="top-center" />
+              </TooltipProvider>
+            </BetSlipProvider>
+          </OddsFormatProvider>
+        </PreferencesProvider>
       </AuthProvider>
     </QueryClientProvider>
   );
