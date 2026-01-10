@@ -359,10 +359,38 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      cron_job_status: {
+        Row: {
+          active: boolean | null
+          command: string | null
+          jobid: number | null
+          jobname: string | null
+          nodename: string | null
+          schedule: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          command?: string | null
+          jobid?: number | null
+          jobname?: string | null
+          nodename?: string | null
+          schedule?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          command?: string | null
+          jobid?: number | null
+          jobname?: string | null
+          nodename?: string | null
+          schedule?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       cleanup_old_odds_history: { Args: never; Returns: undefined }
+      manual_record_odds: { Args: never; Returns: Json }
+      trigger_record_odds: { Args: never; Returns: undefined }
     }
     Enums: {
       [_ in never]: never
