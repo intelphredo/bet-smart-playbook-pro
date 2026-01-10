@@ -26,6 +26,7 @@ import { useBetSlip } from '@/components/BetSlip/BetSlipContext';
 import { useAuth } from '@/hooks/useAuth';
 import { UserBet, BetStatus } from '@/types/betting';
 import { format } from 'date-fns';
+import { isDevMode } from '@/utils/devMode';
 
 const statusConfig: Record<BetStatus, { icon: React.ElementType; color: string; label: string }> = {
   pending: { icon: Clock, color: 'text-yellow-500', label: 'Pending' },
@@ -38,6 +39,7 @@ const statusConfig: Record<BetStatus, { icon: React.ElementType; color: string; 
 export default function BetHistory() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const devMode = isDevMode();
   const { bets, stats, isLoading, updateBetStatus, deleteBet, refetch } = useBetSlip();
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -62,7 +64,7 @@ export default function BetHistory() {
     await updateBetStatus(bet.id, status, profit);
   };
 
-  if (!user) {
+  if (!user && !devMode) {
     return (
       <div className="min-h-screen flex flex-col bg-gradient-to-br from-background via-secondary/30 to-accent/10">
         <NavBar />

@@ -3,10 +3,34 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { UserBet, UserBettingStats, BetSlipItem, BetStatus } from '@/types/betting';
 import { useToast } from '@/hooks/use-toast';
+import { isDevMode } from '@/utils/devMode';
+
+const LOCAL_BETS_KEY = 'dev_mode_bets';
+const LOCAL_STATS_KEY = 'dev_mode_betting_stats';
+
+// Default mock stats for dev mode
+const DEFAULT_DEV_STATS: UserBettingStats = {
+  id: 'dev-stats',
+  user_id: 'dev-user',
+  total_bets: 12,
+  wins: 7,
+  losses: 4,
+  pushes: 1,
+  pending_bets: 3,
+  total_staked: 600,
+  total_profit: 145.50,
+  roi_percentage: 24.25,
+  avg_odds: 1.95,
+  avg_clv: 2.3,
+  current_streak: 2,
+  best_streak: 5,
+  last_updated: new Date().toISOString(),
+};
 
 export function useBetTracking() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const devMode = isDevMode();
   const [bets, setBets] = useState<UserBet[]>([]);
   const [stats, setStats] = useState<UserBettingStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -14,6 +38,16 @@ export function useBetTracking() {
 
   // Fetch user's bets
   const fetchBets = useCallback(async () => {
+    // In dev mode, use localStorage
+    if (devMode) {
+      const stored = localStorage.getItem(LOCAL_BETS_KEY);
+      setBets(stored ? JSON.parse(stored) : []);
+      const storedStats = localStorage.getItem(LOCAL_STATS_KEY);
+      setStats(storedStats ? JSON.parse(storedStats) : DEFAULT_DEV_STATS);
+      setIsLoading(false);
+      return;
+    }
+
     if (!user) {
       setBets([]);
       setIsLoading(false);
@@ -39,10 +73,13 @@ export function useBetTracking() {
     } finally {
       setIsLoading(false);
     }
-  }, [user, toast]);
+  }, [user, toast, devMode]);
 
   // Fetch user's betting stats
   const fetchStats = useCallback(async () => {
+    // In dev mode, stats are loaded in fetchBets
+    if (devMode) return;
+
     if (!user) {
       setStats(null);
       return;
@@ -60,7 +97,7 @@ export function useBetTracking() {
     } catch (error: any) {
       console.error('Error fetching stats:', error);
     }
-  }, [user]);
+  }, [user, devMode]);
 
   useEffect(() => {
     fetchBets();
@@ -99,6 +136,44 @@ export function useBetTracking() {
 
   // Place a bet
   const placeBet = useCallback(async (item: BetSlipItem, stake: number) => {
+    const potentialPayout = stake * item.odds;
+
+    // In dev mode, save to localStorage
+    if (devMode) {
+      const newBet: UserBet = {
+        id: `dev-bet-${Date.now()}`,
+        user_id: 'dev-user',
+        match_id: item.matchId,
+        match_title: item.matchTitle,
+        league: item.league,
+        bet_type: item.betType,
+        selection: item.selection,
+        odds_at_placement: item.odds,
+        stake,
+        potential_payout: potentialPayout,
+        sportsbook: item.sportsbook,
+        model_confidence: item.modelConfidence,
+        model_ev_percentage: item.modelEvPercentage,
+        kelly_stake_recommended: item.kellyRecommended,
+        status: 'pending',
+        placed_at: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      const updatedBets = [newBet, ...bets];
+      setBets(updatedBets);
+      localStorage.setItem(LOCAL_BETS_KEY, JSON.stringify(updatedBets));
+
+      toast({
+        title: 'Bet placed! (Dev Mode)',
+        description: `$${stake.toFixed(2)} on ${item.selection} at ${item.odds.toFixed(2)}`,
+      });
+
+      removeFromBetSlip(item.matchId, item.betType, item.selection);
+      return newBet;
+    }
+
     if (!user) {
       toast({
         title: 'Login required',
@@ -107,8 +182,6 @@ export function useBetTracking() {
       });
       return null;
     }
-
-    const potentialPayout = stake * item.odds;
 
     try {
       const { data, error } = await supabase
@@ -155,10 +228,26 @@ export function useBetTracking() {
       });
       return null;
     }
-  }, [user, toast, fetchBets, fetchStats, removeFromBetSlip]);
+  }, [user, toast, fetchBets, fetchStats, removeFromBetSlip, devMode, bets]);
 
   // Update bet status (for settling bets)
   const updateBetStatus = useCallback(async (betId: string, status: BetStatus, resultProfit?: number) => {
+    // In dev mode, update localStorage
+    if (devMode) {
+      const updatedBets = bets.map(bet => 
+        bet.id === betId 
+          ? { ...bet, status, result_profit: resultProfit, settled_at: new Date().toISOString() }
+          : bet
+      );
+      setBets(updatedBets);
+      localStorage.setItem(LOCAL_BETS_KEY, JSON.stringify(updatedBets));
+      toast({
+        title: 'Bet updated (Dev Mode)',
+        description: `Bet marked as ${status}`,
+      });
+      return updatedBets.find(b => b.id === betId) || null;
+    }
+
     if (!user) return null;
 
     try {
@@ -194,10 +283,22 @@ export function useBetTracking() {
       });
       return null;
     }
-  }, [user, toast, fetchBets, fetchStats]);
+  }, [user, toast, fetchBets, fetchStats, devMode, bets]);
 
   // Delete a bet
   const deleteBet = useCallback(async (betId: string) => {
+    // In dev mode, update localStorage
+    if (devMode) {
+      const updatedBets = bets.filter(bet => bet.id !== betId);
+      setBets(updatedBets);
+      localStorage.setItem(LOCAL_BETS_KEY, JSON.stringify(updatedBets));
+      toast({
+        title: 'Bet deleted (Dev Mode)',
+        description: 'The bet has been removed.',
+      });
+      return true;
+    }
+
     if (!user) return false;
 
     try {
@@ -227,7 +328,7 @@ export function useBetTracking() {
       });
       return false;
     }
-  }, [user, toast, fetchBets, fetchStats]);
+  }, [user, toast, fetchBets, fetchStats, devMode, bets]);
 
   return {
     bets,

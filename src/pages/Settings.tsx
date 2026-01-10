@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { usePreferences } from '@/hooks/usePreferences';
 import { useAuth } from '@/hooks/useAuth';
+import { isDevMode } from '@/utils/devMode';
 
 const AVAILABLE_LEAGUES = ['NFL', 'NBA', 'MLB', 'NHL', 'NCAAF', 'NCAAB', 'SOCCER'];
 const AVAILABLE_SPORTSBOOKS = ['DraftKings', 'FanDuel', 'BetMGM', 'Caesars', 'PointsBet', 'BetRivers'];
@@ -32,6 +33,7 @@ const AVAILABLE_SPORTSBOOKS = ['DraftKings', 'FanDuel', 'BetMGM', 'Caesars', 'Po
 export default function SettingsPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const devMode = isDevMode();
   const { preferences, isLoading, updatePreference, updatePreferences, resetPreferences } = usePreferences();
   const [isSaving, setIsSaving] = useState(false);
   const [localPrefs, setLocalPrefs] = useState(preferences);
@@ -66,7 +68,7 @@ export default function SettingsPage() {
     setLocalPrefs({ ...localPrefs, favorites: { ...localPrefs.favorites, sportsbooks } });
   };
 
-  if (!user) {
+  if (!user && !devMode) {
     return (
       <div className="min-h-screen flex flex-col bg-gradient-to-br from-background via-secondary/30 to-accent/10">
         <NavBar />
