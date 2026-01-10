@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ModeToggle } from "@/components/ModeToggle";
 import { useLocation } from "react-router-dom";
-import { Home, BarChart2, BookOpen, Shield } from "lucide-react";
+import { Home, BarChart2, BookOpen, Shield, Wallet } from "lucide-react";
 
 export default function NavBar() {
   const location = useLocation();
@@ -51,6 +51,18 @@ export default function NavBar() {
                 >
                   <BookOpen size={16} />
                   <span className="hidden sm:inline">Scenarios</span>
+                </Button>
+              </Link>
+            </li>
+            <li>
+              <Link to="/bankroll">
+                <Button 
+                  variant={isActivePath("/bankroll") ? "default" : "ghost"} 
+                  size="sm" 
+                  className="flex items-center gap-1"
+                >
+                  <Wallet size={16} />
+                  <span className="hidden sm:inline">Bankroll</span>
                 </Button>
               </Link>
             </li>

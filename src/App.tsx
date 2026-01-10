@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import AlgorithmsComparison from "./pages/AlgorithmsComparison";
 import CreatorDashboard from "./pages/CreatorDashboard";
 import ScenarioGuide from "./pages/ScenarioGuide";
+import BankrollManager from "./pages/BankrollManager";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/useAuth";
 
@@ -64,6 +65,7 @@ function App() {
               <Route path="/algorithms" element={<AlgorithmsComparison />} />
               <Route path="/creator" element={<CreatorDashboard />} />
               <Route path="/scenarios" element={<ScenarioGuide />} />
+              <Route path="/bankroll" element={<BankrollManager />} />
             </Routes>
           </Router>
           <Toaster richColors position="top-center" />
