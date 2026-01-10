@@ -1,19 +1,21 @@
 
 import { Button } from "@/components/ui/button";
+import { useOddsFormat } from "@/contexts/OddsFormatContext";
 
 interface Props {
   match: any;
-  formatOdds: (odds: number | undefined) => string;
 }
 
-const PredictedOddsRow = ({ match, formatOdds }: Props) => {
+const PredictedOddsRow = ({ match }: Props) => {
+  const { formatOdds } = useOddsFormat();
+  
   return (
     <div className="grid grid-cols-3 gap-2 mb-4">
-      <Button variant="outline" size="sm" className="w-full">
+      <Button variant="outline" size="sm" className="w-full font-mono">
         {formatOdds(match.odds.homeWin)}
       </Button>
       {match.odds.draw ? (
-        <Button variant="outline" size="sm" className="w-full">
+        <Button variant="outline" size="sm" className="w-full font-mono">
           {formatOdds(match.odds.draw)}
         </Button>
       ) : (
@@ -21,7 +23,7 @@ const PredictedOddsRow = ({ match, formatOdds }: Props) => {
           {match.prediction.projectedScore.home} - {match.prediction.projectedScore.away}
         </div>
       )}
-      <Button variant="outline" size="sm" className="w-full">
+      <Button variant="outline" size="sm" className="w-full font-mono">
         {formatOdds(match.odds.awayWin)}
       </Button>
     </div>

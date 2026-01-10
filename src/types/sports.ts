@@ -10,12 +10,27 @@ export interface Sportsbook {
   isAvailable: boolean;
 }
 
+export interface SpreadOdds {
+  homeSpread: number;      // e.g., -7.5
+  homeSpreadOdds: number;  // Odds for home spread
+  awaySpread: number;      // e.g., +7.5
+  awaySpreadOdds: number;  // Odds for away spread
+}
+
+export interface TotalOdds {
+  total: number;           // e.g., 220.5
+  overOdds: number;        // Odds for over
+  underOdds: number;       // Odds for under
+}
+
 export interface LiveOdds {
   homeWin: number;
   awayWin: number;
   draw?: number;
   updatedAt: string;
   sportsbook: Sportsbook;
+  spread?: SpreadOdds;
+  totals?: TotalOdds;
 }
 
 export interface DataVerificationResult {

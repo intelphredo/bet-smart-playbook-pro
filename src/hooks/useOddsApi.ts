@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Match, League, Sportsbook, LiveOdds } from "@/types/sports";
+import { Match, League, Sportsbook, LiveOdds, SpreadOdds, TotalOdds } from "@/types/sports";
 
 export interface OddsApiEvent {
   id: string;
@@ -66,6 +66,9 @@ const mapOddsEventToMatch = (event: OddsApiEvent): Match => {
   
   event.bookmakers.forEach(bookmaker => {
     const h2hMarket = bookmaker.markets.find(m => m.key === "h2h");
+    const spreadsMarket = bookmaker.markets.find(m => m.key === "spreads");
+    const totalsMarket = bookmaker.markets.find(m => m.key === "totals");
+    
     if (h2hMarket) {
       const homeOutcome = h2hMarket.outcomes.find(o => o.name === homeTeam);
       const awayOutcome = h2hMarket.outcomes.find(o => o.name === awayTeam);
@@ -74,6 +77,37 @@ const mapOddsEventToMatch = (event: OddsApiEvent): Match => {
       const homeOdds = homeOutcome ? americanToDecimal(homeOutcome.price) : 0;
       const awayOdds = awayOutcome ? americanToDecimal(awayOutcome.price) : 0;
       const drawOdds = drawOutcome ? americanToDecimal(drawOutcome.price) : undefined;
+      
+      // Extract spread data
+      let spread: SpreadOdds | undefined;
+      if (spreadsMarket) {
+        const homeSpreadOutcome = spreadsMarket.outcomes.find(o => o.name === homeTeam);
+        const awaySpreadOutcome = spreadsMarket.outcomes.find(o => o.name === awayTeam);
+        
+        if (homeSpreadOutcome && awaySpreadOutcome && homeSpreadOutcome.point !== undefined) {
+          spread = {
+            homeSpread: homeSpreadOutcome.point,
+            homeSpreadOdds: americanToDecimal(homeSpreadOutcome.price),
+            awaySpread: awaySpreadOutcome.point ?? -homeSpreadOutcome.point,
+            awaySpreadOdds: americanToDecimal(awaySpreadOutcome.price),
+          };
+        }
+      }
+      
+      // Extract totals data
+      let totals: TotalOdds | undefined;
+      if (totalsMarket) {
+        const overOutcome = totalsMarket.outcomes.find(o => o.name === "Over");
+        const underOutcome = totalsMarket.outcomes.find(o => o.name === "Under");
+        
+        if (overOutcome && underOutcome && overOutcome.point !== undefined) {
+          totals = {
+            total: overOutcome.point,
+            overOdds: americanToDecimal(overOutcome.price),
+            underOdds: americanToDecimal(underOutcome.price),
+          };
+        }
+      }
       
       // Get sportsbook info or create default
       const sportsbook = SPORTSBOOK_MAP[bookmaker.key] || {
@@ -89,6 +123,8 @@ const mapOddsEventToMatch = (event: OddsApiEvent): Match => {
         draw: drawOdds,
         updatedAt: bookmaker.last_update,
         sportsbook,
+        spread,
+        totals,
       });
       
       if (homeOdds > bestHomeOdds) bestHomeOdds = homeOdds;

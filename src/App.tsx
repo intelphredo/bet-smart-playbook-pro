@@ -11,6 +11,7 @@ import Standings from "./pages/Standings";
 import Injuries from "./pages/Injuries";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/useAuth";
+import { OddsFormatProvider } from "@/contexts/OddsFormatContext";
 
 // Create a client
 const queryClient = new QueryClient({
@@ -60,20 +61,22 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <TooltipProvider>
-          <Router>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/standings" element={<Standings />} />
-              <Route path="/injuries" element={<Injuries />} />
-              <Route path="/algorithms" element={<AlgorithmsComparison />} />
-              <Route path="/creator" element={<CreatorDashboard />} />
-              <Route path="/scenarios" element={<ScenarioGuide />} />
-              <Route path="/bankroll" element={<BankrollManager />} />
-            </Routes>
-          </Router>
-          <Toaster richColors position="top-center" />
-        </TooltipProvider>
+        <OddsFormatProvider>
+          <TooltipProvider>
+            <Router>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/standings" element={<Standings />} />
+                <Route path="/injuries" element={<Injuries />} />
+                <Route path="/algorithms" element={<AlgorithmsComparison />} />
+                <Route path="/creator" element={<CreatorDashboard />} />
+                <Route path="/scenarios" element={<ScenarioGuide />} />
+                <Route path="/bankroll" element={<BankrollManager />} />
+              </Routes>
+            </Router>
+            <Toaster richColors position="top-center" />
+          </TooltipProvider>
+        </OddsFormatProvider>
       </AuthProvider>
     </QueryClientProvider>
   );
