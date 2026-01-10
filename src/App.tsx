@@ -4,7 +4,10 @@ import Index from "./pages/Index";
 import { Toaster } from "sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import AlgorithmsComparison from "./pages/AlgorithmsComparison";
+import CreatorDashboard from "./pages/CreatorDashboard";
+import ScenarioGuide from "./pages/ScenarioGuide";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { AuthProvider } from "@/hooks/useAuth";
 
 // Create a client
 const queryClient = new QueryClient({
@@ -53,15 +56,19 @@ if (typeof window !== "undefined") {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Router>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/algorithms" element={<AlgorithmsComparison />} />
-          </Routes>
-        </Router>
-        <Toaster richColors position="top-center" />
-      </TooltipProvider>
+      <AuthProvider>
+        <TooltipProvider>
+          <Router>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/algorithms" element={<AlgorithmsComparison />} />
+              <Route path="/creator" element={<CreatorDashboard />} />
+              <Route path="/scenarios" element={<ScenarioGuide />} />
+            </Routes>
+          </Router>
+          <Toaster richColors position="top-center" />
+        </TooltipProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
