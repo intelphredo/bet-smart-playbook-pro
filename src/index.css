@@ -75,6 +75,10 @@
     outline-color: theme(colors.gold.500);
   }
 
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
     @apply bg-background text-foreground antialiased;
     letter-spacing: 0.01em;
@@ -87,8 +91,13 @@
   }
 
   .hero-gradient {
-    background: linear-gradient(90deg, #fdfcfb 0%, #e2d1c3 100%);
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 50%, hsl(222 84% 60%) 100%);
     @apply bg-clip-text text-transparent font-playfair;
+  }
+
+  .dark .hero-gradient {
+    background: linear-gradient(135deg, hsl(45 100% 60%) 0%, hsl(35 100% 55%) 50%, hsl(30 100% 50%) 100%);
+    @apply bg-clip-text text-transparent;
   }
 
   .card,
@@ -100,7 +109,7 @@
   .card:hover,
   .match-card:hover {
     box-shadow: 0 6px 18px 0 hsla(220, 40%, 39%, 0.14);
-    transform: translateY(-2px) scale(1.015);
+    transform: translateY(-2px) scale(1.01);
   }
 
   button, .btn, .shadcn-btn {
@@ -109,8 +118,8 @@
     box-shadow: 0 2px 8px hsl(var(--primary) / 0.12);
   }
   button:hover, .btn:hover, .shadcn-btn:hover {
-    box-shadow: 0 8px 25px hsl(var(--primary) / 0.25);
-    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 6px 20px hsl(var(--primary) / 0.2);
+    transform: translateY(-1px) scale(1.01);
   }
   button:active, .btn:active, .shadcn-btn:active {
     transform: translateY(-1px) scale(1.01);
@@ -154,8 +163,8 @@
   .card:hover,
   .match-card:hover,
   .player-prop-card:hover {
-    box-shadow: 0 20px 40px hsl(var(--primary) / 0.12), 0 4px 8px hsl(var(--primary) / 0.24);
-    transform: translateY(-4px);
+    box-shadow: 0 16px 32px hsl(var(--primary) / 0.1), 0 4px 8px hsl(var(--primary) / 0.2);
+    transform: translateY(-2px);
   }
 
   input, textarea, select {
