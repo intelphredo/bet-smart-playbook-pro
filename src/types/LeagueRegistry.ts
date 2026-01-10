@@ -135,6 +135,22 @@ class LeagueRegistryImpl implements LeagueRegistryService {
         supportedBetTypes: ['spread', 'moneyline', 'total'],
         level: 'college',
         active: true
+      },
+      {
+        id: 'NCAAB',
+        name: 'College Basketball',
+        shortName: 'NCAAB',
+        category: 'basketball' as SportCategory,
+        apiIdentifiers: { 
+          ESPN: 'basketball/mens-college-basketball',
+          ACTION: 'basketball_ncaab',
+          ODDS_API: 'basketball_ncaab',
+          SPORT_RADAR: 'basketball/ncaab'
+        },
+        hasPlayerProps: false,
+        supportedBetTypes: ['spread', 'moneyline', 'total'],
+        level: 'college',
+        active: true
       }
     ].forEach(league => this.registerLeague(league as LeagueConfig));
   }

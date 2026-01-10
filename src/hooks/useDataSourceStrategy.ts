@@ -24,14 +24,14 @@ export function useDataSourceStrategy(defaultSource: DataSource = "ESPN") {
       name: "ESPN", 
       priority: 1, 
       enabled: true,
-      supportedLeagues: ["NBA", "NFL", "MLB", "NHL", "SOCCER", "NCAAF"] 
+      supportedLeagues: ["NBA", "NFL", "MLB", "NHL", "SOCCER", "NCAAF", "NCAAB"] 
     },
     { 
       id: "ACTION", 
       name: "Action Network", 
       priority: 2, 
       enabled: true,
-      supportedLeagues: ["NBA", "NFL", "MLB", "NHL", "SOCCER", "NCAAF"] 
+      supportedLeagues: ["NBA", "NFL", "MLB", "NHL", "SOCCER", "NCAAF", "NCAAB"] 
     },
     { 
       id: "MLB", 
@@ -47,7 +47,7 @@ export function useDataSourceStrategy(defaultSource: DataSource = "ESPN") {
       enabled: false,
       requiresApiKey: true,
       apiKeyConfigured: false,
-      supportedLeagues: ["NBA", "NFL", "MLB", "NHL", "SOCCER", "NCAAF"] 
+      supportedLeagues: ["NBA", "NFL", "MLB", "NHL", "SOCCER", "NCAAF", "NCAAB"] 
     }
   ]);
 
