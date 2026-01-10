@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ModeToggle } from "@/components/ModeToggle";
 import { useLocation } from "react-router-dom";
-import { Home } from "lucide-react";
+import { Home, BarChart2, BookOpen, Shield } from "lucide-react";
 
 export default function NavBar() {
   const location = useLocation();
@@ -26,7 +26,7 @@ export default function NavBar() {
                   className="flex items-center gap-1"
                 >
                   <Home size={16} />
-                  <span>Home</span>
+                  <span className="hidden sm:inline">Home</span>
                 </Button>
               </Link>
             </li>
@@ -37,8 +37,32 @@ export default function NavBar() {
                   size="sm" 
                   className="flex items-center gap-1"
                 >
-                  {/* Use Home for demonstration—replace with BarChart2 if needed */}
-                  <span>Algorithms</span>
+                  <BarChart2 size={16} />
+                  <span className="hidden sm:inline">Algorithms</span>
+                </Button>
+              </Link>
+            </li>
+            <li>
+              <Link to="/scenarios">
+                <Button 
+                  variant={isActivePath("/scenarios") ? "default" : "ghost"} 
+                  size="sm" 
+                  className="flex items-center gap-1"
+                >
+                  <BookOpen size={16} />
+                  <span className="hidden sm:inline">Scenarios</span>
+                </Button>
+              </Link>
+            </li>
+            <li>
+              <Link to="/creator">
+                <Button 
+                  variant={isActivePath("/creator") ? "default" : "ghost"} 
+                  size="sm" 
+                  className="flex items-center gap-1"
+                >
+                  <Shield size={16} />
+                  <span className="hidden sm:inline">Creator</span>
                 </Button>
               </Link>
             </li>
