@@ -9,6 +9,7 @@ import {
 } from "@/utils/predictions/algorithms";
 import { useSportsData } from "@/hooks/useSportsData";
 import NavBar from "@/components/NavBar";
+import PageFooter from "@/components/PageFooter";
 import AlgorithmPredictionsTable from "@/components/AlgorithmPredictionsTable";
 import StatsOverview from "@/components/StatsOverview";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -49,13 +50,13 @@ export default function AlgorithmsComparison() {
   const isLoading = isLoadingSports || isLoadingPredictions;
   
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen flex flex-col bg-background">
       <NavBar />
-      <div className="container px-4 py-6">
+      <main id="main-content" className="flex-1 container px-4 py-6">
         <h1 className="text-3xl font-bold mb-6">Sports Analytics Algorithms</h1>
         
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-4">
+          <TabsList className="mb-4" aria-label="Algorithm sections">
             <TabsTrigger value="predictions">Predictions</TabsTrigger>
             <TabsTrigger value="performance">Performance</TabsTrigger>
             <TabsTrigger value="setup">Setup</TabsTrigger>
@@ -108,8 +109,9 @@ export default function AlgorithmsComparison() {
                 algorithmsData={algorithmPredictions}
               />
             ) : (
-              <div className="p-12 text-center">
-                <p className="text-muted-foreground">No data available. Please refresh the page.</p>
+              <div className="p-12 text-center rounded-lg border bg-card">
+                <p className="text-muted-foreground mb-4">No predictions available yet.</p>
+                <p className="text-sm text-muted-foreground">Check back when there are upcoming or live matches.</p>
               </div>
             )}
           </TabsContent>
@@ -123,7 +125,8 @@ export default function AlgorithmsComparison() {
             <AlgorithmSetupTool />
           </TabsContent>
         </Tabs>
-      </div>
+      </main>
+      <PageFooter />
     </div>
   );
 }

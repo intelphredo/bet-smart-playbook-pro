@@ -112,13 +112,15 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-secondary/30 to-accent/10">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-background via-secondary/30 to-accent/10">
       <NavBar />
-      <div className="container px-4 py-6">
+      <main id="main-content" className="flex-1 container px-4 py-6">
         <div className="flex flex-col space-y-6">
           <HeroHeader />
-          {/* Example of major card polish */}
-          <div className="card-gradient rounded-2xl shadow-lg p-2">
+          
+          {/* Stats & Filters Section */}
+          <section id="stats-overview" aria-labelledby="stats-heading" className="card-gradient rounded-2xl shadow-lg p-2">
+            <h2 id="stats-heading" className="sr-only">Stats Overview and Filters</h2>
             <FilterSection
               selectedLeague={selectedLeague}
               onLeagueChange={setSelectedLeague}
@@ -135,28 +137,53 @@ const Index = () => {
             <div className="animate-slide-in">
               <StatsOverview />
             </div>
-          </div>
-          <ConfidentPicks />
-          <ArbitrageOpportunitiesSection
-            selectedLeague={selectedLeague as any}
-            arbitrageOpportunitiesToShow={arbitrageOpportunitiesToShow}
-          />
-          <LiveESPNSection
-            selectedLeague={selectedLeague as any}
-            setSelectedLeague={setSelectedLeague as any}
-            activeTab={activeTab}
-            setActiveTab={setActiveTab}
-            isLoading={isLoading}
-            error={error}
-            handleRefreshData={handleRefreshData}
-            upcomingMatches={upcomingMatches}
-            liveMatches={liveMatches}
-            finishedMatches={finishedMatches}
-          />
-          <AlgorithmsSection />
-          <PremiumSubscribeCard />
+          </section>
+          
+          {/* Confident Picks Section */}
+          <section id="confident-picks" aria-labelledby="picks-heading">
+            <h2 id="picks-heading" className="sr-only">Confident Picks</h2>
+            <ConfidentPicks />
+          </section>
+          
+          {/* Arbitrage Section */}
+          <section id="arbitrage" aria-labelledby="arb-heading">
+            <h2 id="arb-heading" className="sr-only">Arbitrage Opportunities</h2>
+            <ArbitrageOpportunitiesSection
+              selectedLeague={selectedLeague as any}
+              arbitrageOpportunitiesToShow={arbitrageOpportunitiesToShow}
+            />
+          </section>
+          
+          {/* Live Matches Section */}
+          <section id="live-matches" aria-labelledby="live-heading">
+            <h2 id="live-heading" className="sr-only">Live Matches</h2>
+            <LiveESPNSection
+              selectedLeague={selectedLeague as any}
+              setSelectedLeague={setSelectedLeague as any}
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+              isLoading={isLoading}
+              error={error}
+              handleRefreshData={handleRefreshData}
+              upcomingMatches={upcomingMatches}
+              liveMatches={liveMatches}
+              finishedMatches={finishedMatches}
+            />
+          </section>
+          
+          {/* Algorithms Section */}
+          <section id="algorithms" aria-labelledby="algo-heading">
+            <h2 id="algo-heading" className="sr-only">Winning Algorithms</h2>
+            <AlgorithmsSection />
+          </section>
+          
+          {/* Premium Section */}
+          <section id="premium" aria-labelledby="premium-heading">
+            <h2 id="premium-heading" className="sr-only">Premium Subscription</h2>
+            <PremiumSubscribeCard />
+          </section>
         </div>
-      </div>
+      </main>
       <PageFooter />
     </div>
   );
