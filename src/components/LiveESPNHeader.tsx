@@ -1,13 +1,15 @@
 
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { RefreshCw } from "lucide-react";
 import LeagueSelector from "@/components/LeagueSelector";
+import DataSourceBadge, { DataSourceInfo } from "./DataSourceBadge";
 
 interface Props {
   selectedLeague: any;
   setSelectedLeague: (v: any) => void;
   isLoading: boolean;
   handleRefreshData: () => void;
+  dataSource?: DataSourceInfo;
 }
 
 const LiveESPNHeader = ({
@@ -15,26 +17,44 @@ const LiveESPNHeader = ({
   setSelectedLeague,
   isLoading,
   handleRefreshData,
+  dataSource,
 }: Props) => (
-  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-    <div className="flex items-center gap-2">
-      <h2 className="text-2xl font-bold">Live ESPN Data</h2>
-      <Button
-        size="sm"
-        variant="outline"
-        onClick={handleRefreshData}
-        disabled={isLoading}
-      >
-        {isLoading ? "Refreshing..." : "Refresh Data"}
-      </Button>
-      <Badge variant="outline" className="bg-navy-50 dark:bg-navy-700">
-        Auto-updates every 60s
-      </Badge>
+  <div className="flex flex-col gap-4">
+    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+      <div className="flex items-center gap-3 flex-wrap">
+        <h2 className="text-2xl font-bold">Live Sports Data</h2>
+        {dataSource && (
+          <DataSourceBadge 
+            dataSource={dataSource} 
+            compact 
+          />
+        )}
+      </div>
+      <div className="flex items-center gap-2">
+        <LeagueSelector
+          selectedLeague={selectedLeague}
+          onSelectLeague={setSelectedLeague}
+        />
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={handleRefreshData}
+          disabled={isLoading}
+          className="gap-2"
+        >
+          <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+          {isLoading ? "Refreshing..." : "Refresh"}
+        </Button>
+      </div>
     </div>
-    <LeagueSelector
-      selectedLeague={selectedLeague}
-      onSelectLeague={setSelectedLeague}
-    />
+    
+    {dataSource && !dataSource.source && (
+      <DataSourceBadge 
+        dataSource={dataSource} 
+        onRefresh={handleRefreshData}
+        isRefreshing={isLoading}
+      />
+    )}
   </div>
 );
 

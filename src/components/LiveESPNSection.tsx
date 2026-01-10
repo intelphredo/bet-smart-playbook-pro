@@ -13,6 +13,13 @@ import PremiumContent from "./PremiumContent";
 import PremiumSectionHeader from "./PremiumSectionHeader";
 import { applySmartScores } from "@/utils/smartScoreCalculator";
 
+interface DataSourceInfo {
+  source: "live" | "mock";
+  lastUpdated: Date;
+  gamesLoaded: number;
+  errors?: string[];
+}
+
 interface Props {
   selectedLeague: League | "ALL";
   setSelectedLeague: (v: League | "ALL") => void;
@@ -24,6 +31,7 @@ interface Props {
   upcomingMatches: Match[];
   liveMatches: Match[];
   finishedMatches: Match[];
+  dataSource?: DataSourceInfo;
 }
 
 const LiveESPNSection = ({
@@ -37,6 +45,7 @@ const LiveESPNSection = ({
   upcomingMatches,
   liveMatches,
   finishedMatches,
+  dataSource,
 }: Props) => {
   const [processedMatches, setProcessedMatches] = useState({
     upcoming: [] as Match[],
@@ -66,6 +75,7 @@ const LiveESPNSection = ({
         setSelectedLeague={setSelectedLeague}
         isLoading={isLoading}
         handleRefreshData={handleRefreshData}
+        dataSource={dataSource}
       />
 
       {error && (
