@@ -39,6 +39,12 @@ export const fetchESPNEvents = async (league: League): Promise<Match[]> => {
       case "SOCCER":
         endpoint = `${ESPN_API_BASE}/soccer/eng.1/scoreboard`;
         break;
+      case "NCAAF":
+        endpoint = `${ESPN_API_BASE}/football/college-football/scoreboard`;
+        break;
+      case "NCAAB":
+        endpoint = `${ESPN_API_BASE}/basketball/mens-college-basketball/scoreboard`;
+        break;
       default:
         throw new Error(`Unsupported league: ${league}`);
     }
@@ -137,6 +143,18 @@ const generateMockEventsForLeague = (league: League): Match[] => {
       { id: "2", name: "Liverpool", shortName: "LIV", logo: "https://a.espncdn.com/i/teamlogos/soccer/500/364.png" },
       { id: "3", name: "Arsenal", shortName: "ARS", logo: "https://a.espncdn.com/i/teamlogos/soccer/500/359.png" },
       { id: "4", name: "Manchester City", shortName: "MCI", logo: "https://a.espncdn.com/i/teamlogos/soccer/500/382.png" }
+    ],
+    NCAAF: [
+      { id: "1", name: "Alabama Crimson Tide", shortName: "ALA", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/333.png" },
+      { id: "2", name: "Ohio State Buckeyes", shortName: "OSU", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/194.png" },
+      { id: "3", name: "Georgia Bulldogs", shortName: "UGA", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/61.png" },
+      { id: "4", name: "Michigan Wolverines", shortName: "MICH", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/130.png" }
+    ],
+    NCAAB: [
+      { id: "1", name: "Duke Blue Devils", shortName: "DUKE", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/150.png" },
+      { id: "2", name: "Kentucky Wildcats", shortName: "UK", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/96.png" },
+      { id: "3", name: "Kansas Jayhawks", shortName: "KU", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2305.png" },
+      { id: "4", name: "North Carolina Tar Heels", shortName: "UNC", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/153.png" }
     ],
   };
   
@@ -237,7 +255,7 @@ const createMockMatch = (
 
 // Fetch events for all supported leagues
 export const fetchAllESPNEvents = async (): Promise<Match[]> => {
-  const leagues: League[] = ["NBA", "NFL", "MLB", "NHL", "SOCCER"];
+  const leagues: League[] = ["NBA", "NFL", "MLB", "NHL", "SOCCER", "NCAAF", "NCAAB"];
   const promises = leagues.map(fetchESPNEvents);
 
   try {
@@ -271,6 +289,12 @@ export const fetchLeagueSchedule = async (league: League): Promise<Match[]> => {
         break;
       case "SOCCER":
         endpoint = `${ESPN_API_BASE}/soccer/eng.1/schedule`;
+        break;
+      case "NCAAF":
+        endpoint = `${ESPN_API_BASE}/football/college-football/schedule`;
+        break;
+      case "NCAAB":
+        endpoint = `${ESPN_API_BASE}/basketball/mens-college-basketball/schedule`;
         break;
       default:
         throw new Error(`Unsupported league: ${league}`);
@@ -308,7 +332,7 @@ export const fetchLeagueSchedule = async (league: League): Promise<Match[]> => {
 
 // Fetch all schedules for all leagues
 export const fetchAllSchedules = async (): Promise<Match[]> => {
-  const leagues: League[] = ["NBA", "NFL", "MLB", "NHL", "SOCCER"];
+  const leagues: League[] = ["NBA", "NFL", "MLB", "NHL", "SOCCER", "NCAAF", "NCAAB"];
   const promises = leagues.map(fetchLeagueSchedule);
 
   try {
