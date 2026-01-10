@@ -251,3 +251,45 @@ export function analyzeLineMovements(match: Match) {
     return null;
   }
 }
+
+/**
+ * Find best odds for each outcome across all sportsbooks
+ */
+export function findBestOdds(liveOdds: LiveOdds[]): {
+  home: { value: number; sportsbookId: string } | null;
+  away: { value: number; sportsbookId: string } | null;
+  draw: { value: number; sportsbookId: string } | null;
+} {
+  if (!liveOdds || liveOdds.length === 0) {
+    return { home: null, away: null, draw: null };
+  }
+
+  let bestHome: { value: number; sportsbookId: string } | null = null;
+  let bestAway: { value: number; sportsbookId: string } | null = null;
+  let bestDraw: { value: number; sportsbookId: string } | null = null;
+
+  liveOdds.forEach(odd => {
+    if (odd.homeWin && (!bestHome || odd.homeWin > bestHome.value)) {
+      bestHome = { value: odd.homeWin, sportsbookId: odd.sportsbook.id };
+    }
+    if (odd.awayWin && (!bestAway || odd.awayWin > bestAway.value)) {
+      bestAway = { value: odd.awayWin, sportsbookId: odd.sportsbook.id };
+    }
+    if (odd.draw !== undefined && (!bestDraw || odd.draw > bestDraw.value)) {
+      bestDraw = { value: odd.draw, sportsbookId: odd.sportsbook.id };
+    }
+  });
+
+  return { home: bestHome, away: bestAway, draw: bestDraw };
+}
+
+/**
+ * Priority order for sorting sportsbooks
+ */
+export const SPORTSBOOK_PRIORITY: Record<string, number> = {
+  draftkings: 1,
+  fanduel: 2,
+  betmgm: 3,
+  caesars: 4,
+  pointsbet: 5,
+};

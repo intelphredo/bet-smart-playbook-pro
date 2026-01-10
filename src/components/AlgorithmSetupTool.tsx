@@ -31,9 +31,12 @@ const AlgorithmSetupTool = () => {
     try {
       setIsSubmitting(true);
       
+      const algorithmId = `algo-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+      
       const { data, error } = await supabase
         .from("algorithms")
         .insert({
+          id: algorithmId,
           name,
           description
         })
