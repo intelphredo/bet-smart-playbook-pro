@@ -156,6 +156,141 @@ export type Database = {
         }
         Relationships: []
       }
+      user_bets: {
+        Row: {
+          bet_type: string
+          closing_odds: number | null
+          clv_percentage: number | null
+          created_at: string | null
+          id: string
+          kelly_stake_recommended: number | null
+          league: string | null
+          match_id: string
+          match_title: string
+          model_confidence: number | null
+          model_ev_percentage: number | null
+          notes: string | null
+          odds_at_placement: number
+          opening_odds: number | null
+          placed_at: string | null
+          potential_payout: number
+          result_profit: number | null
+          selection: string
+          settled_at: string | null
+          sportsbook: string | null
+          stake: number
+          status: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          bet_type: string
+          closing_odds?: number | null
+          clv_percentage?: number | null
+          created_at?: string | null
+          id?: string
+          kelly_stake_recommended?: number | null
+          league?: string | null
+          match_id: string
+          match_title: string
+          model_confidence?: number | null
+          model_ev_percentage?: number | null
+          notes?: string | null
+          odds_at_placement: number
+          opening_odds?: number | null
+          placed_at?: string | null
+          potential_payout: number
+          result_profit?: number | null
+          selection: string
+          settled_at?: string | null
+          sportsbook?: string | null
+          stake: number
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          bet_type?: string
+          closing_odds?: number | null
+          clv_percentage?: number | null
+          created_at?: string | null
+          id?: string
+          kelly_stake_recommended?: number | null
+          league?: string | null
+          match_id?: string
+          match_title?: string
+          model_confidence?: number | null
+          model_ev_percentage?: number | null
+          notes?: string | null
+          odds_at_placement?: number
+          opening_odds?: number | null
+          placed_at?: string | null
+          potential_payout?: number
+          result_profit?: number | null
+          selection?: string
+          settled_at?: string | null
+          sportsbook?: string | null
+          stake?: number
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_betting_stats: {
+        Row: {
+          avg_clv: number | null
+          avg_odds: number | null
+          best_streak: number | null
+          current_streak: number | null
+          id: string
+          last_updated: string | null
+          losses: number | null
+          pending_bets: number | null
+          pushes: number | null
+          roi_percentage: number | null
+          total_bets: number | null
+          total_profit: number | null
+          total_staked: number | null
+          user_id: string
+          wins: number | null
+        }
+        Insert: {
+          avg_clv?: number | null
+          avg_odds?: number | null
+          best_streak?: number | null
+          current_streak?: number | null
+          id?: string
+          last_updated?: string | null
+          losses?: number | null
+          pending_bets?: number | null
+          pushes?: number | null
+          roi_percentage?: number | null
+          total_bets?: number | null
+          total_profit?: number | null
+          total_staked?: number | null
+          user_id: string
+          wins?: number | null
+        }
+        Update: {
+          avg_clv?: number | null
+          avg_odds?: number | null
+          best_streak?: number | null
+          current_streak?: number | null
+          id?: string
+          last_updated?: string | null
+          losses?: number | null
+          pending_bets?: number | null
+          pushes?: number | null
+          roi_percentage?: number | null
+          total_bets?: number | null
+          total_profit?: number | null
+          total_staked?: number | null
+          user_id?: string
+          wins?: number | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
