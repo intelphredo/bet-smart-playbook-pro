@@ -12,6 +12,7 @@ import PremiumSubscribeCard from "@/components/PremiumSubscribeCard";
 import PageFooter from "@/components/PageFooter";
 import NavBar from "@/components/NavBar";
 import FilterSection from "@/components/FilterSection";
+import QuickStatsDashboard from "@/components/QuickStatsDashboard";
 import { useSportsData } from "@/hooks/useSportsData";
 import { SportCategory } from "@/types/LeagueRegistry";
 import { DataViewSource } from "@/components/filters/DataSourceFilter";
@@ -145,6 +146,11 @@ const Index = () => {
         <div className="flex flex-col space-y-6">
           <HeroHeader />
           
+          {/* Quick Stats Dashboard */}
+          <section id="quick-stats" aria-labelledby="quick-stats-heading">
+            <h2 id="quick-stats-heading" className="sr-only">Quick Stats</h2>
+            <QuickStatsDashboard />
+          </section>
           {/* Stats & Filters Section */}
           <section id="stats-overview" aria-labelledby="stats-heading" className="card-gradient rounded-2xl shadow-lg p-2">
             <h2 id="stats-heading" className="sr-only">Stats Overview and Filters</h2>

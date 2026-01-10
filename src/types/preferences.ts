@@ -7,6 +7,7 @@ export interface FavoritesPreferences {
   leagues: string[];
   teams: string[];
   sportsbooks: string[];
+  matches: string[]; // Match IDs
 }
 
 export interface NotificationPreferences {
@@ -48,6 +49,7 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
     leagues: [],
     teams: [],
     sportsbooks: [],
+    matches: [],
   },
   notifications: {
     line_movements: true,
