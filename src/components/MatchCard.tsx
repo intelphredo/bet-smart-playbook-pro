@@ -10,6 +10,7 @@ import BettingMetrics from "./BettingMetrics";
 import ScenarioBadges from "./ScenarioAnalysis/ScenarioBadges";
 import { SocialFactorsCard } from "./SocialIntelligence/SocialFactorsCard";
 import MatchSourceBadge, { MatchDataSource } from "./MatchCard/MatchSourceBadge";
+import OddsLineChart from "./OddsLineChart";
 
 interface MatchCardProps {
   match: any;
@@ -113,7 +114,10 @@ const MatchCard = ({ match }: MatchCardProps) => {
         />
       </CardContent>
       {match.liveOdds && match.liveOdds.length > 0 && (
-        <LiveOdds odds={match.liveOdds} />
+        <>
+          <OddsLineChart match={match} />
+          <LiveOdds odds={match.liveOdds} />
+        </>
       )}
     </Card>
   );
