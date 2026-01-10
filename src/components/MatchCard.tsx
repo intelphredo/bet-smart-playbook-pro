@@ -9,6 +9,7 @@ import PredictedOddsRow from "./MatchCard/PredictedOddsRow";
 import MatchCardFooter from "./MatchCard/MatchCardFooter";
 import BettingMetrics from "./BettingMetrics";
 import ScenarioBadges from "./ScenarioAnalysis/ScenarioBadges";
+import { SocialFactorsCard } from "./SocialIntelligence/SocialFactorsCard";
 
 interface MatchCardProps {
   match: any;
@@ -91,6 +92,9 @@ const MatchCard = ({ match }: MatchCardProps) => {
         <OddsComparisonTable match={match} formatOdds={formatOdds} />
         <PredictedOddsRow match={match} formatOdds={formatOdds} />
         <BettingMetrics match={match} />
+        
+        {/* Social Intelligence */}
+        <SocialFactorsCard match={match} compact />
         <MatchCardFooter 
           match={match} 
           getBadgeColor={getBadgeColor} 
