@@ -1,19 +1,32 @@
+import { useState } from "react";
 import { Trophy, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { SPORTSBOOK_LOGOS, findBestOdds, SPORTSBOOK_PRIORITY } from "@/utils/sportsbook";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { OddsFormatToggle } from "@/components/ui/odds-format-toggle";
+import { useOddsFormat } from "@/contexts/OddsFormatContext";
 import { cn } from "@/lib/utils";
+import { LiveOdds } from "@/types/sports";
 
 interface Props {
   match: any;
-  formatOdds: (odds: number | undefined) => string;
 }
 
-const OddsComparisonTable = ({ match, formatOdds }: Props) => {
+type MarketType = 'moneyline' | 'spread' | 'total';
+
+const OddsComparisonTable = ({ match }: Props) => {
+  const [activeMarket, setActiveMarket] = useState<MarketType>('moneyline');
+  const { formatOdds } = useOddsFormat();
+  
   if (!match.liveOdds || match.liveOdds.length === 0) return null;
 
   const bestOdds = findBestOdds(match.liveOdds);
   const hasDrawMarket = match.odds?.draw !== undefined;
+  
+  // Check if spread/total markets are available
+  const hasSpreadMarket = match.liveOdds.some((o: LiveOdds) => o.spread);
+  const hasTotalMarket = match.liveOdds.some((o: LiveOdds) => o.totals);
 
   // Sort sportsbooks by priority (DraftKings, FanDuel, BetMGM first)
   const sortedOdds = [...match.liveOdds].sort((a: any, b: any) => {
@@ -21,6 +34,63 @@ const OddsComparisonTable = ({ match, formatOdds }: Props) => {
     const priorityB = SPORTSBOOK_PRIORITY[b.sportsbook.id] || 99;
     return priorityA - priorityB;
   });
+
+  // Find best spread odds
+  const findBestSpreadOdds = () => {
+    let bestHomeSpread: { value: number; odds: number; sportsbookId: string } | null = null;
+    let bestAwaySpread: { value: number; odds: number; sportsbookId: string } | null = null;
+
+    match.liveOdds.forEach((odd: LiveOdds) => {
+      if (odd.spread) {
+        if (!bestHomeSpread || odd.spread.homeSpreadOdds > bestHomeSpread.odds) {
+          bestHomeSpread = { 
+            value: odd.spread.homeSpread, 
+            odds: odd.spread.homeSpreadOdds, 
+            sportsbookId: odd.sportsbook.id 
+          };
+        }
+        if (!bestAwaySpread || odd.spread.awaySpreadOdds > bestAwaySpread.odds) {
+          bestAwaySpread = { 
+            value: odd.spread.awaySpread, 
+            odds: odd.spread.awaySpreadOdds, 
+            sportsbookId: odd.sportsbook.id 
+          };
+        }
+      }
+    });
+
+    return { home: bestHomeSpread, away: bestAwaySpread };
+  };
+
+  // Find best total odds
+  const findBestTotalOdds = () => {
+    let bestOver: { value: number; odds: number; sportsbookId: string } | null = null;
+    let bestUnder: { value: number; odds: number; sportsbookId: string } | null = null;
+
+    match.liveOdds.forEach((odd: LiveOdds) => {
+      if (odd.totals) {
+        if (!bestOver || odd.totals.overOdds > bestOver.odds) {
+          bestOver = { 
+            value: odd.totals.total, 
+            odds: odd.totals.overOdds, 
+            sportsbookId: odd.sportsbook.id 
+          };
+        }
+        if (!bestUnder || odd.totals.underOdds > bestUnder.odds) {
+          bestUnder = { 
+            value: odd.totals.total, 
+            odds: odd.totals.underOdds, 
+            sportsbookId: odd.sportsbook.id 
+          };
+        }
+      }
+    });
+
+    return { over: bestOver, under: bestUnder };
+  };
+
+  const bestSpreadOdds = findBestSpreadOdds();
+  const bestTotalOdds = findBestTotalOdds();
 
   // Calculate odds movement compared to opening
   const getMovement = (current: number | undefined, opening: number | undefined) => {
@@ -43,11 +113,13 @@ const OddsComparisonTable = ({ match, formatOdds }: Props) => {
     value, 
     isBest, 
     openingValue,
+    prefix,
     className 
   }: { 
     value: number | undefined; 
     isBest: boolean;
     openingValue?: number;
+    prefix?: string;
     className?: string;
   }) => {
     const movement = getMovement(value, openingValue);
@@ -66,13 +138,105 @@ const OddsComparisonTable = ({ match, formatOdds }: Props) => {
           )}
           <span 
             className={cn(
-              "font-mono",
+              "font-mono text-sm",
               isBest && "font-bold text-green-700 dark:text-green-400"
             )}
           >
-            {formatOdds(value)}
+            {prefix}{formatOdds(value)}
           </span>
           <MovementIndicator movement={movement} />
+        </div>
+      </td>
+    );
+  };
+
+  const SpreadCell = ({ 
+    spread, 
+    odds, 
+    isBest,
+    className 
+  }: { 
+    spread: number | undefined;
+    odds: number | undefined; 
+    isBest: boolean;
+    className?: string;
+  }) => {
+    if (spread === undefined || odds === undefined) {
+      return <td className="px-3 py-2 text-center text-muted-foreground">-</td>;
+    }
+    
+    const spreadDisplay = spread > 0 ? `+${spread}` : `${spread}`;
+    
+    return (
+      <td 
+        className={cn(
+          "px-3 py-2 text-center transition-colors",
+          isBest && "bg-green-100 dark:bg-green-900/30",
+          className
+        )}
+      >
+        <div className="flex flex-col items-center">
+          {isBest && (
+            <Trophy className="w-3 h-3 text-yellow-500 mb-0.5" />
+          )}
+          <span 
+            className={cn(
+              "font-mono text-sm",
+              isBest && "font-bold text-green-700 dark:text-green-400"
+            )}
+          >
+            {spreadDisplay}
+          </span>
+          <span className="text-xs text-muted-foreground">
+            ({formatOdds(odds)})
+          </span>
+        </div>
+      </td>
+    );
+  };
+
+  const TotalCell = ({ 
+    total, 
+    odds, 
+    type,
+    isBest,
+    className 
+  }: { 
+    total: number | undefined;
+    odds: number | undefined;
+    type: 'over' | 'under';
+    isBest: boolean;
+    className?: string;
+  }) => {
+    if (total === undefined || odds === undefined) {
+      return <td className="px-3 py-2 text-center text-muted-foreground">-</td>;
+    }
+    
+    const prefix = type === 'over' ? 'O' : 'U';
+    
+    return (
+      <td 
+        className={cn(
+          "px-3 py-2 text-center transition-colors",
+          isBest && "bg-green-100 dark:bg-green-900/30",
+          className
+        )}
+      >
+        <div className="flex flex-col items-center">
+          {isBest && (
+            <Trophy className="w-3 h-3 text-yellow-500 mb-0.5" />
+          )}
+          <span 
+            className={cn(
+              "font-mono text-sm",
+              isBest && "font-bold text-green-700 dark:text-green-400"
+            )}
+          >
+            {prefix} {total}
+          </span>
+          <span className="text-xs text-muted-foreground">
+            ({formatOdds(odds)})
+          </span>
         </div>
       </td>
     );
@@ -92,145 +256,294 @@ const OddsComparisonTable = ({ match, formatOdds }: Props) => {
     return `${Math.floor(diffHours / 24)}d ago`;
   };
 
+  const SportsbookRow = ({ odd }: { odd: LiveOdds }) => (
+    <td className="px-3 py-2">
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="flex items-center gap-2 cursor-default">
+              <span className="w-6 h-6 rounded-full bg-background border border-border overflow-hidden flex-shrink-0">
+                <img
+                  src={odd.sportsbook.logo || SPORTSBOOK_LOGOS[odd.sportsbook.id as keyof typeof SPORTSBOOK_LOGOS]}
+                  alt={odd.sportsbook.name}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = '/placeholder.svg';
+                  }}
+                />
+              </span>
+              <span className="font-medium truncate max-w-[100px]">
+                {odd.sportsbook.name}
+              </span>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{odd.sportsbook.name}</p>
+            {odd.updatedAt && (
+              <p className="text-xs text-muted-foreground">
+                Last updated: {formatTimeAgo(odd.updatedAt)}
+              </p>
+            )}
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    </td>
+  );
+
+  const MoneylineTable = () => (
+    <table className="w-full text-sm">
+      <thead>
+        <tr className="bg-muted/50">
+          <th className="px-3 py-2 text-left font-medium text-muted-foreground">
+            Sportsbook
+          </th>
+          <th className="px-3 py-2 text-center font-medium text-muted-foreground">
+            Home
+          </th>
+          {hasDrawMarket && (
+            <th className="px-3 py-2 text-center font-medium text-muted-foreground">
+              Draw
+            </th>
+          )}
+          <th className="px-3 py-2 text-center font-medium text-muted-foreground">
+            Away
+          </th>
+          <th className="px-3 py-2 text-right font-medium text-muted-foreground hidden sm:table-cell">
+            Updated
+          </th>
+        </tr>
+      </thead>
+      <tbody className="divide-y divide-border">
+        {/* Opening Odds Row */}
+        <tr className="bg-muted/30">
+          <td className="px-3 py-2">
+            <div className="flex items-center gap-2">
+              <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center">
+                <Minus className="w-3 h-3 text-muted-foreground" />
+              </span>
+              <span className="font-medium text-muted-foreground">Opening</span>
+            </div>
+          </td>
+          <td className="px-3 py-2 text-center font-mono text-muted-foreground">
+            {formatOdds(match.odds?.homeWin)}
+          </td>
+          {hasDrawMarket && (
+            <td className="px-3 py-2 text-center font-mono text-muted-foreground">
+              {formatOdds(match.odds?.draw)}
+            </td>
+          )}
+          <td className="px-3 py-2 text-center font-mono text-muted-foreground">
+            {formatOdds(match.odds?.awayWin)}
+          </td>
+          <td className="px-3 py-2 text-right text-muted-foreground hidden sm:table-cell">
+            —
+          </td>
+        </tr>
+
+        {/* Sportsbook Rows */}
+        {sortedOdds.map((odd: LiveOdds) => {
+          const isBestHome = bestOdds.home?.sportsbookId === odd.sportsbook.id && 
+                             bestOdds.home?.value === odd.homeWin;
+          const isBestAway = bestOdds.away?.sportsbookId === odd.sportsbook.id && 
+                             bestOdds.away?.value === odd.awayWin;
+          const isBestDraw = bestOdds.draw?.sportsbookId === odd.sportsbook.id && 
+                             bestOdds.draw?.value === odd.draw;
+
+          return (
+            <tr 
+              key={odd.sportsbook.id} 
+              className="hover:bg-muted/20 transition-colors"
+            >
+              <SportsbookRow odd={odd} />
+              
+              <OddsCell 
+                value={odd.homeWin} 
+                isBest={isBestHome}
+                openingValue={match.odds?.homeWin}
+              />
+              
+              {hasDrawMarket && (
+                <OddsCell 
+                  value={odd.draw} 
+                  isBest={isBestDraw}
+                  openingValue={match.odds?.draw}
+                />
+              )}
+              
+              <OddsCell 
+                value={odd.awayWin} 
+                isBest={isBestAway}
+                openingValue={match.odds?.awayWin}
+              />
+              
+              <td className="px-3 py-2 text-right text-xs text-muted-foreground hidden sm:table-cell">
+                {odd.updatedAt ? formatTimeAgo(odd.updatedAt) : '—'}
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  );
+
+  const SpreadTable = () => (
+    <table className="w-full text-sm">
+      <thead>
+        <tr className="bg-muted/50">
+          <th className="px-3 py-2 text-left font-medium text-muted-foreground">
+            Sportsbook
+          </th>
+          <th className="px-3 py-2 text-center font-medium text-muted-foreground">
+            {match.homeTeam?.shortName || 'Home'} Spread
+          </th>
+          <th className="px-3 py-2 text-center font-medium text-muted-foreground">
+            {match.awayTeam?.shortName || 'Away'} Spread
+          </th>
+          <th className="px-3 py-2 text-right font-medium text-muted-foreground hidden sm:table-cell">
+            Updated
+          </th>
+        </tr>
+      </thead>
+      <tbody className="divide-y divide-border">
+        {sortedOdds.map((odd: LiveOdds) => {
+          const isBestHomeSpread = bestSpreadOdds.home?.sportsbookId === odd.sportsbook.id;
+          const isBestAwaySpread = bestSpreadOdds.away?.sportsbookId === odd.sportsbook.id;
+
+          return (
+            <tr 
+              key={odd.sportsbook.id} 
+              className="hover:bg-muted/20 transition-colors"
+            >
+              <SportsbookRow odd={odd} />
+              
+              <SpreadCell 
+                spread={odd.spread?.homeSpread}
+                odds={odd.spread?.homeSpreadOdds}
+                isBest={isBestHomeSpread}
+              />
+              
+              <SpreadCell 
+                spread={odd.spread?.awaySpread}
+                odds={odd.spread?.awaySpreadOdds}
+                isBest={isBestAwaySpread}
+              />
+              
+              <td className="px-3 py-2 text-right text-xs text-muted-foreground hidden sm:table-cell">
+                {odd.updatedAt ? formatTimeAgo(odd.updatedAt) : '—'}
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  );
+
+  const TotalTable = () => (
+    <table className="w-full text-sm">
+      <thead>
+        <tr className="bg-muted/50">
+          <th className="px-3 py-2 text-left font-medium text-muted-foreground">
+            Sportsbook
+          </th>
+          <th className="px-3 py-2 text-center font-medium text-muted-foreground">
+            Over
+          </th>
+          <th className="px-3 py-2 text-center font-medium text-muted-foreground">
+            Under
+          </th>
+          <th className="px-3 py-2 text-right font-medium text-muted-foreground hidden sm:table-cell">
+            Updated
+          </th>
+        </tr>
+      </thead>
+      <tbody className="divide-y divide-border">
+        {sortedOdds.map((odd: LiveOdds) => {
+          const isBestOver = bestTotalOdds.over?.sportsbookId === odd.sportsbook.id;
+          const isBestUnder = bestTotalOdds.under?.sportsbookId === odd.sportsbook.id;
+
+          return (
+            <tr 
+              key={odd.sportsbook.id} 
+              className="hover:bg-muted/20 transition-colors"
+            >
+              <SportsbookRow odd={odd} />
+              
+              <TotalCell 
+                total={odd.totals?.total}
+                odds={odd.totals?.overOdds}
+                type="over"
+                isBest={isBestOver}
+              />
+              
+              <TotalCell 
+                total={odd.totals?.total}
+                odds={odd.totals?.underOdds}
+                type="under"
+                isBest={isBestUnder}
+              />
+              
+              <td className="px-3 py-2 text-right text-xs text-muted-foreground hidden sm:table-cell">
+                {odd.updatedAt ? formatTimeAgo(odd.updatedAt) : '—'}
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  );
+
   return (
     <div className="mb-4">
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
         <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
           📊 Odds Comparison
         </h4>
-        {bestOdds.home && (
-          <Badge variant="outline" className="text-xs bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800">
-            <Trophy className="w-3 h-3 mr-1" />
-            Best Value Available
-          </Badge>
-        )}
+        <div className="flex items-center gap-2">
+          <OddsFormatToggle />
+          {bestOdds.home && (
+            <Badge variant="outline" className="text-xs bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800">
+              <Trophy className="w-3 h-3 mr-1" />
+              Best Value
+            </Badge>
+          )}
+        </div>
       </div>
       
-      <div className="overflow-x-auto rounded-lg border border-border">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-muted/50">
-              <th className="px-3 py-2 text-left font-medium text-muted-foreground">
-                Sportsbook
-              </th>
-              <th className="px-3 py-2 text-center font-medium text-muted-foreground">
-                Home
-              </th>
-              {hasDrawMarket && (
-                <th className="px-3 py-2 text-center font-medium text-muted-foreground">
-                  Draw
-                </th>
-              )}
-              <th className="px-3 py-2 text-center font-medium text-muted-foreground">
-                Away
-              </th>
-              <th className="px-3 py-2 text-right font-medium text-muted-foreground hidden sm:table-cell">
-                Updated
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {/* Opening Odds Row */}
-            <tr className="bg-muted/30">
-              <td className="px-3 py-2">
-                <div className="flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center">
-                    <Minus className="w-3 h-3 text-muted-foreground" />
-                  </span>
-                  <span className="font-medium text-muted-foreground">Opening</span>
-                </div>
-              </td>
-              <td className="px-3 py-2 text-center font-mono text-muted-foreground">
-                {formatOdds(match.odds?.homeWin)}
-              </td>
-              {hasDrawMarket && (
-                <td className="px-3 py-2 text-center font-mono text-muted-foreground">
-                  {formatOdds(match.odds?.draw)}
-                </td>
-              )}
-              <td className="px-3 py-2 text-center font-mono text-muted-foreground">
-                {formatOdds(match.odds?.awayWin)}
-              </td>
-              <td className="px-3 py-2 text-right text-muted-foreground hidden sm:table-cell">
-                —
-              </td>
-            </tr>
+      <Tabs value={activeMarket} onValueChange={(v) => setActiveMarket(v as MarketType)}>
+        <TabsList className="mb-3 h-8">
+          <TabsTrigger value="moneyline" className="text-xs px-3 h-7">
+            Moneyline
+          </TabsTrigger>
+          {hasSpreadMarket && (
+            <TabsTrigger value="spread" className="text-xs px-3 h-7">
+              Spread
+            </TabsTrigger>
+          )}
+          {hasTotalMarket && (
+            <TabsTrigger value="total" className="text-xs px-3 h-7">
+              Total
+            </TabsTrigger>
+          )}
+        </TabsList>
 
-            {/* Sportsbook Rows */}
-            {sortedOdds.map((odd: any) => {
-              const isBestHome = bestOdds.home?.sportsbookId === odd.sportsbook.id && 
-                                 bestOdds.home?.value === odd.homeWin;
-              const isBestAway = bestOdds.away?.sportsbookId === odd.sportsbook.id && 
-                                 bestOdds.away?.value === odd.awayWin;
-              const isBestDraw = bestOdds.draw?.sportsbookId === odd.sportsbook.id && 
-                                 bestOdds.draw?.value === odd.draw;
-
-              return (
-                <tr 
-                  key={odd.sportsbook.id} 
-                  className="hover:bg-muted/20 transition-colors"
-                >
-                  <td className="px-3 py-2">
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div className="flex items-center gap-2 cursor-default">
-                            <span className="w-6 h-6 rounded-full bg-background border border-border overflow-hidden flex-shrink-0">
-                              <img
-                                src={odd.sportsbook.logo || SPORTSBOOK_LOGOS[odd.sportsbook.id as keyof typeof SPORTSBOOK_LOGOS]}
-                                alt={odd.sportsbook.name}
-                                className="w-full h-full object-cover"
-                                onError={(e) => {
-                                  (e.target as HTMLImageElement).src = '/placeholder.svg';
-                                }}
-                              />
-                            </span>
-                            <span className="font-medium truncate max-w-[100px]">
-                              {odd.sportsbook.name}
-                            </span>
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>{odd.sportsbook.name}</p>
-                          {odd.updatedAt && (
-                            <p className="text-xs text-muted-foreground">
-                              Last updated: {formatTimeAgo(odd.updatedAt)}
-                            </p>
-                          )}
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </td>
-                  
-                  <OddsCell 
-                    value={odd.homeWin} 
-                    isBest={isBestHome}
-                    openingValue={match.odds?.homeWin}
-                  />
-                  
-                  {hasDrawMarket && (
-                    <OddsCell 
-                      value={odd.draw} 
-                      isBest={isBestDraw}
-                      openingValue={match.odds?.draw}
-                    />
-                  )}
-                  
-                  <OddsCell 
-                    value={odd.awayWin} 
-                    isBest={isBestAway}
-                    openingValue={match.odds?.awayWin}
-                  />
-                  
-                  <td className="px-3 py-2 text-right text-xs text-muted-foreground hidden sm:table-cell">
-                    {odd.updatedAt ? formatTimeAgo(odd.updatedAt) : '—'}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+        <div className="overflow-x-auto rounded-lg border border-border">
+          <TabsContent value="moneyline" className="m-0">
+            <MoneylineTable />
+          </TabsContent>
+          
+          {hasSpreadMarket && (
+            <TabsContent value="spread" className="m-0">
+              <SpreadTable />
+            </TabsContent>
+          )}
+          
+          {hasTotalMarket && (
+            <TabsContent value="total" className="m-0">
+              <TotalTable />
+            </TabsContent>
+          )}
+        </div>
+      </Tabs>
     </div>
   );
 };

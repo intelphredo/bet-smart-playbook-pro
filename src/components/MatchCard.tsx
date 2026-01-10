@@ -28,11 +28,6 @@ const MatchCard = ({ match }: MatchCardProps) => {
     }
   };
 
-  const formatOdds = (odds: number | undefined) => {
-    if (odds === undefined) return "-";
-    return odds >= 2 ? `+${Math.round((odds - 1) * 100)}` : `-${Math.round(100 / (odds - 1))}`;
-  };
-
   const getBadgeColor = (confidence: number) => {
     if (confidence >= 70) return "bg-green-500 hover:bg-green-600";
     if (confidence >= 50) return "bg-yellow-500 hover:bg-yellow-600";
@@ -89,8 +84,8 @@ const MatchCard = ({ match }: MatchCardProps) => {
         {/* Scenario Detection Badges */}
         <ScenarioBadges match={match} maxBadges={3} />
         
-        <OddsComparisonTable match={match} formatOdds={formatOdds} />
-        <PredictedOddsRow match={match} formatOdds={formatOdds} />
+        <OddsComparisonTable match={match} />
+        <PredictedOddsRow match={match} />
         <BettingMetrics match={match} />
         
         {/* Social Intelligence */}
