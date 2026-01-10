@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useESPNData } from "./useESPNData";
 import { useMLBData } from "./useMLBData";
 import { useSportsApiData } from "./useSportsApiData";
@@ -7,6 +7,7 @@ import { DataSource, League, Match } from "@/types/sports";
 import { useDataSourceManager } from "./useDataSourceManager";
 import { useMatchVerification } from "./useMatchVerification";
 import { useMatchesByStatus } from "./useMatchesByStatus";
+import { getESPNDataStatus } from "@/services/espnApi";
 
 interface UseSportsDataOptions {
   league?: League | "ALL";
@@ -183,6 +184,17 @@ export function useSportsData({
     return () => clearInterval(intervalId);
   }, [refreshInterval]);
 
+  // Get ESPN data status for the DataSourceBadge
+  const espnDataStatus = useMemo(() => {
+    const status = getESPNDataStatus();
+    return {
+      source: status.source,
+      lastUpdated: status.lastUpdated,
+      gamesLoaded: allMatches.length,
+      errors: status.errors
+    };
+  }, [allMatches.length, lastRefreshTime]);
+
   return {
     dataSource,
     setDataSource,
@@ -202,6 +214,7 @@ export function useSportsData({
     preferredApiSource,
     verifiedMatches,
     lastRefreshTime,
-    refetchWithTimestamp
+    refetchWithTimestamp,
+    espnDataStatus
   };
 }

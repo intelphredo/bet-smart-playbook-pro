@@ -68,6 +68,7 @@ export interface Match {
   smartScore?: SmartScore;
   verification?: DataVerificationResult;
   lastUpdated?: string;
+  isMockData?: boolean; // Flag to indicate this is mock/demo data
 }
 
 export interface Team {

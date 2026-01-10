@@ -33,7 +33,8 @@ const Index = () => {
     refetchWithTimestamp,
     dataSource,
     setDataSource,
-    availableDataSources
+    availableDataSources,
+    espnDataStatus
   } = useSportsData({
     league: selectedLeague as any,
     refreshInterval: 60000,
@@ -168,6 +169,7 @@ const Index = () => {
               upcomingMatches={upcomingMatches}
               liveMatches={liveMatches}
               finishedMatches={finishedMatches}
+              dataSource={espnDataStatus}
             />
           </section>
           
