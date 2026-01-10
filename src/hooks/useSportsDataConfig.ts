@@ -36,14 +36,14 @@ export function useSportsDataConfig(): SportDataConfiguration {
       name: "ESPN", 
       priority: 1, 
       enabled: true,
-      supportedLeagues: ["NBA", "NFL", "MLB", "NHL", "SOCCER", "NCAAF"]
+      supportedLeagues: ["NBA", "NFL", "MLB", "NHL", "SOCCER", "NCAAF", "NCAAB"]
     },
     { 
       id: "ACTION", 
       name: "Action Network", 
       priority: 2, 
       enabled: true,
-      supportedLeagues: ["NBA", "NFL", "MLB", "NHL", "SOCCER", "NCAAF"]
+      supportedLeagues: ["NBA", "NFL", "MLB", "NHL", "SOCCER", "NCAAF", "NCAAB"]
     },
     { 
       id: "MLB", 
@@ -59,12 +59,12 @@ export function useSportsDataConfig(): SportDataConfiguration {
       enabled: false,
       requiresApiKey: true,
       apiKeyConfigured: false,
-      supportedLeagues: ["NBA", "NFL", "MLB", "NHL", "SOCCER", "NCAAF"]
+      supportedLeagues: ["NBA", "NFL", "MLB", "NHL", "SOCCER", "NCAAF", "NCAAB"]
     }
   ]);
   
   const [enabledDataSources, setEnabledDataSources] = useState<string[]>(["ESPN", "MLB", "ACTION"]);
-  const [enabledLeagues, setEnabledLeagues] = useState<string[]>(["NBA", "NFL", "MLB", "NHL", "SOCCER", "NCAAF"]);
+  const [enabledLeagues, setEnabledLeagues] = useState<string[]>(["NBA", "NFL", "MLB", "NHL", "SOCCER", "NCAAF", "NCAAB"]);
   const [apiKeys, setApiKeys] = useState<Record<string, string>>({});
   const [refreshInterval, setRefreshInterval] = useState<number>(60000);
   const [autoRefresh, setAutoRefresh] = useState<boolean>(true);
