@@ -8,6 +8,7 @@ import CreatorDashboard from "./pages/CreatorDashboard";
 import ScenarioGuide from "./pages/ScenarioGuide";
 import BankrollManager from "./pages/BankrollManager";
 import Standings from "./pages/Standings";
+import Injuries from "./pages/Injuries";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/useAuth";
 
@@ -64,6 +65,7 @@ function App() {
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/standings" element={<Standings />} />
+              <Route path="/injuries" element={<Injuries />} />
               <Route path="/algorithms" element={<AlgorithmsComparison />} />
               <Route path="/creator" element={<CreatorDashboard />} />
               <Route path="/scenarios" element={<ScenarioGuide />} />
