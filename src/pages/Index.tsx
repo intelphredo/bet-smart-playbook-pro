@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { League } from "@/types/sports";
 import StatsOverview from "@/components/StatsOverview";
 import { useToast } from "@/hooks/use-toast";
@@ -15,6 +14,7 @@ import NavBar from "@/components/NavBar";
 import FilterSection from "@/components/FilterSection";
 import { useSportsData } from "@/hooks/useSportsData";
 import { SportCategory } from "@/types/LeagueRegistry";
+import { DataViewSource } from "@/components/filters/DataSourceFilter";
 
 const Index = () => {
   const [selectedLeague, setSelectedLeague] = useState<League | string | "ALL">("ALL");
@@ -22,12 +22,13 @@ const Index = () => {
   const [teamFilter, setTeamFilter] = useState("");
   const [dateRange, setDateRange] = useState<{start?: Date, end?: Date}>({});
   const [sportCategoryFilter, setSportCategoryFilter] = useState<SportCategory | "ALL">("ALL");
+  const [dataViewSource, setDataViewSource] = useState<DataViewSource>("combined");
   const { toast } = useToast();
 
   const {
-    upcomingMatches,
-    liveMatches,
-    finishedMatches,
+    upcomingMatches: rawUpcoming,
+    liveMatches: rawLive,
+    finishedMatches: rawFinished,
     isLoading,
     error,
     refetchWithTimestamp,
@@ -35,12 +36,35 @@ const Index = () => {
     setDataSource,
     availableDataSources,
     espnDataStatus,
-    oddsApiStatus
+    oddsApiStatus,
+    oddsApiMatches
   } = useSportsData({
     league: selectedLeague as any,
     refreshInterval: 60000,
     useExternalApis: true,
   });
+
+  // Filter matches based on data view source
+  const filterBySource = (matches: any[]) => {
+    if (dataViewSource === "combined") return matches;
+    
+    return matches.filter(match => {
+      const isFromEspn = match.homeTeam?.logo && match.homeTeam.logo.length > 0;
+      const hasOddsData = match.liveOdds && match.liveOdds.length > 0;
+      
+      if (dataViewSource === "espn") {
+        return isFromEspn;
+      }
+      if (dataViewSource === "odds") {
+        return hasOddsData && !isFromEspn;
+      }
+      return true;
+    });
+  };
+
+  const upcomingMatches = useMemo(() => filterBySource(rawUpcoming), [rawUpcoming, dataViewSource]);
+  const liveMatches = useMemo(() => filterBySource(rawLive), [rawLive, dataViewSource]);
+  const finishedMatches = useMemo(() => filterBySource(rawFinished), [rawFinished, dataViewSource]);
 
   const handleRefreshData = () => {
     refetchWithTimestamp();
@@ -111,6 +135,7 @@ const Index = () => {
     setTeamFilter("");
     setDateRange({});
     setSportCategoryFilter("ALL");
+    setDataViewSource("combined");
   };
 
   return (
@@ -135,6 +160,8 @@ const Index = () => {
               onReset={resetAllFilters}
               sportCategoryFilter={sportCategoryFilter}
               onSportCategoryChange={setSportCategoryFilter}
+              dataViewSource={dataViewSource}
+              onDataViewSourceChange={setDataViewSource}
             />
             <div className="animate-slide-in">
               <StatsOverview />

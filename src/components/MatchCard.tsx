@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow, parseISO } from "date-fns";
@@ -10,6 +9,7 @@ import MatchCardFooter from "./MatchCard/MatchCardFooter";
 import BettingMetrics from "./BettingMetrics";
 import ScenarioBadges from "./ScenarioAnalysis/ScenarioBadges";
 import { SocialFactorsCard } from "./SocialIntelligence/SocialFactorsCard";
+import MatchSourceBadge, { MatchDataSource } from "./MatchCard/MatchSourceBadge";
 
 interface MatchCardProps {
   match: any;
@@ -42,6 +42,21 @@ const MatchCard = ({ match }: MatchCardProps) => {
     return "bg-red-500";
   };
 
+  // Determine data source for this match
+  const getMatchSource = (): MatchDataSource => {
+    // If match has id starting with ESPN patterns or has team logos, it's from ESPN
+    const isFromEspn = match.homeTeam?.logo && match.homeTeam.logo.length > 0;
+    // If match has liveOdds with sportsbook data, it has Odds API data
+    const hasOddsData = match.liveOdds && match.liveOdds.length > 0;
+    
+    if (isFromEspn && hasOddsData) return "combined";
+    if (hasOddsData && !isFromEspn) return "odds";
+    return "espn";
+  };
+  
+  const matchSource = getMatchSource();
+  const hasOddsData = match.liveOdds && match.liveOdds.length > 0;
+
   return (
     <Card className="match-card overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1 border-border/50 bg-card/95 backdrop-blur-sm">
       <CardHeader className="p-4 bg-card/80 backdrop-blur-sm border-b border-border/30 flex flex-row justify-between items-center space-y-0">
@@ -54,6 +69,7 @@ const MatchCard = ({ match }: MatchCardProps) => {
               ● LIVE
             </Badge>
           )}
+          <MatchSourceBadge source={matchSource} hasOddsData={hasOddsData} />
         </div>
         <div className="text-xs text-muted-foreground font-medium">
           {formatTime(match.startTime)}

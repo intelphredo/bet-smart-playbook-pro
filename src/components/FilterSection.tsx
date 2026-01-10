@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Filter, X } from "lucide-react";
@@ -9,6 +8,7 @@ import LeagueFilter from "./filters/LeagueFilter";
 import MatchStatusFilter from "./filters/MatchStatusFilter";
 import AdvancedFilters from "./filters/AdvancedFilters";
 import ActiveFilters from "./filters/ActiveFilters";
+import DataSourceFilter, { DataViewSource } from "./filters/DataSourceFilter";
 
 interface FilterSectionProps {
   selectedLeague: League | string | "ALL";
@@ -22,6 +22,8 @@ interface FilterSectionProps {
   onReset?: () => void;
   sportCategoryFilter?: SportCategory | "ALL";
   onSportCategoryChange?: (category: SportCategory | "ALL") => void;
+  dataViewSource?: DataViewSource;
+  onDataViewSourceChange?: (source: DataViewSource) => void;
 }
 
 const FilterSection = ({
@@ -35,7 +37,9 @@ const FilterSection = ({
   onDateRangeChange,
   onReset,
   sportCategoryFilter = "ALL",
-  onSportCategoryChange
+  onSportCategoryChange,
+  dataViewSource = "combined",
+  onDataViewSourceChange
 }: FilterSectionProps) => {
   const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState(false);
   const [tempDateRange, setTempDateRange] = useState<{start?: Date, end?: Date}>({});
@@ -75,6 +79,7 @@ const FilterSection = ({
       if (onTeamFilterChange) onTeamFilterChange("");
       if (onDateRangeChange) onDateRangeChange({});
       if (onSportCategoryChange) onSportCategoryChange("ALL");
+      if (onDataViewSourceChange) onDataViewSourceChange("combined");
     }
     setTempFilters({
       team: "",
@@ -92,7 +97,13 @@ const FilterSection = ({
           <span className="font-medium">Filters:</span>
         </div>
         
-        <div className="flex ml-auto">
+        <div className="flex ml-auto gap-2">
+          {onDataViewSourceChange && (
+            <DataSourceFilter 
+              value={dataViewSource} 
+              onChange={onDataViewSourceChange} 
+            />
+          )}
           <Button
             size="sm"
             variant="ghost"
