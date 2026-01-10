@@ -8,6 +8,7 @@ import OddsComparisonTable from "./MatchCard/OddsComparisonTable";
 import PredictedOddsRow from "./MatchCard/PredictedOddsRow";
 import MatchCardFooter from "./MatchCard/MatchCardFooter";
 import BettingMetrics from "./BettingMetrics";
+import ScenarioBadges from "./ScenarioAnalysis/ScenarioBadges";
 
 interface MatchCardProps {
   match: any;
@@ -83,6 +84,10 @@ const MatchCard = ({ match }: MatchCardProps) => {
           </div>
           <MatchParticipant team={match.awayTeam} />
         </div>
+        
+        {/* Scenario Detection Badges */}
+        <ScenarioBadges match={match} maxBadges={3} />
+        
         <OddsComparisonTable match={match} formatOdds={formatOdds} />
         <PredictedOddsRow match={match} formatOdds={formatOdds} />
         <BettingMetrics match={match} />
