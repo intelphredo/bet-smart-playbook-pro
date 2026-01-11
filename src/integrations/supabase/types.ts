@@ -444,6 +444,126 @@ export type Database = {
         }
         Relationships: []
       }
+      venue_coordinates: {
+        Row: {
+          capacity: number | null
+          city: string
+          country: string | null
+          created_at: string
+          id: string
+          is_outdoor: boolean
+          latitude: number
+          league: string
+          longitude: number
+          state: string | null
+          team_name: string
+          updated_at: string
+          venue_name: string
+        }
+        Insert: {
+          capacity?: number | null
+          city: string
+          country?: string | null
+          created_at?: string
+          id?: string
+          is_outdoor?: boolean
+          latitude: number
+          league: string
+          longitude: number
+          state?: string | null
+          team_name: string
+          updated_at?: string
+          venue_name: string
+        }
+        Update: {
+          capacity?: number | null
+          city?: string
+          country?: string | null
+          created_at?: string
+          id?: string
+          is_outdoor?: boolean
+          latitude?: number
+          league?: string
+          longitude?: number
+          state?: string | null
+          team_name?: string
+          updated_at?: string
+          venue_name?: string
+        }
+        Relationships: []
+      }
+      weather_cache: {
+        Row: {
+          condition: string
+          condition_description: string | null
+          created_at: string
+          expires_at: string
+          feels_like: number | null
+          fetched_at: string
+          humidity: number | null
+          id: string
+          is_outdoor_playable: boolean | null
+          latitude: number | null
+          longitude: number | null
+          precipitation: number | null
+          pressure: number | null
+          temperature: number
+          temperature_celsius: number
+          uv_index: number | null
+          venue_key: string
+          visibility: number | null
+          wind_direction: string | null
+          wind_gust: number | null
+          wind_speed: number | null
+        }
+        Insert: {
+          condition: string
+          condition_description?: string | null
+          created_at?: string
+          expires_at?: string
+          feels_like?: number | null
+          fetched_at?: string
+          humidity?: number | null
+          id?: string
+          is_outdoor_playable?: boolean | null
+          latitude?: number | null
+          longitude?: number | null
+          precipitation?: number | null
+          pressure?: number | null
+          temperature: number
+          temperature_celsius: number
+          uv_index?: number | null
+          venue_key: string
+          visibility?: number | null
+          wind_direction?: string | null
+          wind_gust?: number | null
+          wind_speed?: number | null
+        }
+        Update: {
+          condition?: string
+          condition_description?: string | null
+          created_at?: string
+          expires_at?: string
+          feels_like?: number | null
+          fetched_at?: string
+          humidity?: number | null
+          id?: string
+          is_outdoor_playable?: boolean | null
+          latitude?: number | null
+          longitude?: number | null
+          precipitation?: number | null
+          pressure?: number | null
+          temperature?: number
+          temperature_celsius?: number
+          uv_index?: number | null
+          venue_key?: string
+          visibility?: number | null
+          wind_direction?: string | null
+          wind_gust?: number | null
+          wind_speed?: number | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       clv_leaderboard: {
@@ -493,6 +613,7 @@ export type Database = {
       }
     }
     Functions: {
+      clean_expired_weather_cache: { Args: never; Returns: undefined }
       cleanup_old_odds_history: { Args: never; Returns: undefined }
       get_user_preferences: { Args: { user_id_param: string }; Returns: Json }
       manual_record_odds: { Args: never; Returns: Json }
