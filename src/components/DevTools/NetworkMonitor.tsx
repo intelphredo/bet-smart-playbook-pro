@@ -47,7 +47,7 @@ const NetworkMonitor = () => {
       },
       {
         id: "3",
-        url: "/api/actionnetwork/schedule.json",
+        url: "https://api.the-odds-api.com/v4/sports",
         method: "GET",
         status: 200,
         duration: 156,

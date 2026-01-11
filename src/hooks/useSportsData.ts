@@ -2,7 +2,6 @@ import { useEffect, useMemo } from "react";
 import { useESPNData } from "./useESPNData";
 import { useMLBData } from "./useMLBData";
 import { useSportsApiData } from "./useSportsApiData";
-import { useActionNetworkData } from "./useActionNetworkData";
 import { useOddsApi } from "./useOddsApi";
 import { DataSource, League, Match, LiveOdds } from "@/types/sports";
 import { useDataSourceManager } from "./useDataSourceManager";
@@ -79,20 +78,6 @@ export function useSportsData({
   });
 
   const {
-    allMatches: anMatches,
-    upcomingMatches: anUpcomingMatches,
-    liveMatches: anLiveMatches,
-    finishedMatches: anFinishedMatches,
-    isLoading: isLoadingAN,
-    error: anError,
-    refetch: refetchAN
-  } = useActionNetworkData({
-    league,
-    refreshInterval,
-    includeSchedule
-  });
-
-  const {
     allMatches: apiMatches,
     upcomingMatches: apiUpcomingMatches,
     liveMatches: apiLiveMatches,
@@ -136,7 +121,6 @@ export function useSportsData({
     dataSource,
     useExternalApis,
     { allMatches: apiMatches, upcomingMatches: apiUpcomingMatches, liveMatches: apiLiveMatches, finishedMatches: apiFinishedMatches, isLoading: isLoadingApi, error: apiError, refetch: refetchApi },
-    { allMatches: anMatches, upcomingMatches: anUpcomingMatches, liveMatches: anLiveMatches, finishedMatches: anFinishedMatches, isLoading: isLoadingAN, error: anError, refetch: refetchAN },
     { allMatches: mlbMatches, upcomingMatches: mlbUpcomingMatches, liveMatches: mlbLiveMatches, finishedMatches: mlbFinishedMatches, isLoadingSchedule: isLoadingMLB, scheduleError: mlbError, refetchSchedule: refetchMLB, divisionsStandings: mlbDivisionsStandings, isLoadingStandings: mlbIsLoadingStandings, standingsError: mlbStandingsError, fetchLiveGameData: mlbFetchLiveGameData },
     { allMatches: espnMatches, upcomingMatches: espnUpcomingMatches, liveMatches: espnLiveMatches, finishedMatches: espnFinishedMatches, isLoading: isLoadingESPN, error: espnError, refetch: refetchESPN }
   );
@@ -145,7 +129,6 @@ export function useSportsData({
     baseMatches,
     espnMatches,
     apiMatches,
-    anMatches,
     dataSource,
     useExternalApis,
     lastRefreshTime

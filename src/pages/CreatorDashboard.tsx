@@ -90,7 +90,7 @@ export default function CreatorDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  {['ESPN', 'MLB API', 'Action Network', 'Odds API'].map((source) => (
+                  {['ESPN', 'MLB API', 'Odds API'].map((source) => (
                     <Card key={source} className="p-4">
                       <div className="flex items-center justify-between">
                         <span className="font-medium">{source}</span>
@@ -101,7 +101,6 @@ export default function CreatorDashboard() {
                       <p className="text-sm text-muted-foreground mt-2">
                         {source === 'ESPN' && 'Free tier - Live scores and schedules'}
                         {source === 'MLB API' && 'Official MLB data feed'}
-                        {source === 'Action Network' && 'Betting percentages and odds'}
                         {source === 'Odds API' && 'Multi-book odds comparison'}
                       </p>
                     </Card>

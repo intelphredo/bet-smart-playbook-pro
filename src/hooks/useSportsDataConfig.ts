@@ -39,13 +39,6 @@ export function useSportsDataConfig(): SportDataConfiguration {
       supportedLeagues: ["NBA", "NFL", "MLB", "NHL", "SOCCER", "NCAAF", "NCAAB"]
     },
     { 
-      id: "ACTION", 
-      name: "Action Network", 
-      priority: 2, 
-      enabled: true,
-      supportedLeagues: ["NBA", "NFL", "MLB", "NHL", "SOCCER", "NCAAF", "NCAAB"]
-    },
-    { 
       id: "MLB", 
       name: "MLB API", 
       priority: 1, 
@@ -55,7 +48,7 @@ export function useSportsDataConfig(): SportDataConfiguration {
     { 
       id: "API", 
       name: "Sports API", 
-      priority: 3, 
+      priority: 2, 
       enabled: false,
       requiresApiKey: true,
       apiKeyConfigured: false,
@@ -63,7 +56,7 @@ export function useSportsDataConfig(): SportDataConfiguration {
     }
   ]);
   
-  const [enabledDataSources, setEnabledDataSources] = useState<string[]>(["ESPN", "MLB", "ACTION"]);
+  const [enabledDataSources, setEnabledDataSources] = useState<string[]>(["ESPN", "MLB"]);
   const [enabledLeagues, setEnabledLeagues] = useState<string[]>(["NBA", "NFL", "MLB", "NHL", "SOCCER", "NCAAF", "NCAAB"]);
   const [apiKeys, setApiKeys] = useState<Record<string, string>>({});
   const [refreshInterval, setRefreshInterval] = useState<number>(60000);
