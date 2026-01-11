@@ -34,9 +34,19 @@ export function useDataSourceStrategy(defaultSource: DataSource = "ESPN") {
       supportedLeagues: ["MLB"] 
     },
     { 
+      id: "SPORTRADAR", 
+      name: "Sportradar", 
+      priority: 2, 
+      enabled: true,
+      requiresApiKey: true,
+      apiKeyConfigured: true,
+      fallbackSource: "ESPN",
+      supportedLeagues: ["NBA", "NFL", "MLB", "NHL", "SOCCER"] 
+    },
+    { 
       id: "API", 
       name: "Sports API", 
-      priority: 2, 
+      priority: 3, 
       enabled: false,
       requiresApiKey: true,
       apiKeyConfigured: false,
