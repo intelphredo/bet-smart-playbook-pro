@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { isDevMode } from '@/utils/devMode';
 
 export interface LineMovement {
   id: string;
@@ -26,66 +25,24 @@ export interface LineMovement {
   detected_at: string;
 }
 
-const DEV_MOVEMENTS: LineMovement[] = [
-  {
-    id: 'dev-1',
-    match_id: 'demo-1',
-    match_title: 'Chiefs vs Bills',
-    league: 'NFL',
-    sportsbook_id: 'draftkings',
-    market_type: 'spread',
-    previous_odds: { spread_home: -3.5 },
-    current_odds: { spread_home: -4.5 },
-    movement_percentage: -1,
-    movement_direction: 'steam',
-    detected_at: new Date(Date.now() - 30 * 60000).toISOString()
-  },
-  {
-    id: 'dev-2',
-    match_id: 'demo-2',
-    match_title: 'Lakers vs Celtics',
-    league: 'NBA',
-    sportsbook_id: 'fanduel',
-    market_type: 'total',
-    previous_odds: { total: 218.5 },
-    current_odds: { total: 221 },
-    movement_percentage: 2.5,
-    movement_direction: 'reverse',
-    detected_at: new Date(Date.now() - 2 * 3600000).toISOString()
-  },
-  {
-    id: 'dev-3',
-    match_id: 'demo-3',
-    match_title: 'Yankees vs Red Sox',
-    league: 'MLB',
-    sportsbook_id: 'betmgm',
-    market_type: 'moneyline_home',
-    previous_odds: { home: -145 },
-    current_odds: { home: -165 },
-    movement_percentage: -20,
-    movement_direction: 'steam',
-    detected_at: new Date(Date.now() - 5 * 3600000).toISOString()
-  }
-];
-
 export function useLineMovements() {
   const [movements, setMovements] = useState<LineMovement[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   const fetchMovements = useCallback(async () => {
-    if (isDevMode()) {
-      setMovements(DEV_MOVEMENTS);
-      setIsLoading(false);
-      return;
-    }
+    setIsLoading(true);
+    setError(null);
 
     try {
-      // Use fetch API directly for tables not in generated types
+      // Fetch movements from the last 24 hours
+      const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
       
       const response = await fetch(
-        `${supabaseUrl}/rest/v1/line_movement_tracking?select=*&order=detected_at.desc&limit=20`,
+        `${supabaseUrl}/rest/v1/line_movement_tracking?select=*&detected_at=gte.${cutoff}&order=detected_at.desc&limit=20`,
         {
           headers: {
             'apikey': supabaseKey,
@@ -96,15 +53,21 @@ export function useLineMovements() {
       
       if (response.ok) {
         const data = await response.json();
-        setMovements((data || []) as LineMovement[]);
+        // Filter out demo entries
+        const realMovements = (data || []).filter(
+          (m: LineMovement) => !m.match_id?.startsWith('demo-')
+        );
+        setMovements(realMovements);
+        setLastUpdated(new Date());
       } else {
         console.log('Line movements query error:', response.status);
+        setError('Unable to fetch line movements');
         setMovements([]);
       }
     } catch (err) {
       console.error('Error fetching line movements:', err);
-      // Use dev data as fallback
-      setMovements(DEV_MOVEMENTS);
+      setError('Network error fetching line movements');
+      setMovements([]);
     } finally {
       setIsLoading(false);
     }
@@ -117,6 +80,8 @@ export function useLineMovements() {
   return {
     movements,
     isLoading,
+    error,
+    lastUpdated,
     refetch: fetchMovements
   };
 }
