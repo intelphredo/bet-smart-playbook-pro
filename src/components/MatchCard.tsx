@@ -16,6 +16,8 @@ import { SocialFactorsCard } from "./SocialIntelligence/SocialFactorsCard";
 import MatchSourceBadge, { MatchDataSource } from "./MatchCard/MatchSourceBadge";
 import OddsLineChart from "./OddsLineChart";
 import FavoriteButton from "./FavoriteButton";
+import { InjuryImpactBadge } from "./InjuryImpactBadge";
+import { useMatchInjuryImpact } from "@/hooks/useMatchInjuryImpact";
 
 interface MatchCardProps {
   match: any;
@@ -23,6 +25,7 @@ interface MatchCardProps {
 
 const MatchCard = ({ match }: MatchCardProps) => {
   const [showDetails, setShowDetails] = useState(false);
+  const { injuryImpact, hasSignificantImpact } = useMatchInjuryImpact(match);
 
   const formatTime = (timeString: string) => {
     try {
@@ -115,7 +118,12 @@ const MatchCard = ({ match }: MatchCardProps) => {
         </div>
         
         {/* Scenario Detection Badges - show max 2 */}
-        <ScenarioBadges match={match} maxBadges={2} />
+        <div className="flex flex-wrap items-center gap-2 mb-3">
+          <ScenarioBadges match={match} maxBadges={2} />
+          {hasSignificantImpact && (
+            <InjuryImpactBadge impact={injuryImpact} compact />
+          )}
+        </div>
         
         {/* Core odds info */}
         <OddsComparisonTable match={match} />

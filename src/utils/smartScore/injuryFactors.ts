@@ -1,39 +1,167 @@
+import { Match, League } from "@/types/sports";
+import { SportLeague, SportradarInjury } from "@/types/sportradar";
+import { fetchLeagueInjuries } from "@/services/sportradar/injuriesService";
+import { 
+  getPositionWeight, 
+  getStatusMultiplier 
+} from "@/utils/injuries/positionImpactWeights";
 
-import { Match } from "@/types/sports";
+// Cache for injuries to avoid refetching
+const injuryCache: Map<string, { data: SportradarInjury[]; timestamp: number }> = new Map();
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
-export function calculateInjuryImpact(match: Match) {
-  // Default starting score and empty factors array
+function mapToSportLeague(league: League): SportLeague {
+  const mapping: Record<League, SportLeague> = {
+    'NBA': 'NBA',
+    'NFL': 'NFL',
+    'MLB': 'MLB',
+    'NHL': 'NHL',
+    'SOCCER': 'SOCCER',
+    'NCAAF': 'NFL',
+    'NCAAB': 'NBA',
+  };
+  return mapping[league] || 'NBA';
+}
+
+async function getCachedInjuries(league: SportLeague): Promise<SportradarInjury[]> {
+  const cached = injuryCache.get(league);
+  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+    return cached.data;
+  }
+  
+  try {
+    const injuries = await fetchLeagueInjuries(league);
+    injuryCache.set(league, { data: injuries, timestamp: Date.now() });
+    return injuries;
+  } catch (error) {
+    console.error(`[InjuryFactors] Error fetching injuries:`, error);
+    return cached?.data || [];
+  }
+}
+
+function filterTeamInjuries(
+  injuries: SportradarInjury[],
+  teamName: string,
+  teamShortName: string
+): SportradarInjury[] {
+  const normalizedTeamName = teamName.toLowerCase();
+  const normalizedShortName = teamShortName.toLowerCase();
+  
+  return injuries.filter(injury => {
+    const injuryTeam = (injury.team || '').toLowerCase();
+    return (
+      injuryTeam.includes(normalizedTeamName) ||
+      injuryTeam.includes(normalizedShortName) ||
+      normalizedTeamName.includes(injuryTeam)
+    );
+  });
+}
+
+function calculateTeamInjuryScore(
+  injuries: SportradarInjury[],
+  league: League
+): { score: number; factors: string[] } {
+  let totalImpact = 0;
+  const factors: string[] = [];
+  
+  injuries.forEach(injury => {
+    const positionWeight = getPositionWeight(league, injury.position || 'Unknown');
+    const statusMultiplier = getStatusMultiplier(injury.status);
+    
+    const impact = positionWeight.basePointsImpact * statusMultiplier * 10;
+    totalImpact += impact;
+    
+    // Add factor for significant injuries
+    if (statusMultiplier >= 0.75) {
+      factors.push(`${injury.playerName} (${injury.position}) - ${injury.status.toUpperCase()}`);
+    }
+  });
+  
+  // Convert impact to score (higher impact = lower score for betting confidence)
+  // 0 impact = 100 score, 50+ impact = 25 score minimum
+  const score = Math.max(25, 100 - (totalImpact * 1.5));
+  
+  return { score: Math.round(score), factors };
+}
+
+export function calculateInjuryImpact(match: Match): { injuriesScore: number; injuryFactors: string[] } {
+  // Synchronous version for compatibility with existing SmartScore calculator
+  // Uses mock/cached data patterns
   let injuriesScore = 75;
-  const injuryFactors = [];
+  const injuryFactors: string[] = [];
   
-  // In a real implementation, this would check injury reports APIs
-  // For now, let's simulate based on match data patterns
+  // Check team records for losing streaks (proxy for potential injury impact)
+  const homeRecord = match.homeTeam.record || '';
+  const awayRecord = match.awayTeam.record || '';
   
-  // Check if any injury info is in match data
-  // Since description property doesn't exist on Match type, we'll use other properties
+  // Parse recent losses from record
+  const homeLosses = (homeRecord.match(/L/g) || []).length;
+  const awayLosses = (awayRecord.match(/L/g) || []).length;
   
-  // Check for injury indicators in team records
-  if (match.homeTeam.record && match.homeTeam.record.includes("L")) {
-    // More losses recently might indicate injury problems
-    const losses = (match.homeTeam.record.match(/L/g) || []).length;
-    if (losses >= 3) {
-      injuriesScore -= 10;
-      injuryFactors.push(`${match.homeTeam.shortName} on losing streak (possible injury impact)`);
-    }
+  if (homeLosses >= 3) {
+    injuriesScore -= 10;
+    injuryFactors.push(`${match.homeTeam.shortName} on losing streak (possible injury impact)`);
   }
   
-  if (match.awayTeam.record && match.awayTeam.record.includes("L")) {
-    const losses = (match.awayTeam.record.match(/L/g) || []).length;
-    if (losses >= 3) {
-      injuriesScore -= 10;
-      injuryFactors.push(`${match.awayTeam.shortName} on losing streak (possible injury impact)`);
-    }
+  if (awayLosses >= 3) {
+    injuriesScore -= 10;
+    injuryFactors.push(`${match.awayTeam.shortName} on losing streak (possible injury impact)`);
   }
   
-  // If no injury factors were found, add a default one
   if (injuryFactors.length === 0) {
     injuryFactors.push("No major injuries reported");
   }
   
   return { injuriesScore, injuryFactors };
+}
+
+// Async version that uses real injury data
+export async function calculateInjuryImpactAsync(match: Match): Promise<{ 
+  injuriesScore: number; 
+  injuryFactors: string[];
+  homeInjuries: SportradarInjury[];
+  awayInjuries: SportradarInjury[];
+}> {
+  const sportLeague = mapToSportLeague(match.league);
+  const allInjuries = await getCachedInjuries(sportLeague);
+  
+  const homeInjuries = filterTeamInjuries(
+    allInjuries,
+    match.homeTeam.name,
+    match.homeTeam.shortName
+  );
+  
+  const awayInjuries = filterTeamInjuries(
+    allInjuries,
+    match.awayTeam.name,
+    match.awayTeam.shortName
+  );
+  
+  const homeImpact = calculateTeamInjuryScore(homeInjuries, match.league);
+  const awayImpact = calculateTeamInjuryScore(awayInjuries, match.league);
+  
+  // Combined score (average of both teams' injury health)
+  const injuriesScore = Math.round((homeImpact.score + awayImpact.score) / 2);
+  
+  // Combine factors
+  const injuryFactors: string[] = [];
+  
+  if (homeImpact.factors.length > 0) {
+    injuryFactors.push(`${match.homeTeam.shortName}: ${homeImpact.factors.slice(0, 2).join(', ')}`);
+  }
+  
+  if (awayImpact.factors.length > 0) {
+    injuryFactors.push(`${match.awayTeam.shortName}: ${awayImpact.factors.slice(0, 2).join(', ')}`);
+  }
+  
+  if (injuryFactors.length === 0) {
+    injuryFactors.push("Both teams at full strength");
+  }
+  
+  return { 
+    injuriesScore, 
+    injuryFactors,
+    homeInjuries,
+    awayInjuries
+  };
 }
