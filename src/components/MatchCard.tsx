@@ -22,7 +22,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 // Lazy load heavy components that are only shown when expanded
 const BettingMetrics = lazy(() => import("./BettingMetrics"));
 const SocialFactorsCard = lazy(() => import("./SocialIntelligence/SocialFactorsCard").then(m => ({ default: m.SocialFactorsCard })));
-const InjuryBreakdown = lazy(() => import("./MatchCard/InjuryBreakdown"));
+const InjuryBreakdown = lazy(() => import("./MatchCard/InjuryBreakdown").then(m => ({ default: m.InjuryBreakdown })));
 const LiveOdds = lazy(() => import("./LiveOdds"));
 const OddsLineChart = lazy(() => import("./OddsLineChart"));
 
