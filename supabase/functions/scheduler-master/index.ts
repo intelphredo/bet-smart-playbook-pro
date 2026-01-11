@@ -6,7 +6,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-type TaskName = "odds-recorder" | "bet-grader" | "line-detector" | "all";
+type TaskName = "odds-recorder" | "bet-grader" | "line-detector" | "game-monitor" | "all";
 
 interface TaskResult {
   task: string;
@@ -19,6 +19,7 @@ const TASK_FUNCTIONS: Record<string, string> = {
   "odds-recorder": "scheduled-odds-recorder",
   "bet-grader": "scheduled-bet-grader",
   "line-detector": "scheduled-line-detector",
+  "game-monitor": "detect-game-starts",
 };
 
 Deno.serve(async (req) => {
