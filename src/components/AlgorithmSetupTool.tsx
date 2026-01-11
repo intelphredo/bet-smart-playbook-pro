@@ -9,8 +9,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 const AlgorithmSetupTool = () => {
-  const [name, setName] = useState("Sports Edge ML");
-  const [description, setDescription] = useState("Machine learning algorithm that analyzes historical data, player stats, and team performance to predict match outcomes.");
+  const [name, setName] = useState("Statistical Edge");
+  const [description, setDescription] = useState("Pure statistics-based algorithm that considers situational spots, weather impacts, injuries, and matchup advantages to find edges in the betting markets.");
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const queryClient = useQueryClient();
@@ -62,34 +62,34 @@ const AlgorithmSetupTool = () => {
     try {
       setIsSubmitting(true);
       
-      // Check if default algorithm exists
+      // Check if Statistical Edge algorithm exists
       const { data, error } = await supabase
         .from("algorithms")
         .select("*")
-        .eq("name", "Sports Edge ML");
+        .eq("id", "85c48bbe-5b1a-4c1e-a0d5-e284e9e952f1");
       
       if (error) throw error;
       
       if (data && data.length === 0) {
-        // Create the default algorithm
+        // Create the Statistical Edge algorithm
         const { error: insertError } = await supabase
           .from("algorithms")
           .insert({
-            id: "default-algorithm",
-            name: "Sports Edge ML",
-            description: "Machine learning algorithm that analyzes historical data, player stats, and team performance to predict match outcomes."
+            id: "85c48bbe-5b1a-4c1e-a0d5-e284e9e952f1",
+            name: "Statistical Edge",
+            description: "Pure statistics-based algorithm that considers situational spots, weather impacts, injuries, and matchup advantages to find edges in the betting markets."
           });
         
         if (insertError) throw insertError;
         
-        toast.success("Default algorithm created successfully!");
+        toast.success("Statistical Edge algorithm created successfully!");
         queryClient.invalidateQueries({ queryKey: ["algorithms"] });
       } else {
-        toast.info("Default algorithm already exists");
+        toast.info("Statistical Edge algorithm already exists");
       }
     } catch (error) {
-      console.error("Error creating default algorithm:", error);
-      toast.error(`Failed to create default algorithm: ${error.message}`);
+      console.error("Error creating Statistical Edge algorithm:", error);
+      toast.error(`Failed to create algorithm: ${error.message}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -107,10 +107,10 @@ const AlgorithmSetupTool = () => {
             disabled={isSubmitting}
             variant="outline"
           >
-            Create Default Algorithm
+            Create Statistical Edge Algorithm
           </Button>
           <p className="text-sm text-muted-foreground mt-1">
-            Creates an algorithm with ID "default-algorithm" to use with the existing code
+            Creates the Statistical Edge algorithm with ID "85c48bbe-5b1a-4c1e-a0d5-e284e9e952f1"
           </p>
         </div>
         
