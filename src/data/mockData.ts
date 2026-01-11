@@ -1,24 +1,24 @@
-
 import { League, Match, BettingAlgorithm, PlayerProp, ArbitrageOpportunity } from "@/types/sports";
+import { SPORTSBOOK_LOGOS } from "@/utils/teamLogos";
 
 // Define sportsbooks first so we can use them in other declarations
 export const sportsbooks = [
   {
     id: "1",
     name: "DraftKings",
-    logo: "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=400&h=400&fit=crop&crop=center",
+    logo: SPORTSBOOK_LOGOS.draftkings,
     isAvailable: true,
   },
   {
     id: "2",
     name: "FanDuel", 
-    logo: "https://images.unsplash.com/photo-1605810230434-7631ac76ec81?w=400&h=400&fit=crop&crop=center",
+    logo: SPORTSBOOK_LOGOS.fanduel,
     isAvailable: true,
   },
   {
     id: "3",
     name: "BetMGM",
-    logo: "https://images.unsplash.com/photo-1518770660439-4636190af475?w=400&h=400&fit=crop&crop=center",
+    logo: SPORTSBOOK_LOGOS.betmgm,
     isAvailable: true,
   },
 ];
@@ -178,15 +178,15 @@ export const upcomingMatches: Match[] = [
     homeTeam: {
       id: "9",
       name: "Manchester United",
-      shortName: "MU",
-      logo: "https://images.unsplash.com/photo-1472396961693-142e6e269027?w=400&h=400&fit=crop&crop=center",
+      shortName: "MUN",
+      logo: "https://a.espncdn.com/i/teamlogos/soccer/500/360.png",
       record: "26-8-4",
     },
     awayTeam: {
       id: "10",
       name: "Liverpool",
-      shortName: "LFC",
-      logo: "https://images.unsplash.com/photo-1500673922987-e212871fec22?w=400&h=400&fit=crop&crop=center",
+      shortName: "LIV",
+      logo: "https://a.espncdn.com/i/teamlogos/soccer/500/364.png",
       record: "24-10-4",
     },
     startTime: "2025-06-01T16:00:00Z",

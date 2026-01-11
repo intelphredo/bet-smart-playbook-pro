@@ -1,5 +1,5 @@
-
 import { League, Match, Team, LiveOdds, Sportsbook } from "@/types/sports";
+import { getTeamLogoUrl, getSportsbookLogo, getTeamAbbreviation as getTeamAbbr } from "@/utils/teamLogos";
 
 export const mapOddsApiToMatch = (oddsData: any[], scoresData: any[], league: League): Match[] => {
   try {
@@ -10,19 +10,19 @@ export const mapOddsApiToMatch = (oddsData: any[], scoresData: any[], league: Le
     });
     
     return oddsData.map(event => {
-      // Get team information
+      // Get team information with real logos
       const homeTeam: Team = {
         id: `odds-api-${event.home_team.replace(/\s/g, '-').toLowerCase()}`,
         name: event.home_team,
-        shortName: getTeamAbbreviation(event.home_team),
-        logo: `https://placeholder.com/teams/${league.toLowerCase()}/${event.home_team.replace(/\s/g, '-').toLowerCase()}.svg`,
+        shortName: getTeamAbbr(event.home_team, league).toUpperCase(),
+        logo: getTeamLogoUrl(event.home_team, league),
       };
       
       const awayTeam: Team = {
         id: `odds-api-${event.away_team.replace(/\s/g, '-').toLowerCase()}`,
         name: event.away_team,
-        shortName: getTeamAbbreviation(event.away_team),
-        logo: `https://placeholder.com/teams/${league.toLowerCase()}/${event.away_team.replace(/\s/g, '-').toLowerCase()}.svg`,
+        shortName: getTeamAbbr(event.away_team, league).toUpperCase(),
+        logo: getTeamLogoUrl(event.away_team, league),
       };
       
       // Get odds information from the first bookmaker (if available)
@@ -44,7 +44,7 @@ export const mapOddsApiToMatch = (oddsData: any[], scoresData: any[], league: Le
         }
       }
       
-      // Get all bookmakers for live odds comparison
+      // Get all bookmakers for live odds comparison with real logos
       const liveOdds: LiveOdds[] = event.bookmakers?.map(bookmaker => {
         const h2h = bookmaker.markets.find(m => m.key === 'h2h');
         const homeWin = parseFloat(h2h?.outcomes.find(o => o.name === event.home_team)?.price || 0);
@@ -56,7 +56,7 @@ export const mapOddsApiToMatch = (oddsData: any[], scoresData: any[], league: Le
         const sportsbook: Sportsbook = {
           id: bookmaker.key,
           name: bookmaker.title,
-          logo: `https://placeholder.com/sportsbooks/${bookmaker.key}.svg`,
+          logo: getSportsbookLogo(bookmaker.key),
           isAvailable: true
         };
         
