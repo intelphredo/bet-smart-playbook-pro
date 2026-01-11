@@ -12,15 +12,33 @@ import { isDevMode } from '@/utils/devMode';
 import { useNavigate } from 'react-router-dom';
 
 function getRankBadge(rank: number) {
+  const baseClasses = "w-6 h-6 flex items-center justify-center";
+  
   switch (rank) {
     case 1:
-      return <Crown className="w-5 h-5 text-yellow-500" />;
+      return (
+        <div className={cn(baseClasses, "animate-scale-subtle")}>
+          <Crown className="w-5 h-5 text-yellow-500 drop-shadow-sm" />
+        </div>
+      );
     case 2:
-      return <Medal className="w-5 h-5 text-slate-400" />;
+      return (
+        <div className={baseClasses}>
+          <Medal className="w-5 h-5 text-slate-400" />
+        </div>
+      );
     case 3:
-      return <Medal className="w-5 h-5 text-amber-600" />;
+      return (
+        <div className={baseClasses}>
+          <Medal className="w-5 h-5 text-amber-600" />
+        </div>
+      );
     default:
-      return <span className="w-5 h-5 flex items-center justify-center text-sm font-bold text-muted-foreground">#{rank}</span>;
+      return (
+        <span className="w-6 h-6 flex items-center justify-center text-sm font-bold text-muted-foreground bg-muted rounded-full">
+          {rank}
+        </span>
+      );
   }
 }
 
@@ -116,11 +134,11 @@ function EmptyLeaderboard() {
   return (
     <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
       <div className="relative mb-6">
-        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-yellow-500/20 via-amber-500/10 to-orange-500/5 flex items-center justify-center">
+        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-yellow-500/20 via-amber-500/10 to-orange-500/5 flex items-center justify-center animate-float">
           <Trophy className="w-10 h-10 text-yellow-500/70" />
         </div>
-        <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
-          <Sparkles className="w-3 h-3 text-primary" />
+        <div className="absolute -top-1 -right-1 w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center animate-scale-subtle">
+          <Sparkles className="w-4 h-4 text-primary" />
         </div>
       </div>
       
@@ -135,6 +153,7 @@ function EmptyLeaderboard() {
       <Button 
         onClick={() => user ? navigate('/bet-history') : navigate('/auth')}
         className="gap-2"
+        variant="premium"
       >
         {user ? 'Start Tracking Bets' : 'Sign Up to Compete'}
         <ArrowRight className="w-4 h-4" />
@@ -165,8 +184,8 @@ export default function CLVLeaderboard() {
   }
 
   return (
-    <Card className="overflow-hidden">
-      <CardHeader className="pb-3">
+    <Card variant="interactive" className="overflow-hidden">
+      <CardHeader className="pb-3 bg-gradient-to-r from-yellow-500/5 to-transparent">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-lg">
             <Trophy className="w-5 h-5 text-yellow-500" />

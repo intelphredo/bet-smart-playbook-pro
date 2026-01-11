@@ -115,11 +115,11 @@ function EmptyMovements() {
   return (
     <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
       <div className="relative mb-6">
-        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-orange-500/20 via-amber-500/10 to-yellow-500/5 flex items-center justify-center">
+        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-orange-500/20 via-amber-500/10 to-yellow-500/5 flex items-center justify-center animate-float">
           <Activity className="w-10 h-10 text-orange-500/70" />
         </div>
-        <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-emerald-500/10 flex items-center justify-center animate-pulse">
-          <Zap className="w-3 h-3 text-emerald-500" />
+        <div className="absolute -top-1 -right-1 w-7 h-7 rounded-full bg-emerald-500/10 flex items-center justify-center">
+          <Zap className="w-4 h-4 text-emerald-500 animate-pulse" />
         </div>
       </div>
       
@@ -131,7 +131,7 @@ function EmptyMovements() {
         We track spreads, totals, and moneylines across all major sportsbooks
       </p>
       
-      <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 rounded-full px-4 py-2">
+      <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 rounded-full px-4 py-2.5 border border-border/50">
         <Bell className="w-3.5 h-3.5" />
         <span>Movements appear when sharp action is detected</span>
       </div>
@@ -160,23 +160,24 @@ export default function LineMovementsCard() {
   const { movements, isLoading, error, lastUpdated, refetch } = useLineMovements();
 
   return (
-    <Card>
+    <Card variant="interactive">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-lg">
-            <Activity className="w-5 h-5 text-orange-500" />
+            <div className="p-1.5 rounded-lg bg-orange-500/10">
+              <Activity className="w-5 h-5 text-orange-500" />
+            </div>
             Sharp Line Movements
           </CardTitle>
           <div className="flex items-center gap-2">
             {movements.length > 0 && (
-              <Badge variant="destructive" className="animate-pulse">
+              <Badge variant="destructive" className="notification-badge">
                 {movements.length} active
               </Badge>
             )}
             <Button 
               variant="ghost" 
-              size="icon" 
-              className="h-8 w-8"
+              size="icon-xs"
               onClick={refetch}
               disabled={isLoading}
             >
