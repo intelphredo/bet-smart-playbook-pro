@@ -47,13 +47,13 @@ const NetworkMonitor = () => {
       },
       {
         id: "3",
-        url: "https://api.the-odds-api.com/v4/sports",
+        url: "https://api.sportradar.com/nba/trial/v8/en/league/injuries.json",
         method: "GET",
         status: 200,
         duration: 156,
         timestamp: new Date(Date.now() - 15000),
         type: "fetch",
-        size: "5.1 KB"
+        size: "15.3 KB"
       },
       {
         id: "4",

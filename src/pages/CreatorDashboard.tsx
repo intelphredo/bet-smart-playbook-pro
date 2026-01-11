@@ -89,18 +89,19 @@ export default function CreatorDashboard() {
                 <CardTitle>Data Source Management</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  {['ESPN', 'MLB API', 'Odds API'].map((source) => (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                  {['ESPN', 'MLB API', 'Sportradar', 'Odds API'].map((source) => (
                     <Card key={source} className="p-4">
                       <div className="flex items-center justify-between">
                         <span className="font-medium">{source}</span>
-                        <Badge variant={source === 'ESPN' || source === 'MLB API' ? 'default' : 'secondary'}>
-                          {source === 'ESPN' || source === 'MLB API' ? 'Active' : 'Configure'}
+                        <Badge variant={source === 'ESPN' || source === 'MLB API' || source === 'Sportradar' ? 'default' : 'secondary'}>
+                          {source === 'ESPN' || source === 'MLB API' ? 'Active' : source === 'Sportradar' ? 'Premium' : 'Configure'}
                         </Badge>
                       </div>
                       <p className="text-sm text-muted-foreground mt-2">
                         {source === 'ESPN' && 'Free tier - Live scores and schedules'}
                         {source === 'MLB API' && 'Official MLB data feed'}
+                        {source === 'Sportradar' && 'Premium injuries, stats & analytics'}
                         {source === 'Odds API' && 'Multi-book odds comparison'}
                       </p>
                     </Card>
