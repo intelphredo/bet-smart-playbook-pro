@@ -5,6 +5,7 @@ import { MobileNav } from "@/components/MobileNav";
 import { SkipLink } from "@/components/ui/skip-link";
 import { Home, BarChart2, BookOpen, Shield, Wallet, Trophy, AlertTriangle, History, Settings } from "lucide-react";
 import BetSlipDrawer from "@/components/BetSlip/BetSlipDrawer";
+import { isDevMode } from "@/utils/devMode";
 
 const navItems = [
   { path: "/", label: "Home", icon: Home },
@@ -36,6 +37,11 @@ export default function NavBar() {
               <span className="mr-1 tracking-tighter font-playfair">Bet</span>
               <span>Smart</span>
             </Link>
+            {isDevMode() && (
+              <span className="ml-2 px-1.5 py-0.5 text-[10px] font-bold bg-amber-500 text-white rounded">
+                DEV
+              </span>
+            )}
           </div>
           
           <nav role="navigation" aria-label="Main navigation" className="hidden md:block">
