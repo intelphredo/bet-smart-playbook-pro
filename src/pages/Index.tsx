@@ -16,6 +16,8 @@ import QuickStatsDashboard from "@/components/QuickStatsDashboard";
 import { useSportsData } from "@/hooks/useSportsData";
 import { SportCategory } from "@/types/LeagueRegistry";
 import { DataViewSource } from "@/components/filters/DataSourceFilter";
+import DevToolsPanel from "@/components/DevToolsPanel";
+import { isDevMode } from "@/utils/devMode";
 
 const Index = () => {
   const [selectedLeague, setSelectedLeague] = useState<League | string | "ALL">("ALL");
@@ -222,6 +224,7 @@ const Index = () => {
         </div>
       </main>
       <PageFooter />
+      {isDevMode() && <DevToolsPanel />}
     </div>
   );
 };
