@@ -6,6 +6,18 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Structured logging
+const log = {
+  info: (msg: string, data?: Record<string, unknown>) => 
+    console.log(JSON.stringify({ level: "info", msg, ...data, ts: new Date().toISOString() })),
+  error: (msg: string, error?: unknown, data?: Record<string, unknown>) => 
+    console.error(JSON.stringify({ 
+      level: "error", msg, 
+      error: error instanceof Error ? error.message : String(error),
+      ...data, ts: new Date().toISOString() 
+    })),
+};
+
 interface PendingBet {
   id: string;
   user_id: string;
@@ -16,6 +28,7 @@ interface PendingBet {
   odds_at_placement: number;
   stake: number;
   league?: string;
+  graded_at?: string | null;
 }
 
 interface ESPNGame {
@@ -202,33 +215,46 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const startTime = Date.now();
+  
   try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      log.error("Missing environment variables");
+      return new Response(
+        JSON.stringify({ success: false, error: { code: "CONFIG_ERROR", message: "Missing configuration" } }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    console.log("Starting bet grading process...");
+    log.info("Starting bet grading process");
 
-    // Get all pending bets
+    // Get all pending bets that haven't been graded yet
     const { data: pendingBets, error: betsError } = await supabase
       .from("user_bets")
-      .select("id, user_id, match_id, match_title, bet_type, selection, odds_at_placement, stake, league")
-      .eq("status", "pending");
+      .select("id, user_id, match_id, match_title, bet_type, selection, odds_at_placement, stake, league, graded_at")
+      .eq("status", "pending")
+      .is("graded_at", null)
+      .limit(100); // Process in batches for reliability
 
     if (betsError) {
-      console.error("Error fetching pending bets:", betsError);
+      log.error("Error fetching pending bets", betsError);
       throw betsError;
     }
 
     if (!pendingBets || pendingBets.length === 0) {
-      console.log("No pending bets found");
+      log.info("No pending bets found");
       return new Response(
-        JSON.stringify({ success: true, message: "No pending bets to grade", graded: 0 }),
+        JSON.stringify({ success: true, data: { message: "No pending bets to grade", graded: 0 } }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log(`Found ${pendingBets.length} pending bets to check`);
+    log.info(`Found ${pendingBets.length} pending bets to check`);
 
     let gradedCount = 0;
     const alertsToCreate: any[] = [];
@@ -267,16 +293,18 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // Update the bet
+      // Update the bet with idempotency check
       const { error: updateError } = await supabase
         .from("user_bets")
         .update({
           status: outcome.status,
           result_profit: outcome.resultProfit,
           settled_at: new Date().toISOString(),
+          graded_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })
-        .eq("id", bet.id);
+        .eq("id", bet.id)
+        .is("graded_at", null); // Idempotency: only update if not already graded
 
       if (updateError) {
         console.error(`Error updating bet ${bet.id}:`, updateError);
@@ -284,7 +312,11 @@ Deno.serve(async (req) => {
       }
 
       gradedCount++;
-      console.log(`Graded bet ${bet.id}: ${outcome.status}, profit: ${outcome.resultProfit}`);
+      log.info(`Graded bet ${bet.id}`, { 
+        status: outcome.status, 
+        profit: outcome.resultProfit,
+        matchId: bet.match_id 
+      });
 
       // Create alert for bet result
       const emoji = outcome.status === "won" ? "🎉" : outcome.status === "lost" ? "😔" : "↔️";
@@ -310,34 +342,45 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Create alerts
+    // Create alerts in batch
     if (alertsToCreate.length > 0) {
       const { error: alertError } = await supabase
         .from("user_alerts")
         .insert(alertsToCreate);
       
       if (alertError) {
-        console.error("Error creating alerts:", alertError);
+        log.error("Error creating alerts", alertError);
       } else {
-        console.log(`Created ${alertsToCreate.length} bet result alerts`);
+        log.info(`Created ${alertsToCreate.length} bet result alerts`);
       }
     }
 
-    console.log(`Successfully graded ${gradedCount} bets`);
+    const duration = Date.now() - startTime;
+    log.info(`Bet grading completed`, { gradedCount, alertsCreated: alertsToCreate.length, durationMs: duration });
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        graded: gradedCount,
-        alerts_created: alertsToCreate.length
+        data: {
+          graded: gradedCount,
+          alerts_created: alertsToCreate.length,
+          duration_ms: duration
+        }
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 
   } catch (error) {
-    console.error("Error in grade-bets:", error);
+    log.error("Error in grade-bets", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        success: false, 
+        error: { 
+          code: "GRADING_ERROR", 
+          message: error instanceof Error ? error.message : "Unknown error",
+          timestamp: new Date().toISOString()
+        } 
+      }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

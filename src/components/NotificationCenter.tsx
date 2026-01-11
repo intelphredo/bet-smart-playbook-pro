@@ -101,19 +101,19 @@ export default function NotificationCenter() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative">
+        <Button variant="ghost" size="icon-sm" className="relative">
           <Bell size={18} />
           {unreadCount > 0 && (
             <Badge 
               variant="destructive" 
-              className="absolute -top-1 -right-1 h-5 min-w-5 px-1 flex items-center justify-center text-xs"
+              className="absolute -top-1 -right-1 h-5 min-w-5 px-1 flex items-center justify-center text-[10px] notification-badge"
             >
               {unreadCount > 99 ? '99+' : unreadCount}
             </Badge>
           )}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-80 bg-popover border shadow-lg z-50">
+      <DropdownMenuContent align="end" className="w-80 bg-popover/95 backdrop-blur-md border shadow-xl z-50">
         <DropdownMenuLabel className="flex items-center justify-between">
           <span>Notifications</span>
           {unreadCount > 0 && (
@@ -136,9 +136,11 @@ export default function NotificationCenter() {
           </div>
         ) : alerts.length === 0 ? (
           <div className="p-8 text-center">
-            <Bell className="mx-auto h-8 w-8 text-muted-foreground/50 mb-2" />
-            <p className="text-sm text-muted-foreground">No notifications yet</p>
-            <p className="text-xs text-muted-foreground/70 mt-1">
+            <div className="w-14 h-14 mx-auto rounded-full bg-muted/50 flex items-center justify-center mb-3 animate-float">
+              <Bell className="h-7 w-7 text-muted-foreground/50" />
+            </div>
+            <p className="text-sm font-medium text-foreground mb-1">No notifications yet</p>
+            <p className="text-xs text-muted-foreground">
               You'll see bet results and alerts here
             </p>
           </div>

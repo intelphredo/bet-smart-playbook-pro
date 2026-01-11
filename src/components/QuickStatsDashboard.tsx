@@ -1,6 +1,5 @@
 import { useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { TrendingUp, TrendingDown, Target, DollarSign, Activity, Zap } from "lucide-react";
 import { useBetTracking } from "@/hooks/useBetTracking";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -47,8 +46,12 @@ const QuickStatsDashboard = () => {
         {[...Array(4)].map((_, i) => (
           <Card key={i} className="bg-card/80 backdrop-blur-sm">
             <CardContent className="p-4">
-              <Skeleton className="h-4 w-20 mb-2" />
-              <Skeleton className="h-8 w-16" />
+              <div className="flex items-center justify-between mb-3">
+                <Skeleton shimmer className="h-3 w-16" />
+                <Skeleton shimmer className="h-7 w-7 rounded-lg" />
+              </div>
+              <Skeleton shimmer className="h-8 w-20 mb-1" />
+              <Skeleton shimmer className="h-3 w-14" />
             </CardContent>
           </Card>
         ))}
@@ -98,25 +101,38 @@ const QuickStatsDashboard = () => {
         return (
           <Card 
             key={index} 
+            variant="interactive"
             className={cn(
-              "bg-card/80 backdrop-blur-sm border-border/50 hover:border-primary/30 transition-all duration-200",
-              "hover:shadow-md"
+              "bg-card/80 backdrop-blur-sm border-border/50 stat-glow",
+              "fade-in",
+              index === 0 && "stagger-1",
+              index === 1 && "stagger-2",
+              index === 2 && "stagger-3",
+              index === 3 && "stagger-4"
             )}
           >
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
                   {stat.label}
                 </span>
-                <div className={cn("p-1.5 rounded-md", stat.bgColor)}>
-                  <Icon className={cn("h-3.5 w-3.5", stat.color)} />
+                <div className={cn(
+                  "p-1.5 rounded-lg transition-transform duration-200 group-hover:scale-110",
+                  stat.bgColor
+                )}>
+                  <Icon className={cn("h-4 w-4", stat.color)} />
                 </div>
               </div>
-              <div className={cn("text-2xl font-bold tracking-tight", stat.color)}>
+              <div className={cn(
+                "text-2xl font-bold tracking-tight animate-number",
+                stat.color
+              )}>
                 {stat.value}
               </div>
               {stat.subValue && (
-                <p className="text-xs text-muted-foreground mt-1">{stat.subValue}</p>
+                <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                  {stat.subValue}
+                </p>
               )}
             </CardContent>
           </Card>
