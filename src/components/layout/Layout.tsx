@@ -1,16 +1,13 @@
-import React from "react";
-import Navigation from "./Navigation";
-import ErrorBoundary from "@/components/ErrorBoundary";
+import { useIsFetching } from "@tanstack/react-query";
+import { TopLoader } from "@/components/ui/TopLoader";
 
-const Layout = ({ children }: { children: React.ReactNode }) => {
+const Layout = ({ children }) => {
+  const isFetching = useIsFetching() > 0;
+
   return (
-    <ErrorBoundary>
-      <div className="min-h-screen bg-background text-foreground">
-        <Navigation />
-        <main className="max-w-4xl mx-auto py-6 px-4">{children}</main>
-      </div>
-    </ErrorBoundary>
+    <>
+      <TopLoader isLoading={isFetching} />
+      {/* existing layout */}
+    </>
   );
 };
-
-export default Layout;
