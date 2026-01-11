@@ -7,7 +7,6 @@ export function useMatchVerification(
   allMatches: Match[],
   espnMatches: Match[],
   apiMatches: Match[],
-  anMatches: Match[],
   dataSource: DataSource | "ALL",
   useExternalApis: boolean,
   lastRefreshTime: string
@@ -28,8 +27,7 @@ export function useMatchVerification(
     return allMatches.map(match => {
       const matchInSources = [
         { name: "ESPN", data: espnMatches.find(m => m.id === match.id) },
-        { name: "API", data: apiMatches.find(m => m.id === match.id) },
-        { name: "ACTION", data: anMatches.find(m => m.id === match.id) }
+        { name: "API", data: apiMatches.find(m => m.id === match.id) }
       ].filter(source => source.data) as { name: string; data: Match }[];
 
       const verification = verifyMatchData(match, matchInSources);
@@ -40,7 +38,7 @@ export function useMatchVerification(
         lastUpdated: lastRefreshTime
       };
     });
-  }, [allMatches, espnMatches, apiMatches, anMatches, dataSource, useExternalApis, lastRefreshTime]);
+  }, [allMatches, espnMatches, apiMatches, dataSource, useExternalApis, lastRefreshTime]);
 
   return { verifiedMatches };
 }

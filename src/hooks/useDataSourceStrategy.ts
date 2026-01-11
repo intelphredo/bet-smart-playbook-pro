@@ -27,13 +27,6 @@ export function useDataSourceStrategy(defaultSource: DataSource = "ESPN") {
       supportedLeagues: ["NBA", "NFL", "MLB", "NHL", "SOCCER", "NCAAF", "NCAAB"] 
     },
     { 
-      id: "ACTION", 
-      name: "Action Network", 
-      priority: 2, 
-      enabled: true,
-      supportedLeagues: ["NBA", "NFL", "MLB", "NHL", "SOCCER", "NCAAF", "NCAAB"] 
-    },
-    { 
       id: "MLB", 
       name: "MLB API", 
       priority: 1, 
@@ -43,7 +36,7 @@ export function useDataSourceStrategy(defaultSource: DataSource = "ESPN") {
     { 
       id: "API", 
       name: "Sports API", 
-      priority: 3, 
+      priority: 2, 
       enabled: false,
       requiresApiKey: true,
       apiKeyConfigured: false,

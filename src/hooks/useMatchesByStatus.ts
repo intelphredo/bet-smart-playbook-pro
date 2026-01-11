@@ -19,7 +19,6 @@ export function useMatchesByStatus(
   dataSource: DataSource | "ALL",
   useExternalApis: boolean,
   apiMatches: any,
-  anMatches: any,
   mlbMatches: any,
   espnMatches: any
 ): MatchesByStatus {
@@ -32,22 +31,6 @@ export function useMatchesByStatus(
       isLoading: apiMatches.isLoading,
       error: apiMatches.error,
       refetchSchedule: apiMatches.refetch,
-      selectedDivisionsStandings: [],
-      selectedIsLoadingStandings: false,
-      selectedStandingsError: null,
-      selectedFetchLiveGameData: undefined
-    };
-  }
-
-  if (dataSource === "ACTION") {
-    return {
-      baseMatches: anMatches.allMatches,
-      baseUpcomingMatches: anMatches.upcomingMatches,
-      baseLiveMatches: anMatches.liveMatches,
-      baseFinishedMatches: anMatches.finishedMatches,
-      isLoading: anMatches.isLoading,
-      error: anMatches.error,
-      refetchSchedule: anMatches.refetch,
       selectedDivisionsStandings: [],
       selectedIsLoadingStandings: false,
       selectedStandingsError: null,
