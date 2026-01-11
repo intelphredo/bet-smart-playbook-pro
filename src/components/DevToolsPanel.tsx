@@ -7,8 +7,10 @@ import AlgorithmSetupTool from "./AlgorithmSetupTool";
 import NetworkMonitor from "./DevTools/NetworkMonitor";
 import StateInspector from "./DevTools/StateInspector";
 import PerformanceMetrics from "./DevTools/PerformanceMetrics";
-import { X, Bug, Network, Database, Gauge, Wrench, ScrollText } from "lucide-react";
+import { exportDevToolsData } from "./DevTools/exportDevToolsData";
+import { X, Bug, Network, Database, Gauge, Wrench, ScrollText, Download } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
+import { toast } from "sonner";
 
 const DevToolsPanel = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -24,6 +26,21 @@ const DevToolsPanel = () => {
               <h2 className="text-lg font-bold">Developer Tools</h2>
             </div>
             <div className="flex items-center space-x-2">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => {
+                      exportDevToolsData();
+                      toast.success("DevTools data exported as JSON");
+                    }}
+                  >
+                    <Download className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Export DevTools Data</TooltipContent>
+              </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button 
