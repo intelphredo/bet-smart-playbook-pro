@@ -9,9 +9,11 @@ import { useBetSlip } from './BetSlipContext';
 
 interface BetSlipItemProps {
   item: BetSlipItemType;
+  showLegNumber?: boolean;
+  legNumber?: number;
 }
 
-export default function BetSlipItem({ item }: BetSlipItemProps) {
+export default function BetSlipItem({ item, showLegNumber, legNumber }: BetSlipItemProps) {
   const { removeFromBetSlip, placeBet } = useBetSlip();
   const [stake, setStake] = useState<string>('');
   const [isPlacing, setIsPlacing] = useState(false);
@@ -47,6 +49,9 @@ export default function BetSlipItem({ item }: BetSlipItemProps) {
       <div className="pr-6 space-y-2">
         <div className="flex items-start justify-between">
           <div>
+            {showLegNumber && legNumber && (
+              <span className="text-xs font-bold text-primary mr-2">Leg {legNumber}</span>
+            )}
             <p className="font-medium text-sm line-clamp-1">{item.matchTitle}</p>
             <div className="flex items-center gap-2 mt-1">
               <Badge variant="outline" className="text-xs">

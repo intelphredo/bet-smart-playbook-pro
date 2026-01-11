@@ -3,12 +3,15 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/co
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Receipt, Trash2, DollarSign, TrendingUp, AlertCircle } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Receipt, Trash2, DollarSign, TrendingUp, AlertCircle, Layers } from 'lucide-react';
 import { useBetSlip } from './BetSlipContext';
 import { useAuth } from '@/hooks/useAuth';
 import BetSlipItem from './BetSlipItem';
 import { useNavigate } from 'react-router-dom';
 import { isDevMode } from '@/utils/devMode';
+import { calculateParlayOdds, calculateParlayPayout } from '@/types/betting';
 
 export default function BetSlipDrawer() {
   const { betSlip, clearBetSlip, stats } = useBetSlip();
@@ -16,13 +19,24 @@ export default function BetSlipDrawer() {
   const devMode = isDevMode();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
+  const [isParlayMode, setIsParlayMode] = useState(false);
+  const [parlayStake, setParlayStake] = useState(10);
 
-  const totalPotentialPayout = betSlip.reduce((sum, item) => {
-    // Assume $10 default stake for display
-    return sum + (10 * item.odds);
+  // Calculate straight bet payout (assume $10 default stake)
+  const straightPayout = betSlip.reduce((sum, item) => {
+    if (item.odds > 0) {
+      return sum + 10 + (10 * (item.odds / 100));
+    } else {
+      return sum + 10 + (10 * (100 / Math.abs(item.odds)));
+    }
   }, 0);
 
+  // Calculate parlay odds and payout
+  const parlayOdds = calculateParlayOdds(betSlip);
+  const parlayPayout = calculateParlayPayout(parlayOdds, parlayStake);
+
   const showContent = user || devMode;
+  const canParlay = betSlip.length >= 2;
 
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -75,22 +89,87 @@ export default function BetSlipDrawer() {
 
         {showContent && betSlip.length > 0 && (
           <>
+            {/* Parlay Toggle */}
+            {canParlay && (
+              <div className="flex items-center justify-between py-3 px-1 border-b">
+                <div className="flex items-center gap-2">
+                  <Layers className="h-4 w-4 text-primary" />
+                  <Label htmlFor="parlay-mode" className="text-sm font-medium cursor-pointer">
+                    Parlay Mode
+                  </Label>
+                </div>
+                <Switch
+                  id="parlay-mode"
+                  checked={isParlayMode}
+                  onCheckedChange={setIsParlayMode}
+                />
+              </div>
+            )}
+
+            {/* Parlay Info */}
+            {isParlayMode && canParlay && (
+              <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 mt-2">
+                <div className="flex items-center gap-2 mb-2">
+                  <Layers className="h-4 w-4 text-primary" />
+                  <span className="font-medium text-sm">{betSlip.length}-Leg Parlay</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">Combined Odds:</span>
+                    <span className="ml-2 font-semibold text-primary">
+                      {parlayOdds > 0 ? '+' : ''}{parlayOdds}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">To Win:</span>
+                    <span className="ml-2 font-semibold text-emerald-500">
+                      ${(parlayPayout - parlayStake).toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+                <div className="mt-2 flex items-center gap-2">
+                  <Label htmlFor="parlay-stake" className="text-xs text-muted-foreground">Stake:</Label>
+                  <input
+                    id="parlay-stake"
+                    type="number"
+                    min="1"
+                    value={parlayStake}
+                    onChange={(e) => setParlayStake(Math.max(1, Number(e.target.value)))}
+                    className="w-20 h-7 text-sm border rounded px-2 bg-background"
+                  />
+                </div>
+              </div>
+            )}
+
             <ScrollArea className="flex-1 -mx-6 px-6">
               <div className="space-y-3 py-4">
                 {betSlip.map((item, index) => (
-                  <BetSlipItem key={`${item.matchId}-${item.betType}-${item.selection}-${index}`} item={item} />
+                  <BetSlipItem 
+                    key={`${item.matchId}-${item.betType}-${item.selection}-${index}`} 
+                    item={item}
+                    showLegNumber={isParlayMode}
+                    legNumber={index + 1}
+                  />
                 ))}
               </div>
             </ScrollArea>
 
             <div className="border-t pt-4 space-y-4">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Potential Payout</span>
-                <span className="font-semibold text-lg flex items-center">
+                <span className="text-sm text-muted-foreground">
+                  {isParlayMode ? 'Parlay Payout' : 'Potential Payout'}
+                </span>
+                <span className="font-semibold text-lg flex items-center text-emerald-500">
                   <DollarSign className="h-4 w-4" />
-                  {totalPotentialPayout.toFixed(2)}
+                  {isParlayMode ? parlayPayout.toFixed(2) : straightPayout.toFixed(2)}
                 </span>
               </div>
+
+              {isParlayMode && (
+                <p className="text-xs text-muted-foreground">
+                  All {betSlip.length} legs must win to collect. Higher risk, higher reward!
+                </p>
+              )}
 
               <div className="flex gap-2">
                 <Button
@@ -127,13 +206,13 @@ export default function BetSlipDrawer() {
                 <p className="text-xs text-muted-foreground">Total Bets</p>
               </div>
               <div className="bg-muted/50 rounded-lg p-2">
-                <p className={`text-lg font-bold ${stats.roi_percentage >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                <p className={`text-lg font-bold ${stats.roi_percentage >= 0 ? 'text-emerald-500' : 'text-destructive'}`}>
                   {stats.roi_percentage >= 0 ? '+' : ''}{stats.roi_percentage.toFixed(1)}%
                 </p>
                 <p className="text-xs text-muted-foreground">ROI</p>
               </div>
               <div className="bg-muted/50 rounded-lg p-2">
-                <p className={`text-lg font-bold ${stats.total_profit >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                <p className={`text-lg font-bold ${stats.total_profit >= 0 ? 'text-emerald-500' : 'text-destructive'}`}>
                   ${Math.abs(stats.total_profit).toFixed(0)}
                 </p>
                 <p className="text-xs text-muted-foreground">Profit</p>

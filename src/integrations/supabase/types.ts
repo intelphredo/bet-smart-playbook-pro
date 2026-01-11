@@ -225,6 +225,45 @@ export type Database = {
         }
         Relationships: []
       }
+      user_alerts: {
+        Row: {
+          bet_id: string | null
+          created_at: string
+          id: string
+          is_read: boolean
+          match_id: string | null
+          message: string
+          metadata: Json | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          bet_id?: string | null
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          match_id?: string | null
+          message: string
+          metadata?: Json | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          bet_id?: string | null
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          match_id?: string | null
+          message?: string
+          metadata?: Json | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_bets: {
         Row: {
           bet_type: string
@@ -394,6 +433,10 @@ export type Database = {
       cleanup_old_odds_history: { Args: never; Returns: undefined }
       get_user_preferences: { Args: { user_id_param: string }; Returns: Json }
       manual_record_odds: { Args: never; Returns: Json }
+      recalculate_user_betting_stats: {
+        Args: { p_user_id: string }
+        Returns: undefined
+      }
       trigger_record_odds: { Args: never; Returns: undefined }
       update_user_preference: {
         Args: {
