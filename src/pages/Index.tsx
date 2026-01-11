@@ -2,7 +2,6 @@ import { useState, useMemo } from "react";
 import { League } from "@/types/sports";
 import StatsOverview from "@/components/StatsOverview";
 import { useToast } from "@/hooks/use-toast";
-import { arbitrageOpportunities } from "@/data/arbitrageData";
 import ConfidentPicks from "@/components/ConfidentPicks";
 import HeroHeader from "@/components/HeroHeader";
 import ArbitrageOpportunitiesSection from "@/components/ArbitrageOpportunitiesSection";
@@ -20,6 +19,7 @@ import { SportCategory } from "@/types/LeagueRegistry";
 import { DataViewSource } from "@/components/filters/DataSourceFilter";
 import DevToolsPanel from "@/components/DevToolsPanel";
 import { isDevMode } from "@/utils/devMode";
+import { useArbitrageCalculator } from "@/hooks/useArbitrageCalculator";
 
 const Index = () => {
   const [selectedLeague, setSelectedLeague] = useState<League | string | "ALL">("ALL");
@@ -80,59 +80,31 @@ const Index = () => {
     });
   };
 
-  const filteredArbitrage = arbitrageOpportunities.filter(opportunity => {
-    if (selectedLeague !== "ALL" && opportunity.match.league !== selectedLeague) {
-      return false;
+  // Calculate real arbitrage opportunities from live odds data
+  const allMatchesWithOdds = useMemo(() => 
+    [...upcomingMatches, ...liveMatches].filter(m => m.liveOdds && m.liveOdds.length >= 2),
+    [upcomingMatches, liveMatches]
+  );
+  
+  const { opportunities: calculatedArbitrage } = useArbitrageCalculator(allMatchesWithOdds);
+  
+  // Filter arbitrage by team if specified
+  const arbitrageOpportunitiesToShow = useMemo(() => {
+    let filtered = calculatedArbitrage;
+    
+    if (selectedLeague !== "ALL") {
+      filtered = filtered.filter(opp => opp.match.league === selectedLeague);
     }
     
-    if (teamFilter && !(
-      opportunity.match.homeTeam.toLowerCase().includes(teamFilter.toLowerCase()) || 
-      opportunity.match.awayTeam.toLowerCase().includes(teamFilter.toLowerCase())
-    )) {
-      return false;
+    if (teamFilter) {
+      filtered = filtered.filter(opp => 
+        opp.match.homeTeam.toLowerCase().includes(teamFilter.toLowerCase()) ||
+        opp.match.awayTeam.toLowerCase().includes(teamFilter.toLowerCase())
+      );
     }
     
-    return true;
-  });
-
-  const realTimeArbs = [...upcomingMatches, ...liveMatches]
-    .filter(match => {
-      if (teamFilter && !(
-        match.homeTeam.shortName.toLowerCase().includes(teamFilter.toLowerCase()) || 
-        match.awayTeam.shortName.toLowerCase().includes(teamFilter.toLowerCase())
-      )) {
-        return false;
-      }
-      return true;
-    })
-    .slice(0, 3)
-    .map((match) => ({
-      id: match.id,
-      matchId: match.id,
-      match: {
-        homeTeam: match.homeTeam.shortName,
-        awayTeam: match.awayTeam.shortName,
-        league: match.league,
-        startTime: match.startTime,
-      },
-      bookmakers: [
-        { name: "FanDuel", odds: { ...match.odds } },
-        { name: "DraftKings", odds: { ...match.odds } },
-      ],
-      arbitragePercentage: 2.1 + Math.random(),
-      potentialProfit: 21.24 + Math.random() * 30,
-      bettingStrategy: [
-        { bookmaker: "FanDuel", team: "home" as "home", stakePercentage: 52 + Math.random() * 10, odds: match.odds.homeWin },
-        { bookmaker: "DraftKings", team: match.odds.draw !== undefined ? "draw" as "draw" : "away" as "away", stakePercentage: 48 - Math.random() * 10, odds: match.odds.awayWin },
-        ...(match.odds.draw
-          ? [{ bookmaker: "BetMGM", team: "draw" as "draw", stakePercentage: Math.min(100, Math.random() * 20), odds: match.odds.draw }]
-          : []),
-      ],
-      isPremium: Math.random() > 0.5,
-    }));
-
-  const arbitrageOpportunitiesToShow =
-    realTimeArbs.length > 0 ? realTimeArbs : filteredArbitrage;
+    return filtered.slice(0, 6); // Show top 6 opportunities
+  }, [calculatedArbitrage, selectedLeague, teamFilter]);
     
   const resetAllFilters = () => {
     setSelectedLeague("ALL");
