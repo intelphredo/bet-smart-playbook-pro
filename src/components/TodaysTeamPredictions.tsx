@@ -54,7 +54,7 @@ function isMatchLiveOrFinished(match: Match): boolean {
 const TodaysTeamPredictions = () => {
   const [showUpcomingWeek, setShowUpcomingWeek] = useState(true);
   const [dataProvider, setDataProvider] = useState<string>("ESPN");
-  const [selectedAlgorithm, setSelectedAlgorithm] = useState<AlgorithmType>("ML_POWER_INDEX");
+  const [selectedAlgorithm, setSelectedAlgorithm] = useState<AlgorithmType>("STATISTICAL_EDGE");
   const [cachedPredictions, setCachedPredictions] = useState<Record<string, any>>({});
   const [isCacheLoading, setIsCacheLoading] = useState(true);
   

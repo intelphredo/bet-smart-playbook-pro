@@ -15,8 +15,8 @@ export const useSavePrediction = () => {
       }
 
       try {
-        // Get algorithm ID or use a default one if not present
-        const algorithmId = match.prediction.algorithmId || "default-algorithm";
+        // Get algorithm ID or use Statistical Edge as default
+        const algorithmId = match.prediction.algorithmId || "85c48bbe-5b1a-4c1e-a0d5-e284e9e952f1";
         
         console.log(`Saving prediction for match ${match.id} with algorithm ${algorithmId}`);
         console.log("Prediction data:", {
