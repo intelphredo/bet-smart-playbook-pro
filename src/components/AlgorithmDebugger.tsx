@@ -16,7 +16,7 @@ import {
 import { Badge } from "./ui/badge";
 
 const AlgorithmDebugger = () => {
-  const [algorithmId, setAlgorithmId] = useState("default-algorithm");
+  const [algorithmId, setAlgorithmId] = useState("85c48bbe-5b1a-4c1e-a0d5-e284e9e952f1");
   const [showRawData, setShowRawData] = useState(false);
   
   const { data: predictions, isLoading } = useQuery({
@@ -64,8 +64,8 @@ const AlgorithmDebugger = () => {
           </div>
           
           <div className="flex items-center gap-2">
-            <Button size="sm" onClick={() => setAlgorithmId("default-algorithm")}>
-              Use Default
+            <Button size="sm" onClick={() => setAlgorithmId("85c48bbe-5b1a-4c1e-a0d5-e284e9e952f1")}>
+              Use Statistical Edge
             </Button>
             <Button size="sm" onClick={() => setShowRawData(!showRawData)}>
               {showRawData ? "Hide Raw Data" : "Show Raw Data"}

@@ -36,8 +36,8 @@ export const useUpdateAlgorithmResults = () => {
 
         console.log(`Prediction was ${isCorrect ? 'correct' : 'incorrect'}`);
 
-        // Get the algorithm_id from the prediction if available, or use a default
-        const algorithmId = match.prediction.algorithmId || "default-algorithm";
+        // Get the algorithm_id from the prediction if available, or use Statistical Edge as default
+        const algorithmId = match.prediction.algorithmId || "85c48bbe-5b1a-4c1e-a0d5-e284e9e952f1";
 
         // First check if a prediction exists for this match
         const { data: existingPrediction, error: fetchError } = await supabase
