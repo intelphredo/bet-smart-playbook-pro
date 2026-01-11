@@ -270,6 +270,42 @@ export type Database = {
         }
         Relationships: []
       }
+      scheduled_job_logs: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          job_name: string
+          metadata: Json | null
+          records_processed: number | null
+          started_at: string
+          status: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          job_name: string
+          metadata?: Json | null
+          records_processed?: number | null
+          started_at?: string
+          status?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          job_name?: string
+          metadata?: Json | null
+          records_processed?: number | null
+          started_at?: string
+          status?: string
+        }
+        Relationships: []
+      }
       user_alerts: {
         Row: {
           bet_id: string | null
@@ -614,6 +650,7 @@ export type Database = {
     }
     Functions: {
       clean_expired_weather_cache: { Args: never; Returns: undefined }
+      cleanup_old_job_logs: { Args: never; Returns: number }
       cleanup_old_odds_history: { Args: never; Returns: undefined }
       get_user_preferences: { Args: { user_id_param: string }; Returns: Json }
       manual_record_odds: { Args: never; Returns: Json }
