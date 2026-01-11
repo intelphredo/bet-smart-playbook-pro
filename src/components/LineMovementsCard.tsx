@@ -1,4 +1,4 @@
-import { TrendingUp, TrendingDown, Activity, ArrowRight, Clock, Bell, Zap } from 'lucide-react';
+import { TrendingUp, TrendingDown, Activity, ArrowRight, Clock, Bell, Zap, RefreshCw, AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -6,7 +6,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLineMovements, LineMovement } from '@/hooks/useLineMovements';
 import { cn } from '@/lib/utils';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, format } from 'date-fns';
 
 function MovementRow({ movement }: { movement: LineMovement }) {
   const isSteam = movement.movement_direction === 'steam';
@@ -123,24 +123,41 @@ function EmptyMovements() {
         </div>
       </div>
       
-      <h3 className="text-lg font-semibold mb-2">Markets Are Steady</h3>
-      <p className="text-sm text-muted-foreground max-w-[260px] mb-1">
-        No significant line movements detected right now.
+      <h3 className="text-lg font-semibold mb-2">Monitoring Live Markets</h3>
+      <p className="text-sm text-muted-foreground max-w-[280px] mb-1">
+        No significant line movements in the last 24 hours.
       </p>
       <p className="text-xs text-muted-foreground mb-5">
-        We monitor spreads, totals, and moneylines 24/7
+        We track spreads, totals, and moneylines across all major sportsbooks
       </p>
       
       <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 rounded-full px-4 py-2">
         <Bell className="w-3.5 h-3.5" />
-        <span>You'll be alerted when sharp action hits</span>
+        <span>Movements appear when sharp action is detected</span>
       </div>
     </div>
   );
 }
 
+function ErrorState({ onRetry }: { onRetry: () => void }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
+      <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
+        <AlertCircle className="w-6 h-6 text-destructive" />
+      </div>
+      <p className="text-sm text-muted-foreground mb-4">
+        Unable to load line movements
+      </p>
+      <Button variant="outline" size="sm" onClick={onRetry}>
+        <RefreshCw className="w-4 h-4 mr-2" />
+        Try Again
+      </Button>
+    </div>
+  );
+}
+
 export default function LineMovementsCard() {
-  const { movements, isLoading } = useLineMovements();
+  const { movements, isLoading, error, lastUpdated, refetch } = useLineMovements();
 
   return (
     <Card>
@@ -150,20 +167,40 @@ export default function LineMovementsCard() {
             <Activity className="w-5 h-5 text-orange-500" />
             Sharp Line Movements
           </CardTitle>
-          {movements.length > 0 && (
-            <Badge variant="destructive" className="animate-pulse">
-              {movements.length} active
-            </Badge>
+          <div className="flex items-center gap-2">
+            {movements.length > 0 && (
+              <Badge variant="destructive" className="animate-pulse">
+                {movements.length} active
+              </Badge>
+            )}
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-8 w-8"
+              onClick={refetch}
+              disabled={isLoading}
+            >
+              <RefreshCw className={cn("w-4 h-4", isLoading && "animate-spin")} />
+            </Button>
+          </div>
+        </div>
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-muted-foreground mt-1">
+            Significant line changes indicating sharp action
+          </p>
+          {lastUpdated && (
+            <p className="text-xs text-muted-foreground mt-1">
+              Updated {format(lastUpdated, 'h:mm a')}
+            </p>
           )}
         </div>
-        <p className="text-xs text-muted-foreground mt-1">
-          Significant line changes indicating sharp action
-        </p>
       </CardHeader>
       
       <CardContent className="pt-0">
         {isLoading ? (
           <MovementsSkeleton />
+        ) : error ? (
+          <ErrorState onRetry={refetch} />
         ) : movements.length === 0 ? (
           <EmptyMovements />
         ) : (
