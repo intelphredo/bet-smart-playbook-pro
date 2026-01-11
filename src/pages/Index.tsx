@@ -13,6 +13,8 @@ import PageFooter from "@/components/PageFooter";
 import NavBar from "@/components/NavBar";
 import FilterSection from "@/components/FilterSection";
 import QuickStatsDashboard from "@/components/QuickStatsDashboard";
+import CLVLeaderboard from "@/components/CLVLeaderboard";
+import LineMovementsCard from "@/components/LineMovementsCard";
 import { useSportsData } from "@/hooks/useSportsData";
 import { SportCategory } from "@/types/LeagueRegistry";
 import { DataViewSource } from "@/components/filters/DataSourceFilter";
@@ -180,6 +182,13 @@ const Index = () => {
           <section id="confident-picks" aria-labelledby="picks-heading">
             <h2 id="picks-heading" className="sr-only">Confident Picks</h2>
             <ConfidentPicks />
+          </section>
+          
+          {/* Line Movements & CLV Leaderboard */}
+          <section id="insights" aria-labelledby="insights-heading" className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <h2 id="insights-heading" className="sr-only">Sharp Betting Insights</h2>
+            <LineMovementsCard />
+            <CLVLeaderboard />
           </section>
           
           {/* Arbitrage Section */}

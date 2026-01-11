@@ -126,6 +126,51 @@ export type Database = {
         }
         Relationships: []
       }
+      line_movement_tracking: {
+        Row: {
+          alerts_sent: boolean
+          current_odds: Json
+          detected_at: string
+          id: string
+          league: string | null
+          market_type: string
+          match_id: string
+          match_title: string | null
+          movement_direction: string | null
+          movement_percentage: number | null
+          previous_odds: Json
+          sportsbook_id: string
+        }
+        Insert: {
+          alerts_sent?: boolean
+          current_odds: Json
+          detected_at?: string
+          id?: string
+          league?: string | null
+          market_type?: string
+          match_id: string
+          match_title?: string | null
+          movement_direction?: string | null
+          movement_percentage?: number | null
+          previous_odds: Json
+          sportsbook_id: string
+        }
+        Update: {
+          alerts_sent?: boolean
+          current_odds?: Json
+          detected_at?: string
+          id?: string
+          league?: string | null
+          market_type?: string
+          match_id?: string
+          match_title?: string | null
+          movement_direction?: string | null
+          movement_percentage?: number | null
+          previous_odds?: Json
+          sportsbook_id?: string
+        }
+        Relationships: []
+      }
       odds_history: {
         Row: {
           away_odds: number | null
@@ -401,6 +446,24 @@ export type Database = {
       }
     }
     Views: {
+      clv_leaderboard: {
+        Row: {
+          avatar_url: string | null
+          avg_clv: number | null
+          best_clv: number | null
+          display_name: string | null
+          full_name: string | null
+          median_clv: number | null
+          positive_clv_bets: number | null
+          positive_clv_rate: number | null
+          roi_percentage: number | null
+          total_bets_with_clv: number | null
+          total_profit: number | null
+          user_id: string | null
+          worst_clv: number | null
+        }
+        Relationships: []
+      }
       cron_job_status: {
         Row: {
           active: boolean | null
