@@ -1,14 +1,15 @@
+import { memo } from 'react';
 import { TrendingUp, TrendingDown, Activity, ArrowRight, Clock, Bell, Zap, RefreshCw, AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLineMovements, LineMovement } from '@/hooks/useLineMovements';
+import VirtualizedList from '@/components/VirtualizedList';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow, format } from 'date-fns';
 
-function MovementRow({ movement }: { movement: LineMovement }) {
+const MovementRow = memo(function MovementRow({ movement }: { movement: LineMovement }) {
   const isSteam = movement.movement_direction === 'steam';
   
   const getMovementDisplay = () => {
@@ -92,7 +93,7 @@ function MovementRow({ movement }: { movement: LineMovement }) {
       </div>
     </div>
   );
-}
+});
 
 function MovementsSkeleton() {
   return (
@@ -205,13 +206,14 @@ export default function LineMovementsCard() {
         ) : movements.length === 0 ? (
           <EmptyMovements />
         ) : (
-          <ScrollArea className="max-h-[300px]">
-            <div className="space-y-1">
-              {movements.map((movement) => (
-                <MovementRow key={movement.id} movement={movement} />
-              ))}
-            </div>
-          </ScrollArea>
+          <VirtualizedList
+            items={movements}
+            maxHeight={300}
+            estimatedItemHeight={72}
+            renderItem={(movement) => (
+              <MovementRow key={movement.id} movement={movement} />
+            )}
+          />
         )}
 
         {movements.length > 0 && (

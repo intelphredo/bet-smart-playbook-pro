@@ -1,9 +1,9 @@
-
 import { Card, CardContent } from "@/components/ui/card";
-import MatchCard from "@/components/MatchCard";
+import VirtualizedMatchGrid from "../VirtualizedMatchGrid";
 import LoadingCardGrid from "../LoadingCardGrid";
 import { Match } from "@/types/sports";
-import { format, isToday, isTomorrow, startOfDay, addDays, parseISO } from "date-fns";
+import { useMemo } from "react";
+import { isToday, isTomorrow, startOfDay, addDays, parseISO } from "date-fns";
 
 interface Props {
   isLoading: boolean;
@@ -20,12 +20,12 @@ interface GroupedMatches {
 const UpcomingGamesTab = ({ isLoading, matches }: Props) => {
   if (isLoading) return <LoadingCardGrid />;
   
-  const groupMatches = (matches: Match[]): GroupedMatches => {
+  const grouped = useMemo(() => {
     const today = startOfDay(new Date());
     const tomorrow = addDays(today, 1);
     const weekEnd = addDays(today, 7);
     
-    return matches.reduce((acc: GroupedMatches, match) => {
+    return matches.reduce<GroupedMatches>((acc, match) => {
       const matchDate = parseISO(match.startTime);
       
       if (isToday(matchDate)) {
@@ -40,31 +40,47 @@ const UpcomingGamesTab = ({ isLoading, matches }: Props) => {
       
       return acc;
     }, { today: [], tomorrow: [], thisWeek: [], later: [] });
-  };
+  }, [matches]);
 
-  const grouped = groupMatches(matches);
+  const totalMatches = grouped.today.length + grouped.tomorrow.length + grouped.thisWeek.length + grouped.later.length;
 
-  if (Object.values(grouped).every(group => group.length === 0)) {
+  if (totalMatches === 0) {
     return (
       <Card>
         <CardContent className="pt-6 text-center">
-          <p>No upcoming games scheduled.</p>
+          <p className="text-muted-foreground">No upcoming games scheduled.</p>
         </CardContent>
       </Card>
     );
   }
 
-  const renderSection = (title: string, matches: Match[]) => {
-    if (matches.length === 0) return null;
+  // Combine all matches with section headers for virtualized display
+  // For very large lists, show a max count with "show more"
+  const MAX_PER_SECTION = 12;
+
+  const renderSection = (title: string, sectionMatches: Match[]) => {
+    if (sectionMatches.length === 0) return null;
+    
+    const displayMatches = sectionMatches.slice(0, MAX_PER_SECTION);
+    const hasMore = sectionMatches.length > MAX_PER_SECTION;
     
     return (
       <div className="mb-6">
-        <h3 className="text-lg font-semibold mb-3">{title}</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {matches.map((match) => (
-            <MatchCard key={match.id} match={match} />
-          ))}
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-lg font-semibold">{title}</h3>
+          <span className="text-sm text-muted-foreground">
+            {sectionMatches.length} game{sectionMatches.length !== 1 ? 's' : ''}
+          </span>
         </div>
+        <VirtualizedMatchGrid 
+          matches={displayMatches}
+          estimatedCardHeight={280}
+        />
+        {hasMore && (
+          <p className="text-sm text-muted-foreground text-center mt-3">
+            + {sectionMatches.length - MAX_PER_SECTION} more games
+          </p>
+        )}
       </div>
     );
   };

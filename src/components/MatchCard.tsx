@@ -1,33 +1,36 @@
-import { useState } from "react";
+import { useState, memo, lazy, Suspense } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { formatDistanceToNow, parseISO } from "date-fns";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import LiveOdds from "./LiveOdds";
 import MatchParticipant from "./MatchCard/MatchParticipant";
 import OddsComparisonTable from "./MatchCard/OddsComparisonTable";
 import PredictedOddsRow from "./MatchCard/PredictedOddsRow";
 import MatchCardFooter from "./MatchCard/MatchCardFooter";
-import BettingMetrics from "./BettingMetrics";
 import ScenarioBadges from "./ScenarioAnalysis/ScenarioBadges";
-import { SocialFactorsCard } from "./SocialIntelligence/SocialFactorsCard";
 import MatchSourceBadge, { MatchDataSource } from "./MatchCard/MatchSourceBadge";
-import OddsLineChart from "./OddsLineChart";
 import FavoriteButton from "./FavoriteButton";
 import { InjuryImpactBadge } from "./InjuryImpactBadge";
 import { useMatchInjuryImpact } from "@/hooks/useMatchInjuryImpact";
 import { useMatchWeather } from "@/hooks/useMatchWeather";
 import { WeatherDisplay, IndoorBadge } from "./WeatherDisplay";
 import InjuryImpactRow from "./MatchCard/InjuryImpactRow";
-import InjuryBreakdown from "./MatchCard/InjuryBreakdown";
+import { Skeleton } from "@/components/ui/skeleton";
+
+// Lazy load heavy components that are only shown when expanded
+const BettingMetrics = lazy(() => import("./BettingMetrics"));
+const SocialFactorsCard = lazy(() => import("./SocialIntelligence/SocialFactorsCard").then(m => ({ default: m.SocialFactorsCard })));
+const InjuryBreakdown = lazy(() => import("./MatchCard/InjuryBreakdown"));
+const LiveOdds = lazy(() => import("./LiveOdds"));
+const OddsLineChart = lazy(() => import("./OddsLineChart"));
 
 interface MatchCardProps {
   match: any;
 }
 
-const MatchCard = ({ match }: MatchCardProps) => {
+const MatchCard = memo(function MatchCard({ match }: MatchCardProps) {
   const [showDetails, setShowDetails] = useState(false);
   const { injuryImpact, homeInjuries, awayInjuries, hasSignificantImpact } = useMatchInjuryImpact(match);
   const { weather, venue, isIndoor } = useMatchWeather(match);
@@ -192,34 +195,36 @@ const MatchCard = ({ match }: MatchCardProps) => {
               </Button>
             </CollapsibleTrigger>
             <CollapsibleContent className="space-y-3 mt-3">
-              {/* Injury Breakdown in expanded view */}
-              {hasSignificantImpact && injuryImpact && (
-                <InjuryBreakdown
-                  impact={injuryImpact}
-                  homeInjuries={homeInjuries}
-                  awayInjuries={awayInjuries}
-                  homeTeamName={match.homeTeam.shortName}
-                  awayTeamName={match.awayTeam.shortName}
-                />
-              )}
-              <BettingMetrics match={match} />
-              <SocialFactorsCard match={match} compact />
+              <Suspense fallback={<Skeleton className="h-24 w-full" />}>
+                {/* Injury Breakdown in expanded view */}
+                {hasSignificantImpact && injuryImpact && (
+                  <InjuryBreakdown
+                    impact={injuryImpact}
+                    homeInjuries={homeInjuries}
+                    awayInjuries={awayInjuries}
+                    homeTeamName={match.homeTeam.shortName}
+                    awayTeamName={match.awayTeam.shortName}
+                  />
+                )}
+                <BettingMetrics match={match} />
+                <SocialFactorsCard match={match} compact />
+              </Suspense>
             </CollapsibleContent>
           </Collapsible>
         )}
       </CardContent>
 
-      {/* Odds Chart and Live Odds - outside card content for better separation */}
+      {/* Odds Chart and Live Odds - lazy loaded */}
       {hasOddsData && (
-        <>
+        <Suspense fallback={<Skeleton className="h-32 w-full" />}>
           <OddsLineChart match={match} />
           <div className="px-4 pb-4">
             <LiveOdds odds={match.liveOdds} />
           </div>
-        </>
+        </Suspense>
       )}
     </Card>
   );
-};
+});
 
 export default MatchCard;

@@ -1,11 +1,12 @@
+import { memo } from 'react';
 import { Trophy, TrendingUp, Medal, Target, Users, Crown, Sparkles, ArrowRight } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCLVLeaderboard, LeaderboardEntry } from '@/hooks/useCLVLeaderboard';
+import VirtualizedList from '@/components/VirtualizedList';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { isDevMode } from '@/utils/devMode';
@@ -42,7 +43,12 @@ function getRankBadge(rank: number) {
   }
 }
 
-function LeaderboardRow({ entry, rank, isCurrentUser }: { 
+// Memoized row component
+const LeaderboardRow = memo(function LeaderboardRow({ 
+  entry, 
+  rank, 
+  isCurrentUser 
+}: { 
   entry: LeaderboardEntry; 
   rank: number;
   isCurrentUser: boolean;
@@ -107,7 +113,7 @@ function LeaderboardRow({ entry, rank, isCurrentUser }: {
       </div>
     </div>
   );
-}
+});
 
 function LeaderboardSkeleton() {
   return (
@@ -209,18 +215,18 @@ export default function CLVLeaderboard() {
         ) : leaderboard.length === 0 ? (
           <EmptyLeaderboard />
         ) : (
-          <ScrollArea className="max-h-[400px]">
-            <div className="space-y-1">
-              {leaderboard.map((entry, index) => (
-                <LeaderboardRow
-                  key={entry.user_id}
-                  entry={entry}
-                  rank={index + 1}
-                  isCurrentUser={user?.id === entry.user_id || (devMode && index === 2)}
-                />
-              ))}
-            </div>
-          </ScrollArea>
+          <VirtualizedList
+            items={leaderboard}
+            maxHeight={400}
+            estimatedItemHeight={72}
+            renderItem={(entry, index) => (
+              <LeaderboardRow
+                entry={entry}
+                rank={index + 1}
+                isCurrentUser={user?.id === entry.user_id || (devMode && index === 2)}
+              />
+            )}
+          />
         )}
 
         {leaderboard.length > 0 && (
