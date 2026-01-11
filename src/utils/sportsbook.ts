@@ -1,13 +1,7 @@
-
 import { LiveOdds, Match, Sportsbook } from "@/types/sports";
+import { SPORTSBOOK_LOGOS as LOGOS } from "@/utils/teamLogos";
 
-export const SPORTSBOOK_LOGOS = {
-  draftkings: "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=400&h=400&fit=crop&crop=center",
-  betmgm: "https://images.unsplash.com/photo-1518770660439-4636190af475?w=400&h=400&fit=crop&crop=center", 
-  caesars: "https://images.unsplash.com/photo-1487058792275-0ad4aaf24ca7?w=400&h=400&fit=crop&crop=center",
-  pointsbet: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=400&h=400&fit=crop&crop=center",
-  fanduel: "https://images.unsplash.com/photo-1605810230434-7631ac76ec81?w=400&h=400&fit=crop&crop=center",
-};
+export const SPORTSBOOK_LOGOS = LOGOS;
 
 export const AVAILABLE_SPORTSBOOKS: Sportsbook[] = [
   {

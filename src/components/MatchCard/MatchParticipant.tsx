@@ -1,6 +1,8 @@
 import { Badge } from '@/components/ui/badge';
 import { AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useState } from 'react';
+import { getTeamInitials } from '@/utils/teamLogos';
 
 interface Props {
   team: {
@@ -14,17 +16,19 @@ interface Props {
 }
 
 const TeamImage = ({ logo, name, shortName }: { logo?: string; name: string; shortName: string }) => {
-  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    e.currentTarget.style.display = 'none';
-    const parent = e.currentTarget.parentElement;
-    if (parent) {
-      parent.innerHTML = shortName.substring(0, 2);
-      parent.className += ' text-xs font-semibold text-muted-foreground';
-    }
+  const [hasError, setHasError] = useState(false);
+  const initials = getTeamInitials(name);
+
+  const handleImageError = () => {
+    setHasError(true);
   };
 
-  if (!logo) {
-    return <span className="text-xs font-semibold text-muted-foreground">{shortName.substring(0, 2)}</span>;
+  if (!logo || hasError) {
+    return (
+      <div className="w-8 h-8 flex items-center justify-center bg-muted rounded-full">
+        <span className="text-xs font-bold text-muted-foreground">{initials}</span>
+      </div>
+    );
   }
 
   return (

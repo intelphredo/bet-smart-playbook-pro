@@ -1,6 +1,5 @@
-
 import { Match, Team, League } from "@/types/sports";
-import { SPORTSBOOK_LOGOS } from "../utils/sportsbook";
+import { SPORTSBOOK_LOGOS, getTeamLogoUrl, getTeamInitials } from "@/utils/teamLogos";
 import { logger } from "@/utils/logger";
 
 interface ESPNEvent {
@@ -310,7 +309,7 @@ const createFallbackMatch = (league: League): Match => {
     id: "home-team",
     name: `${league} Home Team`,
     shortName: "HOME",
-    logo: "https://images.unsplash.com/photo-1472396961693-142e6e269027?w=400&h=400&fit=crop&crop=center",
+    logo: getTeamLogoUrl("Home Team", league),
     record: "0-0",
   };
 
@@ -318,7 +317,7 @@ const createFallbackMatch = (league: League): Match => {
     id: "away-team",
     name: `${league} Away Team`,
     shortName: "AWAY",
-    logo: "https://images.unsplash.com/photo-1500673922987-e212871fec22?w=400&h=400&fit=crop&crop=center",
+    logo: getTeamLogoUrl("Away Team", league),
     record: "0-0",
   };
   
