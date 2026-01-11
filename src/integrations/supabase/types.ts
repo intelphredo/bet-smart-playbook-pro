@@ -270,6 +270,30 @@ export type Database = {
         }
         Relationships: []
       }
+      push_subscriptions: {
+        Row: {
+          created_at: string | null
+          id: string
+          subscription: Json
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          subscription: Json
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          subscription?: Json
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       scheduled_job_logs: {
         Row: {
           completed_at: string | null
@@ -351,6 +375,8 @@ export type Database = {
           closing_odds: number | null
           clv_percentage: number | null
           created_at: string | null
+          game_started_at: string | null
+          graded_at: string | null
           id: string
           kelly_stake_recommended: number | null
           league: string | null
@@ -377,6 +403,8 @@ export type Database = {
           closing_odds?: number | null
           clv_percentage?: number | null
           created_at?: string | null
+          game_started_at?: string | null
+          graded_at?: string | null
           id?: string
           kelly_stake_recommended?: number | null
           league?: string | null
@@ -403,6 +431,8 @@ export type Database = {
           closing_odds?: number | null
           clv_percentage?: number | null
           created_at?: string | null
+          game_started_at?: string | null
+          graded_at?: string | null
           id?: string
           kelly_stake_recommended?: number | null
           league?: string | null

@@ -36,14 +36,32 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    console.log("Starting CLV capture process...");
+    // Parse optional match_id from request body
+    let targetMatchId: string | null = null;
+    if (req.method === "POST") {
+      try {
+        const body = await req.json();
+        targetMatchId = body.match_id || null;
+      } catch {
+        // Empty body is fine
+      }
+    }
 
-    // Get all pending bets without closing odds
-    const { data: pendingBets, error: betsError } = await supabase
+    console.log(`Starting CLV capture process...${targetMatchId ? ` for match ${targetMatchId}` : ""}`);
+
+    // Build query for pending bets without closing odds
+    let query = supabase
       .from("user_bets")
       .select("id, user_id, match_id, bet_type, selection, odds_at_placement, closing_odds")
       .eq("status", "pending")
       .is("closing_odds", null);
+
+    // If specific match_id provided, filter by it
+    if (targetMatchId) {
+      query = query.eq("match_id", targetMatchId);
+    }
+
+    const { data: pendingBets, error: betsError } = await query;
 
     if (betsError) {
       console.error("Error fetching pending bets:", betsError);

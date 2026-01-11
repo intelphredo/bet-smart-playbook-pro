@@ -21,11 +21,15 @@ import {
   Save,
   RotateCcw,
   Loader2,
-  X
+  X,
+  BellRing,
+  CheckCircle2,
+  XCircle
 } from 'lucide-react';
 import { usePreferences } from '@/hooks/usePreferences';
 import { useAuth } from '@/hooks/useAuth';
 import { isDevMode } from '@/utils/devMode';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 
 const AVAILABLE_LEAGUES = ['NFL', 'NBA', 'MLB', 'NHL', 'NCAAF', 'NCAAB', 'SOCCER'];
 const AVAILABLE_SPORTSBOOKS = ['DraftKings', 'FanDuel', 'BetMGM', 'Caesars', 'PointsBet', 'BetRivers'];
@@ -37,6 +41,7 @@ export default function SettingsPage() {
   const { preferences, isLoading, updatePreference, updatePreferences, resetPreferences } = usePreferences();
   const [isSaving, setIsSaving] = useState(false);
   const [localPrefs, setLocalPrefs] = useState(preferences);
+  const pushNotifications = usePushNotifications();
 
   // Sync local state when preferences load
   useState(() => {
@@ -268,78 +273,143 @@ export default function SettingsPage() {
 
           {/* Notifications Settings */}
           <TabsContent value="notifications">
-            <Card>
-              <CardHeader>
-                <CardTitle>Notification Preferences</CardTitle>
-                <CardDescription>Choose which alerts you want to receive</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label>Line Movements</Label>
-                    <p className="text-sm text-muted-foreground">Alert when odds move significantly</p>
-                  </div>
-                  <Switch
-                    checked={localPrefs.notifications.line_movements}
-                    onCheckedChange={(checked) =>
-                      setLocalPrefs({ ...localPrefs, notifications: { ...localPrefs.notifications, line_movements: checked } })
-                    }
-                  />
-                </div>
+            <div className="space-y-6">
+              {/* Push Notifications Card */}
+              <Card className="border-2 border-primary/20">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BellRing className="h-5 w-5" />
+                    Push Notifications
+                  </CardTitle>
+                  <CardDescription>Get real-time alerts on your device even when the app is closed</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {!pushNotifications.isSupported ? (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <XCircle className="h-5 w-5 text-destructive" />
+                      <span>Push notifications are not supported in your browser</span>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          {pushNotifications.isSubscribed ? (
+                            <CheckCircle2 className="h-5 w-5 text-green-500" />
+                          ) : (
+                            <XCircle className="h-5 w-5 text-muted-foreground" />
+                          )}
+                          <div>
+                            <Label>Push Notifications</Label>
+                            <p className="text-sm text-muted-foreground">
+                              {pushNotifications.isSubscribed 
+                                ? "You're subscribed to push notifications" 
+                                : pushNotifications.permission === "denied"
+                                  ? "Notifications blocked - enable in browser settings"
+                                  : "Enable browser push notifications"}
+                            </p>
+                          </div>
+                        </div>
+                        <Switch
+                          checked={pushNotifications.isSubscribed}
+                          onCheckedChange={async (checked) => {
+                            if (checked) {
+                              await pushNotifications.subscribe();
+                            } else {
+                              await pushNotifications.unsubscribe();
+                            }
+                          }}
+                          disabled={pushNotifications.isLoading || pushNotifications.permission === "denied"}
+                        />
+                      </div>
 
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label>Positive EV Opportunities</Label>
-                    <p className="text-sm text-muted-foreground">Alert for +EV betting opportunities</p>
-                  </div>
-                  <Switch
-                    checked={localPrefs.notifications.positive_ev}
-                    onCheckedChange={(checked) =>
-                      setLocalPrefs({ ...localPrefs, notifications: { ...localPrefs.notifications, positive_ev: checked } })
-                    }
-                  />
-                </div>
+                      {pushNotifications.isSubscribed && (
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={pushNotifications.sendTestNotification}
+                        >
+                          Send Test Notification
+                        </Button>
+                      )}
+                    </>
+                  )}
+                </CardContent>
+              </Card>
 
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label>Arbitrage Opportunities</Label>
-                    <p className="text-sm text-muted-foreground">Alert for arbitrage betting opportunities</p>
+              {/* In-App Notifications Card */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Alert Preferences</CardTitle>
+                  <CardDescription>Choose which in-app alerts you want to receive</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label>Line Movements</Label>
+                      <p className="text-sm text-muted-foreground">Alert when odds move significantly</p>
+                    </div>
+                    <Switch
+                      checked={localPrefs.notifications.line_movements}
+                      onCheckedChange={(checked) =>
+                        setLocalPrefs({ ...localPrefs, notifications: { ...localPrefs.notifications, line_movements: checked } })
+                      }
+                    />
                   </div>
-                  <Switch
-                    checked={localPrefs.notifications.arbitrage}
-                    onCheckedChange={(checked) =>
-                      setLocalPrefs({ ...localPrefs, notifications: { ...localPrefs.notifications, arbitrage: checked } })
-                    }
-                  />
-                </div>
 
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label>Game Start Reminders</Label>
-                    <p className="text-sm text-muted-foreground">Remind before games start</p>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label>Positive EV Opportunities</Label>
+                      <p className="text-sm text-muted-foreground">Alert for +EV betting opportunities</p>
+                    </div>
+                    <Switch
+                      checked={localPrefs.notifications.positive_ev}
+                      onCheckedChange={(checked) =>
+                        setLocalPrefs({ ...localPrefs, notifications: { ...localPrefs.notifications, positive_ev: checked } })
+                      }
+                    />
                   </div>
-                  <Switch
-                    checked={localPrefs.notifications.game_start}
-                    onCheckedChange={(checked) =>
-                      setLocalPrefs({ ...localPrefs, notifications: { ...localPrefs.notifications, game_start: checked } })
-                    }
-                  />
-                </div>
 
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label>Bet Results</Label>
-                    <p className="text-sm text-muted-foreground">Notify when your bets settle</p>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label>Arbitrage Opportunities</Label>
+                      <p className="text-sm text-muted-foreground">Alert for arbitrage betting opportunities</p>
+                    </div>
+                    <Switch
+                      checked={localPrefs.notifications.arbitrage}
+                      onCheckedChange={(checked) =>
+                        setLocalPrefs({ ...localPrefs, notifications: { ...localPrefs.notifications, arbitrage: checked } })
+                      }
+                    />
                   </div>
-                  <Switch
-                    checked={localPrefs.notifications.bet_results}
-                    onCheckedChange={(checked) =>
-                      setLocalPrefs({ ...localPrefs, notifications: { ...localPrefs.notifications, bet_results: checked } })
-                    }
-                  />
-                </div>
-              </CardContent>
-            </Card>
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label>Game Start Reminders</Label>
+                      <p className="text-sm text-muted-foreground">Remind before games start & capture CLV</p>
+                    </div>
+                    <Switch
+                      checked={localPrefs.notifications.game_start}
+                      onCheckedChange={(checked) =>
+                        setLocalPrefs({ ...localPrefs, notifications: { ...localPrefs.notifications, game_start: checked } })
+                      }
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label>Bet Results</Label>
+                      <p className="text-sm text-muted-foreground">Notify when your bets are graded</p>
+                    </div>
+                    <Switch
+                      checked={localPrefs.notifications.bet_results}
+                      onCheckedChange={(checked) =>
+                        setLocalPrefs({ ...localPrefs, notifications: { ...localPrefs.notifications, bet_results: checked } })
+                      }
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           {/* Bankroll Settings */}
