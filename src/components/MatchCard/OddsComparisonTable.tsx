@@ -28,12 +28,20 @@ const OddsComparisonTable = ({ match }: Props) => {
   const hasSpreadMarket = match.liveOdds.some((o: LiveOdds) => o.spread);
   const hasTotalMarket = match.liveOdds.some((o: LiveOdds) => o.totals);
 
-  // Sort sportsbooks by priority (DraftKings, FanDuel, BetMGM first)
-  const sortedOdds = [...match.liveOdds].sort((a: any, b: any) => {
-    const priorityA = SPORTSBOOK_PRIORITY[a.sportsbook.id] || 99;
-    const priorityB = SPORTSBOOK_PRIORITY[b.sportsbook.id] || 99;
-    return priorityA - priorityB;
-  });
+  // Sort sportsbooks by priority (DraftKings, FanDuel, BetMGM first) and deduplicate
+  const sortedOdds = [...match.liveOdds]
+    .reduce((acc: LiveOdds[], odd: LiveOdds) => {
+      // Keep only the first occurrence of each sportsbook (most recent)
+      if (!acc.find((o: LiveOdds) => o.sportsbook.id === odd.sportsbook.id)) {
+        acc.push(odd);
+      }
+      return acc;
+    }, [])
+    .sort((a: any, b: any) => {
+      const priorityA = SPORTSBOOK_PRIORITY[a.sportsbook.id] || 99;
+      const priorityB = SPORTSBOOK_PRIORITY[b.sportsbook.id] || 99;
+      return priorityA - priorityB;
+    });
 
   // Find best spread odds
   const findBestSpreadOdds = () => {
