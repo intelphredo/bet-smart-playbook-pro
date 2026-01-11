@@ -58,3 +58,49 @@ export interface BetSlipItem {
   modelEvPercentage?: number;
   kellyRecommended?: number;
 }
+
+// Parlay types
+export interface ParlayLeg extends BetSlipItem {
+  legId: string;
+}
+
+export interface Parlay {
+  id: string;
+  legs: ParlayLeg[];
+  combinedOdds: number;
+  stake: number;
+  potentialPayout: number;
+}
+
+// Calculate combined parlay odds from individual American odds
+export function calculateParlayOdds(legs: BetSlipItem[]): number {
+  if (legs.length === 0) return 0;
+  if (legs.length === 1) return legs[0].odds;
+
+  // Convert American odds to decimal, multiply, then convert back
+  const decimalOdds = legs.map(leg => {
+    if (leg.odds > 0) {
+      return (leg.odds / 100) + 1;
+    } else {
+      return (100 / Math.abs(leg.odds)) + 1;
+    }
+  });
+
+  const combinedDecimal = decimalOdds.reduce((acc, odds) => acc * odds, 1);
+
+  // Convert back to American
+  if (combinedDecimal >= 2) {
+    return Math.round((combinedDecimal - 1) * 100);
+  } else {
+    return Math.round(-100 / (combinedDecimal - 1));
+  }
+}
+
+// Calculate potential payout for a parlay
+export function calculateParlayPayout(combinedOdds: number, stake: number): number {
+  if (combinedOdds > 0) {
+    return stake + (stake * (combinedOdds / 100));
+  } else {
+    return stake + (stake * (100 / Math.abs(combinedOdds)));
+  }
+}
