@@ -59,8 +59,8 @@ const LiveOdds = ({ odds }: LiveOddsProps) => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {odds.map((odd) => (
-              <TableRow key={odd.sportsbook.id}>
+            {odds.map((odd, index) => (
+              <TableRow key={`${odd.sportsbook.id}-${index}`}>
                 <TableCell>
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 flex items-center justify-center rounded-md bg-white dark:bg-gray-800 p-1">
