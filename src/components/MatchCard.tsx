@@ -18,6 +18,8 @@ import OddsLineChart from "./OddsLineChart";
 import FavoriteButton from "./FavoriteButton";
 import { InjuryImpactBadge } from "./InjuryImpactBadge";
 import { useMatchInjuryImpact } from "@/hooks/useMatchInjuryImpact";
+import { useMatchWeather } from "@/hooks/useMatchWeather";
+import { WeatherDisplay, IndoorBadge } from "./WeatherDisplay";
 
 interface MatchCardProps {
   match: any;
@@ -26,6 +28,7 @@ interface MatchCardProps {
 const MatchCard = ({ match }: MatchCardProps) => {
   const [showDetails, setShowDetails] = useState(false);
   const { injuryImpact, hasSignificantImpact } = useMatchInjuryImpact(match);
+  const { weather, venue, isIndoor } = useMatchWeather(match);
 
   const formatTime = (timeString: string) => {
     try {
@@ -123,6 +126,9 @@ const MatchCard = ({ match }: MatchCardProps) => {
           {hasSignificantImpact && (
             <InjuryImpactBadge impact={injuryImpact} compact />
           )}
+          {/* Weather badge for outdoor games */}
+          {weather && <WeatherDisplay weather={weather} venue={venue} league={match.league} compact />}
+          {isIndoor && !['NBA', 'NHL'].includes(match.league) && <IndoorBadge venueName={venue?.venueName} />}
         </div>
         
         {/* Core odds info */}
