@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo, memo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import NavBar from '@/components/NavBar';
 import PageFooter from '@/components/PageFooter';
@@ -28,6 +28,7 @@ import { UserBet, BetStatus } from '@/types/betting';
 import { format } from 'date-fns';
 import { isDevMode } from '@/utils/devMode';
 import WeeklyPerformanceSummary from '@/components/WeeklyPerformanceSummary';
+import VirtualizedList from '@/components/VirtualizedList';
 
 const statusConfig: Record<BetStatus, { icon: React.ElementType; color: string; label: string }> = {
   pending: { icon: Clock, color: 'text-yellow-500', label: 'Pending' },
@@ -36,6 +37,101 @@ const statusConfig: Record<BetStatus, { icon: React.ElementType; color: string; 
   push: { icon: MinusCircle, color: 'text-muted-foreground', label: 'Push' },
   cancelled: { icon: XCircle, color: 'text-muted-foreground', label: 'Cancelled' },
 };
+
+// Memoized bet row component
+const BetRow = memo(function BetRow({ 
+  bet, 
+  onSettle 
+}: { 
+  bet: UserBet; 
+  onSettle: (bet: UserBet, status: BetStatus) => void;
+}) {
+  const StatusIcon = statusConfig[bet.status].icon;
+  
+  return (
+    <div className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
+      <div className="flex items-start gap-4">
+        <StatusIcon className={`h-5 w-5 mt-0.5 ${statusConfig[bet.status].color}`} />
+        <div>
+          <p className="font-medium">{bet.match_title}</p>
+          <div className="flex items-center gap-2 mt-1">
+            <Badge variant="outline" className="text-xs">
+              {bet.bet_type}
+            </Badge>
+            <span className="text-sm text-muted-foreground">
+              {bet.selection} @ {bet.odds_at_placement.toFixed(2)}
+            </span>
+          </div>
+          <p className="text-xs text-muted-foreground mt-1">
+            {format(new Date(bet.placed_at), 'MMM d, yyyy h:mm a')}
+          </p>
+        </div>
+      </div>
+      <div className="text-right">
+        <p className="font-medium">${bet.stake.toFixed(2)}</p>
+        {bet.status === 'pending' ? (
+          <div className="flex gap-1 mt-2">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs text-green-600 hover:bg-green-50 hover:text-green-700"
+              onClick={() => onSettle(bet, 'won')}
+            >
+              Won
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs text-red-600 hover:bg-red-50 hover:text-red-700"
+              onClick={() => onSettle(bet, 'lost')}
+            >
+              Lost
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs"
+              onClick={() => onSettle(bet, 'push')}
+            >
+              Push
+            </Button>
+          </div>
+        ) : bet.result_profit !== undefined ? (
+          <p className={`text-sm font-medium ${bet.result_profit >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+            {bet.result_profit >= 0 ? '+' : ''}{bet.result_profit.toFixed(2)}
+          </p>
+        ) : null}
+      </div>
+    </div>
+  );
+});
+
+// Stats card component
+const StatCard = memo(function StatCard({ 
+  icon: Icon, 
+  value, 
+  label, 
+  valueClassName 
+}: { 
+  icon: React.ElementType; 
+  value: string | number; 
+  label: string;
+  valueClassName?: string;
+}) {
+  return (
+    <Card>
+      <CardContent className="pt-4">
+        <div className="flex items-center gap-2">
+          <Icon className="h-5 w-5 text-primary" />
+          <div>
+            <p className={`text-2xl font-bold ${valueClassName || ''}`}>{value}</p>
+            <p className="text-xs text-muted-foreground">{label}</p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+});
 
 export default function BetHistory() {
   const navigate = useNavigate();
@@ -46,9 +142,11 @@ export default function BetHistory() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<string>('bets');
 
-  const filteredBets = statusFilter === 'all' 
-    ? bets 
-    : bets.filter((b) => b.status === statusFilter);
+  const filteredBets = useMemo(() => {
+    return statusFilter === 'all' 
+      ? bets 
+      : bets.filter((b) => b.status === statusFilter);
+  }, [bets, statusFilter]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -56,7 +154,7 @@ export default function BetHistory() {
     setIsRefreshing(false);
   };
 
-  const handleSettleBet = async (bet: UserBet, status: BetStatus) => {
+  const handleSettleBet = useCallback(async (bet: UserBet, status: BetStatus) => {
     let profit = 0;
     if (status === 'won') {
       profit = bet.potential_payout - bet.stake;
@@ -64,7 +162,25 @@ export default function BetHistory() {
       profit = -bet.stake;
     }
     await updateBetStatus(bet.id, status, profit);
-  };
+  }, [updateBetStatus]);
+
+  // Memoized stats display values
+  const statsDisplay = useMemo(() => {
+    if (!stats) return null;
+    
+    const winRate = stats.total_bets > 0 
+      ? ((stats.wins / (stats.wins + stats.losses)) * 100).toFixed(1) 
+      : '0';
+    
+    return {
+      totalBets: stats.total_bets,
+      winRate: `${winRate}%`,
+      roi: `${stats.roi_percentage >= 0 ? '+' : ''}${stats.roi_percentage.toFixed(1)}%`,
+      roiClass: stats.roi_percentage >= 0 ? 'text-green-500' : 'text-red-500',
+      profit: `${stats.total_profit >= 0 ? '+' : '-'}$${Math.abs(stats.total_profit).toFixed(2)}`,
+      profitClass: stats.total_profit >= 0 ? 'text-green-500' : 'text-red-500',
+    };
+  }, [stats]);
 
   if (!user && !devMode) {
     return (
@@ -123,58 +239,22 @@ export default function BetHistory() {
 
           <TabsContent value="bets" className="mt-6">
             {/* Stats Overview */}
-            {stats && (
+            {statsDisplay && (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                <Card>
-                  <CardContent className="pt-4">
-                    <div className="flex items-center gap-2">
-                      <Target className="h-5 w-5 text-primary" />
-                      <div>
-                        <p className="text-2xl font-bold">{stats.total_bets}</p>
-                        <p className="text-xs text-muted-foreground">Total Bets</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="pt-4">
-                    <div className="flex items-center gap-2">
-                      <Percent className="h-5 w-5 text-primary" />
-                      <div>
-                        <p className="text-2xl font-bold">
-                          {stats.total_bets > 0 ? ((stats.wins / (stats.wins + stats.losses)) * 100).toFixed(1) : 0}%
-                        </p>
-                        <p className="text-xs text-muted-foreground">Win Rate</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="pt-4">
-                    <div className="flex items-center gap-2">
-                      <BarChart3 className="h-5 w-5 text-primary" />
-                      <div>
-                        <p className={`text-2xl font-bold ${stats.roi_percentage >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                          {stats.roi_percentage >= 0 ? '+' : ''}{stats.roi_percentage.toFixed(1)}%
-                        </p>
-                        <p className="text-xs text-muted-foreground">ROI</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="pt-4">
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="h-5 w-5 text-primary" />
-                      <div>
-                        <p className={`text-2xl font-bold ${stats.total_profit >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                          {stats.total_profit >= 0 ? '+' : '-'}${Math.abs(stats.total_profit).toFixed(2)}
-                        </p>
-                        <p className="text-xs text-muted-foreground">Total Profit</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                <StatCard icon={Target} value={statsDisplay.totalBets} label="Total Bets" />
+                <StatCard icon={Percent} value={statsDisplay.winRate} label="Win Rate" />
+                <StatCard 
+                  icon={BarChart3} 
+                  value={statsDisplay.roi} 
+                  label="ROI" 
+                  valueClassName={statsDisplay.roiClass}
+                />
+                <StatCard 
+                  icon={DollarSign} 
+                  value={statsDisplay.profit} 
+                  label="Total Profit"
+                  valueClassName={statsDisplay.profitClass}
+                />
               </div>
             )}
 
@@ -210,70 +290,15 @@ export default function BetHistory() {
                     </p>
                   </div>
                 ) : (
-                  <div className="space-y-3">
-                    {filteredBets.map((bet) => {
-                      const StatusIcon = statusConfig[bet.status].icon;
-                      return (
-                        <div
-                          key={bet.id}
-                          className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
-                        >
-                          <div className="flex items-start gap-4">
-                            <StatusIcon className={`h-5 w-5 mt-0.5 ${statusConfig[bet.status].color}`} />
-                            <div>
-                              <p className="font-medium">{bet.match_title}</p>
-                              <div className="flex items-center gap-2 mt-1">
-                                <Badge variant="outline" className="text-xs">
-                                  {bet.bet_type}
-                                </Badge>
-                                <span className="text-sm text-muted-foreground">
-                                  {bet.selection} @ {bet.odds_at_placement.toFixed(2)}
-                                </span>
-                              </div>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                {format(new Date(bet.placed_at), 'MMM d, yyyy h:mm a')}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <p className="font-medium">${bet.stake.toFixed(2)}</p>
-                            {bet.status === 'pending' ? (
-                              <div className="flex gap-1 mt-2">
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="h-7 text-xs text-green-600 hover:bg-green-50 hover:text-green-700"
-                                  onClick={() => handleSettleBet(bet, 'won')}
-                                >
-                                  Won
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="h-7 text-xs text-red-600 hover:bg-red-50 hover:text-red-700"
-                                  onClick={() => handleSettleBet(bet, 'lost')}
-                                >
-                                  Lost
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="h-7 text-xs"
-                                  onClick={() => handleSettleBet(bet, 'push')}
-                                >
-                                  Push
-                                </Button>
-                              </div>
-                            ) : bet.result_profit !== undefined ? (
-                              <p className={`text-sm font-medium ${bet.result_profit >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                                {bet.result_profit >= 0 ? '+' : ''}{bet.result_profit.toFixed(2)}
-                              </p>
-                            ) : null}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                  <VirtualizedList
+                    items={filteredBets}
+                    renderItem={(bet) => (
+                      <BetRow bet={bet} onSettle={handleSettleBet} />
+                    )}
+                    estimatedItemHeight={100}
+                    maxHeight={600}
+                    className="space-y-3"
+                  />
                 )}
               </CardContent>
             </Card>
