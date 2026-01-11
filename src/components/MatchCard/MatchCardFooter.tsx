@@ -1,43 +1,71 @@
+// src/components/match/MatchCard.tsx
 
+import React from "react";
+import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Trophy, ChartLine, TrendingUp } from "lucide-react";
+import { UnifiedGame } from "@/hooks/useGames";
 
-interface Props {
-  match: any;
-  getBadgeColor: (confidence: number) => string;
-  getSmartScoreBadgeColor: () => string;
+interface MatchCardProps {
+  game: UnifiedGame;
 }
 
-const MatchCardFooter = ({ match, getBadgeColor, getSmartScoreBadgeColor }: Props) => {
-  const hasSmartScore = match.smartScore !== undefined;
+export const MatchCard: React.FC<MatchCardProps> = ({ game }) => {
   return (
-    <div className="flex justify-between items-center">
-      <Badge 
-        className={`flex items-center gap-1 ${getBadgeColor(match.prediction.confidence)}`}
-      >
-        <Trophy className="h-3 w-3" />
-        {match.prediction.recommended === "home" 
-          ? match.homeTeam.shortName 
-          : match.prediction.recommended === "away" 
-            ? match.awayTeam.shortName 
-            : "Draw"
-        }
-      </Badge>
-      {hasSmartScore ? (
-        <Badge 
-          className={`flex items-center gap-1 ${getSmartScoreBadgeColor()}`}
-        >
-          <ChartLine className="h-3 w-3" />
-          <span>SmartScore {match.smartScore!.overall}</span>
-        </Badge>
-      ) : (
-        <div className="flex items-center text-xs gap-1">
-          <TrendingUp className="h-3 w-3 text-green-500" />
-          <span>{match.prediction.confidence}% confidence</span>
+    <Card className="w-full shadow-sm border border-muted/40">
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div className="flex flex-col">
+          <h3 className="text-lg font-semibold">
+            {game.homeTeam} vs {game.awayTeam}
+          </h3>
+
+          <p className="text-sm text-muted-foreground">
+            {new Date(game.startTime).toLocaleString()}
+          </p>
         </div>
-      )}
-    </div>
+
+        <Badge variant="outline" className="text-xs">
+          {game.source}
+        </Badge>
+      </CardHeader>
+
+      <CardContent className="pt-0">
+        <div className="flex flex-col gap-2">
+          {/* Game Status */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium">Status:</span>
+            <span className="text-sm capitalize">{game.status}</span>
+          </div>
+
+          {/* Odds */}
+          {game.odds && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium">Odds:</span>
+              <span className="text-sm">
+                {typeof game.odds === "string"
+                  ? game.odds
+                  : JSON.stringify(game.odds)}
+              </span>
+            </div>
+          )}
+
+          {/* Injuries */}
+          {game.injuries && (
+            <div className="flex flex-col">
+              <span className="text-sm font-medium mb-1">Injuries:</span>
+              <pre className="text-xs bg-muted/30 p-2 rounded">
+                {JSON.stringify(game.injuries, null, 2)}
+              </pre>
+            </div>
+          )}
+
+          {/* Last Updated */}
+          <p className="text-xs text-muted-foreground mt-2">
+            Last updated: {new Date(game.lastUpdated).toLocaleTimeString()}
+          </p>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 
-export default MatchCardFooter;
+export default MatchCard;
