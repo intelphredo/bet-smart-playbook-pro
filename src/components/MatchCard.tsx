@@ -20,6 +20,8 @@ import { InjuryImpactBadge } from "./InjuryImpactBadge";
 import { useMatchInjuryImpact } from "@/hooks/useMatchInjuryImpact";
 import { useMatchWeather } from "@/hooks/useMatchWeather";
 import { WeatherDisplay, IndoorBadge } from "./WeatherDisplay";
+import InjuryImpactRow from "./MatchCard/InjuryImpactRow";
+import InjuryBreakdown from "./MatchCard/InjuryBreakdown";
 
 interface MatchCardProps {
   match: any;
@@ -27,8 +29,12 @@ interface MatchCardProps {
 
 const MatchCard = ({ match }: MatchCardProps) => {
   const [showDetails, setShowDetails] = useState(false);
-  const { injuryImpact, hasSignificantImpact } = useMatchInjuryImpact(match);
+  const { injuryImpact, homeInjuries, awayInjuries, hasSignificantImpact } = useMatchInjuryImpact(match);
   const { weather, venue, isIndoor } = useMatchWeather(match);
+  
+  // Count injuries by status for each team
+  const countSignificantInjuries = (injuries: any[]) => 
+    injuries.filter(inj => ['out', 'doubtful', 'questionable'].includes(inj.status)).length;
 
   const formatTime = (timeString: string) => {
     try {
@@ -100,7 +106,11 @@ const MatchCard = ({ match }: MatchCardProps) => {
       <CardContent className="p-4">
         {/* Team matchup - more compact */}
         <div className="grid grid-cols-3 gap-3 items-center mb-4">
-          <MatchParticipant team={match.homeTeam} />
+          <MatchParticipant 
+            team={match.homeTeam} 
+            injuryCount={countSignificantInjuries(homeInjuries)}
+            injuryImpact={injuryImpact?.homeTeamImpact?.overallImpact || 0}
+          />
           <div className="text-center">
             {match.status === "live" ? (
               <div className="space-y-0.5">
@@ -117,8 +127,25 @@ const MatchCard = ({ match }: MatchCardProps) => {
               </div>
             )}
           </div>
-          <MatchParticipant team={match.awayTeam} />
+          <MatchParticipant 
+            team={match.awayTeam}
+            injuryCount={countSignificantInjuries(awayInjuries)}
+            injuryImpact={injuryImpact?.awayTeamImpact?.overallImpact || 0}
+          />
         </div>
+        
+        {/* Injury Impact Row - show when significant injuries exist */}
+        {hasSignificantImpact && injuryImpact && (
+          <InjuryImpactRow
+            impact={injuryImpact}
+            homeInjuries={homeInjuries}
+            awayInjuries={awayInjuries}
+            homeTeamName={match.homeTeam.shortName}
+            awayTeamName={match.awayTeam.shortName}
+          />
+        )}
+        
+        {/* Scenario Detection Badges - show max 2 */}
         
         {/* Scenario Detection Badges - show max 2 */}
         <div className="flex flex-wrap items-center gap-2 mb-3">
@@ -165,6 +192,16 @@ const MatchCard = ({ match }: MatchCardProps) => {
               </Button>
             </CollapsibleTrigger>
             <CollapsibleContent className="space-y-3 mt-3">
+              {/* Injury Breakdown in expanded view */}
+              {hasSignificantImpact && injuryImpact && (
+                <InjuryBreakdown
+                  impact={injuryImpact}
+                  homeInjuries={homeInjuries}
+                  awayInjuries={awayInjuries}
+                  homeTeamName={match.homeTeam.shortName}
+                  awayTeamName={match.awayTeam.shortName}
+                />
+              )}
               <BettingMetrics match={match} />
               <SocialFactorsCard match={match} compact />
             </CollapsibleContent>

@@ -51,6 +51,19 @@ export function InjuryImpactBadge({
   
   const spreadDisplay = getSpreadDisplay();
   
+  // Get the most impactful player name
+  const getMostImpactfulPlayer = () => {
+    const allPlayers = [
+      ...impact.homeTeamImpact.keyPlayersOut,
+      ...impact.awayTeamImpact.keyPlayersOut
+    ];
+    if (allPlayers.length === 0) return null;
+    // Return first key player (typically most impactful)
+    return allPlayers[0].playerName;
+  };
+  
+  const keyPlayer = getMostImpactfulPlayer();
+  
   if (compact) {
     return (
       <TooltipProvider>
@@ -61,7 +74,11 @@ export function InjuryImpactBadge({
               className={cn('gap-1 cursor-help', className)}
             >
               <AlertTriangle className="h-3 w-3" />
-              INJ
+              {keyPlayer ? (
+                <span className="truncate max-w-[80px]">{keyPlayer}</span>
+              ) : (
+                'INJ'
+              )}
               {spreadDisplay && <span className="font-mono text-xs">{spreadDisplay}</span>}
             </Badge>
           </TooltipTrigger>
@@ -74,11 +91,15 @@ export function InjuryImpactBadge({
               <div className="text-xs space-y-1">
                 <p>
                   <span className="text-muted-foreground">Home:</span>{' '}
-                  {impact.homeTeamImpact.keyPlayersOut.length} key players affected
+                  {impact.homeTeamImpact.keyPlayersOut.length > 0 
+                    ? impact.homeTeamImpact.keyPlayersOut.map(p => p.playerName).join(', ')
+                    : 'No key players out'}
                 </p>
                 <p>
                   <span className="text-muted-foreground">Away:</span>{' '}
-                  {impact.awayTeamImpact.keyPlayersOut.length} key players affected
+                  {impact.awayTeamImpact.keyPlayersOut.length > 0
+                    ? impact.awayTeamImpact.keyPlayersOut.map(p => p.playerName).join(', ')
+                    : 'No key players out'}
                 </p>
                 {spreadDisplay && (
                   <p className="pt-1 border-t border-border">
