@@ -1,6 +1,7 @@
-import { Trophy, TrendingUp, Medal, Target, Users, ChevronRight, Crown } from 'lucide-react';
+import { Trophy, TrendingUp, Medal, Target, Users, Crown, Sparkles, ArrowRight } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -8,6 +9,7 @@ import { useCLVLeaderboard, LeaderboardEntry } from '@/hooks/useCLVLeaderboard';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { isDevMode } from '@/utils/devMode';
+import { useNavigate } from 'react-router-dom';
 
 function getRankBadge(rank: number) {
   switch (rank) {
@@ -35,12 +37,10 @@ function LeaderboardRow({ entry, rank, isCurrentUser }: {
         isCurrentUser && "bg-primary/10 ring-1 ring-primary/30"
       )}
     >
-      {/* Rank */}
       <div className="flex-shrink-0 w-8">
         {getRankBadge(rank)}
       </div>
 
-      {/* Avatar & Name */}
       <Avatar className="h-9 w-9">
         <AvatarImage src={entry.avatar_url || undefined} />
         <AvatarFallback className="bg-primary/10 text-primary text-sm">
@@ -63,7 +63,6 @@ function LeaderboardRow({ entry, rank, isCurrentUser }: {
         </p>
       </div>
 
-      {/* Stats */}
       <div className="flex items-center gap-4 text-right">
         <div className="hidden sm:block">
           <p className="text-xs text-muted-foreground">+CLV Rate</p>
@@ -110,6 +109,40 @@ function LeaderboardSkeleton() {
   );
 }
 
+function EmptyLeaderboard() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  return (
+    <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
+      <div className="relative mb-6">
+        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-yellow-500/20 via-amber-500/10 to-orange-500/5 flex items-center justify-center">
+          <Trophy className="w-10 h-10 text-yellow-500/70" />
+        </div>
+        <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
+          <Sparkles className="w-3 h-3 text-primary" />
+        </div>
+      </div>
+      
+      <h3 className="text-lg font-semibold mb-2">Be the First Champion</h3>
+      <p className="text-sm text-muted-foreground max-w-[260px] mb-1">
+        Track your bets to see how you stack up against other sharp bettors.
+      </p>
+      <p className="text-xs text-muted-foreground mb-5">
+        Minimum 5 tracked bets required to qualify
+      </p>
+      
+      <Button 
+        onClick={() => user ? navigate('/bet-history') : navigate('/auth')}
+        className="gap-2"
+      >
+        {user ? 'Start Tracking Bets' : 'Sign Up to Compete'}
+        <ArrowRight className="w-4 h-4" />
+      </Button>
+    </div>
+  );
+}
+
 export default function CLVLeaderboard() {
   const { leaderboard, isLoading, error } = useCLVLeaderboard();
   const { user } = useAuth();
@@ -139,10 +172,12 @@ export default function CLVLeaderboard() {
             <Trophy className="w-5 h-5 text-yellow-500" />
             CLV Leaderboard
           </CardTitle>
-          <Badge variant="secondary" className="flex items-center gap-1">
-            <Users className="w-3 h-3" />
-            {leaderboard.length} bettors
-          </Badge>
+          {leaderboard.length > 0 && (
+            <Badge variant="secondary" className="flex items-center gap-1">
+              <Users className="w-3 h-3" />
+              {leaderboard.length} bettors
+            </Badge>
+          )}
         </div>
         <p className="text-xs text-muted-foreground mt-1">
           Top performers by Closing Line Value (min. 5 tracked bets)
@@ -153,12 +188,7 @@ export default function CLVLeaderboard() {
         {isLoading ? (
           <LeaderboardSkeleton />
         ) : leaderboard.length === 0 ? (
-          <div className="text-center py-8">
-            <Target className="mx-auto h-12 w-12 text-muted-foreground/50 mb-3" />
-            <p className="text-sm text-muted-foreground">
-              No CLV data yet. Place bets to start tracking!
-            </p>
-          </div>
+          <EmptyLeaderboard />
         ) : (
           <ScrollArea className="max-h-[400px]">
             <div className="space-y-1">
@@ -174,16 +204,17 @@ export default function CLVLeaderboard() {
           </ScrollArea>
         )}
 
-        {/* Info footer */}
-        <div className="mt-4 pt-3 border-t">
-          <div className="flex items-start gap-2 text-xs text-muted-foreground">
-            <TrendingUp className="w-4 h-4 flex-shrink-0 mt-0.5" />
-            <p>
-              <strong>CLV (Closing Line Value)</strong> measures how well you beat the market. 
-              Positive CLV means you consistently get better odds than where the line closes.
-            </p>
+        {leaderboard.length > 0 && (
+          <div className="mt-4 pt-3 border-t">
+            <div className="flex items-start gap-2 text-xs text-muted-foreground">
+              <TrendingUp className="w-4 h-4 flex-shrink-0 mt-0.5" />
+              <p>
+                <strong>CLV (Closing Line Value)</strong> measures how well you beat the market. 
+                Positive CLV means you consistently get better odds than where the line closes.
+              </p>
+            </div>
           </div>
-        </div>
+        )}
       </CardContent>
     </Card>
   );

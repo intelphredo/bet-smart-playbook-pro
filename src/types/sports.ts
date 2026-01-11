@@ -103,6 +103,8 @@ export interface BettingAlgorithm {
   description: string;
   winRate: number;
   recentResults: ('W' | 'L')[];
+  totalPicks?: number;
+  isFiltered?: boolean;
 }
 
 export interface UserBet {

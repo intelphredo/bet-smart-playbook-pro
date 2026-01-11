@@ -1,6 +1,7 @@
-import { TrendingUp, TrendingDown, Activity, ArrowRight, Clock } from 'lucide-react';
+import { TrendingUp, TrendingDown, Activity, ArrowRight, Clock, Bell, Zap } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLineMovements, LineMovement } from '@/hooks/useLineMovements';
@@ -51,7 +52,6 @@ function MovementRow({ movement }: { movement: LineMovement }) {
 
   return (
     <div className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors">
-      {/* Direction indicator */}
       <div className={cn(
         "w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0",
         isSteam ? "bg-red-100 dark:bg-red-900/30" : "bg-emerald-100 dark:bg-emerald-900/30"
@@ -63,7 +63,6 @@ function MovementRow({ movement }: { movement: LineMovement }) {
         )}
       </div>
 
-      {/* Match info */}
       <div className="flex-1 min-w-0">
         <p className="font-medium text-sm truncate">{movement.match_title}</p>
         <div className="flex items-center gap-2 mt-0.5">
@@ -76,7 +75,6 @@ function MovementRow({ movement }: { movement: LineMovement }) {
         </div>
       </div>
 
-      {/* Movement */}
       <div className="flex items-center gap-2 text-sm">
         <span className="font-mono text-muted-foreground">{display.from}</span>
         <ArrowRight className="w-4 h-4 text-muted-foreground" />
@@ -88,7 +86,6 @@ function MovementRow({ movement }: { movement: LineMovement }) {
         </span>
       </div>
 
-      {/* Time */}
       <div className="hidden sm:flex items-center gap-1 text-xs text-muted-foreground min-w-[80px] justify-end">
         <Clock className="w-3 h-3" />
         {formatDistanceToNow(new Date(movement.detected_at), { addSuffix: true })}
@@ -110,6 +107,34 @@ function MovementsSkeleton() {
           <Skeleton className="h-4 w-24" />
         </div>
       ))}
+    </div>
+  );
+}
+
+function EmptyMovements() {
+  return (
+    <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
+      <div className="relative mb-6">
+        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-orange-500/20 via-amber-500/10 to-yellow-500/5 flex items-center justify-center">
+          <Activity className="w-10 h-10 text-orange-500/70" />
+        </div>
+        <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-emerald-500/10 flex items-center justify-center animate-pulse">
+          <Zap className="w-3 h-3 text-emerald-500" />
+        </div>
+      </div>
+      
+      <h3 className="text-lg font-semibold mb-2">Markets Are Steady</h3>
+      <p className="text-sm text-muted-foreground max-w-[260px] mb-1">
+        No significant line movements detected right now.
+      </p>
+      <p className="text-xs text-muted-foreground mb-5">
+        We monitor spreads, totals, and moneylines 24/7
+      </p>
+      
+      <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 rounded-full px-4 py-2">
+        <Bell className="w-3.5 h-3.5" />
+        <span>You'll be alerted when sharp action hits</span>
+      </div>
     </div>
   );
 }
@@ -140,15 +165,7 @@ export default function LineMovementsCard() {
         {isLoading ? (
           <MovementsSkeleton />
         ) : movements.length === 0 ? (
-          <div className="text-center py-8">
-            <Activity className="mx-auto h-12 w-12 text-muted-foreground/50 mb-3" />
-            <p className="text-sm text-muted-foreground">
-              No significant line movements detected
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              We'll alert you when lines move sharply
-            </p>
-          </div>
+          <EmptyMovements />
         ) : (
           <ScrollArea className="max-h-[300px]">
             <div className="space-y-1">
@@ -159,17 +176,18 @@ export default function LineMovementsCard() {
           </ScrollArea>
         )}
 
-        {/* Legend */}
-        <div className="mt-4 pt-3 border-t flex items-center gap-4 text-xs text-muted-foreground">
-          <div className="flex items-center gap-1">
-            <TrendingDown className="w-3 h-3 text-red-500" />
-            <span>Steam Move (sharp action)</span>
+        {movements.length > 0 && (
+          <div className="mt-4 pt-3 border-t flex items-center gap-4 text-xs text-muted-foreground">
+            <div className="flex items-center gap-1">
+              <TrendingDown className="w-3 h-3 text-red-500" />
+              <span>Steam Move (sharp action)</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <TrendingUp className="w-3 h-3 text-emerald-500" />
+              <span>Reverse Move</span>
+            </div>
           </div>
-          <div className="flex items-center gap-1">
-            <TrendingUp className="w-3 h-3 text-emerald-500" />
-            <span>Reverse Move</span>
-          </div>
-        </div>
+        )}
       </CardContent>
     </Card>
   );
