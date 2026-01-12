@@ -43,16 +43,22 @@ interface ESPNStandingsResponse {
   };
 }
 
-// Get stat value from ESPN stats array
-const getStatValue = (stats: ESPNTeamEntry['stats'], name: string): number => {
-  const stat = stats.find(s => s.name.toLowerCase() === name.toLowerCase());
-  return stat?.value || 0;
+// Get stat value from ESPN stats array - handles multiple stat name variations
+const getStatValue = (stats: ESPNTeamEntry['stats'], ...names: string[]): number => {
+  for (const name of names) {
+    const stat = stats.find(s => s.name.toLowerCase() === name.toLowerCase());
+    if (stat?.value !== undefined) return stat.value;
+  }
+  return 0;
 };
 
 // Get stat display value from ESPN stats array
-const getStatDisplayValue = (stats: ESPNTeamEntry['stats'], name: string): string => {
-  const stat = stats.find(s => s.name.toLowerCase() === name.toLowerCase());
-  return stat?.displayValue || '';
+const getStatDisplayValue = (stats: ESPNTeamEntry['stats'], ...names: string[]): string => {
+  for (const name of names) {
+    const stat = stats.find(s => s.name.toLowerCase() === name.toLowerCase());
+    if (stat?.displayValue) return stat.displayValue;
+  }
+  return '';
 };
 
 // Parse streak string (e.g., "W5", "L2")
@@ -107,35 +113,26 @@ const mapTeamEntry = (
 ): SportradarStanding => {
   const { team, stats } = entry;
   
-  const wins = getStatValue(stats, 'wins');
-  const losses = getStatValue(stats, 'losses');
-  const ties = getStatValue(stats, 'ties') || getStatValue(stats, 'otLosses');
+  // Handle different stat name variations across leagues
+  const wins = getStatValue(stats, 'wins', 'W');
+  const losses = getStatValue(stats, 'losses', 'L');
+  const ties = getStatValue(stats, 'ties', 'T', 'otLosses', 'OTL');
   const gamesPlayed = wins + losses + (ties || 0);
   const winPct = gamesPlayed > 0 ? wins / gamesPlayed : 0;
   
   // Get various stats based on what's available
-  const gamesBack = getStatValue(stats, 'gamesBehind') || getStatValue(stats, 'gamesBack');
-  const homeRecord = getStatDisplayValue(stats, 'home') || getStatDisplayValue(stats, 'homeRecord');
-  const awayRecord = getStatDisplayValue(stats, 'road') || getStatDisplayValue(stats, 'awayRecord') || getStatDisplayValue(stats, 'away');
-  const last10 = getStatDisplayValue(stats, 'L10') || getStatDisplayValue(stats, 'last10');
-  const streak = getStatDisplayValue(stats, 'streak') || getStatDisplayValue(stats, 'strk');
+  const gamesBack = getStatValue(stats, 'gamesBehind', 'gamesBack', 'GB');
+  const homeRecord = getStatDisplayValue(stats, 'home', 'homeRecord', 'Home');
+  const awayRecord = getStatDisplayValue(stats, 'road', 'awayRecord', 'away', 'Road', 'Away');
+  const last10 = getStatDisplayValue(stats, 'L10', 'last10', 'Last10');
+  const streak = getStatDisplayValue(stats, 'streak', 'strk', 'STRK');
   
   // Points for/against (varies by sport)
-  const pointsFor = getStatValue(stats, 'pointsFor') || 
-                    getStatValue(stats, 'runsScored') || 
-                    getStatValue(stats, 'goalsFor') ||
-                    getStatValue(stats, 'avgPointsFor') ||
-                    getStatValue(stats, 'points');
-  const pointsAgainst = getStatValue(stats, 'pointsAgainst') || 
-                        getStatValue(stats, 'runsAllowed') || 
-                        getStatValue(stats, 'goalsAgainst') ||
-                        getStatValue(stats, 'avgPointsAgainst');
+  const pointsFor = getStatValue(stats, 'pointsFor', 'runsScored', 'goalsFor', 'avgPointsFor', 'points', 'PF');
+  const pointsAgainst = getStatValue(stats, 'pointsAgainst', 'runsAllowed', 'goalsAgainst', 'avgPointsAgainst', 'PA');
   
-  const confRank = getStatValue(stats, 'playoffSeed') || 
-                   getStatValue(stats, 'leagueRank') || 
-                   getStatValue(stats, 'rank') ||
-                   index + 1;
-  const divRank = getStatValue(stats, 'divisionRank') || index + 1;
+  const confRank = getStatValue(stats, 'playoffSeed', 'leagueRank', 'rank', 'clinchIndicator') || index + 1;
+  const divRank = getStatValue(stats, 'divisionRank', 'divRank') || index + 1;
   
   const playoffPosition = getPlayoffPosition(entry, confRank, league);
   
@@ -173,17 +170,25 @@ export const mapESPNStandingsToSportradar = (
   const standings: SportradarStanding[] = [];
   
   try {
+    console.log(`[ESPN Standings Mapper] Processing ${league} standings`);
+    
     // Handle conference/division structure (NBA, NFL, NHL, MLB)
     if (response.children && response.children.length > 0) {
+      console.log(`[ESPN Standings Mapper] Found ${response.children.length} conferences/groups`);
+      
       response.children.forEach((conference) => {
         const confName = conference.name || conference.abbreviation || '';
+        console.log(`[ESPN Standings Mapper] Processing conference: ${confName}`);
         
         // Check for divisions within conference
         if (conference.children && conference.children.length > 0) {
+          console.log(`[ESPN Standings Mapper] Found ${conference.children.length} divisions`);
+          
           conference.children.forEach((division) => {
             const divName = division.name || division.abbreviation || '';
             
             if (division.standings?.entries) {
+              console.log(`[ESPN Standings Mapper] Division ${divName}: ${division.standings.entries.length} teams`);
               division.standings.entries.forEach((entry, index) => {
                 standings.push(mapTeamEntry(entry, confName, divName, league, index));
               });
@@ -191,6 +196,7 @@ export const mapESPNStandingsToSportradar = (
           });
         } else if (conference.standings?.entries) {
           // Direct conference standings (no divisions)
+          console.log(`[ESPN Standings Mapper] Conference ${confName}: ${conference.standings.entries.length} teams`);
           conference.standings.entries.forEach((entry, index) => {
             standings.push(mapTeamEntry(entry, confName, '', league, index));
           });
@@ -199,9 +205,13 @@ export const mapESPNStandingsToSportradar = (
     } 
     // Handle flat standings structure (Soccer/Premier League)
     else if (response.standings?.entries) {
+      console.log(`[ESPN Standings Mapper] Flat structure: ${response.standings.entries.length} teams`);
       response.standings.entries.forEach((entry, index) => {
         standings.push(mapTeamEntry(entry, league === 'SOCCER' ? 'Premier League' : '', '', league, index));
       });
+    } else {
+      console.warn(`[ESPN Standings Mapper] No standings data found in response for ${league}`);
+      console.log(`[ESPN Standings Mapper] Response keys:`, Object.keys(response || {}));
     }
     
     // Sort by conference rank
@@ -211,6 +221,8 @@ export const mapESPNStandingsToSportradar = (
       }
       return a.confRank - b.confRank;
     });
+    
+    console.log(`[ESPN Standings Mapper] Mapped ${standings.length} teams for ${league}`);
     
   } catch (error) {
     console.error('[ESPN Standings Mapper] Error mapping standings:', error);
