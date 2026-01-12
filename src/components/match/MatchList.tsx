@@ -8,9 +8,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 export const MatchList: React.FC = () => {
   const { games, isLoading, isError, refetch } = useGames();
 
-  // -----------------------------
-  // Loading State
-  // -----------------------------
   if (isLoading) {
     return (
       <div className="flex flex-col gap-4">
@@ -21,18 +18,15 @@ export const MatchList: React.FC = () => {
     );
   }
 
-  // -----------------------------
-  // Error State
-  // -----------------------------
   if (isError) {
     return (
       <div className="text-center py-10">
-        <p className="text-red-500 font-medium mb-2">
+        <p className="text-destructive font-medium mb-2">
           Failed to load games.
         </p>
         <button
           onClick={() => refetch()}
-          className="text-blue-600 underline text-sm"
+          className="text-primary underline text-sm"
         >
           Try again
         </button>
@@ -40,9 +34,6 @@ export const MatchList: React.FC = () => {
     );
   }
 
-  // -----------------------------
-  // Empty State
-  // -----------------------------
   if (!games || games.length === 0) {
     return (
       <div className="text-center py-10 text-muted-foreground">
@@ -51,9 +42,6 @@ export const MatchList: React.FC = () => {
     );
   }
 
-  // -----------------------------
-  // Game List
-  // -----------------------------
   return (
     <div className="flex flex-col gap-4">
       {games.map((game) => (
