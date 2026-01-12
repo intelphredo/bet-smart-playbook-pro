@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { SportLeague, SportradarInjury, InjuryStatus } from '@/types/sportradar';
+import { SportradarInjury, InjuryStatus } from '@/types/sportradar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -16,10 +16,11 @@ import {
 import { cn } from '@/lib/utils';
 import { calculateInjuryImpact } from '@/hooks/useSportradarInjuries';
 
+// Accept any string for league to support extended leagues like NCAAB
 interface InjuryReportCardProps {
   injuries: SportradarInjury[];
   teamName?: string;
-  league?: SportLeague;
+  league?: string;
   isLoading?: boolean;
   compact?: boolean;
   showImpactScore?: boolean;
