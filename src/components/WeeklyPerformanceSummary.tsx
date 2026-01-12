@@ -42,7 +42,6 @@ import {
   getOddsRangeBreakdown,
   getDayBreakdown,
   generateInsights,
-  generateMockBets,
   WeeklyStats,
   Insight,
 } from '@/utils/betting/performanceAnalyzer';
@@ -57,13 +56,11 @@ const chartConfig = {
 };
 
 export default function WeeklyPerformanceSummary() {
-  const { bets: realBets } = useBetSlip();
+  const { bets: realBets, isLoading } = useBetSlip();
   const [weekOffset, setWeekOffset] = useState(0);
 
-  // Use real bets if available, otherwise generate mock data for demo
-  const allBets = useMemo(() => {
-    return realBets.length > 0 ? realBets : generateMockBets();
-  }, [realBets]);
+  // Only use real bets - no mock data
+  const allBets = useMemo(() => realBets, [realBets]);
 
   const currentWeekBets = useMemo(() => getWeekBets(allBets, weekOffset), [allBets, weekOffset]);
   const lastWeekBets = useMemo(() => getWeekBets(allBets, weekOffset + 1), [allBets, weekOffset]);
@@ -108,6 +105,30 @@ export default function WeeklyPerformanceSummary() {
       case 'tip': return <Lightbulb className="h-4 w-4 text-blue-500" />;
     }
   };
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  // Show empty state if no bets exist
+  if (allBets.length === 0) {
+    return (
+      <Card>
+        <CardContent className="flex flex-col items-center justify-center py-12">
+          <Target className="h-12 w-12 text-muted-foreground/50 mb-4" />
+          <h3 className="text-lg font-medium mb-2">No Bets Placed Yet</h3>
+          <p className="text-muted-foreground text-center max-w-md">
+            Start tracking your bets to see weekly performance summaries, insights, and identify your best picks.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-6">
