@@ -26,6 +26,7 @@ interface DateStats {
   avgConfidence: number;
   arbitrageCount: number;
   score: number; // Overall opportunity score
+  leagueBreakdown: Record<string, number>; // Games per league
 }
 
 export const DateFilter: React.FC<DateFilterProps> = ({
@@ -54,8 +55,13 @@ export const DateFilter: React.FC<DateFilterProps> = ({
           avgConfidence: 0,
           arbitrageCount: 0,
           score: 0,
+          leagueBreakdown: {},
         };
       }
+      
+      // Track league breakdown
+      const league = match.league || "Other";
+      stats[dateKey].leagueBreakdown[league] = (stats[dateKey].leagueBreakdown[league] || 0) + 1;
       
       stats[dateKey].gameCount++;
       
@@ -124,6 +130,7 @@ export const DateFilter: React.FC<DateFilterProps> = ({
       avgConfidence: 0,
       arbitrageCount: 0,
       score: 0,
+      leagueBreakdown: {},
     };
   };
 
@@ -267,11 +274,30 @@ export const DateFilter: React.FC<DateFilterProps> = ({
                       )}
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent side="bottom" className="text-xs">
-                    <div className="space-y-1">
-                      <p className="font-semibold">{format(date, "EEEE, MMMM d")}</p>
+                  <TooltipContent side="bottom" className="text-xs max-w-[280px]">
+                    <div className="space-y-2">
+                      <p className="font-semibold text-sm">{format(date, "EEEE, MMMM d")}</p>
+                      
+                      {/* League Breakdown */}
+                      {Object.keys(stats.leagueBreakdown).length > 0 && (
+                        <div className="border-b pb-2">
+                          <p className="text-muted-foreground mb-1 font-medium">Games by League:</p>
+                          <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
+                            {Object.entries(stats.leagueBreakdown)
+                              .sort((a, b) => b[1] - a[1])
+                              .map(([league, count]) => (
+                                <div key={league} className="flex items-center justify-between">
+                                  <span className="text-muted-foreground">{league}:</span>
+                                  <span className="font-medium">{count}</span>
+                                </div>
+                              ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Stats */}
                       <div className="space-y-0.5 text-muted-foreground">
-                        <p>{stats.gameCount} games scheduled</p>
+                        <p className="font-medium text-foreground">{stats.gameCount} total games</p>
                         {stats.highConfidenceCount > 0 && (
                           <p className="text-green-600 dark:text-green-400 flex items-center gap-1">
                             <TrendingUp className="h-3 w-3" />
@@ -280,18 +306,24 @@ export const DateFilter: React.FC<DateFilterProps> = ({
                         )}
                         {stats.arbitrageCount > 0 && (
                           <p className="text-yellow-600 dark:text-yellow-400">
-                            {stats.arbitrageCount} arbitrage opportunities
+                            {stats.arbitrageCount} top opportunities
                           </p>
                         )}
                         {stats.avgConfidence > 0 && (
                           <p>Avg confidence: {Math.round(stats.avgConfidence)}%</p>
                         )}
-                        {isBest && (
-                          <p className="text-green-600 dark:text-green-400 font-medium mt-1">
-                            ⭐ Best betting day this week
-                          </p>
-                        )}
                       </div>
+                      
+                      {isBest && (
+                        <p className="text-green-600 dark:text-green-400 font-medium pt-1 border-t">
+                          ⭐ Best betting day this week
+                        </p>
+                      )}
+                      {isMostGames && !isBest && (
+                        <p className="text-blue-600 dark:text-blue-400 font-medium pt-1 border-t">
+                          🔥 Most games this week
+                        </p>
+                      )}
                     </div>
                   </TooltipContent>
                 </Tooltip>
