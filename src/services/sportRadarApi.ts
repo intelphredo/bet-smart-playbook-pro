@@ -18,10 +18,19 @@ const formatEndpoint = (endpoint: string, date: Date): string => {
 export const fetchSportRadarSchedule = async (league: League, date: Date = new Date()): Promise<Match[]> => {
   try {
     const { BASE_URL, API_KEY, ENDPOINTS } = API_CONFIGS.SPORTRADAR;
-    const endpoint = ENDPOINTS[league];
+    const leagueEndpoints = ENDPOINTS[league as keyof typeof ENDPOINTS];
     
-    if (!endpoint) {
-      throw new Error(`No endpoint defined for league: ${league}`);
+    if (!leagueEndpoints || typeof leagueEndpoints !== 'object') {
+      console.warn(`No endpoints defined for league: ${league}`);
+      return [];
+    }
+    
+    // Get the SCHEDULE or DAILY_SCHEDULE endpoint
+    const endpoint = 'SCHEDULE' in leagueEndpoints ? leagueEndpoints.SCHEDULE : null;
+    
+    if (!endpoint || typeof endpoint !== 'string') {
+      console.warn(`No schedule endpoint defined for league: ${league}`);
+      return [];
     }
     
     const formattedEndpoint = formatEndpoint(endpoint, date);

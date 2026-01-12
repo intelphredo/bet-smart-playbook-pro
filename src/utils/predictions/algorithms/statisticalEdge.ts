@@ -1,7 +1,7 @@
 import { Match } from "@/types/sports";
 import { generateAdvancedPrediction } from "../core/predictionEngine";
-import { calculateWeatherImpact } from "../../smartScore/factors/weatherFactors";
-import { calculateInjuryImpact } from "../../smartScore/factors/injuryFactors";
+import { calculateWeatherImpact } from "../../smartScore/weatherFactors";
+import { calculateInjuryImpact } from "../../smartScore/injuryFactors";
 import { ALGORITHM_IDS } from "./index";
 
 /**

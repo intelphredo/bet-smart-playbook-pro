@@ -1,11 +1,11 @@
 
 import { Match } from "@/types/sports";
-import { calculateMomentumImpact } from "../factors/momentumFactors";
-import { calculateOddsMovementImpact } from "../factors/oddsMovementFactors";
-import { calculateValueImpact } from "../factors/valueFactors";
-import { calculateWeatherImpact } from "../factors/weatherFactors";
-import { calculateInjuryImpact } from "../factors/injuryFactors";
-import { calculateArbitrageImpact, hasArbitrageOpportunity } from "../factors/arbitrageFactors";
+import { calculateMomentumFactors } from "../momentumFactors";
+import { calculateOddsMovementImpact } from "../oddsMovementFactors";
+import { calculateValueFactor } from "../valueFactors";
+import { calculateWeatherImpact } from "../weatherFactors";
+import { calculateInjuryImpact } from "../injuryFactors";
+import { calculateArbitrageImpact, hasArbitrageOpportunity } from "../arbitrageFactors";
 import { generateSmartScoreRecommendation } from "../recommendations/smartScoreRecommendation";
 import { applyPredictionValidation } from "../validation/predictionValidator";
 
@@ -19,8 +19,8 @@ const WEIGHT_FACTORS = {
 };
 
 export function calculateSmartScore(match: Match) {
-  const { momentumScore, momentumFactors } = calculateMomentumImpact(match);
-  const { valueScore, valueFactors } = calculateValueImpact(match);
+  const { momentumScore, momentumFactors } = calculateMomentumFactors(match);
+  const { valueScore, valueFactors } = calculateValueFactor(match);
   
   // Remove the configuration object and rely on the function's internal implementation
   const { adjustedValueScore: oddsMovementScore, oddsFactors: oddsMovementFactors } = calculateOddsMovementImpact(match);

@@ -1,8 +1,8 @@
 
 import { Match } from "@/types/sports";
 import { generateAdvancedPrediction } from "../core/predictionEngine";
-import { hasArbitrageOpportunity } from "../../smartScore/factors/arbitrageFactors";
-import { calculateValueImpact } from "../../smartScore/factors/valueFactors";
+import { hasArbitrageOpportunity } from "../../smartScore/arbitrageFactors";
+import { calculateValueFactor } from "../../smartScore/valueFactors";
 
 /**
  * Value Pick Finder Algorithm
@@ -50,7 +50,7 @@ function applyValuePickAdjustments(match: Match): number {
   // 1. Check if the match has odds data
   if (match.odds) {
     // Calculate value score (already emphasized value in this algorithm)
-    const { valueScore } = calculateValueImpact(match);
+    const { valueScore } = calculateValueFactor(match);
     
     // Add a strong influence from value score
     if (valueScore > 60) {
