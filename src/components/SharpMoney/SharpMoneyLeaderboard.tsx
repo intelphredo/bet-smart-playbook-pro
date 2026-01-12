@@ -11,13 +11,16 @@ import { Progress } from '@/components/ui/progress';
 import { 
   Brain, Zap, TrendingDown, TrendingUp, Activity, 
   DollarSign, Users, Trophy, Target, BarChart3, 
-  Clock, CheckCircle, XCircle, MinusCircle
+  Clock, CheckCircle, XCircle, MinusCircle,
+  Wallet, ArrowUpRight, ArrowDownRight, Flame, Snowflake, PieChart
 } from 'lucide-react';
 import { 
   useSharpMoneyLeaderboard, 
   useRecentSharpPredictions,
+  useSharpMoneyROI,
   SignalStats,
-  RecentPrediction
+  RecentPrediction,
+  SignalROI
 } from '@/hooks/useSharpMoneyLeaderboard';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
@@ -47,6 +50,7 @@ export function SharpMoneyLeaderboard({ className, compact = false }: SharpMoney
   const [activeTab, setActiveTab] = useState('signals');
   const { data: leaderboard, isLoading: loadingLeaderboard } = useSharpMoneyLeaderboard();
   const { data: recentPredictions, isLoading: loadingRecent } = useRecentSharpPredictions(10);
+  const { data: roiData, isLoading: loadingROI } = useSharpMoneyROI();
 
   if (compact) {
     return (
@@ -95,6 +99,10 @@ export function SharpMoneyLeaderboard({ className, compact = false }: SharpMoney
               <BarChart3 className="h-4 w-4" />
               By Signal Type
             </TabsTrigger>
+            <TabsTrigger value="roi" className="gap-2">
+              <Wallet className="h-4 w-4" />
+              ROI Tracker
+            </TabsTrigger>
             <TabsTrigger value="recent" className="gap-2">
               <Clock className="h-4 w-4" />
               Recent Picks
@@ -113,6 +121,28 @@ export function SharpMoneyLeaderboard({ className, compact = false }: SharpMoney
                 <div className="divide-y">
                   {leaderboard?.map((stat, i) => (
                     <LeaderboardRow key={stat.signalType} stat={stat} rank={i + 1} />
+                  ))}
+                </div>
+              </ScrollArea>
+            )}
+          </CardContent>
+        </TabsContent>
+
+        <TabsContent value="roi" className="m-0">
+          <CardContent className="p-0">
+            {loadingROI ? (
+              <div className="p-6 space-y-4">
+                {[1, 2, 3, 4, 5].map(i => <Skeleton key={i} className="h-32 w-full" />)}
+              </div>
+            ) : (
+              <ScrollArea className="h-[500px]">
+                {/* ROI Summary */}
+                <div className="p-4 bg-gradient-to-r from-green-500/10 via-transparent to-red-500/10 border-b">
+                  <ROISummary roiData={roiData || []} />
+                </div>
+                <div className="divide-y">
+                  {roiData?.map((roi, i) => (
+                    <ROIRow key={roi.signalType} roi={roi} rank={i + 1} />
                   ))}
                 </div>
               </ScrollArea>
@@ -342,6 +372,265 @@ function RecentPredictionRow({ prediction }: { prediction: RecentPrediction }) {
           >
             {prediction.gameResult.toUpperCase()}
           </Badge>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+// ROI Summary component
+function ROISummary({ roiData }: { roiData: SignalROI[] }) {
+  const totalProfit = roiData.reduce((sum, r) => sum + r.profit, 0);
+  const totalStaked = roiData.reduce((sum, r) => sum + r.totalStaked, 0);
+  const totalBets = roiData.reduce((sum, r) => sum + r.totalBets, 0);
+  const totalWins = roiData.reduce((sum, r) => sum + r.wins, 0);
+  const totalLosses = roiData.reduce((sum, r) => sum + r.losses, 0);
+  const overallROI = totalStaked > 0 ? (totalProfit / totalStaked) * 100 : 0;
+
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="text-center">
+        <div className={cn(
+          'text-2xl font-bold font-mono',
+          totalProfit >= 0 ? 'text-green-500' : 'text-red-500'
+        )}>
+          {totalProfit >= 0 ? '+' : ''}{totalProfit.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
+        </div>
+        <div className="text-xs text-muted-foreground">Total Profit</div>
+      </div>
+      <div className="text-center">
+        <div className={cn(
+          'text-2xl font-bold font-mono',
+          overallROI >= 0 ? 'text-green-500' : 'text-red-500'
+        )}>
+          {overallROI >= 0 ? '+' : ''}{overallROI.toFixed(1)}%
+        </div>
+        <div className="text-xs text-muted-foreground">Overall ROI</div>
+      </div>
+      <div className="text-center">
+        <div className="text-2xl font-bold font-mono">
+          {totalBets.toLocaleString()}
+        </div>
+        <div className="text-xs text-muted-foreground">Total Bets</div>
+      </div>
+      <div className="text-center">
+        <div className="text-2xl font-bold font-mono">
+          {totalWins}-{totalLosses}
+        </div>
+        <div className="text-xs text-muted-foreground">Win-Loss Record</div>
+      </div>
+    </div>
+  );
+}
+
+// ROI Row component
+function ROIRow({ roi, rank }: { roi: SignalROI; rank: number }) {
+  const config = SIGNAL_CONFIG[roi.signalType] || { 
+    icon: Brain, 
+    color: 'text-muted-foreground', 
+    label: roi.signalType 
+  };
+  const Icon = config.icon;
+  const [expanded, setExpanded] = useState(false);
+  
+  // Get top leagues
+  const topLeagues = Object.entries(roi.byLeague)
+    .sort((a, b) => b[1].profit - a[1].profit)
+    .slice(0, 3);
+  
+  // Get top markets
+  const topMarkets = Object.entries(roi.byMarket)
+    .sort((a, b) => b[1].profit - a[1].profit);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: rank * 0.05 }}
+      className="p-4 hover:bg-muted/50 transition-colors cursor-pointer"
+      onClick={() => setExpanded(!expanded)}
+    >
+      <div className="flex items-start gap-4">
+        {/* ROI Badge */}
+        <div className={cn(
+          'w-16 h-16 rounded-xl flex flex-col items-center justify-center shrink-0',
+          roi.roi >= 10 ? 'bg-green-500/20 border-2 border-green-500' :
+          roi.roi >= 0 ? 'bg-green-500/10 border border-green-500/50' :
+          roi.roi >= -5 ? 'bg-yellow-500/10 border border-yellow-500/50' :
+          'bg-red-500/10 border border-red-500/50'
+        )}>
+          <span className={cn(
+            'text-lg font-bold',
+            roi.roi >= 0 ? 'text-green-600' : 'text-red-600'
+          )}>
+            {roi.roi >= 0 ? '+' : ''}{roi.roi}%
+          </span>
+          <span className="text-[10px] text-muted-foreground">ROI</span>
+        </div>
+        
+        {/* Signal Info */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-2">
+            <Icon className={cn('h-5 w-5', config.color)} />
+            <h3 className="font-semibold">{config.label}</h3>
+            <Badge 
+              variant="secondary" 
+              className={cn(
+                'text-xs',
+                roi.profit >= 0 ? 'bg-green-500/10 text-green-600' : 'bg-red-500/10 text-red-600'
+              )}
+            >
+              {roi.profit >= 0 ? '+' : ''}{roi.profit.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
+            </Badge>
+          </div>
+          
+          {/* Stats Grid */}
+          <div className="grid grid-cols-4 gap-4 mt-3">
+            <div className="text-center">
+              <p className="font-mono font-bold text-lg">
+                {roi.totalBets}
+              </p>
+              <p className="text-xs text-muted-foreground">Bets</p>
+            </div>
+            <div className="text-center">
+              <p className="font-mono font-bold text-lg">
+                {roi.wins}-{roi.losses}
+              </p>
+              <p className="text-xs text-muted-foreground">Record</p>
+            </div>
+            <div className="text-center">
+              <p className={cn(
+                'font-mono font-bold text-lg',
+                roi.currentStreak > 0 ? 'text-green-500' : 
+                roi.currentStreak < 0 ? 'text-red-500' : 'text-muted-foreground'
+              )}>
+                {roi.currentStreak > 0 ? (
+                  <span className="flex items-center justify-center gap-1">
+                    <Flame className="h-4 w-4" />
+                    {roi.currentStreak}W
+                  </span>
+                ) : roi.currentStreak < 0 ? (
+                  <span className="flex items-center justify-center gap-1">
+                    <Snowflake className="h-4 w-4" />
+                    {Math.abs(roi.currentStreak)}L
+                  </span>
+                ) : (
+                  'Even'
+                )}
+              </p>
+              <p className="text-xs text-muted-foreground">Streak</p>
+            </div>
+            <div className="text-center">
+              <p className="font-mono font-bold text-lg text-muted-foreground">
+                ${roi.totalStaked.toLocaleString()}
+              </p>
+              <p className="text-xs text-muted-foreground">Staked</p>
+            </div>
+          </div>
+          
+          {/* Expanded View */}
+          {expanded && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="mt-4 space-y-4"
+            >
+              {/* League Breakdown */}
+              <div>
+                <h4 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
+                  <PieChart className="h-4 w-4" />
+                  By League
+                </h4>
+                <div className="grid grid-cols-3 gap-2">
+                  {topLeagues.map(([league, stats]) => (
+                    <div 
+                      key={league} 
+                      className={cn(
+                        'p-2 rounded-lg text-center',
+                        stats.profit >= 0 ? 'bg-green-500/10' : 'bg-red-500/10'
+                      )}
+                    >
+                      <Badge variant="outline" className="mb-1">{league}</Badge>
+                      <p className={cn(
+                        'text-sm font-mono font-bold',
+                        stats.profit >= 0 ? 'text-green-600' : 'text-red-600'
+                      )}>
+                        {stats.profit >= 0 ? '+' : ''}{stats.profit.toFixed(0)}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {stats.wins}-{stats.losses}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Market Breakdown */}
+              <div>
+                <h4 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
+                  <BarChart3 className="h-4 w-4" />
+                  By Market
+                </h4>
+                <div className="grid grid-cols-3 gap-2">
+                  {topMarkets.map(([market, stats]) => (
+                    <div 
+                      key={market} 
+                      className={cn(
+                        'p-2 rounded-lg text-center',
+                        stats.profit >= 0 ? 'bg-green-500/10' : 'bg-red-500/10'
+                      )}
+                    >
+                      <Badge variant="outline" className="mb-1 capitalize">{market}</Badge>
+                      <p className={cn(
+                        'text-sm font-mono font-bold',
+                        stats.profit >= 0 ? 'text-green-600' : 'text-red-600'
+                      )}>
+                        {stats.profit >= 0 ? '+' : ''}{stats.profit.toFixed(0)}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {stats.wins}-{stats.losses}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Streak Info */}
+              <div className="flex items-center gap-4 text-sm">
+                <div className="flex items-center gap-1">
+                  <Flame className="h-4 w-4 text-green-500" />
+                  <span className="text-muted-foreground">Best:</span>
+                  <span className="font-mono font-bold text-green-500">{roi.bestStreak}W</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Snowflake className="h-4 w-4 text-red-500" />
+                  <span className="text-muted-foreground">Worst:</span>
+                  <span className="font-mono font-bold text-red-500">{Math.abs(roi.worstStreak)}L</span>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </div>
+        
+        {/* Profit Circle */}
+        <div className={cn(
+          'w-20 h-20 rounded-full border-4 flex flex-col items-center justify-center shrink-0',
+          roi.profit >= 500 ? 'border-green-500 bg-green-500/10' :
+          roi.profit >= 0 ? 'border-green-400 bg-green-400/10' :
+          'border-red-500 bg-red-500/10'
+        )}>
+          {roi.profit >= 0 ? (
+            <ArrowUpRight className="h-5 w-5 text-green-600" />
+          ) : (
+            <ArrowDownRight className="h-5 w-5 text-red-600" />
+          )}
+          <span className={cn(
+            'text-sm font-bold',
+            roi.profit >= 0 ? 'text-green-600' : 'text-red-600'
+          )}>
+            ${Math.abs(roi.profit).toFixed(0)}
+          </span>
         </div>
       </div>
     </motion.div>

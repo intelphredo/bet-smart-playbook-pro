@@ -100,6 +100,22 @@ Deno.serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+
+      if (action === "roi") {
+        // Calculate ROI for each signal type
+        const { data: predictions, error } = await supabase
+          .from("sharp_money_predictions")
+          .select("*")
+          .neq("game_result", "pending");
+
+        if (error) throw error;
+
+        const roiBySignal = calculateROI(predictions || []);
+
+        return new Response(JSON.stringify({ roi: roiBySignal }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     // POST - Record new prediction
@@ -291,4 +307,129 @@ function aggregateBySignalType(stats: any[]) {
       : 0,
     leagueCount: entry.leagues.size,
   })).sort((a, b) => b.winRate - a.winRate);
+}
+
+// Calculate ROI for each signal type
+// Assumes flat $100 bet per play at -110 odds (standard juice)
+function calculateROI(predictions: any[]) {
+  const STAKE = 100; // $100 per bet
+  const WIN_RETURN = 190.91; // $100 stake + $90.91 profit at -110
+  
+  const byType: Record<string, {
+    signalType: string;
+    totalBets: number;
+    wins: number;
+    losses: number;
+    pushes: number;
+    totalStaked: number;
+    totalReturn: number;
+    profit: number;
+    roi: number;
+    avgOdds: number;
+    bestStreak: number;
+    worstStreak: number;
+    currentStreak: number;
+    byLeague: Record<string, { wins: number; losses: number; profit: number }>;
+    byMarket: Record<string, { wins: number; losses: number; profit: number }>;
+    monthlyData: Record<string, { wins: number; losses: number; profit: number }>;
+  }> = {};
+
+  // Sort by detected_at for streak calculation
+  const sorted = [...predictions].sort((a, b) => 
+    new Date(a.detected_at).getTime() - new Date(b.detected_at).getTime()
+  );
+
+  for (const pred of sorted) {
+    const type = pred.signal_type;
+    
+    if (!byType[type]) {
+      byType[type] = {
+        signalType: type,
+        totalBets: 0,
+        wins: 0,
+        losses: 0,
+        pushes: 0,
+        totalStaked: 0,
+        totalReturn: 0,
+        profit: 0,
+        roi: 0,
+        avgOdds: -110,
+        bestStreak: 0,
+        worstStreak: 0,
+        currentStreak: 0,
+        byLeague: {},
+        byMarket: {},
+        monthlyData: {},
+      };
+    }
+
+    const entry = byType[type];
+    entry.totalBets++;
+
+    // Handle league breakdown
+    if (!entry.byLeague[pred.league]) {
+      entry.byLeague[pred.league] = { wins: 0, losses: 0, profit: 0 };
+    }
+
+    // Handle market breakdown
+    if (!entry.byMarket[pred.market_type]) {
+      entry.byMarket[pred.market_type] = { wins: 0, losses: 0, profit: 0 };
+    }
+
+    // Handle monthly breakdown
+    const month = new Date(pred.detected_at).toISOString().slice(0, 7);
+    if (!entry.monthlyData[month]) {
+      entry.monthlyData[month] = { wins: 0, losses: 0, profit: 0 };
+    }
+
+    if (pred.game_result === "won") {
+      entry.wins++;
+      entry.totalStaked += STAKE;
+      entry.totalReturn += WIN_RETURN;
+      entry.byLeague[pred.league].wins++;
+      entry.byLeague[pred.league].profit += (WIN_RETURN - STAKE);
+      entry.byMarket[pred.market_type].wins++;
+      entry.byMarket[pred.market_type].profit += (WIN_RETURN - STAKE);
+      entry.monthlyData[month].wins++;
+      entry.monthlyData[month].profit += (WIN_RETURN - STAKE);
+      
+      // Update streak
+      if (entry.currentStreak >= 0) {
+        entry.currentStreak++;
+        entry.bestStreak = Math.max(entry.bestStreak, entry.currentStreak);
+      } else {
+        entry.currentStreak = 1;
+      }
+    } else if (pred.game_result === "lost") {
+      entry.losses++;
+      entry.totalStaked += STAKE;
+      entry.totalReturn += 0;
+      entry.byLeague[pred.league].losses++;
+      entry.byLeague[pred.league].profit -= STAKE;
+      entry.byMarket[pred.market_type].losses++;
+      entry.byMarket[pred.market_type].profit -= STAKE;
+      entry.monthlyData[month].losses++;
+      entry.monthlyData[month].profit -= STAKE;
+      
+      // Update streak
+      if (entry.currentStreak <= 0) {
+        entry.currentStreak--;
+        entry.worstStreak = Math.min(entry.worstStreak, entry.currentStreak);
+      } else {
+        entry.currentStreak = -1;
+      }
+    } else if (pred.game_result === "push") {
+      entry.pushes++;
+      entry.totalReturn += STAKE; // Return stake on push
+    }
+  }
+
+  // Calculate final ROI for each
+  return Object.values(byType).map((entry) => {
+    entry.profit = entry.totalReturn - entry.totalStaked;
+    entry.roi = entry.totalStaked > 0 
+      ? Math.round((entry.profit / entry.totalStaked) * 1000) / 10 
+      : 0;
+    return entry;
+  }).sort((a, b) => b.roi - a.roi);
 }
