@@ -44,7 +44,7 @@ const FinishedMatchInfo = ({ match }: Props) => {
   
   const handleSavePrediction = () => {
     console.log("Saving prediction for match:", match);
-    savePrediction.mutate(match);
+    savePrediction.mutate({ match, isLive: match.status === "live" });
   };
 
   const handleUpdateResults = () => {

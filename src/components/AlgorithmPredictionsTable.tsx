@@ -99,7 +99,7 @@ export default function AlgorithmPredictionsTable({
   }, [selectedTab]);
 
   const handleSavePrediction = (match: Match) => {
-    savePrediction.mutate(match);
+    savePrediction.mutate({ match, isLive: match.status === "live" });
   };
 
   // Define table columns
