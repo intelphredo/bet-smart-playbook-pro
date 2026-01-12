@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { 
   Target, 
   TrendingUp, 
@@ -11,7 +12,9 @@ import {
   RefreshCw,
   Calendar,
   Clock,
-  ChevronRight
+  ChevronRight,
+  ExternalLink,
+  Trophy
 } from 'lucide-react';
 import { useRecommendedPicks, RecommendedPick } from '@/hooks/useRecommendedPicks';
 import { AlgorithmType } from '@/utils/predictions/algorithms';
@@ -24,7 +27,7 @@ const ALGORITHM_OPTIONS: { label: string; value: AlgorithmType }[] = [
   { label: 'Statistical Edge', value: 'STATISTICAL_EDGE' },
 ];
 
-function PickCard({ pick }: { pick: RecommendedPick }) {
+function PickCard({ pick, onViewDetails }: { pick: RecommendedPick; onViewDetails: (pick: RecommendedPick) => void }) {
   const matchDate = parseISO(pick.match.startTime);
   const timeLabel = formatDistanceToNow(matchDate, { addSuffix: true });
   
@@ -43,7 +46,10 @@ function PickCard({ pick }: { pick: RecommendedPick }) {
       : 'text-muted-foreground';
 
   return (
-    <div className="p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
+    <div 
+      className="p-4 rounded-lg border bg-card hover:bg-accent/50 transition-all duration-200 cursor-pointer hover:shadow-md hover:scale-[1.01]"
+      onClick={() => onViewDetails(pick)}
+    >
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
           {/* Match Info */}
@@ -71,10 +77,11 @@ function PickCard({ pick }: { pick: RecommendedPick }) {
             </span>
           </div>
 
-          {/* Projected Score */}
-          <p className="text-xs text-muted-foreground">
-            Projected: {pick.projectedScore.home} - {pick.projectedScore.away}
-          </p>
+          {/* Click hint */}
+          <div className="text-xs text-muted-foreground flex items-center gap-1">
+            <ExternalLink className="h-3 w-3" />
+            Click for details
+          </div>
         </div>
 
         {/* Stats */}
@@ -105,6 +112,7 @@ function PickCard({ pick }: { pick: RecommendedPick }) {
 export default function RecommendedPicksSection() {
   const [algorithm, setAlgorithm] = useState<AlgorithmType>('STATISTICAL_EDGE');
   const [viewMode, setViewMode] = useState<'confidence' | 'value'>('value');
+  const [selectedPick, setSelectedPick] = useState<RecommendedPick | null>(null);
 
   const { 
     picks, 
@@ -124,6 +132,10 @@ export default function RecommendedPicksSection() {
 
   const displayPicks = viewMode === 'confidence' ? topByConfidence : topByEV;
   const qualifiedPicks = picks.filter(p => p.evPercentage > 0 && p.confidence >= 55);
+
+  const handleViewDetails = (pick: RecommendedPick) => {
+    setSelectedPick(pick);
+  };
 
   if (isLoading) {
     return (
@@ -150,96 +162,182 @@ export default function RecommendedPicksSection() {
   }
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between flex-wrap gap-3">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Zap className="h-5 w-5 text-primary" />
-            Algorithm Recommended Picks
-          </CardTitle>
-          
-          <div className="flex items-center gap-2">
-            <Select value={algorithm} onValueChange={(v) => setAlgorithm(v as AlgorithmType)}>
-              <SelectTrigger className="w-[160px] h-8 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {ALGORITHM_OPTIONS.map(opt => (
-                  <SelectItem key={opt.value} value={opt.value} className="text-xs">
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+    <>
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Zap className="h-5 w-5 text-primary" />
+              Algorithm Recommended Picks
+            </CardTitle>
             
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={refetch}>
-              <RefreshCw className="h-4 w-4" />
-            </Button>
+            <div className="flex items-center gap-2">
+              <Select value={algorithm} onValueChange={(v) => setAlgorithm(v as AlgorithmType)}>
+                <SelectTrigger className="w-[160px] h-8 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ALGORITHM_OPTIONS.map(opt => (
+                    <SelectItem key={opt.value} value={opt.value} className="text-xs">
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={refetch}>
+                <RefreshCw className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
-        </div>
-        
-        {lastRefreshTime && (
-          <p className="text-xs text-muted-foreground mt-1">
-            Updated {formatDistanceToNow(parseISO(lastRefreshTime), { addSuffix: true })} • 
-            {totalUpcoming} upcoming games • 
-            {qualifiedPicks.length} qualified picks
-          </p>
-        )}
-      </CardHeader>
-
-      <CardContent>
-        {picks.length === 0 ? (
-          <div className="text-center py-8">
-            <Target className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
-            <h3 className="text-base font-medium mb-1">No Recommended Picks</h3>
-            <p className="text-sm text-muted-foreground">
-              No upcoming matches meet the prediction criteria right now.
+          
+          {lastRefreshTime && (
+            <p className="text-xs text-muted-foreground mt-1">
+              Updated {formatDistanceToNow(parseISO(lastRefreshTime), { addSuffix: true })} • 
+              {totalUpcoming} upcoming games • 
+              {qualifiedPicks.length} qualified picks
             </p>
-          </div>
-        ) : (
-          <>
-            <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'confidence' | 'value')}>
-              <TabsList className="grid w-full grid-cols-2 mb-4">
-                <TabsTrigger value="value" className="text-xs">
-                  <TrendingUp className="h-3 w-3 mr-1" />
-                  Top Value (+EV)
-                </TabsTrigger>
-                <TabsTrigger value="confidence" className="text-xs">
-                  <Target className="h-3 w-3 mr-1" />
-                  High Confidence
-                </TabsTrigger>
-              </TabsList>
+          )}
+        </CardHeader>
 
-              <TabsContent value="value" className="mt-0">
-                <div className="space-y-3">
-                  {topByEV.map((pick) => (
-                    <PickCard key={pick.match.id} pick={pick} />
-                  ))}
+        <CardContent>
+          {picks.length === 0 ? (
+            <div className="text-center py-8">
+              <Target className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
+              <h3 className="text-base font-medium mb-1">No Recommended Picks</h3>
+              <p className="text-sm text-muted-foreground">
+                No upcoming matches meet the prediction criteria right now.
+              </p>
+            </div>
+          ) : (
+            <>
+              <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'confidence' | 'value')}>
+                <TabsList className="grid w-full grid-cols-2 mb-4">
+                  <TabsTrigger value="value" className="text-xs">
+                    <TrendingUp className="h-3 w-3 mr-1" />
+                    Top Value (+EV)
+                  </TabsTrigger>
+                  <TabsTrigger value="confidence" className="text-xs">
+                    <Target className="h-3 w-3 mr-1" />
+                    High Confidence
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="value" className="mt-0">
+                  <div className="space-y-3">
+                    {topByEV.map((pick) => (
+                      <PickCard key={pick.match.id} pick={pick} onViewDetails={handleViewDetails} />
+                    ))}
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="confidence" className="mt-0">
+                  <div className="space-y-3">
+                    {topByConfidence.map((pick) => (
+                      <PickCard key={pick.match.id} pick={pick} onViewDetails={handleViewDetails} />
+                    ))}
+                  </div>
+                </TabsContent>
+              </Tabs>
+
+              {picks.length > 3 && (
+                <div className="mt-4 pt-4 border-t">
+                  <Link to="/algorithms">
+                    <Button variant="outline" className="w-full" size="sm">
+                      View All {picks.length} Predictions
+                      <ChevronRight className="h-4 w-4 ml-1" />
+                    </Button>
+                  </Link>
                 </div>
-              </TabsContent>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
 
-              <TabsContent value="confidence" className="mt-0">
-                <div className="space-y-3">
-                  {topByConfidence.map((pick) => (
-                    <PickCard key={pick.match.id} pick={pick} />
-                  ))}
+      {/* Pick Detail Modal */}
+      <Dialog open={!!selectedPick} onOpenChange={(open) => !open && setSelectedPick(null)}>
+        <DialogContent className="max-w-lg">
+          {selectedPick && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Trophy className="h-5 w-5 text-primary" />
+                  {selectedPick.match.homeTeam.name} vs {selectedPick.match.awayTeam.name}
+                </DialogTitle>
+              </DialogHeader>
+              
+              <div className="space-y-4">
+                {/* Algorithm & League */}
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline">{selectedPick.match.league}</Badge>
+                  <Badge className="bg-primary/20 text-primary">{selectedPick.algorithmName}</Badge>
                 </div>
-              </TabsContent>
-            </Tabs>
 
-            {picks.length > 3 && (
-              <div className="mt-4 pt-4 border-t">
-                <Link to="/">
-                  <Button variant="outline" className="w-full" size="sm">
-                    View All {picks.length} Predictions
-                    <ChevronRight className="h-4 w-4 ml-1" />
-                  </Button>
-                </Link>
+                {/* Recommendation */}
+                <div className="p-4 rounded-lg bg-muted/50">
+                  <h4 className="font-semibold mb-2">AI Recommendation</h4>
+                  <div className="flex items-center gap-3 mb-2">
+                    <Badge className="bg-green-500 text-white text-lg px-3 py-1">
+                      {selectedPick.recommendedTeam}
+                    </Badge>
+                    <span className="text-muted-foreground">@ {selectedPick.odds.toFixed(2)}</span>
+                  </div>
+                </div>
+
+                {/* Projected Score */}
+                <div className="p-4 rounded-lg border">
+                  <h4 className="font-semibold mb-2">Projected Score</h4>
+                  <div className="flex justify-center items-center gap-4 text-2xl font-bold">
+                    <span>{selectedPick.match.homeTeam.shortName}</span>
+                    <span className="text-primary">{selectedPick.projectedScore.home} - {selectedPick.projectedScore.away}</span>
+                    <span>{selectedPick.match.awayTeam.shortName}</span>
+                  </div>
+                </div>
+
+                {/* Metrics */}
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="p-3 rounded-lg border text-center">
+                    <Target className="h-5 w-5 mx-auto mb-1 text-muted-foreground" />
+                    <div className="text-xs text-muted-foreground">Confidence</div>
+                    <div className={`text-lg font-bold ${selectedPick.confidence >= 70 ? 'text-green-500' : selectedPick.confidence >= 60 ? 'text-yellow-500' : 'text-muted-foreground'}`}>
+                      {selectedPick.confidence}%
+                    </div>
+                  </div>
+                  <div className="p-3 rounded-lg border text-center">
+                    <TrendingUp className="h-5 w-5 mx-auto mb-1 text-muted-foreground" />
+                    <div className="text-xs text-muted-foreground">Expected Value</div>
+                    <div className={`text-lg font-bold ${selectedPick.evPercentage >= 5 ? 'text-green-500' : selectedPick.evPercentage >= 2 ? 'text-yellow-500' : 'text-muted-foreground'}`}>
+                      +{selectedPick.evPercentage.toFixed(1)}%
+                    </div>
+                  </div>
+                  <div className="p-3 rounded-lg border text-center">
+                    <Zap className="h-5 w-5 mx-auto mb-1 text-muted-foreground" />
+                    <div className="text-xs text-muted-foreground">Kelly Stake</div>
+                    <div className="text-lg font-bold">
+                      {selectedPick.kellyStakeUnits.toFixed(1)}u
+                    </div>
+                  </div>
+                </div>
+
+                {/* Match Time */}
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Clock className="h-4 w-4" />
+                  <span>Starts {formatDistanceToNow(parseISO(selectedPick.match.startTime), { addSuffix: true })}</span>
+                </div>
+
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => setSelectedPick(null)}
+                >
+                  Close
+                </Button>
               </div>
-            )}
-          </>
-        )}
-      </CardContent>
-    </Card>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
