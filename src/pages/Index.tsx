@@ -31,6 +31,8 @@ import { TeamScheduleView } from "@/components/TeamSchedule";
 import { DateFilter } from "@/components/filters/DateFilter";
 import { WeeklySummaryCard } from "@/components/filters/WeeklySummaryCard";
 import { WeeklyCalendarGrid } from "@/components/filters/WeeklyCalendarGrid";
+import { HighValueAlertBanner } from "@/components/HighValueAlertBanner";
+import { useHighValueAlerts } from "@/hooks/useHighValueAlerts";
 
 import { Radio, Clock, CheckCircle2, TrendingUp, Zap, BarChart3, DollarSign, Brain, Target, History, CalendarDays } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -114,6 +116,16 @@ const Index = () => {
   );
   const { opportunities } = useArbitrageCalculator(allMatchesWithOdds);
 
+  // High-value alerts hook - monitors for betting opportunities
+  const allActiveMatches = useMemo(() => [...filteredUpcoming, ...filteredLive], [filteredUpcoming, filteredLive]);
+  useHighValueAlerts({
+    matches: allActiveMatches,
+    confidenceThreshold: 75,
+    smartScoreThreshold: 70,
+    evThreshold: 5,
+    enabled: true,
+  });
+
   // Stats for the bar
   const dashboardStats = {
     liveGames: filteredLive.length,
@@ -156,6 +168,15 @@ const Index = () => {
 
       {/* Main Content */}
       <main className="flex-1 container px-4 py-6 mx-auto max-w-7xl">
+        {/* High-Value Alert Banner */}
+        <HighValueAlertBanner
+          matches={allActiveMatches}
+          confidenceThreshold={75}
+          smartScoreThreshold={70}
+          evThreshold={5}
+          maxAlerts={5}
+        />
+
         {/* Stats Bar */}
         <section className="mb-6">
           <StatsBar stats={dashboardStats} />
