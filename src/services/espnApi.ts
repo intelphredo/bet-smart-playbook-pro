@@ -2,6 +2,7 @@
 import { Match, League } from "@/types/sports";
 import { ESPN_API_BASE } from "./espnConstants";
 import { mapESPNEventToMatch, ESPNResponse } from "./espnMappers";
+import { format, addDays } from "date-fns";
 
 // Data source tracking
 export interface ESPNDataStatus {
@@ -32,6 +33,82 @@ const fetchWithTimeout = async (url: string, timeout = 8000): Promise<Response> 
   } catch (error) {
     clearTimeout(id);
     throw error;
+  }
+};
+
+// Format date for ESPN API (YYYYMMDD)
+const formatDateForESPN = (date: Date): string => {
+  return format(date, "yyyyMMdd");
+};
+
+// Get schedule endpoint with date for a league
+const getScheduleEndpoint = (league: League, date: Date): string | null => {
+  const dateStr = formatDateForESPN(date);
+  const endpoints: Record<League, string> = {
+    NBA: `${ESPN_API_BASE}/basketball/nba/scoreboard?dates=${dateStr}`,
+    NFL: `${ESPN_API_BASE}/football/nfl/scoreboard?dates=${dateStr}`,
+    MLB: `${ESPN_API_BASE}/baseball/mlb/scoreboard?dates=${dateStr}`,
+    NHL: `${ESPN_API_BASE}/hockey/nhl/scoreboard?dates=${dateStr}`,
+    SOCCER: `${ESPN_API_BASE}/soccer/eng.1/scoreboard?dates=${dateStr}`,
+    NCAAF: `${ESPN_API_BASE}/football/college-football/scoreboard?dates=${dateStr}`,
+    NCAAB: `${ESPN_API_BASE}/basketball/mens-college-basketball/scoreboard?dates=${dateStr}`,
+  };
+  return endpoints[league] || null;
+};
+
+// Fetch games for a specific date
+const fetchGamesForDate = async (league: League, date: Date): Promise<Match[]> => {
+  const endpoint = getScheduleEndpoint(league, date);
+  
+  if (!endpoint) {
+    return [];
+  }
+
+  try {
+    const response = await fetchWithTimeout(endpoint);
+
+    if (!response.ok) {
+      return [];
+    }
+
+    const data: ESPNResponse = await response.json();
+    const events = data.events || [];
+
+    return events.map(event => mapESPNEventToMatch(event, league));
+  } catch (error) {
+    return [];
+  }
+};
+
+// Fetch games for next N days (default 7)
+export const fetchLeagueScheduleAdvanced = async (league: League, daysAhead: number = 7): Promise<Match[]> => {
+  const today = new Date();
+  const dates: Date[] = [];
+  
+  // Generate dates for today + next N days
+  for (let i = 0; i < daysAhead; i++) {
+    dates.push(addDays(today, i));
+  }
+  
+  try {
+    // Fetch all dates in parallel
+    const results = await Promise.all(
+      dates.map(date => fetchGamesForDate(league, date))
+    );
+    
+    const allMatches = results.flat();
+    
+    // Update status if we got real data
+    if (allMatches.length > 0 && !allMatches.some(m => m.isMockData)) {
+      dataStatus.source = "live";
+      dataStatus.lastUpdated = new Date();
+      dataStatus.gamesLoaded += allMatches.length;
+    }
+    
+    return allMatches;
+  } catch (error) {
+    console.error(`Error fetching ${league} schedule:`, error);
+    return generateMockEventsForLeague(league);
   }
 };
 
@@ -205,7 +282,7 @@ const createMockMatch = (
   };
 };
 
-// Fetch events for all supported leagues
+// Fetch events for all supported leagues (today only - for live/current games)
 export const fetchAllESPNEvents = async (): Promise<Match[]> => {
   // Reset status for new fetch
   dataStatus = {
@@ -233,12 +310,50 @@ export const fetchAllESPNEvents = async (): Promise<Match[]> => {
   }
 };
 
-// Simplified schedule fetching - just use scoreboard
+// Fetch schedule for a league - 7 days ahead
 export const fetchLeagueSchedule = async (league: League): Promise<Match[]> => {
-  return fetchESPNEvents(league);
+  return fetchLeagueScheduleAdvanced(league, 7);
 };
 
-// Fetch all schedules
-export const fetchAllSchedules = async (): Promise<Match[]> => {
-  return fetchAllESPNEvents();
+// Fetch all schedules for all leagues - 7 days ahead
+export const fetchAllSchedules = async (daysAhead: number = 7): Promise<Match[]> => {
+  // Reset status for new fetch
+  dataStatus = {
+    source: "mock",
+    lastUpdated: new Date(),
+    gamesLoaded: 0,
+    errors: []
+  };
+
+  const leagues: League[] = ["NBA", "NFL", "MLB", "NHL", "SOCCER", "NCAAF", "NCAAB"];
+  
+  try {
+    // Fetch all leagues in parallel, each with 7 days of data
+    const results = await Promise.all(
+      leagues.map(league => fetchLeagueScheduleAdvanced(league, daysAhead))
+    );
+    const allMatches = results.flat();
+    
+    // Deduplicate by match ID
+    const uniqueMatches = Array.from(
+      new Map(allMatches.map(m => [m.id, m])).values()
+    );
+    
+    // Sort by start time
+    uniqueMatches.sort((a, b) => 
+      new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
+    );
+    
+    // Check if we got any real data
+    const hasRealData = uniqueMatches.some(m => !m.isMockData);
+    dataStatus.source = hasRealData ? "live" : "mock";
+    dataStatus.gamesLoaded = uniqueMatches.length;
+    
+    console.log(`Fetched ${uniqueMatches.length} total games across ${daysAhead} days`);
+    
+    return uniqueMatches;
+  } catch (error) {
+    console.error("Error fetching all schedules:", error);
+    return [];
+  }
 };
