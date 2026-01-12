@@ -18,6 +18,7 @@ import { useMatchWeather } from "@/hooks/useMatchWeather";
 import { WeatherDisplay, IndoorBadge } from "./WeatherDisplay";
 import InjuryImpactRow from "./MatchCard/InjuryImpactRow";
 import { Skeleton } from "@/components/ui/skeleton";
+import SharpMoneyBadge from "./MatchCard/SharpMoneyBadge";
 
 // Lazy load heavy components that are only shown when expanded
 const BettingMetrics = lazy(() => import("./BettingMetrics"));
@@ -153,6 +154,14 @@ const MatchCard = memo(function MatchCard({ match }: MatchCardProps) {
         {/* Scenario Detection Badges - show max 2 */}
         <div className="flex flex-wrap items-center gap-2 mb-3">
           <ScenarioBadges match={match} maxBadges={2} />
+          {/* Sharp Money Indicator */}
+          <SharpMoneyBadge 
+            matchId={match.id}
+            homeTeam={match.homeTeam?.name || match.homeTeam?.shortName || ''}
+            awayTeam={match.awayTeam?.name || match.awayTeam?.shortName || ''}
+            league={match.league}
+            compact
+          />
           {hasSignificantImpact && (
             <InjuryImpactBadge impact={injuryImpact} compact />
           )}
