@@ -20,6 +20,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   GitCompare,
   ChevronDown,
@@ -40,10 +41,14 @@ import {
   Percent,
   History,
   Minus,
+  Wifi,
+  WifiOff,
+  RefreshCw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, parseISO, isToday, isTomorrow, addDays } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
+import { useHeadToHead } from "@/hooks/useHeadToHead";
 
 interface TeamComparisonToolProps {
   matches: Match[];
@@ -71,113 +76,6 @@ interface TeamStats {
   nextGame: Match | null;
   upcomingOpponents: string[];
 }
-
-interface HistoricalMatch {
-  id: string;
-  date: string;
-  homeTeam: string;
-  awayTeam: string;
-  homeScore: number;
-  awayScore: number;
-  winner: "home" | "away" | "tie";
-  venue: string;
-  season: string;
-}
-
-interface HeadToHeadHistory {
-  team1Wins: number;
-  team2Wins: number;
-  ties: number;
-  totalGames: number;
-  lastMeetings: HistoricalMatch[];
-  streakTeam: string | null;
-  streakCount: number;
-  avgTeam1Score: number;
-  avgTeam2Score: number;
-}
-
-// Generate mock historical data based on team IDs for consistency
-const generateMockHistory = (
-  team1: TeamData,
-  team2: TeamData
-): HeadToHeadHistory => {
-  // Use team IDs to generate consistent mock data
-  const seed = (team1.id + team2.id).split("").reduce((a, b) => a + b.charCodeAt(0), 0);
-  const random = (min: number, max: number) => {
-    const x = Math.sin(seed * 9999) * 10000;
-    return Math.floor((x - Math.floor(x)) * (max - min + 1)) + min;
-  };
-  
-  const totalGames = random(5, 15);
-  const team1Wins = random(1, totalGames - 1);
-  const ties = random(0, Math.min(2, totalGames - team1Wins));
-  const team2Wins = totalGames - team1Wins - ties;
-  
-  // Generate last meetings
-  const lastMeetings: HistoricalMatch[] = [];
-  const currentYear = new Date().getFullYear();
-  
-  for (let i = 0; i < Math.min(5, totalGames); i++) {
-    const monthsAgo = i * 2 + random(1, 3);
-    const date = new Date();
-    date.setMonth(date.getMonth() - monthsAgo);
-    
-    const isHomeTeam1 = i % 2 === 0;
-    const homeScore = random(70, 130);
-    const awayScore = random(70, 130);
-    const winner = homeScore > awayScore ? "home" : homeScore < awayScore ? "away" : "tie";
-    
-    lastMeetings.push({
-      id: `h2h-${i}`,
-      date: date.toISOString(),
-      homeTeam: isHomeTeam1 ? team1.name : team2.name,
-      awayTeam: isHomeTeam1 ? team2.name : team1.name,
-      homeScore,
-      awayScore,
-      winner,
-      venue: isHomeTeam1 ? `${team1.shortName} Arena` : `${team2.shortName} Arena`,
-      season: `${currentYear - Math.floor(monthsAgo / 12)}-${(currentYear - Math.floor(monthsAgo / 12) + 1).toString().slice(-2)}`,
-    });
-  }
-  
-  // Determine streak
-  let streakTeam: string | null = null;
-  let streakCount = 0;
-  
-  if (lastMeetings.length > 0) {
-    const firstMatch = lastMeetings[0];
-    const firstWinner = firstMatch.winner === "home" ? firstMatch.homeTeam : 
-                        firstMatch.winner === "away" ? firstMatch.awayTeam : null;
-    
-    if (firstWinner) {
-      streakTeam = firstWinner;
-      streakCount = 1;
-      
-      for (let i = 1; i < lastMeetings.length; i++) {
-        const match = lastMeetings[i];
-        const winner = match.winner === "home" ? match.homeTeam : 
-                       match.winner === "away" ? match.awayTeam : null;
-        if (winner === streakTeam) {
-          streakCount++;
-        } else {
-          break;
-        }
-      }
-    }
-  }
-  
-  return {
-    team1Wins,
-    team2Wins,
-    ties,
-    totalGames,
-    lastMeetings,
-    streakTeam,
-    streakCount,
-    avgTeam1Score: random(95, 115),
-    avgTeam2Score: random(95, 115),
-  };
-};
 
 const LEAGUE_ORDER: (League | "ALL")[] = ["ALL", "NBA", "NFL", "NHL", "MLB", "SOCCER", "NCAAF", "NCAAB"];
 
@@ -303,11 +201,13 @@ export const TeamComparisonTool: React.FC<TeamComparisonToolProps> = ({
     );
   }, [team1Id, team2Id, matches]);
 
-  // Generate head-to-head history
-  const h2hHistory = useMemo(() => {
-    if (!team1 || !team2) return null;
-    return generateMockHistory(team1, team2);
-  }, [team1, team2]);
+  // Fetch head-to-head history using the hook
+  const { 
+    data: h2hHistory, 
+    isLoading: h2hLoading, 
+    refetch: refetchH2H,
+    isFetching: h2hFetching 
+  } = useHeadToHead(team1, team2);
 
   // Team selector component
   const TeamSelector = ({
@@ -672,13 +572,57 @@ export const TeamComparisonTool: React.FC<TeamComparisonToolProps> = ({
             </Card>
 
             {/* Head-to-Head History */}
-            {h2hHistory && (
+            {h2hLoading ? (
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-lg flex items-center gap-2">
                     <History className="h-5 w-5 text-primary" />
                     Head-to-Head History
+                    <RefreshCw className="h-4 w-4 animate-spin text-muted-foreground ml-2" />
                   </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="grid grid-cols-3 items-center gap-4">
+                    <Skeleton className="h-20 w-full" />
+                    <Skeleton className="h-20 w-full" />
+                    <Skeleton className="h-20 w-full" />
+                  </div>
+                  <div className="space-y-2">
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                  </div>
+                </CardContent>
+              </Card>
+            ) : h2hHistory && (
+              <Card>
+                <CardHeader className="pb-2">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <History className="h-5 w-5 text-primary" />
+                      Head-to-Head History
+                      {h2hHistory.isLiveData ? (
+                        <Badge variant="outline" className="text-[10px] gap-1 ml-2">
+                          <Wifi className="h-3 w-3 text-green-500" />
+                          Live ESPN Data
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-[10px] gap-1 ml-2">
+                          <WifiOff className="h-3 w-3 text-muted-foreground" />
+                          Simulated
+                        </Badge>
+                      )}
+                    </CardTitle>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => refetchH2H()}
+                      disabled={h2hFetching}
+                      className="h-8"
+                    >
+                      <RefreshCw className={cn("h-4 w-4", h2hFetching && "animate-spin")} />
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   {/* Overall Record */}
@@ -762,7 +706,11 @@ export const TeamComparisonTool: React.FC<TeamComparisonToolProps> = ({
                     </h4>
                     <div className="space-y-2">
                       {h2hHistory.lastMeetings.map((match, idx) => {
-                        const team1IsHome = match.homeTeam === team1.name;
+                        // Handle both API format (homeTeamId) and mock format (homeTeam name)
+                        const matchAny = match as any;
+                        const team1IsHome = matchAny.homeTeamId === team1.id || 
+                          match.homeTeam.toLowerCase().includes(team1.name.toLowerCase().split(" ").pop() || "") ||
+                          match.homeTeam === team1.name;
                         const team1Score = team1IsHome ? match.homeScore : match.awayScore;
                         const team2Score = team1IsHome ? match.awayScore : match.homeScore;
                         const team1Won = (team1IsHome && match.winner === "home") || (!team1IsHome && match.winner === "away");
@@ -835,10 +783,19 @@ export const TeamComparisonTool: React.FC<TeamComparisonToolProps> = ({
                     </div>
                   </div>
 
-                  {/* Note about mock data */}
+                  {/* Data source indicator */}
                   <div className="flex items-center gap-2 text-xs text-muted-foreground pt-2 border-t">
-                    <History className="h-3 w-3" />
-                    <span>Historical data based on simulated matchups</span>
+                    {h2hHistory.isLiveData ? (
+                      <>
+                        <Wifi className="h-3 w-3 text-green-500" />
+                        <span>Data from ESPN API • {h2hHistory.totalGames} historical matchups found</span>
+                      </>
+                    ) : (
+                      <>
+                        <WifiOff className="h-3 w-3" />
+                        <span>Simulated data (no historical matchups found in API)</span>
+                      </>
+                    )}
                   </div>
                 </CardContent>
               </Card>
