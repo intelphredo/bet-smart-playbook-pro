@@ -1,109 +1,64 @@
-import React, { useMemo } from "react";
+import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import TeamLogo from "./TeamLogo";
 import { League } from "@/types/sports";
-import { Trophy, TrendingUp, Calendar, Minus } from "lucide-react";
-import { format } from "date-fns";
+import { Trophy, TrendingUp, Calendar, Minus, RefreshCw, Wifi, WifiOff, MapPin } from "lucide-react";
+import { format, parseISO } from "date-fns";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-
-interface MatchResult {
-  date: string;
-  homeTeam: string;
-  awayTeam: string;
-  homeScore: number;
-  awayScore: number;
-  venue?: string;
-  competition?: string;
-}
+import { useHeadToHead } from "@/hooks/useHeadToHead";
 
 interface HeadToHeadHistoryProps {
+  homeTeamId: string;
   homeTeamName: string;
+  homeTeamShortName?: string;
+  homeTeamLogo?: string;
+  awayTeamId: string;
   awayTeamName: string;
+  awayTeamShortName?: string;
+  awayTeamLogo?: string;
   league: League;
   className?: string;
 }
 
-// Generate mock historical data based on team names for demo purposes
-const generateMockHistory = (
-  homeTeam: string,
-  awayTeam: string
-): MatchResult[] => {
-  // Use team names to generate consistent "random" results
-  const seed = (homeTeam.length * 7 + awayTeam.length * 13) % 100;
-  
-  const results: MatchResult[] = [];
-  const now = new Date();
-  
-  for (let i = 0; i < 5; i++) {
-    const daysAgo = 30 + i * 60 + (seed % 20);
-    const date = new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000);
-    
-    // Alternate home/away and generate scores based on seed
-    const isHomeFirst = i % 2 === 0;
-    const homeScore = ((seed + i * 3) % 5) + (i % 2);
-    const awayScore = ((seed + i * 7) % 4) + ((i + 1) % 2);
-    
-    results.push({
-      date: date.toISOString(),
-      homeTeam: isHomeFirst ? homeTeam : awayTeam,
-      awayTeam: isHomeFirst ? awayTeam : homeTeam,
-      homeScore,
-      awayScore,
-      venue: isHomeFirst ? `${homeTeam} Stadium` : `${awayTeam} Arena`,
-      competition: i === 0 ? "Playoffs" : "Regular Season",
-    });
-  }
-  
-  return results;
-};
-
 const HeadToHeadHistory: React.FC<HeadToHeadHistoryProps> = ({
+  homeTeamId,
   homeTeamName,
+  homeTeamShortName,
+  homeTeamLogo,
+  awayTeamId,
   awayTeamName,
+  awayTeamShortName,
+  awayTeamLogo,
   league,
   className,
 }) => {
-  const history = useMemo(
-    () => generateMockHistory(homeTeamName, awayTeamName),
-    [homeTeamName, awayTeamName]
-  );
+  // Build team info objects for the hook
+  const homeTeam = {
+    id: homeTeamId,
+    name: homeTeamName,
+    shortName: homeTeamShortName || homeTeamName.split(" ").pop() || homeTeamName,
+    logo: homeTeamLogo || "",
+    league,
+  };
 
-  // Calculate head-to-head stats
-  const stats = useMemo(() => {
-    let homeWins = 0;
-    let awayWins = 0;
-    let draws = 0;
-    let totalHomeGoals = 0;
-    let totalAwayGoals = 0;
+  const awayTeam = {
+    id: awayTeamId,
+    name: awayTeamName,
+    shortName: awayTeamShortName || awayTeamName.split(" ").pop() || awayTeamName,
+    logo: awayTeamLogo || "",
+    league,
+  };
 
-    history.forEach((match) => {
-      const isHome = match.homeTeam === homeTeamName;
-      const teamScore = isHome ? match.homeScore : match.awayScore;
-      const oppScore = isHome ? match.awayScore : match.homeScore;
+  const { data: h2hData, isLoading, refetch, isFetching } = useHeadToHead(homeTeam, awayTeam);
 
-      totalHomeGoals += teamScore;
-      totalAwayGoals += oppScore;
-
-      if (teamScore > oppScore) homeWins++;
-      else if (teamScore < oppScore) awayWins++;
-      else draws++;
-    });
-
-    return {
-      homeWins,
-      awayWins,
-      draws,
-      totalGames: history.length,
-      avgHomeGoals: (totalHomeGoals / history.length).toFixed(1),
-      avgAwayGoals: (totalAwayGoals / history.length).toFixed(1),
-    };
-  }, [history, homeTeamName]);
-
-  const getResultForTeam = (match: MatchResult, teamName: string) => {
-    const isHome = match.homeTeam === teamName;
+  const getResultForTeam = (match: any, teamId: string) => {
+    const isHome = match.homeTeamId === teamId || 
+      match.homeTeam.toLowerCase().includes(homeTeamName.toLowerCase().split(" ").pop() || "");
     const teamScore = isHome ? match.homeScore : match.awayScore;
     const oppScore = isHome ? match.awayScore : match.homeScore;
     
@@ -112,13 +67,65 @@ const HeadToHeadHistory: React.FC<HeadToHeadHistoryProps> = ({
     return "draw";
   };
 
+  if (isLoading) {
+    return (
+      <Card className={cn("overflow-hidden", className)}>
+        <CardHeader className="bg-gradient-to-r from-muted/50 to-muted/30">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Trophy className="h-5 w-5 text-primary" />
+            Head-to-Head History
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-6 space-y-6">
+          <div className="grid grid-cols-3 gap-4">
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-28 rounded-xl" />
+            ))}
+          </div>
+          <Skeleton className="h-12 w-full" />
+          <div className="space-y-2">
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-16 w-full" />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!h2hData) {
+    return null;
+  }
+
   return (
     <Card className={cn("overflow-hidden", className)}>
       <CardHeader className="bg-gradient-to-r from-muted/50 to-muted/30">
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <Trophy className="h-5 w-5 text-primary" />
-          Head-to-Head History
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Trophy className="h-5 w-5 text-primary" />
+            Head-to-Head History
+            {h2hData.isLiveData ? (
+              <Badge variant="outline" className="text-[10px] gap-1 ml-2">
+                <Wifi className="h-3 w-3 text-green-500" />
+                Live Data
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="text-[10px] gap-1 ml-2">
+                <WifiOff className="h-3 w-3 text-muted-foreground" />
+                Simulated
+              </Badge>
+            )}
+          </CardTitle>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => refetch()}
+            disabled={isFetching}
+            className="h-8"
+          >
+            <RefreshCw className={cn("h-4 w-4", isFetching && "animate-spin")} />
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="pt-6 space-y-6">
         {/* Summary Stats */}
@@ -136,7 +143,12 @@ const HeadToHeadHistory: React.FC<HeadToHeadHistoryProps> = ({
               size="md" 
               className="mx-auto mb-2"
             />
-            <p className="text-3xl font-bold text-primary">{stats.homeWins}</p>
+            <p className={cn(
+              "text-3xl font-bold",
+              h2hData.team1Wins > h2hData.team2Wins ? "text-green-500" : "text-primary"
+            )}>
+              {h2hData.team1Wins}
+            </p>
             <p className="text-xs text-muted-foreground uppercase tracking-wide">Wins</p>
           </motion.div>
 
@@ -150,7 +162,7 @@ const HeadToHeadHistory: React.FC<HeadToHeadHistoryProps> = ({
             <div className="flex items-center justify-center h-12 w-12 mx-auto mb-2 rounded-full bg-muted">
               <Minus className="h-6 w-6 text-muted-foreground" />
             </div>
-            <p className="text-3xl font-bold text-muted-foreground">{stats.draws}</p>
+            <p className="text-3xl font-bold text-muted-foreground">{h2hData.ties}</p>
             <p className="text-xs text-muted-foreground uppercase tracking-wide">Draws</p>
           </motion.div>
 
@@ -167,25 +179,44 @@ const HeadToHeadHistory: React.FC<HeadToHeadHistoryProps> = ({
               size="md" 
               className="mx-auto mb-2"
             />
-            <p className="text-3xl font-bold text-secondary-foreground">{stats.awayWins}</p>
+            <p className={cn(
+              "text-3xl font-bold",
+              h2hData.team2Wins > h2hData.team1Wins ? "text-green-500" : "text-secondary-foreground"
+            )}>
+              {h2hData.team2Wins}
+            </p>
             <p className="text-xs text-muted-foreground uppercase tracking-wide">Wins</p>
           </motion.div>
         </div>
 
-        {/* Average Score */}
-        <div className="flex items-center justify-center gap-4 p-3 bg-muted/30 rounded-lg">
-          <div className="flex items-center gap-2">
+        {/* Average Score & Stats */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="flex items-center justify-center gap-2 p-3 bg-muted/30 rounded-lg">
             <TrendingUp className="h-4 w-4 text-primary" />
-            <span className="text-sm text-muted-foreground">Avg Score:</span>
+            <span className="text-sm text-muted-foreground">Avg:</span>
+            <span className="font-semibold">{homeTeam.shortName}</span>
+            <Badge variant="outline">{h2hData.avgTeam1Score}</Badge>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="font-semibold">{homeTeamName.split(' ').pop()}</span>
-            <Badge variant="outline">{stats.avgHomeGoals}</Badge>
-            <span className="text-muted-foreground">-</span>
-            <Badge variant="outline">{stats.avgAwayGoals}</Badge>
-            <span className="font-semibold">{awayTeamName.split(' ').pop()}</span>
+          <div className="flex items-center justify-center gap-2 p-3 bg-muted/30 rounded-lg">
+            <TrendingUp className="h-4 w-4 text-secondary-foreground" />
+            <span className="text-sm text-muted-foreground">Avg:</span>
+            <span className="font-semibold">{awayTeam.shortName}</span>
+            <Badge variant="outline">{h2hData.avgTeam2Score}</Badge>
           </div>
         </div>
+
+        {/* Streak Info */}
+        {h2hData.streakTeam && h2hData.streakCount > 1 && (
+          <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg text-center">
+            <span className="text-sm">
+              🔥 <strong>{h2hData.streakTeam}</strong> is on a{" "}
+              <Badge className="bg-primary text-primary-foreground">
+                {h2hData.streakCount} game
+              </Badge>{" "}
+              winning streak
+            </span>
+          </div>
+        )}
 
         <Separator />
 
@@ -193,16 +224,16 @@ const HeadToHeadHistory: React.FC<HeadToHeadHistoryProps> = ({
         <div className="space-y-3">
           <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
             <Calendar className="h-4 w-4" />
-            Recent Matchups
+            Recent Matchups ({h2hData.totalGames} games)
           </h4>
           
           <div className="space-y-2">
-            {history.map((match, index) => {
-              const homeResult = getResultForTeam(match, homeTeamName);
+            {h2hData.lastMeetings.slice(0, 5).map((match, index) => {
+              const homeResult = getResultForTeam(match, homeTeamId);
               
               return (
                 <motion.div
-                  key={index}
+                  key={match.id || index}
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.1 + index * 0.05 }}
@@ -211,7 +242,7 @@ const HeadToHeadHistory: React.FC<HeadToHeadHistoryProps> = ({
                   {/* Result Indicator for Home Team */}
                   <div
                     className={cn(
-                      "w-2 h-8 rounded-full",
+                      "w-2 h-8 rounded-full flex-shrink-0",
                       homeResult === "win" && "bg-green-500",
                       homeResult === "loss" && "bg-red-500",
                       homeResult === "draw" && "bg-yellow-500"
@@ -219,18 +250,20 @@ const HeadToHeadHistory: React.FC<HeadToHeadHistoryProps> = ({
                   />
                   
                   {/* Date */}
-                  <div className="w-20 text-xs text-muted-foreground">
-                    {format(new Date(match.date), "MMM d, yyyy")}
+                  <div className="w-20 text-xs text-muted-foreground flex-shrink-0">
+                    {format(parseISO(match.date), "MMM d, yyyy")}
                   </div>
                   
                   {/* Teams & Score */}
                   <div className="flex-1 flex items-center justify-center gap-2">
                     <div className="flex items-center gap-2 flex-1 justify-end">
                       <span className={cn(
-                        "text-sm font-medium truncate max-w-[100px]",
-                        match.homeTeam === homeTeamName ? "text-primary" : ""
+                        "text-sm font-medium truncate max-w-[80px]",
+                        match.homeTeam.toLowerCase().includes(homeTeamName.toLowerCase().split(" ").pop() || "") 
+                          ? "text-primary" 
+                          : ""
                       )}>
-                        {match.homeTeam.split(' ').pop()}
+                        {match.homeTeam.split(" ").pop()}
                       </span>
                       <TeamLogo 
                         teamName={match.homeTeam} 
@@ -264,27 +297,34 @@ const HeadToHeadHistory: React.FC<HeadToHeadHistoryProps> = ({
                         size="sm" 
                       />
                       <span className={cn(
-                        "text-sm font-medium truncate max-w-[100px]",
-                        match.awayTeam === awayTeamName ? "text-primary" : ""
+                        "text-sm font-medium truncate max-w-[80px]",
+                        match.awayTeam.toLowerCase().includes(awayTeamName.toLowerCase().split(" ").pop() || "") 
+                          ? "text-primary" 
+                          : ""
                       )}>
-                        {match.awayTeam.split(' ').pop()}
+                        {match.awayTeam.split(" ").pop()}
                       </span>
                     </div>
                   </div>
                   
-                  {/* Competition Badge */}
-                  <Badge variant="outline" className="text-xs hidden sm:flex">
-                    {match.competition}
-                  </Badge>
+                  {/* Venue */}
+                  {match.venue && (
+                    <div className="hidden sm:flex items-center gap-1 text-xs text-muted-foreground max-w-[100px]">
+                      <MapPin className="h-3 w-3 flex-shrink-0" />
+                      <span className="truncate">{match.venue}</span>
+                    </div>
+                  )}
                 </motion.div>
               );
             })}
           </div>
         </div>
 
-        {/* Note about mock data */}
+        {/* Data source note */}
         <p className="text-xs text-center text-muted-foreground pt-2">
-          Historical data for demonstration purposes
+          {h2hData.isLiveData
+            ? `Data from ESPN • ${h2hData.totalGames} historical matchups`
+            : "Simulated data (no historical matchups found in API)"}
         </p>
       </CardContent>
     </Card>

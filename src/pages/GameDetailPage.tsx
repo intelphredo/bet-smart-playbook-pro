@@ -748,8 +748,14 @@ const GameDetailPage: React.FC = () => {
           transition={{ delay: 0.3 }}
         >
           <HeadToHeadHistory
+            homeTeamId={match.homeTeam?.id || "home"}
             homeTeamName={match.homeTeam?.name || "Home Team"}
+            homeTeamShortName={match.homeTeam?.shortName}
+            homeTeamLogo={match.homeTeam?.logo}
+            awayTeamId={match.awayTeam?.id || "away"}
             awayTeamName={match.awayTeam?.name || "Away Team"}
+            awayTeamShortName={match.awayTeam?.shortName}
+            awayTeamLogo={match.awayTeam?.logo}
             league={league}
           />
         </motion.div>

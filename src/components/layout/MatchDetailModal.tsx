@@ -1,4 +1,4 @@
-import { Match } from "@/types/sports";
+import { Match, League } from "@/types/sports";
 import {
   Dialog,
   DialogContent,
@@ -28,10 +28,13 @@ import {
   Target,
   ThermometerSun,
   Wind,
+  History,
 } from "lucide-react";
 import { useOddsFormat } from "@/contexts/OddsFormatContext";
 import { SPORTSBOOK_LOGOS, findBestOdds, SPORTSBOOK_PRIORITY } from "@/utils/sportsbook";
 import { LiveOdds } from "@/types/sports";
+import { TeamLogoImage } from "@/components/ui/TeamLogoImage";
+import { useHeadToHead } from "@/hooks/useHeadToHead";
 
 interface MatchDetailModalProps {
   match: Match | null;
@@ -41,6 +44,26 @@ interface MatchDetailModalProps {
 
 const MatchDetailModal = ({ match, isOpen, onClose }: MatchDetailModalProps) => {
   const { formatOdds } = useOddsFormat();
+  const league = (match?.league || "NBA") as League;
+
+  // Build team objects for H2H hook
+  const homeTeam = match ? {
+    id: match.homeTeam?.id || "home",
+    name: match.homeTeam?.name || "Home",
+    shortName: match.homeTeam?.shortName || "HOME",
+    logo: match.homeTeam?.logo || "",
+    league,
+  } : null;
+
+  const awayTeam = match ? {
+    id: match.awayTeam?.id || "away",
+    name: match.awayTeam?.name || "Away",
+    shortName: match.awayTeam?.shortName || "AWAY",
+    logo: match.awayTeam?.logo || "",
+    league,
+  } : null;
+
+  const { data: h2hData, isLoading: h2hLoading } = useHeadToHead(homeTeam, awayTeam);
 
   if (!match) return null;
 
@@ -102,22 +125,13 @@ const MatchDetailModal = ({ match, isOpen, onClose }: MatchDetailModalProps) => 
             <div className="grid grid-cols-3 gap-4 items-center">
               {/* Away Team */}
               <div className="text-center">
-                <div className="w-16 h-16 mx-auto mb-2 bg-muted rounded-full flex items-center justify-center overflow-hidden">
-                  {match.awayTeam?.logo ? (
-                    <img
-                      src={match.awayTeam.logo}
-                      alt={match.awayTeam.name}
-                      className="w-12 h-12 object-contain"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = "/placeholder.svg";
-                      }}
-                    />
-                  ) : (
-                    <span className="text-lg font-bold text-muted-foreground">
-                      {match.awayTeam?.shortName?.charAt(0) || "A"}
-                    </span>
-                  )}
-                </div>
+                <TeamLogoImage
+                  teamName={match.awayTeam?.name || "Away"}
+                  logoUrl={match.awayTeam?.logo}
+                  league={league}
+                  size="lg"
+                  className="mx-auto mb-2"
+                />
                 <p className="font-semibold">{match.awayTeam?.name || "Away"}</p>
                 {match.awayTeam?.record && (
                   <p className="text-xs text-muted-foreground">{match.awayTeam.record}</p>
@@ -146,22 +160,13 @@ const MatchDetailModal = ({ match, isOpen, onClose }: MatchDetailModalProps) => 
 
               {/* Home Team */}
               <div className="text-center">
-                <div className="w-16 h-16 mx-auto mb-2 bg-muted rounded-full flex items-center justify-center overflow-hidden">
-                  {match.homeTeam?.logo ? (
-                    <img
-                      src={match.homeTeam.logo}
-                      alt={match.homeTeam.name}
-                      className="w-12 h-12 object-contain"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = "/placeholder.svg";
-                      }}
-                    />
-                  ) : (
-                    <span className="text-lg font-bold text-muted-foreground">
-                      {match.homeTeam?.shortName?.charAt(0) || "H"}
-                    </span>
-                  )}
-                </div>
+                <TeamLogoImage
+                  teamName={match.homeTeam?.name || "Home"}
+                  logoUrl={match.homeTeam?.logo}
+                  league={league}
+                  size="lg"
+                  className="mx-auto mb-2"
+                />
                 <p className="font-semibold">{match.homeTeam?.name || "Home"}</p>
                 {match.homeTeam?.record && (
                   <p className="text-xs text-muted-foreground">{match.homeTeam.record}</p>
@@ -211,6 +216,13 @@ const MatchDetailModal = ({ match, isOpen, onClose }: MatchDetailModalProps) => 
               >
                 <Users className="h-4 w-4 mr-2" />
                 Injuries
+              </TabsTrigger>
+              <TabsTrigger
+                value="h2h"
+                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-6 py-3"
+              >
+                <History className="h-4 w-4 mr-2" />
+                H2H
               </TabsTrigger>
             </TabsList>
 
@@ -644,6 +656,129 @@ const MatchDetailModal = ({ match, isOpen, onClose }: MatchDetailModalProps) => 
                   </Card>
                 )}
               </div>
+            </TabsContent>
+
+            {/* H2H Tab */}
+            <TabsContent value="h2h" className="p-6 pt-4 m-0">
+              {h2hLoading ? (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-3 gap-4">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="h-24 bg-muted animate-pulse rounded-xl" />
+                    ))}
+                  </div>
+                  <div className="h-12 bg-muted animate-pulse rounded-lg" />
+                  <div className="space-y-2">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="h-16 bg-muted animate-pulse rounded-lg" />
+                    ))}
+                  </div>
+                </div>
+              ) : h2hData ? (
+                <div className="space-y-6">
+                  {/* Overall Record */}
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="text-center p-4 bg-primary/10 rounded-xl">
+                      <TeamLogoImage
+                        teamName={match.homeTeam?.name || "Home"}
+                        logoUrl={match.homeTeam?.logo}
+                        league={league}
+                        size="md"
+                        className="mx-auto mb-2"
+                      />
+                      <p className={cn(
+                        "text-3xl font-bold",
+                        h2hData.team1Wins > h2hData.team2Wins && "text-green-500"
+                      )}>
+                        {h2hData.team1Wins}
+                      </p>
+                      <p className="text-xs text-muted-foreground uppercase">Wins</p>
+                    </div>
+                    <div className="text-center p-4 bg-muted/50 rounded-xl">
+                      <div className="h-12 w-12 mx-auto mb-2 rounded-full bg-muted flex items-center justify-center">
+                        <span className="text-2xl font-bold text-muted-foreground">-</span>
+                      </div>
+                      <p className="text-3xl font-bold text-muted-foreground">{h2hData.ties}</p>
+                      <p className="text-xs text-muted-foreground uppercase">Draws</p>
+                    </div>
+                    <div className="text-center p-4 bg-secondary/50 rounded-xl">
+                      <TeamLogoImage
+                        teamName={match.awayTeam?.name || "Away"}
+                        logoUrl={match.awayTeam?.logo}
+                        league={league}
+                        size="md"
+                        className="mx-auto mb-2"
+                      />
+                      <p className={cn(
+                        "text-3xl font-bold",
+                        h2hData.team2Wins > h2hData.team1Wins && "text-green-500"
+                      )}>
+                        {h2hData.team2Wins}
+                      </p>
+                      <p className="text-xs text-muted-foreground uppercase">Wins</p>
+                    </div>
+                  </div>
+
+                  {/* Stats */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <Card className="p-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">Total Games</span>
+                        <span className="font-bold">{h2hData.totalGames}</span>
+                      </div>
+                    </Card>
+                    <Card className="p-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">Avg Score</span>
+                        <span className="font-bold">
+                          {h2hData.avgTeam1Score} - {h2hData.avgTeam2Score}
+                        </span>
+                      </div>
+                    </Card>
+                  </div>
+
+                  {/* Streak */}
+                  {h2hData.streakTeam && h2hData.streakCount > 1 && (
+                    <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg text-center">
+                      <span className="text-sm">
+                        🔥 <strong>{h2hData.streakTeam}</strong> is on a{" "}
+                        <Badge className="bg-primary text-primary-foreground">
+                          {h2hData.streakCount} game
+                        </Badge>{" "}
+                        winning streak
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Recent Matchups */}
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-medium text-muted-foreground">Recent Matchups</h4>
+                    {h2hData.lastMeetings.slice(0, 3).map((m, idx) => (
+                      <div key={m.id || idx} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                        <span className="text-xs text-muted-foreground">
+                          {format(new Date(m.date), "MMM d, yyyy")}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{m.homeTeam.split(" ").pop()}</span>
+                          <Badge variant="outline" className="font-mono">
+                            {m.homeScore} - {m.awayScore}
+                          </Badge>
+                          <span className="font-medium">{m.awayTeam.split(" ").pop()}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <p className="text-xs text-center text-muted-foreground">
+                    {h2hData.isLiveData ? "Data from ESPN" : "Simulated data"}
+                  </p>
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <History className="h-12 w-12 mx-auto mb-4 opacity-30" />
+                  <p>No head-to-head data available</p>
+                </div>
+              )}
             </TabsContent>
           </Tabs>
         </ScrollArea>
