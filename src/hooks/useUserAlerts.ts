@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 export interface UserAlert {
   id: string;
   user_id: string;
-  type: 'bet_result' | 'line_movement' | 'arbitrage' | 'game_start' | 'clv_update' | 'system';
+  type: 'bet_result' | 'line_movement' | 'arbitrage' | 'game_start' | 'clv_update' | 'system' | 'sharp_money' | 'reverse_line';
   title: string;
   message: string;
   match_id?: string;

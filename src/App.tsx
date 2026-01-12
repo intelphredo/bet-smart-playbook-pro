@@ -20,6 +20,7 @@ import { OddsFormatProvider } from "@/contexts/OddsFormatContext";
 import { BetSlipProvider } from "@/components/BetSlip/BetSlipContext";
 import FloatingBetSlip from "@/components/BetSlip/FloatingBetSlip";
 import { PreferencesProvider } from "@/hooks/usePreferences";
+import SharpMoneyMonitor from "@/components/SharpMoneyMonitor";
 
 // Create a client
 const queryClient = new QueryClient({
@@ -88,6 +89,7 @@ function App() {
                     <Route path="/auth" element={<Auth />} />
                   </Routes>
                   <FloatingBetSlip />
+                  <SharpMoneyMonitor />
                 </Router>
                 <Toaster richColors position="top-center" />
               </TooltipProvider>
