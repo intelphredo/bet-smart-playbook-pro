@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { isDevMode } from '@/utils/devMode';
 import { toast } from 'sonner';
 
 export interface UserAlert {
@@ -17,38 +16,6 @@ export interface UserAlert {
   created_at: string;
 }
 
-const DEV_ALERTS: UserAlert[] = [
-  {
-    id: 'dev-1',
-    user_id: 'dev-user',
-    type: 'bet_result',
-    title: 'Bet Won! 🎉',
-    message: 'Lakers vs Celtics: Your moneyline bet on "Lakers" won. +$45.00',
-    match_id: 'demo-match-1',
-    is_read: false,
-    created_at: new Date(Date.now() - 30 * 60000).toISOString()
-  },
-  {
-    id: 'dev-2',
-    user_id: 'dev-user',
-    type: 'clv_update',
-    title: 'Positive CLV Captured! 📈',
-    message: 'Your bet closed with +3.2% CLV. You beat the closing line!',
-    is_read: false,
-    created_at: new Date(Date.now() - 2 * 3600000).toISOString()
-  },
-  {
-    id: 'dev-3',
-    user_id: 'dev-user',
-    type: 'line_movement',
-    title: 'Sharp Line Movement 📊',
-    message: 'Chiefs -3.5 moved to -4.5. Consider locking in your bet.',
-    match_id: 'demo-match-2',
-    is_read: true,
-    created_at: new Date(Date.now() - 5 * 3600000).toISOString()
-  }
-];
-
 export function useUserAlerts() {
   const { user } = useAuth();
   const [alerts, setAlerts] = useState<UserAlert[]>([]);
@@ -56,13 +23,6 @@ export function useUserAlerts() {
   const [unreadCount, setUnreadCount] = useState(0);
 
   const fetchAlerts = useCallback(async () => {
-    if (isDevMode() && !user) {
-      setAlerts(DEV_ALERTS);
-      setUnreadCount(DEV_ALERTS.filter(a => !a.is_read).length);
-      setIsLoading(false);
-      return;
-    }
-
     if (!user) {
       setAlerts([]);
       setUnreadCount(0);
@@ -85,18 +45,14 @@ export function useUserAlerts() {
       setUnreadCount(typedAlerts.filter(a => !a.is_read).length);
     } catch (error) {
       console.error('Error fetching alerts:', error);
+      setAlerts([]);
+      setUnreadCount(0);
     } finally {
       setIsLoading(false);
     }
   }, [user]);
 
   const markAsRead = useCallback(async (alertId: string) => {
-    if (isDevMode() && !user) {
-      setAlerts(prev => prev.map(a => a.id === alertId ? { ...a, is_read: true } : a));
-      setUnreadCount(prev => Math.max(0, prev - 1));
-      return;
-    }
-
     if (!user) return;
 
     try {
@@ -116,12 +72,6 @@ export function useUserAlerts() {
   }, [user]);
 
   const markAllAsRead = useCallback(async () => {
-    if (isDevMode() && !user) {
-      setAlerts(prev => prev.map(a => ({ ...a, is_read: true })));
-      setUnreadCount(0);
-      return;
-    }
-
     if (!user) return;
 
     try {
@@ -142,17 +92,6 @@ export function useUserAlerts() {
   }, [user]);
 
   const deleteAlert = useCallback(async (alertId: string) => {
-    if (isDevMode() && !user) {
-      setAlerts(prev => {
-        const alert = prev.find(a => a.id === alertId);
-        if (alert && !alert.is_read) {
-          setUnreadCount(c => Math.max(0, c - 1));
-        }
-        return prev.filter(a => a.id !== alertId);
-      });
-      return;
-    }
-
     if (!user) return;
 
     try {
