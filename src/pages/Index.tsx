@@ -24,7 +24,7 @@ import SmartScoreSection from "@/components/SmartScoreSection";
 import ArbitrageOpportunitiesSection from "@/components/ArbitrageOpportunitiesSection";
 import { HighValueAlertBanner } from "@/components/HighValueAlertBanner";
 import { useHighValueAlerts } from "@/hooks/useHighValueAlerts";
-import { SharpMoneySection, SteamMoveMonitor } from "@/components/SharpMoney";
+import { SharpMoneySection, SteamMoveMonitor, SharpMoneyLeaderboard } from "@/components/SharpMoney";
 
 import { 
   Radio, Clock, TrendingUp, RefreshCw, ChevronRight, 
@@ -208,13 +208,19 @@ const Index = () => {
               <div className="xl:col-span-3 space-y-6">
                 {/* Sharp Money Mode */}
                 {isSharpMode ? (
-                  <SharpMoneySection 
-                    matches={allActiveMatches} 
-                    league="ALL"
-                    maxItems={20}
-                    showFilter={true}
-                    compact={false}
-                  />
+                  <div className="space-y-6">
+                    {/* Sharp Money Leaderboard */}
+                    <SharpMoneyLeaderboard />
+                    
+                    {/* Sharp Money Games */}
+                    <SharpMoneySection 
+                      matches={allActiveMatches} 
+                      league="ALL"
+                      maxItems={20}
+                      showFilter={true}
+                      compact={false}
+                    />
+                  </div>
                 ) : (
                   <>
                     {/* Live Games */}

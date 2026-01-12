@@ -333,6 +333,90 @@ export type Database = {
         }
         Relationships: []
       }
+      sharp_money_predictions: {
+        Row: {
+          actual_score_away: number | null
+          actual_score_home: number | null
+          away_team: string
+          beat_closing_line: boolean | null
+          closing_line: number | null
+          confidence: number
+          created_at: string
+          detected_at: string
+          detection_line: number | null
+          game_result: string | null
+          game_start_time: string | null
+          home_team: string
+          id: string
+          league: string
+          market_type: string
+          match_id: string
+          match_title: string
+          opening_line: number | null
+          public_pct_at_detection: number | null
+          result_verified_at: string | null
+          sharp_pct_at_detection: number | null
+          sharp_side: string
+          signal_strength: string
+          signal_type: string
+          updated_at: string
+        }
+        Insert: {
+          actual_score_away?: number | null
+          actual_score_home?: number | null
+          away_team: string
+          beat_closing_line?: boolean | null
+          closing_line?: number | null
+          confidence?: number
+          created_at?: string
+          detected_at?: string
+          detection_line?: number | null
+          game_result?: string | null
+          game_start_time?: string | null
+          home_team: string
+          id?: string
+          league: string
+          market_type?: string
+          match_id: string
+          match_title: string
+          opening_line?: number | null
+          public_pct_at_detection?: number | null
+          result_verified_at?: string | null
+          sharp_pct_at_detection?: number | null
+          sharp_side: string
+          signal_strength?: string
+          signal_type: string
+          updated_at?: string
+        }
+        Update: {
+          actual_score_away?: number | null
+          actual_score_home?: number | null
+          away_team?: string
+          beat_closing_line?: boolean | null
+          closing_line?: number | null
+          confidence?: number
+          created_at?: string
+          detected_at?: string
+          detection_line?: number | null
+          game_result?: string | null
+          game_start_time?: string | null
+          home_team?: string
+          id?: string
+          league?: string
+          market_type?: string
+          match_id?: string
+          match_title?: string
+          opening_line?: number | null
+          public_pct_at_detection?: number | null
+          result_verified_at?: string | null
+          sharp_pct_at_detection?: number | null
+          sharp_side?: string
+          signal_strength?: string
+          signal_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_alerts: {
         Row: {
           bet_id: string | null
@@ -677,6 +761,24 @@ export type Database = {
           jobname?: string | null
           nodename?: string | null
           schedule?: string | null
+        }
+        Relationships: []
+      }
+      sharp_money_stats: {
+        Row: {
+          avg_confidence: number | null
+          beat_closing_count: number | null
+          clv_rate: number | null
+          league: string | null
+          losses: number | null
+          market_type: string | null
+          pending: number | null
+          pushes: number | null
+          signal_strength: string | null
+          signal_type: string | null
+          total_predictions: number | null
+          win_rate: number | null
+          wins: number | null
         }
         Relationships: []
       }
