@@ -24,7 +24,7 @@ import SmartScoreSection from "@/components/SmartScoreSection";
 import ArbitrageOpportunitiesSection from "@/components/ArbitrageOpportunitiesSection";
 import { HighValueAlertBanner } from "@/components/HighValueAlertBanner";
 import { useHighValueAlerts } from "@/hooks/useHighValueAlerts";
-import { SharpMoneySection } from "@/components/SharpMoney";
+import { SharpMoneySection, SteamMoveMonitor } from "@/components/SharpMoney";
 
 import { 
   Radio, Clock, TrendingUp, RefreshCw, ChevronRight, 
@@ -167,6 +167,12 @@ const Index = () => {
                 </ScrollArea>
                 
                 <div className="flex items-center gap-2 ml-4">
+                  {/* Steam Move Monitor */}
+                  <SteamMoveMonitor 
+                    matches={allActiveMatches} 
+                    enabled={true}
+                  />
+                  
                   <span className="text-xs text-muted-foreground hidden sm:block">
                     {lastRefresh.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
                   </span>
