@@ -304,6 +304,7 @@ const Index = () => {
                 selectedDate={selectedDate}
                 onDateSelect={setSelectedDate}
                 daysAhead={7}
+                matches={filteredUpcoming}
               />
             </div>
             
