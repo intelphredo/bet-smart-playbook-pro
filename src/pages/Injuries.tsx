@@ -3,6 +3,7 @@ import { SportLeague } from '@/types/sportradar';
 import { useSportradarInjuries } from '@/hooks/useSportradarInjuries';
 import NavBar from '@/components/NavBar';
 import PageFooter from '@/components/PageFooter';
+import AppBreadcrumb from '@/components/layout/AppBreadcrumb';
 import InjuryReportCard from '@/components/Sportradar/InjuryReportCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -116,6 +117,8 @@ export default function Injuries() {
       <NavBar />
       
       <main className="container py-8">
+        <AppBreadcrumb className="mb-4" />
+        
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 rounded-lg bg-orange-500/10">
