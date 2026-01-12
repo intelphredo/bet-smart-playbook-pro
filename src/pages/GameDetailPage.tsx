@@ -12,6 +12,8 @@ import TeamLogo from "@/components/match/TeamLogo";
 import HeadToHeadHistory from "@/components/match/HeadToHeadHistory";
 import TeamNewsInjuries from "@/components/match/TeamNewsInjuries";
 import AddToBetSlipButton from "@/components/BetSlip/AddToBetSlipButton";
+import { SharpMoneyAlertBanner } from "@/components/BettingTrends";
+import { useMatchBettingTrend } from "@/hooks/useBettingTrends";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -31,7 +33,8 @@ import {
   Users,
   Ticket,
   Check,
-  Plus
+  Plus,
+  Brain
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -56,6 +59,15 @@ const GameDetailPage: React.FC = () => {
 
   // Find the specific match
   const match = useMemo(() => allMatches.find((m) => m.id === id), [allMatches, id]);
+  
+  // Fetch betting trends for sharp money detection
+  const { data: bettingTrend, isLoading: trendLoading } = useMatchBettingTrend(
+    id || '',
+    match?.homeTeam?.name || '',
+    match?.awayTeam?.name || '',
+    (match?.league as League) || 'NBA',
+    !!match
+  );
 
   if (isLoading) {
     return (
@@ -595,6 +607,20 @@ const GameDetailPage: React.FC = () => {
                 )}
               </CardContent>
             </Card>
+          </motion.div>
+        )}
+
+        {/* Sharp Money / Betting Trends Alert Banner */}
+        {!isFinished && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.22 }}
+          >
+            <SharpMoneyAlertBanner 
+              trend={bettingTrend} 
+              isLoading={trendLoading}
+            />
           </motion.div>
         )}
 

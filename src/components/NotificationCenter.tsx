@@ -1,4 +1,4 @@
-import { Bell, Check, CheckCheck, Trophy, TrendingUp, AlertTriangle, Clock, Trash2, X, Eye } from 'lucide-react';
+import { Bell, Check, CheckCheck, Trophy, TrendingUp, AlertTriangle, Clock, Trash2, X, Eye, Brain, Zap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
@@ -21,7 +21,9 @@ const alertTypeConfig: Record<UserAlert['type'], { icon: typeof Bell; color: str
   line_movement: { icon: AlertTriangle, color: 'text-orange-500' },
   arbitrage: { icon: TrendingUp, color: 'text-blue-500' },
   game_start: { icon: Clock, color: 'text-purple-500' },
-  system: { icon: Bell, color: 'text-muted-foreground' }
+  system: { icon: Bell, color: 'text-muted-foreground' },
+  sharp_money: { icon: Brain, color: 'text-purple-500' },
+  reverse_line: { icon: Zap, color: 'text-orange-500' }
 };
 
 function AlertItem({ 
