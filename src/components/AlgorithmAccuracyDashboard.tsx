@@ -33,12 +33,14 @@ import {
   Upload,
   Loader2,
   Edit2,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { useAlgorithmAccuracy, useRecentPredictions, AlgorithmAccuracyStats, AlgorithmPrediction } from '@/hooks/useAlgorithmAccuracy';
 import { usePredictionSync } from '@/hooks/usePredictionSync';
 import { ALGORITHM_IDS } from '@/utils/predictions/algorithms';
 import { format, formatDistanceToNow } from 'date-fns';
 import { PredictionCorrectionModal } from './PredictionCorrectionModal';
+import { BulkCorrectionModal } from './BulkCorrectionModal';
 
 const chartConfig = {
   wins: { label: 'Wins', color: 'hsl(142.1 76.2% 36.3%)' },
@@ -198,6 +200,7 @@ export default function AlgorithmAccuracyDashboard() {
   const [selectedAlgorithm, setSelectedAlgorithm] = useState('all');
   const [editingPrediction, setEditingPrediction] = useState<AlgorithmPrediction | null>(null);
   const [correctionModalOpen, setCorrectionModalOpen] = useState(false);
+  const [bulkCorrectionOpen, setBulkCorrectionOpen] = useState(false);
 
   const algorithmId = selectedAlgorithm === 'all' ? undefined : selectedAlgorithm;
 
@@ -298,6 +301,16 @@ export default function AlgorithmAccuracyDashboard() {
               ))}
             </SelectContent>
           </Select>
+          
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="h-9"
+            onClick={() => setBulkCorrectionOpen(true)}
+          >
+            <FileSpreadsheet className="h-4 w-4 mr-2" />
+            Bulk Edit
+          </Button>
           
           <Button 
             variant="outline" 
@@ -504,6 +517,12 @@ export default function AlgorithmAccuracyDashboard() {
         prediction={editingPrediction}
         open={correctionModalOpen}
         onOpenChange={setCorrectionModalOpen}
+      />
+
+      {/* Bulk Correction Modal */}
+      <BulkCorrectionModal
+        open={bulkCorrectionOpen}
+        onOpenChange={setBulkCorrectionOpen}
       />
     </div>
   );
