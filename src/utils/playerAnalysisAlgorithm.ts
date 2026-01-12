@@ -5,7 +5,6 @@ import {
   TeamMatchupHistory,
   PlayerStreak 
 } from "@/types/playerAnalytics";
-import { playerHistoricalData } from "@/data/playerHistoricalData";
 
 // Weight factors for our algorithm
 const FACTORS = {
@@ -17,11 +16,11 @@ const FACTORS = {
 
 /**
  * Main algorithm to analyze a player prop and generate confident pick recommendations
+ * 
+ * Note: This now requires historical data to be passed in or fetched from a real API.
+ * Without a player analytics API, predictions use only the prop's built-in data.
  */
-export function analyzePlayerProp(prop: PlayerProp): PlayerTrendAnalysis {
-  // Get historical data for the player
-  const playerData = findPlayerData(prop.playerId);
-  
+export function analyzePlayerProp(prop: PlayerProp, playerData?: PlayerHistoricalData): PlayerTrendAnalysis {
   if (!playerData) {
     return generateDefaultAnalysis(prop);
   }
@@ -62,13 +61,6 @@ export function analyzePlayerProp(prop: PlayerProp): PlayerTrendAnalysis {
     streakImpact,
     matchupImpact
   };
-}
-
-/**
- * Find player historical data by ID
- */
-function findPlayerData(playerId: string): PlayerHistoricalData | undefined {
-  return playerHistoricalData.find(player => player.playerId === playerId);
 }
 
 /**
