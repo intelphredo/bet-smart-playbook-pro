@@ -32,7 +32,12 @@ import {
 } from "lucide-react";
 import { format, parseISO, startOfDay, addDays, isSameDay } from "date-fns";
 import { cn } from "@/lib/utils";
-import { exportMatchesToCSV, exportMatchesToICal } from "@/utils/scheduleExport";
+import { 
+  exportMatchesToCSV, 
+  exportMatchesToICal, 
+  openGoogleCalendarBulk, 
+  openOutlookCalendarBulk 
+} from "@/utils/scheduleExport";
 import { toast } from "sonner";
 
 interface WeeklyCalendarGridProps {
@@ -215,6 +220,24 @@ export const WeeklyCalendarGrid: React.FC<WeeklyCalendarGridProps> = ({
     toast.success(`Exported ${allVisibleMatches.length} games to calendar`);
   };
 
+  const handleGoogleCalendar = () => {
+    if (allVisibleMatches.length === 0) {
+      toast.error("No games to add");
+      return;
+    }
+    openGoogleCalendarBulk(allVisibleMatches);
+    toast.success("Opening Google Calendar...");
+  };
+
+  const handleOutlookCalendar = () => {
+    if (allVisibleMatches.length === 0) {
+      toast.error("No games to add");
+      return;
+    }
+    openOutlookCalendarBulk(allVisibleMatches);
+    toast.success("Opening Outlook Calendar...");
+  };
+
   return (
     <Card className="border-border/50">
       <CardHeader className="pb-3">
@@ -239,7 +262,40 @@ export const WeeklyCalendarGrid: React.FC<WeeklyCalendarGridProps> = ({
                   <span className="hidden sm:inline">Export</span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="bg-popover">
+              <DropdownMenuContent align="end" className="bg-popover w-56">
+                {/* Direct Calendar Sync */}
+                <div className="px-2 py-1.5">
+                  <p className="text-xs font-medium text-muted-foreground">Add to Calendar</p>
+                </div>
+                <DropdownMenuItem onClick={handleGoogleCalendar} className="gap-2 cursor-pointer">
+                  <svg className="h-4 w-4" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                  </svg>
+                  <div>
+                    <p className="font-medium">Google Calendar</p>
+                    <p className="text-xs text-muted-foreground">Add directly to Google</p>
+                  </div>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleOutlookCalendar} className="gap-2 cursor-pointer">
+                  <svg className="h-4 w-4" viewBox="0 0 24 24">
+                    <path fill="#0078D4" d="M24 7.387v10.478c0 .23-.08.424-.238.576-.158.152-.353.228-.584.228h-8.547v-6.95l1.56 1.14c.078.052.168.078.27.078.103 0 .193-.026.27-.078l6.993-5.14c.078-.052.156-.06.234-.024.078.036.117.097.117.182v-.49c0-.23.08-.424.238-.576.158-.152.353-.228.584-.228h-.897zm0 2.086l-7.096 5.207-7.096-5.207v9.78h14.192V9.473zm-8.547-3.803h8.172c.23 0 .426.076.584.228.158.152.238.346.238.576v.398l-8.547 6.277V5.584h-.447zM0 5.584v13.416c0 .23.076.426.228.584.152.158.346.238.576.238h12.478V5.584H0z"/>
+                  </svg>
+                  <div>
+                    <p className="font-medium">Outlook Calendar</p>
+                    <p className="text-xs text-muted-foreground">Add to Outlook.com</p>
+                  </div>
+                </DropdownMenuItem>
+                
+                {/* Divider */}
+                <div className="my-1 h-px bg-border" />
+                
+                {/* File Downloads */}
+                <div className="px-2 py-1.5">
+                  <p className="text-xs font-medium text-muted-foreground">Download File</p>
+                </div>
                 <DropdownMenuItem onClick={handleExportCSV} className="gap-2 cursor-pointer">
                   <FileSpreadsheet className="h-4 w-4 text-green-600" />
                   <div>
@@ -251,7 +307,7 @@ export const WeeklyCalendarGrid: React.FC<WeeklyCalendarGridProps> = ({
                   <Calendar className="h-4 w-4 text-blue-600" />
                   <div>
                     <p className="font-medium">Export as iCal</p>
-                    <p className="text-xs text-muted-foreground">Add to calendar app</p>
+                    <p className="text-xs text-muted-foreground">Apple Calendar, etc.</p>
                   </div>
                 </DropdownMenuItem>
               </DropdownMenuContent>

@@ -152,3 +152,168 @@ export function exportMatchesToICal(matches: Match[], filename = "games-schedule
   const ical = generateMatchesICal(matches);
   downloadFile(ical, filename, "text/calendar;charset=utf-8");
 }
+
+/**
+ * Generate a Google Calendar URL for a single match
+ */
+export function generateGoogleCalendarUrl(match: Match): string {
+  const startDate = parseISO(match.startTime);
+  const endDate = new Date(startDate.getTime() + 3 * 60 * 60 * 1000); // 3 hours
+
+  const formatGoogleDate = (date: Date): string => {
+    return format(date, "yyyyMMdd'T'HHmmss");
+  };
+
+  const title = `${match.homeTeam?.name || "Home"} vs ${match.awayTeam?.name || "Away"}`;
+  const details = [
+    `League: ${match.league || "Unknown"}`,
+    match.prediction?.confidence ? `Confidence: ${match.prediction.confidence.toFixed(1)}%` : "",
+    match.smartScore?.overall ? `SmartScore: ${match.smartScore.overall.toFixed(1)}` : "",
+    match.prediction?.recommended ? `Recommended Pick: ${match.prediction.recommended}` : "",
+    match.prediction?.projectedScore
+      ? `Projected Score: ${match.prediction.projectedScore.home} - ${match.prediction.projectedScore.away}`
+      : "",
+    "",
+    "Added via BetSmart",
+  ].filter(Boolean).join("\n");
+
+  const params = new URLSearchParams({
+    action: "TEMPLATE",
+    text: title,
+    dates: `${formatGoogleDate(startDate)}/${formatGoogleDate(endDate)}`,
+    details: details,
+    location: match.league || "",
+  });
+
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
+/**
+ * Generate an Outlook Calendar URL for a single match
+ */
+export function generateOutlookCalendarUrl(match: Match): string {
+  const startDate = parseISO(match.startTime);
+  const endDate = new Date(startDate.getTime() + 3 * 60 * 60 * 1000); // 3 hours
+
+  const title = `${match.homeTeam?.name || "Home"} vs ${match.awayTeam?.name || "Away"}`;
+  const details = [
+    `League: ${match.league || "Unknown"}`,
+    match.prediction?.confidence ? `Confidence: ${match.prediction.confidence.toFixed(1)}%` : "",
+    match.smartScore?.overall ? `SmartScore: ${match.smartScore.overall.toFixed(1)}` : "",
+    match.prediction?.recommended ? `Recommended Pick: ${match.prediction.recommended}` : "",
+    match.prediction?.projectedScore
+      ? `Projected Score: ${match.prediction.projectedScore.home} - ${match.prediction.projectedScore.away}`
+      : "",
+    "",
+    "Added via BetSmart",
+  ].filter(Boolean).join("\n");
+
+  const params = new URLSearchParams({
+    path: "/calendar/action/compose",
+    rru: "addevent",
+    subject: title,
+    startdt: startDate.toISOString(),
+    enddt: endDate.toISOString(),
+    body: details,
+    location: match.league || "",
+  });
+
+  return `https://outlook.live.com/calendar/0/deeplink/compose?${params.toString()}`;
+}
+
+/**
+ * Open Google Calendar with multiple events (opens first event, shows count)
+ * For multiple events, we create a summary event
+ */
+export function openGoogleCalendarBulk(matches: Match[]): void {
+  if (matches.length === 0) return;
+
+  if (matches.length === 1) {
+    window.open(generateGoogleCalendarUrl(matches[0]), "_blank");
+    return;
+  }
+
+  // For multiple matches, create a summary event with all games
+  const firstMatch = matches[0];
+  const lastMatch = matches[matches.length - 1];
+  const startDate = parseISO(firstMatch.startTime);
+  const endDate = parseISO(lastMatch.startTime);
+  endDate.setHours(endDate.getHours() + 3);
+
+  const formatGoogleDate = (date: Date): string => {
+    return format(date, "yyyyMMdd'T'HHmmss");
+  };
+
+  const gamesList = matches
+    .slice(0, 10) // Limit to first 10 for URL length
+    .map((m) => {
+      const time = format(parseISO(m.startTime), "MMM d h:mm a");
+      return `• ${m.homeTeam?.shortName} vs ${m.awayTeam?.shortName} (${time})`;
+    })
+    .join("\n");
+
+  const details = [
+    `${matches.length} Games Scheduled`,
+    "",
+    gamesList,
+    matches.length > 10 ? `\n...and ${matches.length - 10} more games` : "",
+    "",
+    "View full schedule at BetSmart",
+  ].filter(Boolean).join("\n");
+
+  const params = new URLSearchParams({
+    action: "TEMPLATE",
+    text: `BetSmart: ${matches.length} Games This Week`,
+    dates: `${formatGoogleDate(startDate)}/${formatGoogleDate(endDate)}`,
+    details: details,
+  });
+
+  window.open(`https://calendar.google.com/calendar/render?${params.toString()}`, "_blank");
+}
+
+/**
+ * Open Outlook Calendar with multiple events
+ */
+export function openOutlookCalendarBulk(matches: Match[]): void {
+  if (matches.length === 0) return;
+
+  if (matches.length === 1) {
+    window.open(generateOutlookCalendarUrl(matches[0]), "_blank");
+    return;
+  }
+
+  // For multiple matches, create a summary event
+  const firstMatch = matches[0];
+  const lastMatch = matches[matches.length - 1];
+  const startDate = parseISO(firstMatch.startTime);
+  const endDate = parseISO(lastMatch.startTime);
+  endDate.setHours(endDate.getHours() + 3);
+
+  const gamesList = matches
+    .slice(0, 10)
+    .map((m) => {
+      const time = format(parseISO(m.startTime), "MMM d h:mm a");
+      return `• ${m.homeTeam?.shortName} vs ${m.awayTeam?.shortName} (${time})`;
+    })
+    .join("\n");
+
+  const details = [
+    `${matches.length} Games Scheduled`,
+    "",
+    gamesList,
+    matches.length > 10 ? `\n...and ${matches.length - 10} more games` : "",
+    "",
+    "View full schedule at BetSmart",
+  ].filter(Boolean).join("\n");
+
+  const params = new URLSearchParams({
+    path: "/calendar/action/compose",
+    rru: "addevent",
+    subject: `BetSmart: ${matches.length} Games This Week`,
+    startdt: startDate.toISOString(),
+    enddt: endDate.toISOString(),
+    body: details,
+  });
+
+  window.open(`https://outlook.live.com/calendar/0/deeplink/compose?${params.toString()}`, "_blank");
+}
