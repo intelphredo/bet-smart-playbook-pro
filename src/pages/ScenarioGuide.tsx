@@ -1,7 +1,7 @@
-
 import { useState, useMemo } from "react";
 import NavBar from "@/components/NavBar";
 import PageFooter from "@/components/PageFooter";
+import AppBreadcrumb from "@/components/layout/AppBreadcrumb";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -78,6 +78,8 @@ export default function ScenarioGuide() {
     <div className="min-h-screen bg-gradient-to-br from-background via-secondary/30 to-accent/10">
       <NavBar />
       <div className="container px-4 py-6">
+        <AppBreadcrumb className="mb-4" />
+        
         <div className="flex flex-col space-y-6">
           {/* Header */}
           <div>

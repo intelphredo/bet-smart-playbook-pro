@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { 
@@ -10,6 +9,7 @@ import {
 import { useSportsData } from "@/hooks/useSportsData";
 import NavBar from "@/components/NavBar";
 import PageFooter from "@/components/PageFooter";
+import AppBreadcrumb from "@/components/layout/AppBreadcrumb";
 import AlgorithmPredictionsTable from "@/components/AlgorithmPredictionsTable";
 import StatsOverview from "@/components/StatsOverview";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -53,6 +53,7 @@ export default function AlgorithmsComparison() {
     <div className="min-h-screen flex flex-col bg-background">
       <NavBar />
       <main id="main-content" className="flex-1 container px-4 py-6">
+        <AppBreadcrumb className="mb-4" />
         <h1 className="text-3xl font-bold mb-6">Sports Analytics Algorithms</h1>
         
         <Tabs value={activeTab} onValueChange={setActiveTab}>

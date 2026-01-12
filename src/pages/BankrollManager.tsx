@@ -1,6 +1,6 @@
-
 import NavBar from "@/components/NavBar";
 import PageFooter from "@/components/PageFooter";
+import AppBreadcrumb from "@/components/layout/AppBreadcrumb";
 import { BankrollDashboard } from "@/components/Bankroll/BankrollDashboard";
 import { Wallet } from "lucide-react";
 
@@ -10,6 +10,8 @@ export default function BankrollManager() {
       <NavBar />
       
       <main className="flex-1 container py-6">
+        <AppBreadcrumb className="mb-4" />
+        
         <div className="flex items-center gap-3 mb-6">
           <div className="p-2 bg-primary/20 rounded-lg">
             <Wallet className="h-6 w-6 text-primary" />

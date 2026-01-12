@@ -2,6 +2,7 @@ import { useState, useMemo, memo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import NavBar from '@/components/NavBar';
 import PageFooter from '@/components/PageFooter';
+import AppBreadcrumb from '@/components/layout/AppBreadcrumb';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,7 +14,6 @@ import {
   CheckCircle, 
   XCircle, 
   MinusCircle,
-  ArrowLeft,
   DollarSign,
   Target,
   Percent,
@@ -211,14 +211,10 @@ export default function BetHistory() {
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-background via-secondary/30 to-accent/10">
       <NavBar />
       <main className="flex-1 container px-4 py-6">
+        <AppBreadcrumb className="mb-4" />
+        
         <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
-            </Button>
-            <h1 className="text-2xl font-bold">Bet History</h1>
-          </div>
+          <h1 className="text-2xl font-bold">Bet History</h1>
           <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isRefreshing}>
             {isRefreshing ? (
               <Loader2 className="h-4 w-4 animate-spin" />

@@ -1,8 +1,8 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import NavBar from "@/components/NavBar";
+import AppBreadcrumb from "@/components/layout/AppBreadcrumb";
 import CreatorPanel from "@/components/CreatorPanel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -47,6 +47,8 @@ export default function CreatorDashboard() {
     <div className="min-h-screen bg-gradient-to-br from-background via-secondary/30 to-accent/10">
       <NavBar />
       <div className="container px-4 py-6">
+        <AppBreadcrumb className="mb-4" />
+        
         <div className="flex items-center gap-3 mb-6">
           <Shield className="h-8 w-8 text-primary" />
           <h1 className="text-3xl font-bold">Creator Dashboard</h1>

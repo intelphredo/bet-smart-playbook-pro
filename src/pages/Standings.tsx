@@ -3,6 +3,7 @@ import { SportLeague, SportradarStanding } from '@/types/sportradar';
 import { useSportradarStandings } from '@/hooks/useSportradarStandings';
 import NavBar from '@/components/NavBar';
 import PageFooter from '@/components/PageFooter';
+import AppBreadcrumb from '@/components/layout/AppBreadcrumb';
 import StandingsTable from '@/components/Sportradar/StandingsTable';
 import StandingsFilters, { StandingsView } from '@/components/Sportradar/StandingsFilters';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -103,6 +104,8 @@ export default function Standings() {
       <NavBar />
       
       <main className="container py-8">
+        <AppBreadcrumb className="mb-4" />
+        
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 rounded-lg bg-primary/10">
