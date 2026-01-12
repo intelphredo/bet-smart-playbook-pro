@@ -28,6 +28,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { useHistoricalPredictions, HistoricalPrediction } from "@/hooks/useHistoricalPredictions";
+import PredictionCharts from "./PredictionCharts";
 
 const HistoricalPredictionsSection = () => {
   const [leagueFilter, setLeagueFilter] = useState<string>("all");
@@ -92,6 +93,16 @@ const HistoricalPredictionsSection = () => {
             color="text-yellow-500"
           />
         </div>
+      )}
+
+      {/* Charts Section */}
+      {stats && stats.dailyStats.length > 0 && (
+        <PredictionCharts
+          dailyStats={stats.dailyStats}
+          leaguePerformance={stats.leaguePerformance}
+          confidenceVsAccuracy={stats.confidenceVsAccuracy}
+          overallWinRate={stats.winRate}
+        />
       )}
 
       {/* League Breakdown */}
