@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { Match } from "@/types/sports";
 import NavBar from "@/components/NavBar";
 import PageFooter from "@/components/PageFooter";
@@ -40,6 +41,7 @@ import { Card } from "@/components/ui/card";
 import TopLoader from "@/components/ui/TopLoader";
 
 const Index = () => {
+  const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState<SportCategory | "ALL">("ALL");
   const [selectedLeague, setSelectedLeague] = useState<string>("ALL");
   const [activeSection, setActiveSection] = useState("overview");
@@ -48,6 +50,11 @@ const Index = () => {
   const { toast } = useToast();
   const { preferences } = usePreferences();
   const { stats } = useBetTracking();
+
+  // Handle match click from alerts - navigate to game detail
+  const handleMatchClick = (match: Match) => {
+    navigate(`/game/${match.id}`);
+  };
 
   const {
     upcomingMatches: rawUpcoming,
@@ -179,6 +186,7 @@ const Index = () => {
           smartScoreThreshold={70}
           evThreshold={5}
           maxAlerts={5}
+          onMatchClick={handleMatchClick}
         />
 
         {/* Stats Bar */}

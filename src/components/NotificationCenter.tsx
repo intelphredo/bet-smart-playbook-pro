@@ -1,4 +1,5 @@
-import { Bell, Check, CheckCheck, Trophy, TrendingUp, AlertTriangle, Clock, Trash2, X } from 'lucide-react';
+import { Bell, Check, CheckCheck, Trophy, TrendingUp, AlertTriangle, Clock, Trash2, X, Eye } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -26,11 +27,13 @@ const alertTypeConfig: Record<UserAlert['type'], { icon: typeof Bell; color: str
 function AlertItem({ 
   alert, 
   onMarkRead, 
-  onDelete 
+  onDelete,
+  onView
 }: { 
   alert: UserAlert; 
   onMarkRead: (id: string) => void;
   onDelete: (id: string) => void;
+  onView: (alert: UserAlert) => void;
 }) {
   const config = alertTypeConfig[alert.type] || alertTypeConfig.system;
   const Icon = config.icon;
@@ -38,9 +41,10 @@ function AlertItem({
   return (
     <div 
       className={cn(
-        "flex items-start gap-3 p-3 rounded-lg transition-colors hover:bg-muted/50",
+        "flex items-start gap-3 p-3 rounded-lg transition-colors hover:bg-muted/50 cursor-pointer",
         !alert.is_read && "bg-primary/5 border-l-2 border-l-primary"
       )}
+      onClick={() => onView(alert)}
     >
       <div className={cn("mt-0.5", config.color)}>
         <Icon size={18} />
@@ -66,6 +70,21 @@ function AlertItem({
         </p>
       </div>
       <div className="flex items-center gap-1">
+        {/* View button */}
+        {(alert.match_id || alert.bet_id) && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-primary"
+            onClick={(e) => {
+              e.stopPropagation();
+              onView(alert);
+            }}
+            title="View details"
+          >
+            <Eye size={14} />
+          </Button>
+        )}
         {!alert.is_read && (
           <Button
             variant="ghost"
@@ -75,6 +94,7 @@ function AlertItem({
               e.stopPropagation();
               onMarkRead(alert.id);
             }}
+            title="Mark as read"
           >
             <Check size={14} />
           </Button>
@@ -87,6 +107,7 @@ function AlertItem({
             e.stopPropagation();
             onDelete(alert.id);
           }}
+          title="Delete"
         >
           <X size={14} />
         </Button>
@@ -96,7 +117,39 @@ function AlertItem({
 }
 
 export default function NotificationCenter() {
+  const navigate = useNavigate();
   const { alerts, unreadCount, isLoading, markAsRead, markAllAsRead, deleteAlert } = useUserAlerts();
+
+  // Handle viewing an alert - navigate to appropriate page
+  const handleViewAlert = (alert: UserAlert) => {
+    // Mark as read when viewing
+    if (!alert.is_read) {
+      markAsRead(alert.id);
+    }
+
+    // Navigate based on alert type and available IDs
+    if (alert.match_id) {
+      navigate(`/game/${alert.match_id}`);
+    } else if (alert.bet_id) {
+      navigate(`/bet-history`);
+    } else {
+      // For system alerts without specific navigation, just mark as read
+      switch (alert.type) {
+        case 'line_movement':
+          navigate('/?tab=insights');
+          break;
+        case 'arbitrage':
+          navigate('/?tab=overview');
+          break;
+        case 'clv_update':
+          navigate('/bet-history');
+          break;
+        default:
+          // No specific navigation for this alert type
+          break;
+      }
+    }
+  };
 
   return (
     <DropdownMenu>
@@ -153,6 +206,7 @@ export default function NotificationCenter() {
                   alert={alert} 
                   onMarkRead={markAsRead}
                   onDelete={deleteAlert}
+                  onView={handleViewAlert}
                 />
               ))}
             </div>
