@@ -1,8 +1,8 @@
 import { Badge } from '@/components/ui/badge';
 import { AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useState } from 'react';
-import { getTeamInitials } from '@/utils/teamLogos';
+import { TeamLogoImage } from '@/components/ui/TeamLogoImage';
+import { League } from '@/types/sports';
 
 interface Props {
   team: {
@@ -13,34 +13,8 @@ interface Props {
   };
   injuryCount?: number;
   injuryImpact?: number;
+  league?: League;
 }
-
-const TeamImage = ({ logo, name, shortName }: { logo?: string; name: string; shortName: string }) => {
-  const [hasError, setHasError] = useState(false);
-  const initials = getTeamInitials(name);
-
-  const handleImageError = () => {
-    setHasError(true);
-  };
-
-  if (!logo || hasError) {
-    return (
-      <div className="w-8 h-8 flex items-center justify-center bg-muted rounded-full">
-        <span className="text-xs font-bold text-muted-foreground">{initials}</span>
-      </div>
-    );
-  }
-
-  return (
-    <img 
-      src={logo} 
-      alt={name} 
-      className="w-8 h-8 object-contain rounded-full transition-transform hover:scale-110"
-      onError={handleImageError}
-      loading="lazy"
-    />
-  );
-};
 
 const getInjuryIndicator = (count: number, impact: number) => {
   if (count === 0) return null;
@@ -62,10 +36,16 @@ const getInjuryIndicator = (count: number, impact: number) => {
   );
 };
 
-const MatchParticipant = ({ team, injuryCount = 0, injuryImpact = 0 }: Props) => (
+const MatchParticipant = ({ team, injuryCount = 0, injuryImpact = 0, league }: Props) => (
   <div className="text-center group">
     <div className="w-12 h-12 bg-card border border-border rounded-full mx-auto mb-2 flex items-center justify-center transition-all group-hover:shadow-lg group-hover:scale-105">
-      <TeamImage logo={team.logo} name={team.name} shortName={team.shortName} />
+      <TeamLogoImage 
+        teamName={team.name} 
+        logoUrl={team.logo}
+        league={league}
+        size="sm"
+        showFallback
+      />
     </div>
     <div className="text-sm font-medium truncate text-foreground">{team.shortName}</div>
     {team.record && (

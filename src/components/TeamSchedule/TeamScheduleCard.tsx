@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
+import { TeamLogoImage } from "@/components/ui/TeamLogoImage";
 
 interface TeamScheduleCardProps {
   match: Match;
@@ -107,13 +108,11 @@ export const TeamScheduleCard: React.FC<TeamScheduleCardProps> = ({
           {/* Selected Team */}
           <div className="flex items-center gap-3 flex-1">
             <div className="relative">
-              <img
-                src={selectedTeam.logo}
-                alt={selectedTeam.name}
-                className="h-12 w-12 object-contain"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = "/placeholder.svg";
-                }}
+              <TeamLogoImage
+                teamName={selectedTeam.name}
+                logoUrl={selectedTeam.logo}
+                league={match.league}
+                size="md"
               />
               {isFavored && (
                 <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
@@ -148,13 +147,12 @@ export const TeamScheduleCard: React.FC<TeamScheduleCardProps> = ({
                 {opponent.record || "0-0"}
               </p>
             </div>
-            <img
-              src={opponent.logo}
-              alt={opponent.name}
-              className="h-12 w-12 object-contain opacity-75"
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = "/placeholder.svg";
-              }}
+            <TeamLogoImage
+              teamName={opponent.name}
+              logoUrl={opponent.logo}
+              league={match.league}
+              size="md"
+              className="opacity-75"
             />
           </div>
         </div>

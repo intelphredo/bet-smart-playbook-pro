@@ -1,24 +1,16 @@
-// src/components/match/TeamLogo.tsx
+// src/components/MatchCard/TeamLogo.tsx
+// Re-exports the unified TeamLogoImage component for backward compatibility
 
-import React from "react";
+import { TeamLogoImage } from "@/components/ui/TeamLogoImage";
 
 interface Props {
   team: string;
+  logo?: string;
+  size?: "xs" | "sm" | "md" | "lg" | "xl";
 }
 
-export const TeamLogo: React.FC<Props> = ({ team }) => {
-  const url = `/logos/${team.toLowerCase().replace(/\s+/g, "-")}.png`;
-
-  return (
-    <img
-      src={url}
-      alt={team}
-      className="w-8 h-8 object-contain"
-      onError={(e) => {
-        (e.target as HTMLImageElement).style.display = "none";
-      }}
-    />
-  );
+export const TeamLogo: React.FC<Props> = ({ team, logo, size = "sm" }) => {
+  return <TeamLogoImage teamName={team} logoUrl={logo} size={size} showFallback />;
 };
 
 export default TeamLogo;

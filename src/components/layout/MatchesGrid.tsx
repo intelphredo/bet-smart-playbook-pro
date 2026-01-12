@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { Match } from "@/types/sports";
+import { Match, League } from "@/types/sports";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Clock, Radio, CheckCircle2 } from "lucide-react";
 import MatchDetailModal from "./MatchDetailModal";
+import { TeamLogoImage } from "@/components/ui/TeamLogoImage";
 
 interface MatchesGridProps {
   matches: Match[];
@@ -82,6 +83,7 @@ const MatchCard = ({
   type: string; 
   onClick: () => void;
 }) => {
+  const league = match.league;
   const homeScore = match.score?.home;
   const awayScore = match.score?.away;
   const hasScores = homeScore !== undefined && awayScore !== undefined;
@@ -123,6 +125,7 @@ const MatchCard = ({
           name={match.awayTeam?.name || "TBD"}
           shortName={match.awayTeam?.shortName}
           logo={match.awayTeam?.logo}
+          league={league}
           score={awayScore}
           isWinner={hasScores && (awayScore ?? 0) > (homeScore ?? 0)}
           showScore={type !== "upcoming"}
@@ -131,6 +134,7 @@ const MatchCard = ({
           name={match.homeTeam?.name || "TBD"}
           shortName={match.homeTeam?.shortName}
           logo={match.homeTeam?.logo}
+          league={league}
           score={homeScore}
           isWinner={hasScores && (homeScore ?? 0) > (awayScore ?? 0)}
           showScore={type !== "upcoming"}
@@ -168,6 +172,7 @@ const TeamRow = ({
   name, 
   shortName,
   logo,
+  league,
   score, 
   isWinner, 
   showScore,
@@ -176,6 +181,7 @@ const TeamRow = ({
   name: string;
   shortName?: string;
   logo?: string;
+  league?: League;
   score?: number; 
   isWinner: boolean;
   showScore: boolean;
@@ -186,16 +192,13 @@ const TeamRow = ({
     isWinner && "font-semibold"
   )}>
     <div className="flex items-center gap-2">
-      {logo && (
-        <img 
-          src={logo} 
-          alt={name} 
-          className="w-5 h-5 object-contain"
-          onError={(e) => {
-            (e.target as HTMLImageElement).style.display = 'none';
-          }}
-        />
-      )}
+      <TeamLogoImage 
+        teamName={name}
+        logoUrl={logo}
+        league={league}
+        size="xs"
+        showFallback
+      />
       <span className={cn(
         "text-sm",
         isWinner ? "text-foreground" : "text-muted-foreground"
