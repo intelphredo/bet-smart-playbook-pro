@@ -21,7 +21,8 @@ import {
   RefreshCw,
   Loader2,
   Calendar,
-  Zap
+  Zap,
+  Award
 } from 'lucide-react';
 import { useBetSlip } from '@/components/BetSlip/BetSlipContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -30,6 +31,7 @@ import { format } from 'date-fns';
 import { isDevMode } from '@/utils/devMode';
 import WeeklyPerformanceSummary from '@/components/WeeklyPerformanceSummary';
 import RecommendedPicksSection from '@/components/RecommendedPicksSection';
+import AlgorithmAccuracyDashboard from '@/components/AlgorithmAccuracyDashboard';
 import VirtualizedList from '@/components/VirtualizedList';
 
 const statusConfig: Record<BetStatus, { icon: React.ElementType; color: string; label: string }> = {
@@ -228,7 +230,7 @@ export default function BetHistory() {
 
         {/* Main Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
-          <TabsList>
+          <TabsList className="flex-wrap h-auto gap-1">
             <TabsTrigger value="bets" className="flex items-center gap-2">
               <Target className="h-4 w-4" />
               Your Bets
@@ -236,6 +238,10 @@ export default function BetHistory() {
             <TabsTrigger value="predictions" className="flex items-center gap-2">
               <Zap className="h-4 w-4" />
               AI Predictions
+            </TabsTrigger>
+            <TabsTrigger value="accuracy" className="flex items-center gap-2">
+              <Award className="h-4 w-4" />
+              Accuracy
             </TabsTrigger>
             <TabsTrigger value="summary" className="flex items-center gap-2">
               <Calendar className="h-4 w-4" />
@@ -312,6 +318,10 @@ export default function BetHistory() {
 
           <TabsContent value="predictions" className="mt-6">
             <RecommendedPicksSection />
+          </TabsContent>
+
+          <TabsContent value="accuracy" className="mt-6">
+            <AlgorithmAccuracyDashboard />
           </TabsContent>
 
           <TabsContent value="summary" className="mt-6">
