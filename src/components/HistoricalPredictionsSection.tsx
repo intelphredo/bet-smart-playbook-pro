@@ -29,7 +29,9 @@ import {
   Calendar,
   Radio,
   PlayCircle,
+  Download,
 } from "lucide-react";
+import { toast } from "sonner";
 import { 
   useHistoricalPredictions, 
   HistoricalPrediction, 
@@ -55,6 +57,77 @@ const HistoricalPredictionsSection = () => {
   
   const { data, isLoading, error } = useHistoricalPredictions(timeRange, predictionType);
 
+  const { predictions, stats } = data || { predictions: [], stats: null };
+
+  // Get unique leagues for filter
+  const leagues = Array.from(new Set(predictions.map(p => p.league).filter(Boolean))) as string[];
+
+  // Filter predictions
+  const filteredPredictions = predictions.filter(p => {
+    if (leagueFilter !== "all" && p.league !== leagueFilter) return false;
+    if (statusFilter !== "all" && p.status !== statusFilter) return false;
+    return true;
+  });
+
+  // CSV Export function
+  const exportToCSV = () => {
+    if (!filteredPredictions.length) {
+      toast.error("No predictions to export");
+      return;
+    }
+
+    const headers = [
+      "Date",
+      "Time",
+      "League",
+      "Match ID",
+      "Prediction",
+      "Confidence (%)",
+      "Status",
+      "Type",
+      "Projected Home",
+      "Projected Away",
+      "Actual Home",
+      "Actual Away",
+      "Accuracy Rating"
+    ];
+
+    const rows = filteredPredictions.map(p => [
+      format(new Date(p.predicted_at), "yyyy-MM-dd"),
+      format(new Date(p.predicted_at), "HH:mm:ss"),
+      p.league || "Unknown",
+      p.match_id,
+      p.prediction || "",
+      p.confidence?.toString() || "",
+      p.status,
+      p.is_live_prediction ? "Live" : "Pre-Live",
+      p.projected_score_home?.toString() || "",
+      p.projected_score_away?.toString() || "",
+      p.actual_score_home?.toString() || "",
+      p.actual_score_away?.toString() || "",
+      p.accuracy_rating?.toString() || ""
+    ]);
+
+    // Create CSV content
+    const csvContent = [
+      headers.join(","),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(","))
+    ].join("\n");
+
+    // Create blob and download
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `predictions_${timeRange}_${format(new Date(), "yyyy-MM-dd")}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast.success(`Exported ${filteredPredictions.length} predictions to CSV`);
+  };
+
   if (isLoading) {
     return <HistoricalPredictionsSkeleton />;
   }
@@ -69,18 +142,6 @@ const HistoricalPredictionsSection = () => {
       </Card>
     );
   }
-
-  const { predictions, stats } = data || { predictions: [], stats: null };
-
-  // Get unique leagues for filter
-  const leagues = Array.from(new Set(predictions.map(p => p.league).filter(Boolean))) as string[];
-
-  // Filter predictions
-  const filteredPredictions = predictions.filter(p => {
-    if (leagueFilter !== "all" && p.league !== leagueFilter) return false;
-    if (statusFilter !== "all" && p.status !== statusFilter) return false;
-    return true;
-  });
 
   return (
     <div className="space-y-6">
@@ -134,6 +195,20 @@ const HistoricalPredictionsSection = () => {
                   </TabsTrigger>
                 </TabsList>
               </Tabs>
+            </div>
+
+            {/* Export Button */}
+            <div className="sm:w-auto flex items-end">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={exportToCSV}
+                className="gap-2 h-8"
+                disabled={!predictions.length}
+              >
+                <Download className="h-4 w-4" />
+                Export CSV
+              </Button>
             </div>
           </div>
         </CardContent>
