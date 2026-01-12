@@ -98,11 +98,9 @@ export function useSportsData({
     isError: isOddsError,
   } = useOddsApi(league);
 
-  console.log('ESPN upcoming matches:', espnUpcomingMatches.length);
-  console.log('MLB upcoming matches:', mlbUpcomingMatches.length);
-  console.log('Odds API matches:', oddsApiMatches.length);
-  if (useExternalApis) {
-    console.log('API upcoming matches:', apiUpcomingMatches.length);
+  // Debug logging only in development
+  if (import.meta.env.DEV) {
+    console.log('[SportsData] ESPN:', espnUpcomingMatches.length, 'MLB:', mlbUpcomingMatches.length, 'Odds:', oddsApiMatches.length);
   }
 
   const {
@@ -165,13 +163,7 @@ export function useSportsData({
     const oddsLive = oddsApiMatches.filter(m => m.status === "live");
     const combined = [...base, ...oddsLive];
     
-    console.log('=== Live Games Debug ===');
-    console.log('ESPN/Base live:', base.length);
-    console.log('Odds API live:', oddsLive.length);
-    console.log('Combined before dedup:', combined.length);
-    
     const deduped = dedupeMatches(combined);
-    console.log('Combined after dedup:', deduped.length);
     
     return deduped;
   }, [baseLiveMatches, oddsApiMatches, dataSource, league]);

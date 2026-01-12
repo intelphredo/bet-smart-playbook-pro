@@ -37,6 +37,7 @@ import { useHighValueAlerts } from "@/hooks/useHighValueAlerts";
 import { Radio, Clock, CheckCircle2, TrendingUp, Zap, BarChart3, DollarSign, Brain, Target, History, CalendarDays } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
+import TopLoader from "@/components/ui/TopLoader";
 
 const Index = () => {
   const [selectedCategory, setSelectedCategory] = useState<SportCategory | "ALL">("ALL");
@@ -147,6 +148,9 @@ const Index = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-background via-background to-accent/5">
+      {/* Global Loading Indicator */}
+      <TopLoader isLoading={isLoading} />
+      
       <NavBar />
       
       {/* Dashboard Header */}
