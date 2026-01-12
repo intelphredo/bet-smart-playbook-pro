@@ -133,6 +133,8 @@ const Index = () => {
       <SportCategoryNav
         selectedCategory={selectedCategory}
         onCategoryChange={setSelectedCategory}
+        selectedLeague={selectedLeague}
+        onLeagueChange={setSelectedLeague}
         matchCounts={matchCounts}
       />
 
