@@ -30,6 +30,7 @@ import HistoricalPredictionsSection from "@/components/HistoricalPredictionsSect
 import { TeamScheduleView } from "@/components/TeamSchedule";
 import { DateFilter } from "@/components/filters/DateFilter";
 import { WeeklySummaryCard } from "@/components/filters/WeeklySummaryCard";
+import { WeeklyCalendarGrid } from "@/components/filters/WeeklyCalendarGrid";
 
 import { Radio, Clock, CheckCircle2, TrendingUp, Zap, BarChart3, DollarSign, Brain, Target, History, CalendarDays } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -301,6 +302,9 @@ const Index = () => {
           <TabsContent value="upcoming" className="mt-6 space-y-4">
             {/* Weekly Summary Card */}
             <WeeklySummaryCard matches={filteredUpcoming} daysAhead={7} />
+            
+            {/* Weekly Calendar Grid */}
+            <WeeklyCalendarGrid matches={filteredUpcoming} daysAhead={7} />
             
             {/* Date Filter */}
             <div className="bg-card border rounded-lg p-4">
