@@ -33,15 +33,17 @@ export interface LiveOdds {
   totals?: TotalOdds;
 }
 
+export interface DataDiscrepancy {
+  field: string;
+  values: Record<string, string | number | boolean>;
+}
+
 export interface DataVerificationResult {
   isVerified: boolean;
   confidenceScore: number;
   lastUpdated: string;
   sources: string[];
-  discrepancies?: {
-    field: string;
-    values: Record<string, any>;
-  }[];
+  discrepancies?: DataDiscrepancy[];
 }
 
 export interface Match {
@@ -212,6 +214,20 @@ export interface User {
 
 export type DataSource = 'ESPN' | 'MLB' | 'ACTION' | 'API';
 
+// Base factor interface for SmartScore calculations
+// Flexible type to accommodate different factor formats across the codebase
+export interface SmartScoreFactor {
+  key?: string;
+  name?: string;
+  weight?: number;
+  value?: number;
+  impact: 'positive' | 'negative' | 'neutral';
+  description: string;
+}
+
+// Generic factor array type that allows strings or structured factors
+export type FactorArray = SmartScoreFactor[] | string[];
+
 export interface SmartScore {
   overall: number;        // 0-100 overall smart score
   components: {
@@ -223,12 +239,12 @@ export interface SmartScore {
     arbitrage: number;    // 0-100 arbitrage rating
   };
   factors: {
-    momentum: any[];
-    value: any[];
-    oddsMovement: any[];
-    weather: any[];
-    injuries: any[];
-    arbitrage: any[];
+    momentum: FactorArray;
+    value: FactorArray;
+    oddsMovement: FactorArray;
+    weather: FactorArray;
+    injuries: FactorArray;
+    arbitrage: FactorArray;
   };
   recommendation?: {
     betOn: 'home' | 'away' | 'draw' | 'over' | 'under' | 'none';
