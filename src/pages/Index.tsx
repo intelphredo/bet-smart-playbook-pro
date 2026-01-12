@@ -26,8 +26,9 @@ import CLVLeaderboard from "@/components/CLVLeaderboard";
 import AlgorithmsSection from "@/components/AlgorithmsSection";
 import StatsOverview from "@/components/StatsOverview";
 import HistoricalPredictionsSection from "@/components/HistoricalPredictionsSection";
+import { TeamScheduleView } from "@/components/TeamSchedule";
 
-import { Radio, Clock, CheckCircle2, TrendingUp, Zap, BarChart3, DollarSign, Brain, Target, History } from "lucide-react";
+import { Radio, Clock, CheckCircle2, TrendingUp, Zap, BarChart3, DollarSign, Brain, Target, History, CalendarDays } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 
@@ -170,6 +171,10 @@ const Index = () => {
               <Clock className="h-4 w-4" />
               Upcoming
             </TabsTrigger>
+            <TabsTrigger value="schedule" className="gap-2">
+              <CalendarDays className="h-4 w-4" />
+              Team Schedules
+            </TabsTrigger>
             <TabsTrigger value="insights" className="gap-2">
               <Brain className="h-4 w-4" />
               Insights
@@ -294,6 +299,14 @@ const Index = () => {
           {/* Predictions History Tab */}
           <TabsContent value="predictions" className="mt-6">
             <HistoricalPredictionsSection />
+          </TabsContent>
+
+          {/* Team Schedule Tab */}
+          <TabsContent value="schedule" className="mt-6">
+            <TeamScheduleView 
+              matches={[...filteredUpcoming, ...filteredLive]} 
+              selectedLeague={selectedLeague as any}
+            />
           </TabsContent>
 
           {/* Insights Tab */}
