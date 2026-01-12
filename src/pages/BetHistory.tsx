@@ -20,7 +20,8 @@ import {
   BarChart3,
   RefreshCw,
   Loader2,
-  Calendar
+  Calendar,
+  Zap
 } from 'lucide-react';
 import { useBetSlip } from '@/components/BetSlip/BetSlipContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -28,6 +29,7 @@ import { UserBet, BetStatus } from '@/types/betting';
 import { format } from 'date-fns';
 import { isDevMode } from '@/utils/devMode';
 import WeeklyPerformanceSummary from '@/components/WeeklyPerformanceSummary';
+import RecommendedPicksSection from '@/components/RecommendedPicksSection';
 import VirtualizedList from '@/components/VirtualizedList';
 
 const statusConfig: Record<BetStatus, { icon: React.ElementType; color: string; label: string }> = {
@@ -231,6 +233,10 @@ export default function BetHistory() {
               <Target className="h-4 w-4" />
               Your Bets
             </TabsTrigger>
+            <TabsTrigger value="predictions" className="flex items-center gap-2">
+              <Zap className="h-4 w-4" />
+              AI Predictions
+            </TabsTrigger>
             <TabsTrigger value="summary" className="flex items-center gap-2">
               <Calendar className="h-4 w-4" />
               Weekly Summary
@@ -302,6 +308,10 @@ export default function BetHistory() {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="predictions" className="mt-6">
+            <RecommendedPicksSection />
           </TabsContent>
 
           <TabsContent value="summary" className="mt-6">
