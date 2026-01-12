@@ -3,6 +3,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import MatchCard from "./MatchCard";
 import { Match } from "@/types/sports";
 import { cn } from "@/lib/utils";
+import { TeamLogoImage } from "@/components/ui/TeamLogoImage";
 
 interface VirtualizedMatchGridProps {
   matches: Match[];
@@ -25,16 +26,24 @@ const CompactMatchCard = ({ match }: { match: Match }) => {
       </div>
       <div className="flex items-center justify-between gap-2">
         <div className="flex-1 text-center">
-          <div className="w-8 h-8 bg-muted rounded-full mx-auto mb-1 flex items-center justify-center text-xs font-medium">
-            {match.homeTeam?.shortName?.substring(0, 2) || "H"}
-          </div>
+          <TeamLogoImage
+            teamName={match.homeTeam?.name || "Home"}
+            logoUrl={match.homeTeam?.logo}
+            league={match.league}
+            size="sm"
+            className="mx-auto mb-1"
+          />
           <p className="text-sm font-medium truncate">{match.homeTeam?.shortName}</p>
         </div>
         <div className="text-muted-foreground text-sm">vs</div>
         <div className="flex-1 text-center">
-          <div className="w-8 h-8 bg-muted rounded-full mx-auto mb-1 flex items-center justify-center text-xs font-medium">
-            {match.awayTeam?.shortName?.substring(0, 2) || "A"}
-          </div>
+          <TeamLogoImage
+            teamName={match.awayTeam?.name || "Away"}
+            logoUrl={match.awayTeam?.logo}
+            league={match.league}
+            size="sm"
+            className="mx-auto mb-1"
+          />
           <p className="text-sm font-medium truncate">{match.awayTeam?.shortName}</p>
         </div>
       </div>

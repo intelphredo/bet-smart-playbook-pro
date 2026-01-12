@@ -49,6 +49,7 @@ import { cn } from "@/lib/utils";
 import { format, parseISO, isToday, isTomorrow, addDays } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
 import { useHeadToHead } from "@/hooks/useHeadToHead";
+import { TeamLogoImage } from "@/components/ui/TeamLogoImage";
 
 interface TeamComparisonToolProps {
   matches: Match[];
@@ -236,13 +237,11 @@ export const TeamComparisonTool: React.FC<TeamComparisonToolProps> = ({
         >
           {selectedTeam ? (
             <div className="flex items-center gap-3">
-              <img
-                src={selectedTeam.logo}
-                alt={selectedTeam.name}
-                className="h-10 w-10 object-contain"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = "/placeholder.svg";
-                }}
+              <TeamLogoImage
+                teamName={selectedTeam.name}
+                logoUrl={selectedTeam.logo}
+                league={selectedTeam.league}
+                size="sm"
               />
               <div className="text-left">
                 <p className="font-semibold">{selectedTeam.name}</p>
@@ -281,13 +280,11 @@ export const TeamComparisonTool: React.FC<TeamComparisonToolProps> = ({
                       onSelect={() => { onSelect(team.id); setOpen(false); }}
                       className="flex items-center gap-2 py-2"
                     >
-                      <img
-                        src={team.logo}
-                        alt={team.name}
-                        className="h-6 w-6 object-contain"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = "none";
-                        }}
+                      <TeamLogoImage
+                        teamName={team.name}
+                        logoUrl={team.logo}
+                        league={team.league}
+                        size="xs"
                       />
                       <span className="flex-1 truncate">{team.name}</span>
                       {selectedTeam?.id === team.id && <Check className="h-4 w-4" />}
@@ -499,20 +496,20 @@ export const TeamComparisonTool: React.FC<TeamComparisonToolProps> = ({
                       <p className="font-semibold truncate">{team1.name}</p>
                       <p className="text-xs text-muted-foreground">{team1.record || team1.league}</p>
                     </div>
-                    <img
-                      src={team1.logo}
-                      alt={team1.name}
-                      className="h-10 w-10 object-contain"
-                      onError={(e) => { (e.target as HTMLImageElement).src = "/placeholder.svg"; }}
+                    <TeamLogoImage
+                      teamName={team1.name}
+                      logoUrl={team1.logo}
+                      league={team1.league}
+                      size="sm"
                     />
                   </div>
                   <div className="text-center text-sm text-muted-foreground font-medium">VS</div>
                   <div className="flex items-center gap-2">
-                    <img
-                      src={team2.logo}
-                      alt={team2.name}
-                      className="h-10 w-10 object-contain"
-                      onError={(e) => { (e.target as HTMLImageElement).src = "/placeholder.svg"; }}
+                    <TeamLogoImage
+                      teamName={team2.name}
+                      logoUrl={team2.logo}
+                      league={team2.league}
+                      size="sm"
                     />
                     <div className="text-left">
                       <p className="font-semibold truncate">{team2.name}</p>
@@ -629,11 +626,11 @@ export const TeamComparisonTool: React.FC<TeamComparisonToolProps> = ({
                   <div className="grid grid-cols-3 items-center gap-4">
                     <div className="text-center">
                       <div className="flex items-center justify-center gap-2 mb-1">
-                        <img
-                          src={team1.logo}
-                          alt={team1.name}
-                          className="h-8 w-8 object-contain"
-                          onError={(e) => { (e.target as HTMLImageElement).src = "/placeholder.svg"; }}
+                        <TeamLogoImage
+                          teamName={team1.name}
+                          logoUrl={team1.logo}
+                          league={team1.league}
+                          size="sm"
                         />
                       </div>
                       <p className={cn(
@@ -657,11 +654,11 @@ export const TeamComparisonTool: React.FC<TeamComparisonToolProps> = ({
                     
                     <div className="text-center">
                       <div className="flex items-center justify-center gap-2 mb-1">
-                        <img
-                          src={team2.logo}
-                          alt={team2.name}
-                          className="h-8 w-8 object-contain"
-                          onError={(e) => { (e.target as HTMLImageElement).src = "/placeholder.svg"; }}
+                        <TeamLogoImage
+                          teamName={team2.name}
+                          logoUrl={team2.logo}
+                          league={team2.league}
+                          size="sm"
                         />
                       </div>
                       <p className={cn(
@@ -810,11 +807,11 @@ export const TeamComparisonTool: React.FC<TeamComparisonToolProps> = ({
                 <Card key={team.id}>
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm flex items-center gap-2">
-                      <img
-                        src={team.logo}
-                        alt={team.name}
-                        className="h-6 w-6 object-contain"
-                        onError={(e) => { (e.target as HTMLImageElement).src = "/placeholder.svg"; }}
+                      <TeamLogoImage
+                        teamName={team.name}
+                        logoUrl={team.logo}
+                        league={team.league}
+                        size="xs"
                       />
                       {team.name} - Next Up
                     </CardTitle>
@@ -824,15 +821,19 @@ export const TeamComparisonTool: React.FC<TeamComparisonToolProps> = ({
                       <div className="space-y-3">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
-                            <img
-                              src={
+                            <TeamLogoImage
+                              teamName={
+                                stats.nextGame.homeTeam.id === team.id
+                                  ? stats.nextGame.awayTeam.name
+                                  : stats.nextGame.homeTeam.name
+                              }
+                              logoUrl={
                                 stats.nextGame.homeTeam.id === team.id
                                   ? stats.nextGame.awayTeam.logo
                                   : stats.nextGame.homeTeam.logo
                               }
-                              alt="opponent"
-                              className="h-8 w-8 object-contain"
-                              onError={(e) => { (e.target as HTMLImageElement).src = "/placeholder.svg"; }}
+                              league={team.league}
+                              size="sm"
                             />
                             <div>
                               <p className="font-medium">
