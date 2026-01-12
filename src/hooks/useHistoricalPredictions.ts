@@ -1,6 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { format, subDays, startOfDay, eachDayOfInterval } from "date-fns";
+import { format, subDays, subWeeks, subMonths, startOfDay, eachDayOfInterval } from "date-fns";
+
+export type TimeRange = "1d" | "7d" | "14d" | "1m" | "3m" | "all";
+export type PredictionType = "all" | "live" | "prelive";
 
 export interface HistoricalPrediction {
   id: string;
@@ -17,6 +20,7 @@ export interface HistoricalPrediction {
   accuracy_rating: number | null;
   predicted_at: string;
   result_updated_at: string | null;
+  is_live_prediction?: boolean;
 }
 
 export interface DailyStats {
@@ -51,24 +55,102 @@ export interface PredictionStats {
   dailyStats: DailyStats[];
   leaguePerformance: LeaguePerformance[];
   confidenceVsAccuracy: { confidence: number; winRate: number; count: number }[];
+  liveStats: { total: number; won: number; lost: number; pending: number; winRate: number };
+  preliveStats: { total: number; won: number; lost: number; pending: number; winRate: number };
 }
 
-export const useHistoricalPredictions = (limit: number = 100) => {
+const getDateFromRange = (range: TimeRange): Date | null => {
+  const now = new Date();
+  switch (range) {
+    case "1d":
+      return subDays(now, 1);
+    case "7d":
+      return subDays(now, 7);
+    case "14d":
+      return subDays(now, 14);
+    case "1m":
+      return subMonths(now, 1);
+    case "3m":
+      return subMonths(now, 3);
+    case "all":
+    default:
+      return null;
+  }
+};
+
+const getDaysForRange = (range: TimeRange): number => {
+  switch (range) {
+    case "1d": return 1;
+    case "7d": return 7;
+    case "14d": return 14;
+    case "1m": return 30;
+    case "3m": return 90;
+    case "all": return 30; // Default to 30 days for chart
+    default: return 14;
+  }
+};
+
+export const useHistoricalPredictions = (
+  timeRange: TimeRange = "14d",
+  predictionType: PredictionType = "all"
+) => {
   return useQuery({
-    queryKey: ["historicalPredictions", limit],
+    queryKey: ["historicalPredictions", timeRange, predictionType],
     queryFn: async (): Promise<{ predictions: HistoricalPrediction[]; stats: PredictionStats }> => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("algorithm_predictions")
         .select("*")
-        .order("predicted_at", { ascending: false })
-        .limit(limit);
+        .order("predicted_at", { ascending: false });
+
+      // Apply time range filter
+      const startDate = getDateFromRange(timeRange);
+      if (startDate) {
+        query = query.gte("predicted_at", startDate.toISOString());
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         console.error("Error fetching historical predictions:", error);
         throw error;
       }
 
-      const predictions = (data || []) as HistoricalPrediction[];
+      // Add is_live_prediction flag based on prediction timing
+      // A prediction is considered "live" if it was made close to game start
+      // For now, we'll infer this from match_id pattern or add it to predictions
+      let predictions = (data || []).map(p => ({
+        ...p,
+        // Infer live status - predictions with actual scores but no projected are likely live
+        // Or we can check if prediction was made after game started
+        is_live_prediction: p.match_id?.includes("live") || 
+          (p.actual_score_home !== null && p.projected_score_home === null) ||
+          (p.algorithm_id?.includes("live"))
+      })) as HistoricalPrediction[];
+
+      // Filter by prediction type
+      if (predictionType === "live") {
+        predictions = predictions.filter(p => p.is_live_prediction);
+      } else if (predictionType === "prelive") {
+        predictions = predictions.filter(p => !p.is_live_prediction);
+      }
+
+      // Calculate live vs prelive stats
+      const livePredictions = predictions.filter(p => p.is_live_prediction);
+      const prelivePredictions = predictions.filter(p => !p.is_live_prediction);
+
+      const calcTypeStats = (preds: HistoricalPrediction[]) => {
+        const won = preds.filter(p => p.status === "won").length;
+        const lost = preds.filter(p => p.status === "lost").length;
+        const pending = preds.filter(p => p.status === "pending").length;
+        const settled = won + lost;
+        return {
+          total: preds.length,
+          won,
+          lost,
+          pending,
+          winRate: settled > 0 ? (won / settled) * 100 : 0,
+        };
+      };
 
       // Calculate basic stats
       const stats: PredictionStats = {
@@ -82,6 +164,8 @@ export const useHistoricalPredictions = (limit: number = 100) => {
         dailyStats: [],
         leaguePerformance: [],
         confidenceVsAccuracy: [],
+        liveStats: calcTypeStats(livePredictions),
+        preliveStats: calcTypeStats(prelivePredictions),
       };
 
       // Calculate win rate (excluding pending)
@@ -105,10 +189,11 @@ export const useHistoricalPredictions = (limit: number = 100) => {
         else stats.byLeague[league].pending++;
       });
 
-      // Calculate daily stats for charts (last 14 days)
+      // Calculate daily stats for charts based on time range
+      const daysToShow = getDaysForRange(timeRange);
       const today = startOfDay(new Date());
-      const twoWeeksAgo = subDays(today, 13);
-      const dateRange = eachDayOfInterval({ start: twoWeeksAgo, end: today });
+      const rangeStart = subDays(today, daysToShow - 1);
+      const dateRange = eachDayOfInterval({ start: rangeStart, end: today });
 
       let cumulativeWon = 0;
       let cumulativeLost = 0;
@@ -124,8 +209,8 @@ export const useHistoricalPredictions = (limit: number = 100) => {
         const lost = dayPredictions.filter(p => p.status === "lost").length;
         const pending = dayPredictions.filter(p => p.status === "pending").length;
         const total = dayPredictions.length;
-        const settled = won + lost;
-        const winRate = settled > 0 ? (won / settled) * 100 : 0;
+        const daySettled = won + lost;
+        const winRate = daySettled > 0 ? (won / daySettled) * 100 : 0;
 
         cumulativeWon += won;
         cumulativeLost += lost;
@@ -155,15 +240,14 @@ export const useHistoricalPredictions = (limit: number = 100) => {
       // Calculate league performance for chart
       stats.leaguePerformance = Object.entries(stats.byLeague).map(([league, data]) => {
         const total = data.won + data.lost + data.pending;
-        const settled = data.won + data.lost;
-        const winRate = settled > 0 ? (data.won / settled) * 100 : 0;
+        const leagueSettled = data.won + data.lost;
+        const winRate = leagueSettled > 0 ? (data.won / leagueSettled) * 100 : 0;
         return { league, ...data, total, winRate };
       }).sort((a, b) => b.total - a.total);
 
       // Calculate confidence vs accuracy buckets
       const confidenceBuckets: Record<number, { won: number; lost: number }> = {};
       predictions.filter(p => p.confidence && p.status !== "pending").forEach(p => {
-        // Round to nearest 10 (50-59 -> 50, 60-69 -> 60, etc.)
         const bucket = Math.floor(p.confidence! / 10) * 10;
         if (!confidenceBuckets[bucket]) {
           confidenceBuckets[bucket] = { won: 0, lost: 0 };

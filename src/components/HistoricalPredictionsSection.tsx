@@ -23,17 +23,37 @@ import {
   TrendingDown,
   Target,
   BarChart3,
-  Filter,
   Trophy,
   AlertCircle,
+  Zap,
+  Calendar,
+  Radio,
+  PlayCircle,
 } from "lucide-react";
-import { useHistoricalPredictions, HistoricalPrediction } from "@/hooks/useHistoricalPredictions";
+import { 
+  useHistoricalPredictions, 
+  HistoricalPrediction, 
+  TimeRange, 
+  PredictionType 
+} from "@/hooks/useHistoricalPredictions";
 import PredictionCharts from "./PredictionCharts";
+
+const TIME_RANGE_OPTIONS: { value: TimeRange; label: string }[] = [
+  { value: "1d", label: "24 Hours" },
+  { value: "7d", label: "1 Week" },
+  { value: "14d", label: "2 Weeks" },
+  { value: "1m", label: "1 Month" },
+  { value: "3m", label: "3 Months" },
+  { value: "all", label: "All Time" },
+];
 
 const HistoricalPredictionsSection = () => {
   const [leagueFilter, setLeagueFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const { data, isLoading, error } = useHistoricalPredictions(100);
+  const [timeRange, setTimeRange] = useState<TimeRange>("14d");
+  const [predictionType, setPredictionType] = useState<PredictionType>("all");
+  
+  const { data, isLoading, error } = useHistoricalPredictions(timeRange, predictionType);
 
   if (isLoading) {
     return <HistoricalPredictionsSkeleton />;
@@ -64,6 +84,128 @@ const HistoricalPredictionsSection = () => {
 
   return (
     <div className="space-y-6">
+      {/* Time Range & Type Filters */}
+      <Card className="bg-gradient-to-r from-primary/5 to-accent/5 border-primary/20">
+        <CardContent className="p-4">
+          <div className="flex flex-col sm:flex-row gap-4">
+            {/* Time Range Selector */}
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2">
+                <Calendar className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium">Time Range</span>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {TIME_RANGE_OPTIONS.map(option => (
+                  <Button
+                    key={option.value}
+                    variant={timeRange === option.value ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setTimeRange(option.value)}
+                    className={cn(
+                      "text-xs h-8",
+                      timeRange === option.value && "bg-primary text-primary-foreground"
+                    )}
+                  >
+                    {option.label}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            {/* Prediction Type Selector */}
+            <div className="sm:w-auto">
+              <div className="flex items-center gap-2 mb-2">
+                <Zap className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium">Prediction Type</span>
+              </div>
+              <Tabs value={predictionType} onValueChange={(v) => setPredictionType(v as PredictionType)}>
+                <TabsList className="grid grid-cols-3 w-full sm:w-auto">
+                  <TabsTrigger value="all" className="text-xs gap-1.5">
+                    <BarChart3 className="h-3 w-3" />
+                    All
+                  </TabsTrigger>
+                  <TabsTrigger value="prelive" className="text-xs gap-1.5">
+                    <PlayCircle className="h-3 w-3" />
+                    Pre-Live
+                  </TabsTrigger>
+                  <TabsTrigger value="live" className="text-xs gap-1.5">
+                    <Radio className="h-3 w-3" />
+                    Live
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Live vs Pre-Live Stats Comparison */}
+      {stats && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Card className="border-green-500/30 bg-green-500/5">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <PlayCircle className="h-4 w-4 text-green-500" />
+                Pre-Live Predictions
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="grid grid-cols-3 gap-4 text-center">
+                <div>
+                  <p className="text-2xl font-bold text-green-500">{stats.preliveStats.total}</p>
+                  <p className="text-xs text-muted-foreground">Total</p>
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">
+                    {stats.preliveStats.winRate.toFixed(1)}%
+                  </p>
+                  <p className="text-xs text-muted-foreground">Win Rate</p>
+                </div>
+                <div>
+                  <p className="text-lg font-semibold">
+                    <span className="text-green-500">{stats.preliveStats.won}W</span>
+                    {" - "}
+                    <span className="text-red-500">{stats.preliveStats.lost}L</span>
+                  </p>
+                  <p className="text-xs text-muted-foreground">Record</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-orange-500/30 bg-orange-500/5">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Radio className="h-4 w-4 text-orange-500 animate-pulse" />
+                Live Predictions
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="grid grid-cols-3 gap-4 text-center">
+                <div>
+                  <p className="text-2xl font-bold text-orange-500">{stats.liveStats.total}</p>
+                  <p className="text-xs text-muted-foreground">Total</p>
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">
+                    {stats.liveStats.winRate.toFixed(1)}%
+                  </p>
+                  <p className="text-xs text-muted-foreground">Win Rate</p>
+                </div>
+                <div>
+                  <p className="text-lg font-semibold">
+                    <span className="text-green-500">{stats.liveStats.won}W</span>
+                    {" - "}
+                    <span className="text-red-500">{stats.liveStats.lost}L</span>
+                  </p>
+                  <p className="text-xs text-muted-foreground">Record</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {/* Stats Overview */}
       {stats && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -155,6 +297,9 @@ const HistoricalPredictionsSection = () => {
             <CardTitle className="text-base flex items-center gap-2">
               <BarChart3 className="h-4 w-4" />
               Prediction History
+              <Badge variant="secondary" className="ml-2">
+                {filteredPredictions.length} results
+              </Badge>
             </CardTitle>
             <div className="flex items-center gap-2">
               <Select value={leagueFilter} onValueChange={setLeagueFilter}>
@@ -266,14 +411,25 @@ const PredictionRow = ({ prediction }: { prediction: HistoricalPrediction }) => 
 
       {/* Main Content */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-1">
+        <div className="flex items-center gap-2 mb-1 flex-wrap">
           <Badge variant="outline" className="text-[10px]">
             {prediction.league || "Unknown"}
           </Badge>
+          {prediction.is_live_prediction ? (
+            <Badge variant="secondary" className="text-[10px] bg-orange-500/20 text-orange-500 border-orange-500/30">
+              <Radio className="h-2.5 w-2.5 mr-1" />
+              Live
+            </Badge>
+          ) : (
+            <Badge variant="secondary" className="text-[10px] bg-green-500/20 text-green-500 border-green-500/30">
+              <PlayCircle className="h-2.5 w-2.5 mr-1" />
+              Pre-Live
+            </Badge>
+          )}
           <span className="text-sm font-medium truncate">{prediction.prediction}</span>
         </div>
         <div className="flex items-center gap-3 text-xs text-muted-foreground">
-          <span>{format(new Date(prediction.predicted_at), "MMM d, yyyy")}</span>
+          <span>{format(new Date(prediction.predicted_at), "MMM d, yyyy HH:mm")}</span>
           {prediction.confidence && (
             <span className="flex items-center gap-1">
               <Target className="h-3 w-3" />
