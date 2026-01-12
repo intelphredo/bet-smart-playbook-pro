@@ -11,6 +11,12 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { 
   CalendarDays, 
   ChevronLeft, 
@@ -19,10 +25,15 @@ import {
   Target,
   Zap,
   Flame,
-  Thermometer
+  Thermometer,
+  Download,
+  FileSpreadsheet,
+  Calendar
 } from "lucide-react";
 import { format, parseISO, startOfDay, addDays, isSameDay } from "date-fns";
 import { cn } from "@/lib/utils";
+import { exportMatchesToCSV, exportMatchesToICal } from "@/utils/scheduleExport";
+import { toast } from "sonner";
 
 interface WeeklyCalendarGridProps {
   matches: Match[];
@@ -179,6 +190,31 @@ export const WeeklyCalendarGrid: React.FC<WeeklyCalendarGridProps> = ({
 
   const totalGames = dayColumns.reduce((sum, col) => sum + col.matches.length, 0);
 
+  // Get all matches for export (flattened from all day columns)
+  const allVisibleMatches = useMemo(() => {
+    return dayColumns.flatMap(col => col.matches);
+  }, [dayColumns]);
+
+  const handleExportCSV = () => {
+    if (allVisibleMatches.length === 0) {
+      toast.error("No games to export");
+      return;
+    }
+    const dateRange = `${format(dayColumns[0].date, "MMM-d")}-to-${format(dayColumns[dayColumns.length - 1].date, "MMM-d")}`;
+    exportMatchesToCSV(allVisibleMatches, `games-schedule-${dateRange}.csv`);
+    toast.success(`Exported ${allVisibleMatches.length} games to CSV`);
+  };
+
+  const handleExportICal = () => {
+    if (allVisibleMatches.length === 0) {
+      toast.error("No games to export");
+      return;
+    }
+    const dateRange = `${format(dayColumns[0].date, "MMM-d")}-to-${format(dayColumns[dayColumns.length - 1].date, "MMM-d")}`;
+    exportMatchesToICal(allVisibleMatches, `games-schedule-${dateRange}.ics`);
+    toast.success(`Exported ${allVisibleMatches.length} games to calendar`);
+  };
+
   return (
     <Card className="border-border/50">
       <CardHeader className="pb-3">
@@ -195,6 +231,32 @@ export const WeeklyCalendarGrid: React.FC<WeeklyCalendarGridProps> = ({
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {/* Export Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="h-8 gap-1">
+                  <Download className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Export</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-popover">
+                <DropdownMenuItem onClick={handleExportCSV} className="gap-2 cursor-pointer">
+                  <FileSpreadsheet className="h-4 w-4 text-green-600" />
+                  <div>
+                    <p className="font-medium">Export as CSV</p>
+                    <p className="text-xs text-muted-foreground">Spreadsheet format</p>
+                  </div>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExportICal} className="gap-2 cursor-pointer">
+                  <Calendar className="h-4 w-4 text-blue-600" />
+                  <div>
+                    <p className="font-medium">Export as iCal</p>
+                    <p className="text-xs text-muted-foreground">Add to calendar app</p>
+                  </div>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
             <Button 
               variant="outline" 
               size="icon" 
