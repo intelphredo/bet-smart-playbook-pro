@@ -1,14 +1,23 @@
 import React, { useMemo, useState } from "react";
 import { Match, League } from "@/types/sports";
 import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator,
+} from "@/components/ui/command";
+import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Users, Search, ChevronDown, X } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Users, ChevronDown, X, Check, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Team {
@@ -17,6 +26,7 @@ interface Team {
   shortName: string;
   logo: string;
   league: League;
+  gamesCount: number;
 }
 
 interface TeamSelectorProps {
@@ -26,6 +36,8 @@ interface TeamSelectorProps {
   selectedLeague?: League | "ALL";
 }
 
+const LEAGUE_ORDER: (League | "ALL")[] = ["ALL", "NBA", "NFL", "NHL", "MLB", "SOCCER", "NCAAF", "NCAAB"];
+
 export const TeamSelector: React.FC<TeamSelectorProps> = ({
   matches,
   selectedTeamId,
@@ -33,37 +45,40 @@ export const TeamSelector: React.FC<TeamSelectorProps> = ({
   selectedLeague = "ALL",
 }) => {
   const [open, setOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [filterLeague, setFilterLeague] = useState<League | "ALL">(selectedLeague);
 
-  // Extract unique teams from matches
+  // Extract unique teams from matches with game counts
   const teams = useMemo(() => {
     const teamMap = new Map<string, Team>();
 
     matches.forEach((match) => {
-      // Filter by league if specified
-      if (selectedLeague !== "ALL" && match.league !== selectedLeague) {
-        return;
-      }
-
       // Add home team
-      if (!teamMap.has(match.homeTeam.id)) {
-        teamMap.set(match.homeTeam.id, {
+      const homeKey = match.homeTeam.id;
+      if (teamMap.has(homeKey)) {
+        teamMap.get(homeKey)!.gamesCount++;
+      } else {
+        teamMap.set(homeKey, {
           id: match.homeTeam.id,
           name: match.homeTeam.name,
           shortName: match.homeTeam.shortName,
           logo: match.homeTeam.logo,
           league: match.league,
+          gamesCount: 1,
         });
       }
 
       // Add away team
-      if (!teamMap.has(match.awayTeam.id)) {
-        teamMap.set(match.awayTeam.id, {
+      const awayKey = match.awayTeam.id;
+      if (teamMap.has(awayKey)) {
+        teamMap.get(awayKey)!.gamesCount++;
+      } else {
+        teamMap.set(awayKey, {
           id: match.awayTeam.id,
           name: match.awayTeam.name,
           shortName: match.awayTeam.shortName,
           logo: match.awayTeam.logo,
           league: match.league,
+          gamesCount: 1,
         });
       }
     });
@@ -72,19 +87,19 @@ export const TeamSelector: React.FC<TeamSelectorProps> = ({
     return Array.from(teamMap.values()).sort((a, b) =>
       a.name.localeCompare(b.name)
     );
-  }, [matches, selectedLeague]);
+  }, [matches]);
 
-  // Filter teams by search query
+  // Filter teams by selected league tab
   const filteredTeams = useMemo(() => {
-    if (!searchQuery.trim()) return teams;
-    const query = searchQuery.toLowerCase();
-    return teams.filter(
-      (team) =>
-        team.name.toLowerCase().includes(query) ||
-        team.shortName.toLowerCase().includes(query) ||
-        team.league.toLowerCase().includes(query)
-    );
-  }, [teams, searchQuery]);
+    if (filterLeague === "ALL") return teams;
+    return teams.filter(team => team.league === filterLeague);
+  }, [teams, filterLeague]);
+
+  // Get available leagues
+  const availableLeagues = useMemo(() => {
+    const leagues = new Set(teams.map(t => t.league));
+    return LEAGUE_ORDER.filter(l => l === "ALL" || leagues.has(l as League));
+  }, [teams]);
 
   // Group filtered teams by league
   const teamsByLeague = useMemo(() => {
@@ -103,117 +118,134 @@ export const TeamSelector: React.FC<TeamSelectorProps> = ({
   const handleTeamSelect = (teamId: string | null) => {
     onTeamSelect(teamId);
     setOpen(false);
-    setSearchQuery("");
   };
 
   return (
     <div className="flex items-center gap-2">
-      <Users className="h-4 w-4 text-muted-foreground" />
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
             variant="outline"
             role="combobox"
             aria-expanded={open}
-            className="w-[280px] justify-between"
+            className="w-full sm:w-[320px] justify-between h-11"
           >
             {selectedTeam ? (
               <div className="flex items-center gap-2 truncate">
                 <img
                   src={selectedTeam.logo}
                   alt={selectedTeam.name}
-                  className="h-5 w-5 object-contain shrink-0"
+                  className="h-6 w-6 object-contain shrink-0"
                   onError={(e) => {
                     (e.target as HTMLImageElement).style.display = "none";
                   }}
                 />
-                <span className="truncate">{selectedTeam.name}</span>
+                <span className="truncate font-medium">{selectedTeam.name}</span>
+                <Badge variant="secondary" className="text-[10px] ml-auto">
+                  {selectedTeam.league}
+                </Badge>
               </div>
             ) : (
-              <span className="text-muted-foreground">Select a team...</span>
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Users className="h-4 w-4" />
+                <span>Select a team to view schedule...</span>
+              </div>
             )}
             <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[320px] p-0" align="start">
-          {/* Search Input */}
-          <div className="flex items-center border-b px-3 py-2">
-            <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
-            <Input
-              placeholder="Search teams..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-8 border-0 p-0 focus-visible:ring-0 focus-visible:ring-offset-0"
-            />
-            {searchQuery && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6"
-                onClick={() => setSearchQuery("")}
-              >
-                <X className="h-3 w-3" />
-              </Button>
-            )}
+        <PopoverContent className="w-[360px] p-0" align="start">
+          {/* League Filter Tabs */}
+          <div className="p-2 border-b bg-muted/30">
+            <Tabs value={filterLeague} onValueChange={(v) => setFilterLeague(v as League | "ALL")}>
+              <TabsList className="h-8 w-full grid" style={{ gridTemplateColumns: `repeat(${Math.min(availableLeagues.length, 5)}, 1fr)` }}>
+                {availableLeagues.slice(0, 5).map(league => (
+                  <TabsTrigger key={league} value={league} className="text-xs px-2">
+                    {league}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+              {availableLeagues.length > 5 && (
+                <TabsList className="h-8 w-full grid mt-1" style={{ gridTemplateColumns: `repeat(${availableLeagues.length - 5}, 1fr)` }}>
+                  {availableLeagues.slice(5).map(league => (
+                    <TabsTrigger key={league} value={league} className="text-xs px-2">
+                      {league}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              )}
+            </Tabs>
           </div>
 
-          <ScrollArea className="h-[300px]">
-            {/* All Teams Option */}
-            <div
-              className={cn(
-                "flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-accent",
-                !selectedTeamId && "bg-accent"
-              )}
-              onClick={() => handleTeamSelect(null)}
-            >
-              <Users className="h-5 w-5 text-muted-foreground" />
-              <span className="font-medium">All Teams</span>
-            </div>
+          <Command>
+            <CommandInput placeholder="Search teams..." />
+            <CommandList className="max-h-[300px]">
+              <CommandEmpty>No teams found.</CommandEmpty>
+              
+              {/* Popular/Recent Option */}
+              <CommandGroup heading="Quick Actions">
+                <CommandItem
+                  onSelect={() => handleTeamSelect(null)}
+                  className="flex items-center gap-2"
+                >
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                  <span>Clear Selection</span>
+                  {!selectedTeamId && <Check className="ml-auto h-4 w-4" />}
+                </CommandItem>
+              </CommandGroup>
 
-            {/* Teams grouped by league */}
-            {Object.entries(teamsByLeague).length > 0 ? (
-              Object.entries(teamsByLeague).map(([league, leagueTeams]) => (
-                <div key={league}>
-                  <div className="px-3 py-1.5 text-xs font-semibold text-muted-foreground bg-muted/50 sticky top-0">
-                    {league} ({leagueTeams.length})
-                  </div>
+              <CommandSeparator />
+
+              {/* Teams grouped by league */}
+              {Object.entries(teamsByLeague).map(([league, leagueTeams]) => (
+                <CommandGroup key={league} heading={`${league} (${leagueTeams.length} teams)`}>
                   {leagueTeams.map((team) => (
-                    <div
+                    <CommandItem
                       key={team.id}
-                      className={cn(
-                        "flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-accent",
-                        selectedTeamId === team.id && "bg-accent"
-                      )}
-                      onClick={() => handleTeamSelect(team.id)}
+                      value={`${team.name} ${team.shortName} ${team.league}`}
+                      onSelect={() => handleTeamSelect(team.id)}
+                      className="flex items-center gap-2 py-2"
                     >
                       <img
                         src={team.logo}
                         alt={team.name}
-                        className="h-5 w-5 object-contain"
+                        className="h-6 w-6 object-contain shrink-0"
                         onError={(e) => {
                           (e.target as HTMLImageElement).style.display = "none";
                         }}
                       />
-                      <span className="flex-1 truncate">{team.name}</span>
-                      <span className="text-xs text-muted-foreground">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{team.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {team.gamesCount} upcoming game{team.gamesCount !== 1 ? 's' : ''}
+                        </p>
+                      </div>
+                      <Badge variant="outline" className="text-[10px] shrink-0">
                         {team.shortName}
-                      </span>
-                    </div>
+                      </Badge>
+                      {selectedTeamId === team.id && (
+                        <Check className="h-4 w-4 text-primary shrink-0" />
+                      )}
+                    </CommandItem>
                   ))}
-                </div>
-              ))
-            ) : (
-              <div className="px-3 py-8 text-center text-muted-foreground">
-                <Search className="h-8 w-8 mx-auto mb-2 opacity-30" />
-                <p className="text-sm">No teams found</p>
-                <p className="text-xs">Try a different search term</p>
-              </div>
-            )}
-          </ScrollArea>
+                </CommandGroup>
+              ))}
+            </CommandList>
+          </Command>
 
           {/* Footer with count */}
-          <div className="border-t px-3 py-2 text-xs text-muted-foreground">
-            {filteredTeams.length} of {teams.length} teams
+          <div className="border-t px-3 py-2 text-xs text-muted-foreground flex items-center justify-between bg-muted/30">
+            <span>{filteredTeams.length} teams available</span>
+            {filterLeague !== "ALL" && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-6 text-xs"
+                onClick={() => setFilterLeague("ALL")}
+              >
+                Show all leagues
+              </Button>
+            )}
           </div>
         </PopoverContent>
       </Popover>
@@ -223,7 +255,7 @@ export const TeamSelector: React.FC<TeamSelectorProps> = ({
         <Button
           variant="ghost"
           size="icon"
-          className="h-8 w-8"
+          className="h-11 w-11 shrink-0"
           onClick={() => onTeamSelect(null)}
         >
           <X className="h-4 w-4" />
