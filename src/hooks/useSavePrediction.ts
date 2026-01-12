@@ -9,95 +9,90 @@ export const useSavePrediction = () => {
   return useMutation({
     mutationFn: async ({ match, isLive = false }: { match: Match; isLive?: boolean }) => {
       if (!match.prediction) {
-        console.error("No prediction found for match:", match.id);
-        toast.error("No prediction data available to save");
-        return;
+        throw new Error("No prediction data available");
       }
 
-      try {
-        // Get algorithm ID or use Statistical Edge as default
-        const algorithmId = match.prediction.algorithmId || "85c48bbe-5b1a-4c1e-a0d5-e284e9e952f1";
-        
-        console.log(`Saving ${isLive ? 'live' : 'pre-live'} prediction for match ${match.id} with algorithm ${algorithmId}`);
-        console.log("Prediction data:", {
-          match_id: match.id,
-          league: match.league,
-          algorithm_id: algorithmId,
-          prediction: match.prediction.recommended,
-          confidence: match.prediction.confidence,
-          projected_scores: match.prediction.projectedScore,
-          is_live_prediction: isLive
-        });
+      // Get algorithm ID or use Statistical Edge as default
+      const algorithmId = match.prediction.algorithmId || "85c48bbe-5b1a-4c1e-a0d5-e284e9e952f1";
+      
+      // Use upsert for atomic operation - more efficient than check then insert/update
+      const predictionData = {
+        match_id: match.id,
+        league: match.league,
+        algorithm_id: algorithmId,
+        prediction: match.prediction.recommended,
+        confidence: Math.max(0, Math.min(100, match.prediction.confidence)),
+        projected_score_home: match.prediction.projectedScore?.home ?? null,
+        projected_score_away: match.prediction.projectedScore?.away ?? null,
+        predicted_at: new Date().toISOString(),
+        is_live_prediction: isLive,
+        status: 'pending',
+      };
 
-        // First check if prediction already exists for this match
-        const { data: existingPrediction, error: checkError } = await supabase
+      // First check if prediction already exists
+      const { data: existing, error: checkError } = await supabase
+        .from("algorithm_predictions")
+        .select("id, status")
+        .eq("match_id", match.id)
+        .maybeSingle();
+
+      if (checkError) {
+        console.error("Error checking prediction:", checkError);
+        throw new Error(`Failed to check existing prediction: ${checkError.message}`);
+      }
+
+      if (existing) {
+        // Don't overwrite finalized predictions
+        if (existing.status === 'won' || existing.status === 'lost') {
+          console.log(`Prediction for ${match.id} already finalized, skipping update`);
+          return { updated: false, reason: 'already_finalized' };
+        }
+
+        const { error: updateError } = await supabase
           .from("algorithm_predictions")
+          .update({
+            prediction: predictionData.prediction,
+            confidence: predictionData.confidence,
+            projected_score_home: predictionData.projected_score_home,
+            projected_score_away: predictionData.projected_score_away,
+            predicted_at: predictionData.predicted_at,
+            is_live_prediction: predictionData.is_live_prediction,
+          })
+          .eq("id", existing.id);
+
+        if (updateError) {
+          throw new Error(`Failed to update prediction: ${updateError.message}`);
+        }
+
+        return { updated: true, id: existing.id };
+      } else {
+        const { data: inserted, error: insertError } = await supabase
+          .from("algorithm_predictions")
+          .insert(predictionData)
           .select("id")
-          .eq("match_id", match.id)
-          .maybeSingle();
+          .single();
 
-        if (checkError) {
-          console.error("Error checking for existing prediction:", checkError);
-          throw checkError;
+        if (insertError) {
+          throw new Error(`Failed to insert prediction: ${insertError.message}`);
         }
 
-        if (existingPrediction) {
-          console.log(`Prediction for match ${match.id} already exists, updating`);
-          
-          const { error } = await supabase
-            .from("algorithm_predictions")
-            .update({
-              prediction: match.prediction.recommended,
-              confidence: match.prediction.confidence,
-              projected_score_home: match.prediction.projectedScore.home,
-              projected_score_away: match.prediction.projectedScore.away,
-              predicted_at: new Date().toISOString(),
-              is_live_prediction: isLive
-            })
-            .eq("match_id", match.id);
-
-          if (error) throw error;
-        } else {
-          console.log(`Creating new ${isLive ? 'live' : 'pre-live'} prediction for match ${match.id}`);
-          
-          const { error } = await supabase
-            .from("algorithm_predictions")
-            .insert({
-              match_id: match.id,
-              league: match.league,
-              algorithm_id: algorithmId,
-              prediction: match.prediction.recommended,
-              confidence: match.prediction.confidence,
-              projected_score_home: match.prediction.projectedScore.home,
-              projected_score_away: match.prediction.projectedScore.away,
-              status: 'pending',
-              predicted_at: new Date().toISOString(),
-              is_live_prediction: isLive
-            });
-
-          if (error) throw error;
-        }
-        
-        console.log(`Successfully saved ${isLive ? 'live' : 'pre-live'} prediction for match ${match.id}`);
-      } catch (error) {
-        console.error("Error in useSavePrediction:", error);
-        toast.error("Failed to save prediction");
-        throw error;
+        return { created: true, id: inserted.id };
       }
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["algorithmPerformance"] });
       queryClient.invalidateQueries({ queryKey: ["historicalPredictions"] });
-      toast.success("Prediction saved successfully");
+      queryClient.invalidateQueries({ queryKey: ["algorithmAccuracy"] });
+      
+      if (result?.reason === 'already_finalized') {
+        toast.info("Prediction already finalized");
+      } else {
+        toast.success("Prediction saved");
+      }
     },
-    onError: (error) => {
-      console.error("Mutation error in useSavePrediction:", error);
-      toast.error(`Failed to save prediction: ${error.message}`);
+    onError: (error: Error) => {
+      console.error("Error in useSavePrediction:", error);
+      toast.error(error.message || "Failed to save prediction");
     }
   });
 };
-
-// This hook will be used to automatically save predictions
-// for matches that become live or are updated
-// We're keeping the existing code but adding another hook
-// that will be triggered when matches change status

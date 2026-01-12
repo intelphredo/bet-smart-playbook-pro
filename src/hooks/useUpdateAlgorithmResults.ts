@@ -1,4 +1,3 @@
-
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Match } from "@/types/sports";
@@ -10,115 +9,102 @@ export const useUpdateAlgorithmResults = () => {
   return useMutation({
     mutationFn: async (match: Match) => {
       if (!match.prediction || !match.score) {
-        console.error("Missing prediction or score data for match:", match.id);
-        toast.error("Missing prediction or score data");
-        return;
+        throw new Error("Missing prediction or score data");
       }
 
-      try {
-        console.log(`Updating prediction results for match ${match.id}`);
-        console.log("Match data:", {
-          id: match.id,
-          league: match.league,
-          homeTeam: match.homeTeam.name,
-          awayTeam: match.awayTeam.name,
-          score: match.score,
-          prediction: match.prediction
-        });
+      const { recommended } = match.prediction;
+      const { home: homeScore, away: awayScore } = match.score;
+      
+      // Determine if prediction was correct
+      const homeWon = homeScore > awayScore;
+      const awayWon = awayScore > homeScore;
+      const isDraw = homeScore === awayScore;
+      
+      const isCorrect = 
+        (recommended === "home" && homeWon) ||
+        (recommended === "away" && awayWon) ||
+        (recommended === "draw" && isDraw);
+
+      // Use database status format: 'won' or 'lost'
+      const status = isCorrect ? 'won' : 'lost';
+      const algorithmId = match.prediction.algorithmId || "85c48bbe-5b1a-4c1e-a0d5-e284e9e952f1";
+
+      // Check for existing prediction
+      const { data: existing, error: fetchError } = await supabase
+        .from("algorithm_predictions")
+        .select("id, status")
+        .eq("match_id", match.id)
+        .maybeSingle();
+
+      if (fetchError) {
+        throw new Error(`Failed to fetch prediction: ${fetchError.message}`);
+      }
+
+      if (existing) {
+        // Already finalized - don't update again
+        if (existing.status === 'won' || existing.status === 'lost') {
+          return { skipped: true, reason: 'already_finalized', status: existing.status };
+        }
         
-        const isCorrect = (() => {
-          const { recommended } = match.prediction;
-          if (recommended === "home" && match.score.home > match.score.away) return true;
-          if (recommended === "away" && match.score.away > match.score.home) return true;
-          if (recommended === "draw" && match.score.home === match.score.away) return true;
-          return false;
-        })();
-
-        console.log(`Prediction was ${isCorrect ? 'correct' : 'incorrect'}`);
-
-        // Get the algorithm_id from the prediction if available, or use Statistical Edge as default
-        const algorithmId = match.prediction.algorithmId || "85c48bbe-5b1a-4c1e-a0d5-e284e9e952f1";
-
-        // First check if a prediction exists for this match
-        const { data: existingPrediction, error: fetchError } = await supabase
+        const { error: updateError } = await supabase
           .from("algorithm_predictions")
-          .select("id, status, algorithm_id")
-          .eq("match_id", match.id)
-          .maybeSingle();
+          .update({
+            status,
+            actual_score_home: homeScore,
+            actual_score_away: awayScore,
+            accuracy_rating: calculateAccuracyRating(match),
+            result_updated_at: new Date().toISOString()
+          })
+          .eq('id', existing.id);
 
-        if (fetchError) {
-          console.error("Error fetching prediction:", fetchError);
-          throw fetchError;
+        if (updateError) {
+          throw new Error(`Failed to update prediction: ${updateError.message}`);
         }
 
-        if (existingPrediction) {
-          // Update existing prediction
-          console.log(`Updating existing prediction for match ${match.id}`);
-          
-          // If the status is already set to win or loss, don't update again
-          if (existingPrediction.status === 'win' || existingPrediction.status === 'loss') {
-            console.log(`Prediction for match ${match.id} already has final result: ${existingPrediction.status}`);
-            toast.info("This prediction already has a final result");
-            return;
-          }
-          
-          const { error } = await supabase
-            .from("algorithm_predictions")
-            .update({
-              status: isCorrect ? 'win' : 'loss',
-              actual_score_home: match.score.home,
-              actual_score_away: match.score.away,
-              accuracy_rating: calculateAccuracyRating(match),
-              result_updated_at: new Date().toISOString()
-            })
-            .eq('id', existingPrediction.id);
+        return { updated: true, id: existing.id, status, isCorrect };
+      } else {
+        // Create new prediction with results
+        const { data: inserted, error: insertError } = await supabase
+          .from("algorithm_predictions")
+          .insert({
+            match_id: match.id,
+            league: match.league,
+            algorithm_id: algorithmId,
+            prediction: recommended,
+            confidence: match.prediction.confidence,
+            projected_score_home: match.prediction.projectedScore?.home ?? null,
+            projected_score_away: match.prediction.projectedScore?.away ?? null,
+            status,
+            actual_score_home: homeScore,
+            actual_score_away: awayScore,
+            accuracy_rating: calculateAccuracyRating(match),
+            result_updated_at: new Date().toISOString(),
+            predicted_at: new Date().toISOString()
+          })
+          .select("id")
+          .single();
 
-          if (error) {
-            console.error("Error updating prediction:", error);
-            throw error;
-          }
-        } else {
-          // Create new prediction with results
-          console.log(`Creating new prediction with results for match ${match.id}`);
-          
-          const { error } = await supabase
-            .from("algorithm_predictions")
-            .insert({
-              match_id: match.id,
-              league: match.league,
-              algorithm_id: algorithmId,
-              prediction: match.prediction.recommended,
-              confidence: match.prediction.confidence,
-              projected_score_home: match.prediction.projectedScore.home,
-              projected_score_away: match.prediction.projectedScore.away,
-              status: isCorrect ? 'win' : 'loss',
-              actual_score_home: match.score.home,
-              actual_score_away: match.score.away,
-              accuracy_rating: calculateAccuracyRating(match),
-              result_updated_at: new Date().toISOString(),
-              predicted_at: new Date().toISOString()
-            });
-
-          if (error) {
-            console.error("Error creating prediction with results:", error);
-            throw error;
-          }
+        if (insertError) {
+          throw new Error(`Failed to create prediction: ${insertError.message}`);
         }
-        
-        console.log(`Successfully updated prediction results for match ${match.id}`);
-      } catch (error) {
-        console.error("Error in useUpdateAlgorithmResults:", error);
-        toast.error("Failed to update algorithm results");
-        throw error;
+
+        return { created: true, id: inserted.id, status, isCorrect };
       }
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["algorithmPerformance"] });
-      toast.success("Algorithm results updated successfully");
+      queryClient.invalidateQueries({ queryKey: ["algorithmAccuracy"] });
+      queryClient.invalidateQueries({ queryKey: ["recentPredictions"] });
+      
+      if (result?.skipped) {
+        toast.info("Prediction already has a final result");
+      } else {
+        toast.success(`Result recorded: ${result?.isCorrect ? 'Correct!' : 'Incorrect'}`);
+      }
     },
-    onError: (error) => {
-      console.error("Mutation error in useUpdateAlgorithmResults:", error);
-      toast.error(`Failed to update results: ${error.message}`);
+    onError: (error: Error) => {
+      console.error("Error in useUpdateAlgorithmResults:", error);
+      toast.error(error.message || "Failed to update results");
     }
   });
 };
@@ -127,24 +113,31 @@ export const useUpdateAlgorithmResults = () => {
 function calculateAccuracyRating(match: Match): number {
   if (!match.prediction?.projectedScore || !match.score) return 0;
   
-  const projectedDiff = Math.abs(
-    match.prediction.projectedScore.home - match.prediction.projectedScore.away
-  );
-  const actualDiff = Math.abs(match.score.home - match.score.away);
+  const projectedHome = match.prediction.projectedScore.home ?? 0;
+  const projectedAway = match.prediction.projectedScore.away ?? 0;
+  const actualHome = match.score.home;
+  const actualAway = match.score.away;
   
-  // Score difference accuracy (0-50 points)
-  const diffAccuracy = Math.max(0, 50 - Math.abs(projectedDiff - actualDiff) * 10);
+  const projectedDiff = Math.abs(projectedHome - projectedAway);
+  const actualDiff = Math.abs(actualHome - actualAway);
+  
+  // Score difference accuracy (0-25 points)
+  const diffAccuracy = Math.max(0, 25 - Math.abs(projectedDiff - actualDiff) * 3);
+  
+  // Individual score accuracy (0-25 points)
+  const homeError = Math.abs(projectedHome - actualHome);
+  const awayError = Math.abs(projectedAway - actualAway);
+  const avgError = (homeError + awayError) / 2;
+  const scoreAccuracy = Math.max(0, 25 - avgError * 2);
   
   // Winner prediction accuracy (0-50 points)
-  const predictedWinner = 
-    match.prediction.projectedScore.home > match.prediction.projectedScore.away ? 'home' :
-    match.prediction.projectedScore.home < match.prediction.projectedScore.away ? 'away' : 'draw';
+  const predictedWinner = projectedHome > projectedAway ? 'home' :
+                          projectedHome < projectedAway ? 'away' : 'draw';
   
-  const actualWinner = 
-    match.score.home > match.score.away ? 'home' :
-    match.score.home < match.score.away ? 'away' : 'draw';
+  const actualWinner = actualHome > actualAway ? 'home' :
+                       actualHome < actualAway ? 'away' : 'draw';
   
   const winnerAccuracy = predictedWinner === actualWinner ? 50 : 0;
   
-  return diffAccuracy + winnerAccuracy;
+  return Math.min(100, Math.round(diffAccuracy + scoreAccuracy + winnerAccuracy));
 }

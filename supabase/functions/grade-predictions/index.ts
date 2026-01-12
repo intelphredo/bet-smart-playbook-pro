@@ -179,64 +179,82 @@ Deno.serve(async (req) => {
 
     let gradedCount = 0;
     const statsUpdates: Map<string, { wins: number; total: number; confidenceSum: number }> = new Map();
+    const updatePromises: Promise<void>[] = [];
 
-    for (const prediction of pendingPredictions as PendingPrediction[]) {
-      // Fetch game result from ESPN
-      const result = await fetchESPNGameResult(prediction.match_id, prediction.league || "NBA");
-
-      if (!result || !result.completed) {
-        continue; // Game not finished yet
-      }
-
-      // Determine if prediction was correct
-      const predictionLower = prediction.prediction?.toLowerCase() || "";
+    // Process predictions in batches for better performance
+    const BATCH_SIZE = 10;
+    
+    for (let i = 0; i < pendingPredictions.length; i += BATCH_SIZE) {
+      const batch = (pendingPredictions as PendingPrediction[]).slice(i, i + BATCH_SIZE);
       
-      // Check if predicted home or away win
-      const predictedHome = 
-        predictionLower.includes(result.homeTeam.toLowerCase()) ||
-        predictionLower.includes("home");
-      
-      const isCorrect = predictedHome ? result.homeWon : !result.homeWon;
-      const newStatus = isCorrect ? "won" : "lost";
-
-      // Calculate accuracy rating
-      const accuracyRating = calculateAccuracyRating(
-        { home: prediction.projected_score_home, away: prediction.projected_score_away },
-        { home: result.homeScore, away: result.awayScore },
-        isCorrect
+      // Fetch results in parallel for the batch
+      const resultsPromises = batch.map(prediction => 
+        fetchESPNGameResult(prediction.match_id, prediction.league || "NBA")
+          .then(result => ({ prediction, result }))
       );
+      
+      const batchResults = await Promise.all(resultsPromises);
+      
+      for (const { prediction, result } of batchResults) {
+        if (!result || !result.completed) {
+          continue; // Game not finished yet
+        }
 
-      // Update prediction with idempotency check
-      const { error: updateError } = await supabase
-        .from("algorithm_predictions")
-        .update({
-          status: newStatus,
-          actual_score_home: result.homeScore,
-          actual_score_away: result.awayScore,
-          accuracy_rating: accuracyRating,
-          result_updated_at: new Date().toISOString(),
-        })
-        .eq("id", prediction.id)
-        .is("result_updated_at", null);
+        // Determine if prediction was correct
+        const predictionLower = prediction.prediction?.toLowerCase() || "";
+        
+        // Check if predicted home or away win
+        const predictedHome = 
+          predictionLower.includes(result.homeTeam.toLowerCase()) ||
+          predictionLower.includes("home");
+        
+        const isCorrect = predictedHome ? result.homeWon : !result.homeWon;
+        const newStatus = isCorrect ? "won" : "lost";
 
-      if (updateError) {
-        console.error(`Error updating prediction ${prediction.id}:`, updateError);
-        continue;
+        // Calculate accuracy rating
+        const accuracyRating = calculateAccuracyRating(
+          { home: prediction.projected_score_home, away: prediction.projected_score_away },
+          { home: result.homeScore, away: result.awayScore },
+          isCorrect
+        );
+
+        // Queue update promise
+        updatePromises.push(
+          supabase
+            .from("algorithm_predictions")
+            .update({
+              status: newStatus,
+              actual_score_home: result.homeScore,
+              actual_score_away: result.awayScore,
+              accuracy_rating: accuracyRating,
+              result_updated_at: new Date().toISOString(),
+            })
+            .eq("id", prediction.id)
+            .is("result_updated_at", null)
+            .then(({ error }) => {
+              if (error) {
+                console.error(`Error updating prediction ${prediction.id}:`, error);
+                return;
+              }
+              gradedCount++;
+              console.log(`Graded prediction ${prediction.id}: ${newStatus} (${accuracyRating} accuracy)`);
+            })
+        );
+
+        // Track stats for algorithm_stats update
+        const algId = prediction.algorithm_id;
+        if (!statsUpdates.has(algId)) {
+          statsUpdates.set(algId, { wins: 0, total: 0, confidenceSum: 0 });
+        }
+        const stats = statsUpdates.get(algId)!;
+        stats.total++;
+        if (isCorrect) stats.wins++;
+        stats.confidenceSum += prediction.confidence || 0;
       }
-
-      gradedCount++;
-      console.log(`Graded prediction ${prediction.id}: ${newStatus} (${accuracyRating} accuracy)`);
-
-      // Track stats for algorithm_stats update
-      const algId = prediction.algorithm_id;
-      if (!statsUpdates.has(algId)) {
-        statsUpdates.set(algId, { wins: 0, total: 0, confidenceSum: 0 });
-      }
-      const stats = statsUpdates.get(algId)!;
-      stats.total++;
-      if (isCorrect) stats.wins++;
-      stats.confidenceSum += prediction.confidence || 0;
     }
+    
+    // Wait for all updates to complete
+    await Promise.all(updatePromises);
 
     // Update algorithm_stats table
     for (const [algId, stats] of statsUpdates) {
