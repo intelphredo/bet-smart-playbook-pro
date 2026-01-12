@@ -9,6 +9,7 @@ import ScenarioGuide from "./pages/ScenarioGuide";
 import BankrollManager from "./pages/BankrollManager";
 import Standings from "./pages/Standings";
 import Injuries from "./pages/Injuries";
+import BettingTrends from "./pages/BettingTrends";
 import BetHistory from "./pages/BetHistory";
 import Settings from "./pages/Settings";
 import Auth from "./pages/Auth";
@@ -78,7 +79,7 @@ function App() {
                     <Route path="/game/:id" element={<GameDetailPage />} />
                     <Route path="/standings" element={<Standings />} />
                     <Route path="/injuries" element={<Injuries />} />
-                    <Route path="/algorithms" element={<AlgorithmsComparison />} />
+                    <Route path="/betting-trends" element={<BettingTrends />} />
                     <Route path="/creator" element={<CreatorDashboard />} />
                     <Route path="/scenarios" element={<ScenarioGuide />} />
                     <Route path="/bankroll" element={<BankrollManager />} />
