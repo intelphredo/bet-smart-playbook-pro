@@ -1,7 +1,9 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, Settings, Bell } from "lucide-react";
+import { RefreshCw, Settings } from "lucide-react";
 import { format } from "date-fns";
+import { useNavigate } from "react-router-dom";
+import NotificationCenter from "@/components/NotificationCenter";
 
 interface DashboardHeaderProps {
   onRefresh: () => void;
@@ -16,6 +18,8 @@ const DashboardHeader = ({
   lastUpdated,
   liveCount 
 }: DashboardHeaderProps) => {
+  const navigate = useNavigate();
+
   return (
     <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm">
       <div className="container px-4 py-4 mx-auto">
@@ -54,11 +58,15 @@ const DashboardHeader = ({
               <span className="hidden sm:inline">Refresh</span>
             </Button>
 
-            <Button variant="ghost" size="icon" className="h-9 w-9">
-              <Bell className="h-4 w-4" />
-            </Button>
+            {/* Notification Center with full functionality */}
+            <NotificationCenter />
 
-            <Button variant="ghost" size="icon" className="h-9 w-9">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-9 w-9"
+              onClick={() => navigate('/settings')}
+            >
               <Settings className="h-4 w-4" />
             </Button>
           </div>
