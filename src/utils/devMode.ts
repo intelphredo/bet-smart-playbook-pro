@@ -23,9 +23,9 @@ export const isDevMode = (): boolean => {
   return false;
 };
 
-// Minimal dev user info for auth context when no real user is logged in
+// Use a valid UUID format for dev user to avoid database errors
 export const DEV_USER = {
-  id: 'dev-user-local',
+  id: '00000000-0000-0000-0000-000000000000', // Valid UUID for dev mode
   email: 'local@example.com',
   user_metadata: {
     full_name: 'Local User',
@@ -37,7 +37,7 @@ export const DEV_USER = {
 
 // Minimal dev profile for auth context
 export const DEV_PROFILE = {
-  id: 'dev-user-local',
+  id: '00000000-0000-0000-0000-000000000000', // Valid UUID for dev mode
   email: 'local@example.com',
   full_name: 'Local User',
   avatar_url: null,
