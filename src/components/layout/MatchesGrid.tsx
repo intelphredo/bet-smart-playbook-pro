@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { Match } from "@/types/sports";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Clock, Radio, CheckCircle2 } from "lucide-react";
+import MatchDetailModal from "./MatchDetailModal";
 
 interface MatchesGridProps {
   matches: Match[];
@@ -13,7 +15,19 @@ interface MatchesGridProps {
 }
 
 const MatchesGrid = ({ matches, type, maxItems = 6, isLoading }: MatchesGridProps) => {
+  const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const displayMatches = matches.slice(0, maxItems);
+
+  const handleMatchClick = (match: Match) => {
+    setSelectedMatch(match);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedMatch(null);
+  };
 
   if (isLoading) {
     return (
@@ -38,22 +52,46 @@ const MatchesGrid = ({ matches, type, maxItems = 6, isLoading }: MatchesGridProp
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-      {displayMatches.map((match) => (
-        <MatchCard key={match.id} match={match} type={type} />
-      ))}
-    </div>
+    <>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        {displayMatches.map((match) => (
+          <MatchCard 
+            key={match.id} 
+            match={match} 
+            type={type} 
+            onClick={() => handleMatchClick(match)}
+          />
+        ))}
+      </div>
+
+      <MatchDetailModal
+        match={selectedMatch}
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+      />
+    </>
   );
 };
 
-const MatchCard = ({ match, type }: { match: Match; type: string }) => {
+const MatchCard = ({ 
+  match, 
+  type, 
+  onClick 
+}: { 
+  match: Match; 
+  type: string; 
+  onClick: () => void;
+}) => {
   const homeScore = match.score?.home;
   const awayScore = match.score?.away;
   const hasScores = homeScore !== undefined && awayScore !== undefined;
   const smartScoreValue = match.smartScore?.overall ?? 0;
 
   return (
-    <Card className="p-4 hover:bg-accent/5 transition-colors cursor-pointer group">
+    <Card 
+      className="p-4 hover:bg-accent/5 hover:border-primary/30 transition-all cursor-pointer group"
+      onClick={onClick}
+    >
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <Badge variant="outline" className="text-[10px]">
@@ -83,12 +121,16 @@ const MatchCard = ({ match, type }: { match: Match; type: string }) => {
       <div className="space-y-2">
         <TeamRow 
           name={match.awayTeam?.name || "TBD"}
+          shortName={match.awayTeam?.shortName}
+          logo={match.awayTeam?.logo}
           score={awayScore}
           isWinner={hasScores && (awayScore ?? 0) > (homeScore ?? 0)}
           showScore={type !== "upcoming"}
         />
         <TeamRow 
           name={match.homeTeam?.name || "TBD"}
+          shortName={match.homeTeam?.shortName}
+          logo={match.homeTeam?.logo}
           score={homeScore}
           isWinner={hasScores && (homeScore ?? 0) > (awayScore ?? 0)}
           showScore={type !== "upcoming"}
@@ -113,18 +155,27 @@ const MatchCard = ({ match, type }: { match: Match; type: string }) => {
           </div>
         </div>
       )}
+
+      {/* Hover indicator */}
+      <div className="mt-3 pt-2 border-t border-border/30 opacity-0 group-hover:opacity-100 transition-opacity">
+        <p className="text-xs text-center text-muted-foreground">Click for details</p>
+      </div>
     </Card>
   );
 };
 
 const TeamRow = ({ 
   name, 
+  shortName,
+  logo,
   score, 
   isWinner, 
   showScore,
   isHome 
 }: { 
-  name: string; 
+  name: string;
+  shortName?: string;
+  logo?: string;
   score?: number; 
   isWinner: boolean;
   showScore: boolean;
@@ -135,11 +186,21 @@ const TeamRow = ({
     isWinner && "font-semibold"
   )}>
     <div className="flex items-center gap-2">
+      {logo && (
+        <img 
+          src={logo} 
+          alt={name} 
+          className="w-5 h-5 object-contain"
+          onError={(e) => {
+            (e.target as HTMLImageElement).style.display = 'none';
+          }}
+        />
+      )}
       <span className={cn(
         "text-sm",
         isWinner ? "text-foreground" : "text-muted-foreground"
       )}>
-        {name}
+        {shortName || name}
       </span>
       {isHome && (
         <span className="text-[10px] text-muted-foreground/60 uppercase">home</span>
