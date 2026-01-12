@@ -10,6 +10,7 @@ import NavBar from "@/components/NavBar";
 import AppBreadcrumb from "@/components/layout/AppBreadcrumb";
 import TeamLogo from "@/components/match/TeamLogo";
 import HeadToHeadHistory from "@/components/match/HeadToHeadHistory";
+import TeamNewsInjuries from "@/components/match/TeamNewsInjuries";
 import AddToBetSlipButton from "@/components/BetSlip/AddToBetSlipButton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -747,6 +748,19 @@ const GameDetailPage: React.FC = () => {
           transition={{ delay: 0.3 }}
         >
           <HeadToHeadHistory
+            homeTeamName={match.homeTeam?.name || "Home Team"}
+            awayTeamName={match.awayTeam?.name || "Away Team"}
+            league={league}
+          />
+        </motion.div>
+
+        {/* Team News & Injuries */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.35 }}
+        >
+          <TeamNewsInjuries
             homeTeamName={match.homeTeam?.name || "Home Team"}
             awayTeamName={match.awayTeam?.name || "Away Team"}
             league={league}
