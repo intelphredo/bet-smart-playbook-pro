@@ -9,6 +9,7 @@ import { usePreferences } from "@/hooks/usePreferences";
 import { useBetTracking } from "@/hooks/useBetTracking";
 import { applySmartScores } from "@/utils/smartScoreCalculator";
 import { useToast } from "@/hooks/use-toast";
+import { isSameDay, parseISO, startOfDay } from "date-fns";
 
 // Layout Components
 import DashboardHeader from "@/components/layout/DashboardHeader";
@@ -27,6 +28,7 @@ import AlgorithmsSection from "@/components/AlgorithmsSection";
 import StatsOverview from "@/components/StatsOverview";
 import HistoricalPredictionsSection from "@/components/HistoricalPredictionsSection";
 import { TeamScheduleView } from "@/components/TeamSchedule";
+import { DateFilter } from "@/components/filters/DateFilter";
 
 import { Radio, Clock, CheckCircle2, TrendingUp, Zap, BarChart3, DollarSign, Brain, Target, History, CalendarDays } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -37,6 +39,7 @@ const Index = () => {
   const [selectedLeague, setSelectedLeague] = useState<string>("ALL");
   const [activeSection, setActiveSection] = useState("overview");
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const { toast } = useToast();
   const { preferences } = usePreferences();
   const { stats } = useBetTracking();
@@ -75,6 +78,15 @@ const Index = () => {
   const filteredUpcoming = useMemo(() => filterByCategory(upcomingMatches), [upcomingMatches, selectedCategory]);
   const filteredLive = useMemo(() => filterByCategory(liveMatches), [liveMatches, selectedCategory]);
   const filteredFinished = useMemo(() => filterByCategory(finishedMatches), [finishedMatches, selectedCategory]);
+
+  // Filter upcoming by selected date
+  const dateFilteredUpcoming = useMemo(() => {
+    if (!selectedDate) return filteredUpcoming;
+    return filteredUpcoming.filter(match => {
+      const matchDate = parseISO(match.startTime);
+      return isSameDay(matchDate, selectedDate);
+    });
+  }, [filteredUpcoming, selectedDate]);
 
   // Match counts per category
   const matchCounts = useMemo(() => {
@@ -285,14 +297,31 @@ const Index = () => {
           </TabsContent>
 
           {/* Upcoming Tab */}
-          <TabsContent value="upcoming" className="mt-6">
+          <TabsContent value="upcoming" className="mt-6 space-y-4">
+            {/* Date Filter */}
+            <div className="bg-card border rounded-lg p-4">
+              <DateFilter
+                selectedDate={selectedDate}
+                onDateSelect={setSelectedDate}
+                daysAhead={7}
+              />
+            </div>
+            
             <ContentSection
               title="Upcoming Games"
-              subtitle="Scheduled matches"
+              subtitle={selectedDate ? `Games on ${selectedDate.toLocaleDateString()}` : "All scheduled matches (next 7 days)"}
               icon={Clock}
-              badge={filteredUpcoming.length}
+              badge={dateFilteredUpcoming.length}
             >
-              <MatchesGrid matches={filteredUpcoming} type="upcoming" maxItems={50} isLoading={isLoading} />
+              {dateFilteredUpcoming.length > 0 ? (
+                <MatchesGrid matches={dateFilteredUpcoming} type="upcoming" maxItems={50} isLoading={isLoading} />
+              ) : (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Clock className="h-12 w-12 mx-auto mb-4 opacity-30" />
+                  <p>No games scheduled for this date</p>
+                  <p className="text-sm mt-1">Try selecting a different day</p>
+                </div>
+              )}
             </ContentSection>
           </TabsContent>
 
