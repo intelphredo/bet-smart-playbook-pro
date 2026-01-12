@@ -1,71 +1,58 @@
-// src/components/match/MatchCard.tsx
+// src/components/MatchCard/MatchCardFooter.tsx
 
-import React from "react";
-import { Card, CardHeader, CardContent } from "@/components/ui/card";
+import { memo } from "react";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { UnifiedGame } from "@/hooks/useGames";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Brain, TrendingUp } from "lucide-react";
 
-interface MatchCardProps {
-  game: UnifiedGame;
+interface MatchCardFooterProps {
+  match: any;
+  getBadgeColor: (confidence: number) => string;
+  getSmartScoreBadgeColor: () => string;
 }
 
-export const MatchCard: React.FC<MatchCardProps> = ({ game }) => {
+const MatchCardFooter = memo(function MatchCardFooter({
+  match,
+  getBadgeColor,
+  getSmartScoreBadgeColor,
+}: MatchCardFooterProps) {
+  const confidence = match.prediction?.confidence || 0;
+  const smartScore = match.smartScore?.overall || 0;
+
   return (
-    <Card className="w-full shadow-sm border border-muted/40">
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div className="flex flex-col">
-          <h3 className="text-lg font-semibold">
-            {game.homeTeam} vs {game.awayTeam}
-          </h3>
+    <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/30">
+      <div className="flex items-center gap-2">
+        {match.prediction?.recommendedBet && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Badge className={`${getBadgeColor(confidence)} text-xs px-2 py-0.5`}>
+                <TrendingUp className="h-3 w-3 mr-1" />
+                {match.prediction.recommendedBet}
+              </Badge>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Recommended bet with {confidence}% confidence</p>
+            </TooltipContent>
+          </Tooltip>
+        )}
+      </div>
 
-          <p className="text-sm text-muted-foreground">
-            {new Date(game.startTime).toLocaleString()}
-          </p>
-        </div>
-
-        <Badge variant="outline" className="text-xs">
-          {game.source}
-        </Badge>
-      </CardHeader>
-
-      <CardContent className="pt-0">
-        <div className="flex flex-col gap-2">
-          {/* Game Status */}
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium">Status:</span>
-            <span className="text-sm capitalize">{game.status}</span>
-          </div>
-
-          {/* Odds */}
-          {game.odds && (
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium">Odds:</span>
-              <span className="text-sm">
-                {typeof game.odds === "string"
-                  ? game.odds
-                  : JSON.stringify(game.odds)}
-              </span>
-            </div>
-          )}
-
-          {/* Injuries */}
-          {game.injuries && (
-            <div className="flex flex-col">
-              <span className="text-sm font-medium mb-1">Injuries:</span>
-              <pre className="text-xs bg-muted/30 p-2 rounded">
-                {JSON.stringify(game.injuries, null, 2)}
-              </pre>
-            </div>
-          )}
-
-          {/* Last Updated */}
-          <p className="text-xs text-muted-foreground mt-2">
-            Last updated: {new Date(game.lastUpdated).toLocaleTimeString()}
-          </p>
-        </div>
-      </CardContent>
-    </Card>
+      {smartScore > 0 && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Badge className={`${getSmartScoreBadgeColor()} text-xs px-2 py-0.5`}>
+              <Brain className="h-3 w-3 mr-1" />
+              Smart: {smartScore}
+            </Badge>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>SmartScore based on multiple factors</p>
+          </TooltipContent>
+        </Tooltip>
+      )}
+    </div>
   );
-};
+});
 
-export default MatchCard;
+export default MatchCardFooter;

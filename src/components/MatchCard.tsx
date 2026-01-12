@@ -167,7 +167,7 @@ const MatchCard = memo(function MatchCard({ match }: MatchCardProps) {
         
         {/* Footer with SmartScore */}
         <MatchCardFooter 
-          match={match} 
+          match={match}
           getBadgeColor={getBadgeColor} 
           getSmartScoreBadgeColor={getSmartScoreBadgeColor} 
         />
