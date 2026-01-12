@@ -32,11 +32,13 @@ import {
   Download,
   Upload,
   Loader2,
+  Edit2,
 } from 'lucide-react';
 import { useAlgorithmAccuracy, useRecentPredictions, AlgorithmAccuracyStats, AlgorithmPrediction } from '@/hooks/useAlgorithmAccuracy';
 import { usePredictionSync } from '@/hooks/usePredictionSync';
 import { ALGORITHM_IDS } from '@/utils/predictions/algorithms';
 import { format, formatDistanceToNow } from 'date-fns';
+import { PredictionCorrectionModal } from './PredictionCorrectionModal';
 
 const chartConfig = {
   wins: { label: 'Wins', color: 'hsl(142.1 76.2% 36.3%)' },
@@ -140,9 +142,15 @@ function AlgorithmCard({ stats }: { stats: AlgorithmAccuracyStats }) {
   );
 }
 
-function PredictionRow({ prediction }: { prediction: AlgorithmPrediction }) {
+function PredictionRow({ 
+  prediction, 
+  onEdit 
+}: { 
+  prediction: AlgorithmPrediction; 
+  onEdit: (prediction: AlgorithmPrediction) => void;
+}) {
   return (
-    <div className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
+    <div className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors group">
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
           <Badge variant="outline" className="text-xs">
@@ -155,21 +163,31 @@ function PredictionRow({ prediction }: { prediction: AlgorithmPrediction }) {
           {formatDistanceToNow(new Date(prediction.predictedAt), { addSuffix: true })}
         </p>
       </div>
-      <div className="text-right ml-4">
-        <div className="flex items-center justify-end gap-1 mb-1">
-          <Target className="h-3 w-3 text-muted-foreground" />
-          <span className="text-sm font-medium">{prediction.confidence}%</span>
+      <div className="flex items-center gap-2">
+        <div className="text-right">
+          <div className="flex items-center justify-end gap-1 mb-1">
+            <Target className="h-3 w-3 text-muted-foreground" />
+            <span className="text-sm font-medium">{prediction.confidence}%</span>
+          </div>
+          {prediction.projectedScoreHome !== null && prediction.projectedScoreAway !== null && (
+            <p className="text-xs text-muted-foreground">
+              Proj: {prediction.projectedScoreHome}-{prediction.projectedScoreAway}
+            </p>
+          )}
+          {prediction.actualScoreHome !== null && prediction.actualScoreAway !== null && (
+            <p className="text-xs font-medium">
+              Actual: {prediction.actualScoreHome}-{prediction.actualScoreAway}
+            </p>
+          )}
         </div>
-        {prediction.projectedScoreHome !== null && prediction.projectedScoreAway !== null && (
-          <p className="text-xs text-muted-foreground">
-            Proj: {prediction.projectedScoreHome}-{prediction.projectedScoreAway}
-          </p>
-        )}
-        {prediction.actualScoreHome !== null && prediction.actualScoreAway !== null && (
-          <p className="text-xs font-medium">
-            Actual: {prediction.actualScoreHome}-{prediction.actualScoreAway}
-          </p>
-        )}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+          onClick={() => onEdit(prediction)}
+        >
+          <Edit2 className="h-4 w-4" />
+        </Button>
       </div>
     </div>
   );
@@ -178,6 +196,8 @@ function PredictionRow({ prediction }: { prediction: AlgorithmPrediction }) {
 export default function AlgorithmAccuracyDashboard() {
   const [days, setDays] = useState(30);
   const [selectedAlgorithm, setSelectedAlgorithm] = useState('all');
+  const [editingPrediction, setEditingPrediction] = useState<AlgorithmPrediction | null>(null);
+  const [correctionModalOpen, setCorrectionModalOpen] = useState(false);
 
   const algorithmId = selectedAlgorithm === 'all' ? undefined : selectedAlgorithm;
 
@@ -409,7 +429,14 @@ export default function AlgorithmAccuracyDashboard() {
               {recentPredictions && recentPredictions.length > 0 ? (
                 <div className="space-y-3 max-h-[500px] overflow-y-auto">
                   {recentPredictions.map((prediction) => (
-                    <PredictionRow key={prediction.id} prediction={prediction} />
+                    <PredictionRow 
+                      key={prediction.id} 
+                      prediction={prediction} 
+                      onEdit={(p) => {
+                        setEditingPrediction(p);
+                        setCorrectionModalOpen(true);
+                      }}
+                    />
                   ))}
                 </div>
               ) : (
@@ -471,6 +498,13 @@ export default function AlgorithmAccuracyDashboard() {
           </CardContent>
         </Card>
       )}
+
+      {/* Prediction Correction Modal */}
+      <PredictionCorrectionModal
+        prediction={editingPrediction}
+        open={correctionModalOpen}
+        onOpenChange={setCorrectionModalOpen}
+      />
     </div>
   );
 }
