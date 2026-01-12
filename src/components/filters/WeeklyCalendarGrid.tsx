@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { Switch } from "@/components/ui/switch";
 import {
   Tooltip,
   TooltipContent,
@@ -17,7 +18,8 @@ import {
   Clock,
   Target,
   Zap,
-  Flame
+  Flame,
+  Thermometer
 } from "lucide-react";
 import { format, parseISO, startOfDay, addDays, isSameDay } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -40,6 +42,15 @@ interface DayColumn {
   matches: Match[];
 }
 
+interface HeatMapData {
+  hourTotals: Record<number, number>;
+  cellCounts: Record<string, number>; // "hour-dayIndex" -> count
+  maxHourTotal: number;
+  maxCellCount: number;
+  busiestHour: number;
+  busiestHourLabel: string;
+}
+
 // Generate time slots from 10 AM to 11 PM
 const TIME_SLOTS: TimeSlot[] = Array.from({ length: 14 }, (_, i) => {
   const hour = i + 10; // Start at 10 AM
@@ -59,12 +70,32 @@ const LEAGUE_COLORS: Record<string, string> = {
   SOCCER: "bg-emerald-500",
 };
 
+// Heat map color function - returns opacity based on intensity
+const getHeatMapColor = (count: number, maxCount: number): string => {
+  if (count === 0 || maxCount === 0) return "bg-transparent";
+  const intensity = count / maxCount;
+  if (intensity >= 0.8) return "bg-red-500/40";
+  if (intensity >= 0.6) return "bg-orange-500/35";
+  if (intensity >= 0.4) return "bg-yellow-500/30";
+  if (intensity >= 0.2) return "bg-green-500/20";
+  return "bg-blue-500/10";
+};
+
+const getHeatMapBorder = (count: number, maxCount: number): string => {
+  if (count === 0 || maxCount === 0) return "";
+  const intensity = count / maxCount;
+  if (intensity >= 0.8) return "ring-2 ring-red-500/50";
+  if (intensity >= 0.6) return "ring-1 ring-orange-500/40";
+  return "";
+};
+
 export const WeeklyCalendarGrid: React.FC<WeeklyCalendarGridProps> = ({
   matches,
   daysAhead = 7,
   onMatchClick,
 }) => {
   const [weekOffset, setWeekOffset] = useState(0);
+  const [showHeatMap, setShowHeatMap] = useState(false);
   
   const dayColumns = useMemo((): DayColumn[] => {
     const today = startOfDay(new Date());
@@ -89,6 +120,55 @@ export const WeeklyCalendarGrid: React.FC<WeeklyCalendarGridProps> = ({
     
     return columns;
   }, [matches, daysAhead, weekOffset]);
+
+  // Calculate heat map data
+  const heatMapData = useMemo((): HeatMapData => {
+    const hourTotals: Record<number, number> = {};
+    const cellCounts: Record<string, number> = {};
+    
+    TIME_SLOTS.forEach((slot) => {
+      hourTotals[slot.hour] = 0;
+    });
+    
+    dayColumns.forEach((col, dayIndex) => {
+      col.matches.forEach((match) => {
+        const hour = parseISO(match.startTime).getHours();
+        if (hour >= 10 && hour <= 23) {
+          hourTotals[hour] = (hourTotals[hour] || 0) + 1;
+          const cellKey = `${hour}-${dayIndex}`;
+          cellCounts[cellKey] = (cellCounts[cellKey] || 0) + 1;
+        }
+      });
+    });
+    
+    const maxHourTotal = Math.max(...Object.values(hourTotals), 1);
+    const maxCellCount = Math.max(...Object.values(cellCounts), 1);
+    
+    // Find busiest hour
+    let busiestHour = 10;
+    let busiestCount = 0;
+    Object.entries(hourTotals).forEach(([hour, count]) => {
+      if (count > busiestCount) {
+        busiestCount = count;
+        busiestHour = parseInt(hour);
+      }
+    });
+    
+    const busiestHourLabel = busiestHour === 12 
+      ? "12 PM" 
+      : busiestHour > 12 
+        ? `${busiestHour - 12} PM` 
+        : `${busiestHour} AM`;
+    
+    return {
+      hourTotals,
+      cellCounts,
+      maxHourTotal,
+      maxCellCount,
+      busiestHour,
+      busiestHourLabel,
+    };
+  }, [dayColumns]);
 
   const getMatchesForTimeSlot = (dayColumn: DayColumn, hour: number) => {
     return dayColumn.matches.filter((match) => {
@@ -144,14 +224,65 @@ export const WeeklyCalendarGrid: React.FC<WeeklyCalendarGridProps> = ({
         </div>
         
         {/* League Legend */}
-        <div className="flex flex-wrap gap-2 mt-3">
-          {Object.entries(LEAGUE_COLORS).map(([league, color]) => (
-            <div key={league} className="flex items-center gap-1">
-              <div className={cn("w-2 h-2 rounded-full", color)} />
-              <span className="text-[10px] text-muted-foreground">{league}</span>
-            </div>
-          ))}
+        <div className="flex flex-wrap items-center justify-between gap-2 mt-3">
+          <div className="flex flex-wrap gap-2">
+            {Object.entries(LEAGUE_COLORS).map(([league, color]) => (
+              <div key={league} className="flex items-center gap-1">
+                <div className={cn("w-2 h-2 rounded-full", color)} />
+                <span className="text-[10px] text-muted-foreground">{league}</span>
+              </div>
+            ))}
+          </div>
+          
+          {/* Heat Map Toggle */}
+          <div className="flex items-center gap-2">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center gap-2">
+                    <Thermometer className={cn(
+                      "h-4 w-4 transition-colors",
+                      showHeatMap ? "text-orange-500" : "text-muted-foreground"
+                    )} />
+                    <span className="text-xs text-muted-foreground">Heat Map</span>
+                    <Switch
+                      checked={showHeatMap}
+                      onCheckedChange={setShowHeatMap}
+                      className="scale-75"
+                    />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Show busy hours overlay</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
         </div>
+
+        {/* Heat Map Legend */}
+        {showHeatMap && (
+          <div className="flex items-center gap-3 mt-3 p-2 rounded-lg bg-muted/30 border border-border/50">
+            <div className="flex items-center gap-1">
+              <Flame className="h-4 w-4 text-orange-500" />
+              <span className="text-xs font-medium">Busiest:</span>
+              <Badge variant="secondary" className="text-xs bg-orange-500/20 text-orange-600">
+                {heatMapData.busiestHourLabel} ({heatMapData.hourTotals[heatMapData.busiestHour]} games)
+              </Badge>
+            </div>
+            <div className="flex items-center gap-1 ml-auto">
+              <span className="text-[10px] text-muted-foreground">Low</span>
+              <div className="flex gap-0.5">
+                <div className="w-4 h-3 rounded-sm bg-blue-500/10" />
+                <div className="w-4 h-3 rounded-sm bg-green-500/20" />
+                <div className="w-4 h-3 rounded-sm bg-yellow-500/30" />
+                <div className="w-4 h-3 rounded-sm bg-orange-500/35" />
+                <div className="w-4 h-3 rounded-sm bg-red-500/40" />
+              </div>
+              <span className="text-[10px] text-muted-foreground">High</span>
+            </div>
+          </div>
+        )}
       </CardHeader>
       
       <CardContent className="p-0">
@@ -186,39 +317,95 @@ export const WeeklyCalendarGrid: React.FC<WeeklyCalendarGridProps> = ({
             
             {/* Time Slots Grid */}
             <div className="max-h-[500px] overflow-y-auto">
-              {TIME_SLOTS.map((slot) => (
-                <div 
-                  key={slot.hour} 
-                  className="grid grid-cols-[80px_repeat(7,1fr)] border-b border-border/30 min-h-[60px]"
-                >
-                  <div className="p-2 text-xs text-muted-foreground flex items-start justify-center bg-muted/20 border-r border-border/30">
-                    {slot.label}
-                  </div>
-                  {dayColumns.map((col, colIndex) => {
-                    const slotMatches = getMatchesForTimeSlot(col, slot.hour);
-                    
-                    return (
-                      <div 
-                        key={colIndex}
-                        className={cn(
-                          "p-1 border-l border-border/30 min-h-[60px]",
-                          col.isToday && "bg-primary/5"
+              {TIME_SLOTS.map((slot) => {
+                const hourTotal = heatMapData.hourTotals[slot.hour] || 0;
+                const isBusiestHour = slot.hour === heatMapData.busiestHour && hourTotal > 0;
+                
+                return (
+                  <div 
+                    key={slot.hour} 
+                    className="grid grid-cols-[80px_repeat(7,1fr)] border-b border-border/30 min-h-[60px]"
+                  >
+                    {/* Time Label with heat indicator */}
+                    <div className={cn(
+                      "p-2 text-xs flex items-start justify-center border-r border-border/30 relative",
+                      showHeatMap && isBusiestHour 
+                        ? "bg-orange-500/20 text-orange-700 dark:text-orange-300 font-medium" 
+                        : "text-muted-foreground bg-muted/20"
+                    )}>
+                      <div className="flex flex-col items-center gap-1">
+                        <span>{slot.label}</span>
+                        {showHeatMap && hourTotal > 0 && (
+                          <Badge 
+                            variant="secondary" 
+                            className={cn(
+                              "text-[9px] h-4 px-1",
+                              isBusiestHour 
+                                ? "bg-orange-500/30 text-orange-700 dark:text-orange-300" 
+                                : "bg-muted"
+                            )}
+                          >
+                            {hourTotal}
+                          </Badge>
                         )}
-                      >
-                        <div className="flex flex-col gap-1">
-                          {slotMatches.map((match) => (
-                            <MatchCell 
-                              key={match.id} 
-                              match={match} 
-                              onClick={onMatchClick}
-                            />
-                          ))}
-                        </div>
                       </div>
-                    );
-                  })}
-                </div>
-              ))}
+                      {showHeatMap && isBusiestHour && (
+                        <Flame className="absolute top-1 right-1 h-3 w-3 text-orange-500 animate-pulse" />
+                      )}
+                    </div>
+                    
+                    {/* Day cells with heat map overlay */}
+                    {dayColumns.map((col, colIndex) => {
+                      const slotMatches = getMatchesForTimeSlot(col, slot.hour);
+                      const cellKey = `${slot.hour}-${colIndex}`;
+                      const cellCount = heatMapData.cellCounts[cellKey] || 0;
+                      const heatColor = showHeatMap ? getHeatMapColor(cellCount, heatMapData.maxCellCount) : "";
+                      const heatBorder = showHeatMap ? getHeatMapBorder(cellCount, heatMapData.maxCellCount) : "";
+                      
+                      return (
+                        <div 
+                          key={colIndex}
+                          className={cn(
+                            "p-1 border-l border-border/30 min-h-[60px] transition-colors relative",
+                            col.isToday && !showHeatMap && "bg-primary/5",
+                            heatColor,
+                            heatBorder
+                          )}
+                        >
+                          {/* Cell count badge for heat map */}
+                          {showHeatMap && cellCount > 0 && (
+                            <div className="absolute top-0.5 right-0.5">
+                              <Badge 
+                                variant="secondary" 
+                                className={cn(
+                                  "text-[9px] h-4 px-1 min-w-[18px] justify-center",
+                                  cellCount >= heatMapData.maxCellCount * 0.8 
+                                    ? "bg-red-500/40 text-red-700 dark:text-red-300" 
+                                    : cellCount >= heatMapData.maxCellCount * 0.5
+                                      ? "bg-orange-500/30 text-orange-700 dark:text-orange-300"
+                                      : "bg-muted/80"
+                                )}
+                              >
+                                {cellCount}
+                              </Badge>
+                            </div>
+                          )}
+                          
+                          <div className="flex flex-col gap-1">
+                            {slotMatches.map((match) => (
+                              <MatchCell 
+                                key={match.id} 
+                                match={match} 
+                                onClick={onMatchClick}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })}
             </div>
           </div>
           <ScrollBar orientation="horizontal" />
