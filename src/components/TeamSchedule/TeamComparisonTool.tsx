@@ -38,6 +38,8 @@ import {
   ArrowRight,
   Clock,
   Percent,
+  History,
+  Minus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, parseISO, isToday, isTomorrow, addDays } from "date-fns";
@@ -69,6 +71,113 @@ interface TeamStats {
   nextGame: Match | null;
   upcomingOpponents: string[];
 }
+
+interface HistoricalMatch {
+  id: string;
+  date: string;
+  homeTeam: string;
+  awayTeam: string;
+  homeScore: number;
+  awayScore: number;
+  winner: "home" | "away" | "tie";
+  venue: string;
+  season: string;
+}
+
+interface HeadToHeadHistory {
+  team1Wins: number;
+  team2Wins: number;
+  ties: number;
+  totalGames: number;
+  lastMeetings: HistoricalMatch[];
+  streakTeam: string | null;
+  streakCount: number;
+  avgTeam1Score: number;
+  avgTeam2Score: number;
+}
+
+// Generate mock historical data based on team IDs for consistency
+const generateMockHistory = (
+  team1: TeamData,
+  team2: TeamData
+): HeadToHeadHistory => {
+  // Use team IDs to generate consistent mock data
+  const seed = (team1.id + team2.id).split("").reduce((a, b) => a + b.charCodeAt(0), 0);
+  const random = (min: number, max: number) => {
+    const x = Math.sin(seed * 9999) * 10000;
+    return Math.floor((x - Math.floor(x)) * (max - min + 1)) + min;
+  };
+  
+  const totalGames = random(5, 15);
+  const team1Wins = random(1, totalGames - 1);
+  const ties = random(0, Math.min(2, totalGames - team1Wins));
+  const team2Wins = totalGames - team1Wins - ties;
+  
+  // Generate last meetings
+  const lastMeetings: HistoricalMatch[] = [];
+  const currentYear = new Date().getFullYear();
+  
+  for (let i = 0; i < Math.min(5, totalGames); i++) {
+    const monthsAgo = i * 2 + random(1, 3);
+    const date = new Date();
+    date.setMonth(date.getMonth() - monthsAgo);
+    
+    const isHomeTeam1 = i % 2 === 0;
+    const homeScore = random(70, 130);
+    const awayScore = random(70, 130);
+    const winner = homeScore > awayScore ? "home" : homeScore < awayScore ? "away" : "tie";
+    
+    lastMeetings.push({
+      id: `h2h-${i}`,
+      date: date.toISOString(),
+      homeTeam: isHomeTeam1 ? team1.name : team2.name,
+      awayTeam: isHomeTeam1 ? team2.name : team1.name,
+      homeScore,
+      awayScore,
+      winner,
+      venue: isHomeTeam1 ? `${team1.shortName} Arena` : `${team2.shortName} Arena`,
+      season: `${currentYear - Math.floor(monthsAgo / 12)}-${(currentYear - Math.floor(monthsAgo / 12) + 1).toString().slice(-2)}`,
+    });
+  }
+  
+  // Determine streak
+  let streakTeam: string | null = null;
+  let streakCount = 0;
+  
+  if (lastMeetings.length > 0) {
+    const firstMatch = lastMeetings[0];
+    const firstWinner = firstMatch.winner === "home" ? firstMatch.homeTeam : 
+                        firstMatch.winner === "away" ? firstMatch.awayTeam : null;
+    
+    if (firstWinner) {
+      streakTeam = firstWinner;
+      streakCount = 1;
+      
+      for (let i = 1; i < lastMeetings.length; i++) {
+        const match = lastMeetings[i];
+        const winner = match.winner === "home" ? match.homeTeam : 
+                       match.winner === "away" ? match.awayTeam : null;
+        if (winner === streakTeam) {
+          streakCount++;
+        } else {
+          break;
+        }
+      }
+    }
+  }
+  
+  return {
+    team1Wins,
+    team2Wins,
+    ties,
+    totalGames,
+    lastMeetings,
+    streakTeam,
+    streakCount,
+    avgTeam1Score: random(95, 115),
+    avgTeam2Score: random(95, 115),
+  };
+};
 
 const LEAGUE_ORDER: (League | "ALL")[] = ["ALL", "NBA", "NFL", "NHL", "MLB", "SOCCER", "NCAAF", "NCAAB"];
 
@@ -193,6 +302,12 @@ export const TeamComparisonTool: React.FC<TeamComparisonToolProps> = ({
       (m.homeTeam.id === team2Id && m.awayTeam.id === team1Id)
     );
   }, [team1Id, team2Id, matches]);
+
+  // Generate head-to-head history
+  const h2hHistory = useMemo(() => {
+    if (!team1 || !team2) return null;
+    return generateMockHistory(team1, team2);
+  }, [team1, team2]);
 
   // Team selector component
   const TeamSelector = ({
@@ -555,6 +670,179 @@ export const TeamComparisonTool: React.FC<TeamComparisonToolProps> = ({
                 </div>
               </CardContent>
             </Card>
+
+            {/* Head-to-Head History */}
+            {h2hHistory && (
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <History className="h-5 w-5 text-primary" />
+                    Head-to-Head History
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* Overall Record */}
+                  <div className="grid grid-cols-3 items-center gap-4">
+                    <div className="text-center">
+                      <div className="flex items-center justify-center gap-2 mb-1">
+                        <img
+                          src={team1.logo}
+                          alt={team1.name}
+                          className="h-8 w-8 object-contain"
+                          onError={(e) => { (e.target as HTMLImageElement).src = "/placeholder.svg"; }}
+                        />
+                      </div>
+                      <p className={cn(
+                        "text-3xl font-bold",
+                        h2hHistory.team1Wins > h2hHistory.team2Wins && "text-green-500"
+                      )}>
+                        {h2hHistory.team1Wins}
+                      </p>
+                      <p className="text-xs text-muted-foreground uppercase">Wins</p>
+                    </div>
+                    
+                    <div className="text-center">
+                      <div className="flex items-center justify-center gap-1 mb-1">
+                        <Minus className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                      <p className="text-2xl font-bold text-muted-foreground">
+                        {h2hHistory.ties}
+                      </p>
+                      <p className="text-xs text-muted-foreground uppercase">Ties</p>
+                    </div>
+                    
+                    <div className="text-center">
+                      <div className="flex items-center justify-center gap-2 mb-1">
+                        <img
+                          src={team2.logo}
+                          alt={team2.name}
+                          className="h-8 w-8 object-contain"
+                          onError={(e) => { (e.target as HTMLImageElement).src = "/placeholder.svg"; }}
+                        />
+                      </div>
+                      <p className={cn(
+                        "text-3xl font-bold",
+                        h2hHistory.team2Wins > h2hHistory.team1Wins && "text-green-500"
+                      )}>
+                        {h2hHistory.team2Wins}
+                      </p>
+                      <p className="text-xs text-muted-foreground uppercase">Wins</p>
+                    </div>
+                  </div>
+
+                  {/* Summary Stats */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div className="bg-muted/30 rounded-lg p-3 text-center">
+                      <p className="text-lg font-semibold">{h2hHistory.totalGames}</p>
+                      <p className="text-xs text-muted-foreground">Total Games</p>
+                    </div>
+                    <div className="bg-muted/30 rounded-lg p-3 text-center">
+                      <p className="text-lg font-semibold">{h2hHistory.avgTeam1Score.toFixed(1)}</p>
+                      <p className="text-xs text-muted-foreground">{team1.shortName} Avg Pts</p>
+                    </div>
+                    <div className="bg-muted/30 rounded-lg p-3 text-center">
+                      <p className="text-lg font-semibold">{h2hHistory.avgTeam2Score.toFixed(1)}</p>
+                      <p className="text-xs text-muted-foreground">{team2.shortName} Avg Pts</p>
+                    </div>
+                    {h2hHistory.streakTeam && h2hHistory.streakCount > 1 && (
+                      <div className="bg-primary/10 rounded-lg p-3 text-center">
+                        <p className="text-lg font-semibold text-primary">{h2hHistory.streakCount}W</p>
+                        <p className="text-xs text-muted-foreground">
+                          {h2hHistory.streakTeam === team1.name ? team1.shortName : team2.shortName} Streak
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Recent Matchups */}
+                  <div>
+                    <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
+                      <Clock className="h-4 w-4" />
+                      Recent Matchups
+                    </h4>
+                    <div className="space-y-2">
+                      {h2hHistory.lastMeetings.map((match, idx) => {
+                        const team1IsHome = match.homeTeam === team1.name;
+                        const team1Score = team1IsHome ? match.homeScore : match.awayScore;
+                        const team2Score = team1IsHome ? match.awayScore : match.homeScore;
+                        const team1Won = (team1IsHome && match.winner === "home") || (!team1IsHome && match.winner === "away");
+                        const team2Won = (team1IsHome && match.winner === "away") || (!team1IsHome && match.winner === "home");
+                        
+                        return (
+                          <motion.div
+                            key={match.id}
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: idx * 0.05 }}
+                            className="flex items-center justify-between p-3 rounded-lg bg-muted/20 hover:bg-muted/30 transition-colors"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="text-xs text-muted-foreground w-20">
+                                {format(parseISO(match.date), "MMM d, yyyy")}
+                              </div>
+                              <Badge variant="outline" className="text-[10px]">
+                                {match.season}
+                              </Badge>
+                            </div>
+                            
+                            <div className="flex items-center gap-4">
+                              <div className={cn(
+                                "flex items-center gap-2",
+                                team1Won && "font-bold"
+                              )}>
+                                <span className={cn(
+                                  "text-sm",
+                                  team1Won && "text-green-500"
+                                )}>
+                                  {team1.shortName}
+                                </span>
+                                <span className={cn(
+                                  "text-lg font-mono",
+                                  team1Won && "text-green-500"
+                                )}>
+                                  {team1Score}
+                                </span>
+                              </div>
+                              
+                              <span className="text-muted-foreground text-xs">-</span>
+                              
+                              <div className={cn(
+                                "flex items-center gap-2",
+                                team2Won && "font-bold"
+                              )}>
+                                <span className={cn(
+                                  "text-lg font-mono",
+                                  team2Won && "text-green-500"
+                                )}>
+                                  {team2Score}
+                                </span>
+                                <span className={cn(
+                                  "text-sm",
+                                  team2Won && "text-green-500"
+                                )}>
+                                  {team2.shortName}
+                                </span>
+                              </div>
+                            </div>
+                            
+                            <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground">
+                              <MapPin className="h-3 w-3" />
+                              <span className="truncate max-w-[100px]">{match.venue}</span>
+                            </div>
+                          </motion.div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Note about mock data */}
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground pt-2 border-t">
+                    <History className="h-3 w-3" />
+                    <span>Historical data based on simulated matchups</span>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Upcoming Opponents */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
