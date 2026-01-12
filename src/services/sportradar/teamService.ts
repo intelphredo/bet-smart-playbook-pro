@@ -1,7 +1,6 @@
 // Sportradar Team Service
-// Fetches team profiles, rosters, and depth charts
+// Fetches team profiles, rosters, and depth charts via edge function
 
-import { API_CONFIGS } from '@/config/apiConfig';
 import { 
   SportLeague, 
   SportradarTeam, 
@@ -149,7 +148,7 @@ const mapApiPlayer = (apiPlayer: any): SportradarPlayer => {
   };
 };
 
-// Fetch team profile
+// Fetch team profile via edge function
 export const fetchTeamProfile = async (
   league: SportLeague,
   teamId: string
@@ -159,16 +158,13 @@ export const fetchTeamProfile = async (
   }
 
   try {
-    const endpoints = API_CONFIGS.SPORTRADAR.ENDPOINTS[league];
-    if (!endpoints?.TEAM_PROFILE) {
-      console.warn(`[Team] No team profile endpoint for ${league}`);
-      return MOCK_TEAMS[teamId] || null;
-    }
-
     const response = await fetchSportradar<any>(
-      endpoints.TEAM_PROFILE,
-      { team_id: teamId, league },
-      { cacheDuration: CACHE_DURATION * 4 } // Team info doesn't change often
+      league,
+      'TEAM_PROFILE',
+      { 
+        cacheDuration: CACHE_DURATION * 4, // Team info doesn't change often
+        teamId
+      }
     );
 
     return mapApiTeam(response.data.team || response.data);
@@ -178,7 +174,7 @@ export const fetchTeamProfile = async (
   }
 };
 
-// Fetch team roster
+// Fetch team roster via edge function (uses TEAM_PROFILE endpoint)
 export const fetchTeamRoster = async (
   league: SportLeague,
   teamId: string
@@ -188,18 +184,13 @@ export const fetchTeamRoster = async (
   }
 
   try {
-    const endpoints = API_CONFIGS.SPORTRADAR.ENDPOINTS[league] as Record<string, string>;
-    const rosterEndpoint = endpoints?.TEAM_ROSTER || endpoints?.TEAM_PROFILE;
-    
-    if (!rosterEndpoint) {
-      console.warn(`[Team] No roster endpoint for ${league}`);
-      return [];
-    }
-
     const response = await fetchSportradar<any>(
-      rosterEndpoint,
-      { team_id: teamId, league },
-      { cacheDuration: CACHE_DURATION * 2 }
+      league,
+      'TEAM_PROFILE',
+      { 
+        cacheDuration: CACHE_DURATION * 2,
+        teamId
+      }
     );
 
     const players = response.data.players || response.data.roster || [];
@@ -210,59 +201,14 @@ export const fetchTeamRoster = async (
   }
 };
 
-// Fetch depth chart
+// Fetch depth chart (not currently supported via edge function)
 export const fetchDepthChart = async (
   league: SportLeague,
   teamId: string
 ): Promise<SportradarTeamDepthChart | null> => {
-  if (shouldUseMockData()) {
-    return null;
-  }
-
-  try {
-    const endpoints = API_CONFIGS.SPORTRADAR.ENDPOINTS[league] as Record<string, string>;
-    const depthEndpoint = endpoints?.TEAM_DEPTH_CHART || endpoints?.DEPTH_CHARTS;
-    
-    if (!depthEndpoint) {
-      console.warn(`[Team] No depth chart endpoint for ${league}`);
-      return null;
-    }
-
-    const response = await fetchSportradar<any>(
-      depthEndpoint,
-      { team_id: teamId, league },
-      { cacheDuration: CACHE_DURATION }
-    );
-
-    const positions: SportradarDepthChartPosition[] = [];
-    const depthData = response.data.depth_chart || response.data.positions || [];
-
-    depthData.forEach((pos: any) => {
-      const players = (pos.players || []).map((p: any, idx: number) => ({
-        depth: p.depth || idx + 1,
-        player: mapApiPlayer(p.player || p)
-      }));
-
-      if (players.length > 0) {
-        positions.push({
-          position: pos.name || pos.position,
-          positionName: pos.full_name || pos.name || pos.position,
-          players
-        });
-      }
-    });
-
-    return {
-      teamId,
-      teamName: response.data.team?.name || '',
-      league,
-      positions,
-      lastUpdated: new Date().toISOString()
-    };
-  } catch (error) {
-    console.error(`[Team] Error fetching depth chart for ${teamId}:`, error);
-    return null;
-  }
+  // Edge function doesn't currently support depth charts
+  console.debug(`[Team] Depth chart not supported via edge function for ${teamId}`);
+  return null;
 };
 
 // Get team with roster

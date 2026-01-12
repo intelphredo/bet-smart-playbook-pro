@@ -1,105 +1,169 @@
-
-import { API_CONFIGS, DEFAULT_HEADERS, LEAGUE_MAPPINGS, getCurrentSeasonType } from "@/config/apiConfig";
+import { supabase } from "@/integrations/supabase/client";
 import { League, Match } from "@/types/sports";
 import { mapSportRadarToMatch } from "./sportRadarMappers";
 
-// Helper to replace date and season placeholders in URL
-const formatEndpoint = (endpoint: string, date: Date, league: string): string => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  
-  // Get current season type for NFL/NBA/NHL
-  const seasonType = getCurrentSeasonType(league);
-  
-  // Calculate NFL week (approximate)
-  const getNFLWeek = (): number => {
-    const seasonStart = new Date(year, 8, 5); // First Thursday of September (approx)
-    const diffTime = date.getTime() - seasonStart.getTime();
-    const diffWeeks = Math.floor(diffTime / (7 * 24 * 60 * 60 * 1000));
-    return Math.max(1, Math.min(18, diffWeeks + 1));
-  };
-  
-  return endpoint
-    .replace('{{year}}', year.toString())
-    .replace('{{month}}', month)
-    .replace('{{day}}', day)
-    .replace('{{season_type}}', seasonType)
-    .replace('{{week}}', getNFLWeek().toString());
-};
+type SportradarDataType = 
+  | "SCHEDULE" 
+  | "INJURIES" 
+  | "STANDINGS" 
+  | "LEADERS" 
+  | "TEAM_PROFILE" 
+  | "PLAYER_PROFILE";
 
-export const fetchSportRadarSchedule = async (league: League, date: Date = new Date()): Promise<Match[]> => {
+interface SportradarResponse {
+  success: boolean;
+  league: string;
+  dataType: string;
+  data: any;
+  fetchedAt: string;
+  error?: string;
+}
+
+/**
+ * Fetch data from SportRadar via the secure edge function
+ * All API key handling happens server-side
+ */
+async function fetchFromEdgeFunction(
+  league: League,
+  dataType: SportradarDataType,
+  options?: { teamId?: string; playerId?: string }
+): Promise<SportradarResponse | null> {
   try {
-    const { BASE_URL, API_KEY, ENDPOINTS } = API_CONFIGS.SPORTRADAR;
-    
-    // Skip if no API key configured
-    if (!API_KEY) {
-      console.debug(`SportRadar API key not configured, skipping ${league}`);
-      return [];
-    }
-    
-    const leagueEndpoints = ENDPOINTS[league as keyof typeof ENDPOINTS];
-    
-    if (!leagueEndpoints || typeof leagueEndpoints !== 'object') {
-      console.warn(`No endpoints defined for league: ${league}`);
-      return [];
-    }
-    
-    // Get the SCHEDULE or DAILY_SCHEDULE endpoint
-    const endpoint = 'SCHEDULE' in leagueEndpoints ? leagueEndpoints.SCHEDULE : null;
-    
-    if (!endpoint || typeof endpoint !== 'string') {
-      console.warn(`No schedule endpoint defined for league: ${league}`);
-      return [];
-    }
-    
-    const formattedEndpoint = formatEndpoint(endpoint, date, league);
-    
-    // Check for unresolved placeholders
-    if (formattedEndpoint.includes('{{')) {
-      console.warn(`Unresolved placeholders in endpoint for ${league}: ${formattedEndpoint}`);
-      return [];
-    }
-    
-    const url = `${BASE_URL}${formattedEndpoint}?api_key=${API_KEY}`;
-    
-    console.log(`Fetching SportRadar data for ${league} on ${date.toISOString().split('T')[0]}`);
-    const response = await fetch(url, {
-      headers: DEFAULT_HEADERS
+    const params = new URLSearchParams({
+      league,
+      type: dataType,
     });
+
+    if (options?.teamId) params.set("team_id", options.teamId);
+    if (options?.playerId) params.set("player_id", options.playerId);
+
+    const { data, error } = await supabase.functions.invoke<SportradarResponse>(
+      "fetch-sportradar",
+      {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+        body: null,
+      }
+    );
+
+    // Since supabase.functions.invoke doesn't support query params directly,
+    // we need to use fetch directly
+    const functionUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fetch-sportradar?${params}`;
     
+    const response = await fetch(functionUrl, {
+      headers: {
+        "Authorization": `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        "Content-Type": "application/json",
+      },
+    });
+
     if (!response.ok) {
-      throw new Error(`SportRadar API Error: ${response.status} - ${response.statusText}`);
+      const errorData = await response.json().catch(() => ({}));
+      console.error(`SportRadar edge function error for ${league}/${dataType}:`, errorData);
+      return null;
     }
-    
-    const data = await response.json();
-    console.log(`SportRadar data received for ${league}:`, data);
-    
-    // Map the response to our Match type
-    return mapSportRadarToMatch(data, league);
+
+    return await response.json();
   } catch (error) {
-    console.error(`Error fetching SportRadar data for ${league}:`, error);
+    console.error(`Error calling SportRadar edge function for ${league}/${dataType}:`, error);
+    return null;
+  }
+}
+
+/**
+ * Fetch schedule for a specific league
+ * Note: The edge function currently supports INJURIES, STANDINGS, LEADERS, TEAM_PROFILE, PLAYER_PROFILE
+ * SCHEDULE endpoint support can be added to the edge function if needed
+ */
+export const fetchSportRadarSchedule = async (
+  league: League,
+  date: Date = new Date()
+): Promise<Match[]> => {
+  try {
+    // For now, return empty as edge function doesn't have SCHEDULE endpoint
+    // The schedule data comes from ESPN which is more reliable for live scores
+    console.debug(`SportRadar schedule for ${league}: Using ESPN instead for live data`);
+    return [];
+  } catch (error) {
+    console.error(`Error fetching SportRadar schedule for ${league}:`, error);
     return [];
   }
 };
 
-export const fetchAllSportRadarSchedules = async (date: Date = new Date()): Promise<Match[]> => {
-  const { API_KEY } = API_CONFIGS.SPORTRADAR;
-  
-  // Skip entirely if no API key
-  if (!API_KEY) {
-    console.debug('SportRadar API key not configured, skipping all leagues');
-    return [];
-  }
-  
+/**
+ * Fetch all schedules - defers to ESPN for live game data
+ */
+export const fetchAllSportRadarSchedules = async (
+  date: Date = new Date()
+): Promise<Match[]> => {
+  console.debug("SportRadar schedules: Deferring to ESPN for live game data");
+  return [];
+};
+
+/**
+ * Fetch injuries for a league via edge function
+ */
+export const fetchSportRadarInjuries = async (league: League): Promise<any> => {
+  const response = await fetchFromEdgeFunction(league, "INJURIES");
+  return response?.data || null;
+};
+
+/**
+ * Fetch standings for a league via edge function
+ */
+export const fetchSportRadarStandings = async (league: League): Promise<any> => {
+  const response = await fetchFromEdgeFunction(league, "STANDINGS");
+  return response?.data || null;
+};
+
+/**
+ * Fetch league leaders via edge function
+ */
+export const fetchSportRadarLeaders = async (league: League): Promise<any> => {
+  const response = await fetchFromEdgeFunction(league, "LEADERS");
+  return response?.data || null;
+};
+
+/**
+ * Fetch team profile via edge function
+ */
+export const fetchSportRadarTeamProfile = async (
+  league: League,
+  teamId: string
+): Promise<any> => {
+  const response = await fetchFromEdgeFunction(league, "TEAM_PROFILE", { teamId });
+  return response?.data || null;
+};
+
+/**
+ * Fetch player profile via edge function
+ */
+export const fetchSportRadarPlayerProfile = async (
+  league: League,
+  playerId: string
+): Promise<any> => {
+  const response = await fetchFromEdgeFunction(league, "PLAYER_PROFILE", { playerId });
+  return response?.data || null;
+};
+
+/**
+ * Fetch injuries for all leagues
+ */
+export const fetchAllSportRadarInjuries = async (): Promise<Record<League, any>> => {
   const leagues: League[] = ["NFL", "NBA", "MLB", "NHL", "SOCCER"];
-  const promises = leagues.map(league => fetchSportRadarSchedule(league, date));
-  
-  try {
-    const results = await Promise.all(promises);
-    return results.flat();
-  } catch (error) {
-    console.error("Error fetching all SportRadar schedules:", error);
-    return [];
-  }
+  const results = await Promise.allSettled(
+    leagues.map(async (league) => ({
+      league,
+      data: await fetchSportRadarInjuries(league),
+    }))
+  );
+
+  const injuries: Record<string, any> = {};
+  results.forEach((result) => {
+    if (result.status === "fulfilled" && result.value.data) {
+      injuries[result.value.league] = result.value.data;
+    }
+  });
+
+  return injuries as Record<League, any>;
 };

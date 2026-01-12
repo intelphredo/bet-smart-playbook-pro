@@ -1,8 +1,8 @@
 // Sportradar Core API Utilities
-// Handles authentication, caching, rate limiting, and error handling
+// All SportRadar API calls are routed through the edge function for security
 
-import { API_CONFIGS, DEFAULT_HEADERS, getCurrentSeasonYear, getCurrentSeasonType } from '@/config/apiConfig';
-import { SportLeague, SportradarError, SportradarResponse } from '@/types/sportradar';
+import { getCurrentSeasonYear, getCurrentSeasonType } from '@/config/apiConfig';
+import { SportLeague, SportradarResponse } from '@/types/sportradar';
 
 // Cache configuration
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
@@ -22,10 +22,11 @@ const apiCache = new Map<string, CacheEntry<any>>();
 let lastRequestTime = 0;
 const MIN_REQUEST_INTERVAL = 1000; // 1 second between requests
 
-// Check if API key is configured
+// Check if API is available (edge function always handles the key check)
 export const isApiKeyConfigured = (): boolean => {
-  const apiKey = API_CONFIGS.SPORTRADAR.API_KEY;
-  return !!apiKey && apiKey.length > 10;
+  // Always return true since the edge function handles API key validation
+  // The key is stored server-side, not in the client
+  return true;
 };
 
 // Get cache entry
@@ -75,23 +76,21 @@ const waitForRateLimit = async (): Promise<void> => {
   lastRequestTime = Date.now();
 };
 
-// Build URL with parameters
-export const buildUrl = (
-  endpoint: string,
-  params: Record<string, string | number>
+// Build edge function URL with parameters
+export const buildEdgeFunctionUrl = (
+  league: SportLeague,
+  dataType: string,
+  params?: { teamId?: string; playerId?: string }
 ): string => {
-  let url = `${API_CONFIGS.SPORTRADAR.BASE_URL}${endpoint}`;
-  
-  // Replace template placeholders
-  Object.entries(params).forEach(([key, value]) => {
-    url = url.replace(`{{${key}}}`, String(value));
+  const searchParams = new URLSearchParams({
+    league,
+    type: dataType,
   });
   
-  // Add API key
-  const separator = url.includes('?') ? '&' : '?';
-  url += `${separator}api_key=${API_CONFIGS.SPORTRADAR.API_KEY}`;
+  if (params?.teamId) searchParams.set("team_id", params.teamId);
+  if (params?.playerId) searchParams.set("player_id", params.playerId);
   
-  return url;
+  return `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fetch-sportradar?${searchParams}`;
 };
 
 // Format date for API
@@ -111,26 +110,22 @@ export const getSeasonParams = (league: SportLeague): { year: number; season_typ
   };
 };
 
-// Fetch with retry and error handling
+// Fetch via edge function with retry and error handling
 export const fetchSportradar = async <T>(
-  endpoint: string,
-  params: Record<string, string | number> = {},
+  league: SportLeague,
+  dataType: string,
   options: {
     cacheDuration?: number;
     skipCache?: boolean;
     retries?: number;
+    teamId?: string;
+    playerId?: string;
   } = {}
 ): Promise<SportradarResponse<T>> => {
   const { cacheDuration = CACHE_DURATION, skipCache = false, retries = 3 } = options;
   
-  // Check if API key is configured
-  if (!isApiKeyConfigured()) {
-    console.warn('[Sportradar] API key not configured, returning empty data');
-    throw new Error('Sportradar API key not configured');
-  }
-  
   // Build cache key
-  const cacheKey = `sportradar:${endpoint}:${JSON.stringify(params)}`;
+  const cacheKey = `sportradar:${league}:${dataType}:${options.teamId || ''}:${options.playerId || ''}`;
   
   // Check cache
   if (!skipCache) {
@@ -140,7 +135,7 @@ export const fetchSportradar = async <T>(
         data: cached,
         cached: true,
         timestamp: new Date().toISOString(),
-        league: (params.league as SportLeague) || 'NBA'
+        league
       };
     }
   }
@@ -148,34 +143,45 @@ export const fetchSportradar = async <T>(
   // Rate limiting
   await waitForRateLimit();
   
-  const url = buildUrl(endpoint, params);
-  console.log(`[Sportradar] Fetching: ${endpoint}`);
+  const url = buildEdgeFunctionUrl(league, dataType, {
+    teamId: options.teamId,
+    playerId: options.playerId
+  });
+  
+  console.log(`[Sportradar] Fetching via edge function: ${league}/${dataType}`);
   
   let lastError: Error | null = null;
   
   for (let attempt = 0; attempt < retries; attempt++) {
     try {
       const response = await fetch(url, {
-        headers: DEFAULT_HEADERS
+        headers: {
+          "Authorization": `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          "Content-Type": "application/json",
+        }
       });
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(
-          `Sportradar API Error: ${response.status} - ${errorData.message || response.statusText}`
+          `Sportradar API Error: ${response.status} - ${errorData.error || response.statusText}`
         );
       }
       
-      const data = await response.json();
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Unknown error from SportRadar edge function');
+      }
       
       // Cache the successful response
-      setCachedData(cacheKey, data, cacheDuration);
+      setCachedData(cacheKey, result.data, cacheDuration);
       
       return {
-        data,
+        data: result.data,
         cached: false,
-        timestamp: new Date().toISOString(),
-        league: (params.league as SportLeague) || 'NBA'
+        timestamp: result.fetchedAt || new Date().toISOString(),
+        league
       };
     } catch (error) {
       lastError = error as Error;
@@ -196,5 +202,7 @@ export { CACHE_DURATION, INJURY_CACHE_DURATION, STANDINGS_CACHE_DURATION };
 
 // Export helper to check if we should use mock data
 export const shouldUseMockData = (): boolean => {
-  return !isApiKeyConfigured();
+  // With edge function handling the API key, we don't need mock data
+  // The edge function will return an error if the key isn't configured
+  return false;
 };
