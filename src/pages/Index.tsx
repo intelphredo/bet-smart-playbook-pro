@@ -25,8 +25,9 @@ import LineMovementsCard from "@/components/LineMovementsCard";
 import CLVLeaderboard from "@/components/CLVLeaderboard";
 import AlgorithmsSection from "@/components/AlgorithmsSection";
 import StatsOverview from "@/components/StatsOverview";
+import HistoricalPredictionsSection from "@/components/HistoricalPredictionsSection";
 
-import { Radio, Clock, CheckCircle2, TrendingUp, Zap, BarChart3, DollarSign, Brain } from "lucide-react";
+import { Radio, Clock, CheckCircle2, TrendingUp, Zap, BarChart3, DollarSign, Brain, Target, History } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 
@@ -147,7 +148,7 @@ const Index = () => {
 
         {/* Section Tabs */}
         <Tabs value={activeSection} onValueChange={setActiveSection} className="space-y-6">
-          <TabsList className="bg-muted/50 p-1">
+          <TabsList className="bg-muted/50 p-1 flex-wrap">
             <TabsTrigger value="overview" className="gap-2">
               <BarChart3 className="h-4 w-4" />
               Overview
@@ -160,6 +161,10 @@ const Index = () => {
                   {filteredLive.length}
                 </span>
               )}
+            </TabsTrigger>
+            <TabsTrigger value="predictions" className="gap-2">
+              <Target className="h-4 w-4" />
+              Predictions
             </TabsTrigger>
             <TabsTrigger value="upcoming" className="gap-2">
               <Clock className="h-4 w-4" />
@@ -284,6 +289,11 @@ const Index = () => {
             >
               <MatchesGrid matches={filteredUpcoming} type="upcoming" maxItems={50} isLoading={isLoading} />
             </ContentSection>
+          </TabsContent>
+
+          {/* Predictions History Tab */}
+          <TabsContent value="predictions" className="mt-6">
+            <HistoricalPredictionsSection />
           </TabsContent>
 
           {/* Insights Tab */}
