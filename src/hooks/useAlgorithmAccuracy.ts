@@ -71,11 +71,12 @@ export function useAlgorithmAccuracy(options: UseAlgorithmAccuracyOptions = {}) 
     queryFn: async (): Promise<AlgorithmAccuracyStats[]> => {
       const startDate = startOfDay(subDays(new Date(), days)).toISOString();
       
-      // Build query
+      // Build query - only fetch predictions that have actual prediction data
       let query = supabase
         .from('algorithm_predictions')
         .select('*')
         .gte('predicted_at', startDate)
+        .not('prediction', 'is', null)
         .order('predicted_at', { ascending: false });
 
       if (algorithmId) {
@@ -221,9 +222,11 @@ export function useRecentPredictions(options: { limit?: number; algorithmId?: st
   return useQuery({
     queryKey: ['recentPredictions', limit, algorithmId],
     queryFn: async (): Promise<AlgorithmPrediction[]> => {
+      // Only fetch predictions that have actual prediction data
       let query = supabase
         .from('algorithm_predictions')
         .select('*')
+        .not('prediction', 'is', null)
         .order('predicted_at', { ascending: false })
         .limit(limit);
 

@@ -65,7 +65,7 @@ const Index = () => {
         NBA: "basketball", NCAAB: "basketball",
         NFL: "football", NCAAF: "football",
         MLB: "baseball", NHL: "hockey",
-        EPL: "soccer", MLS: "soccer",
+        EPL: "soccer", MLS: "soccer", SOCCER: "soccer",
       };
       return categoryMap[match.league?.toUpperCase()] === selectedCategory;
     });
@@ -83,7 +83,7 @@ const Index = () => {
       NBA: "basketball", NCAAB: "basketball",
       NFL: "football", NCAAF: "football",
       MLB: "baseball", NHL: "hockey",
-      EPL: "soccer", MLS: "soccer",
+      EPL: "soccer", MLS: "soccer", SOCCER: "soccer",
     };
     allMatches.forEach(match => {
       const category = categoryMap[match.league?.toUpperCase()];
