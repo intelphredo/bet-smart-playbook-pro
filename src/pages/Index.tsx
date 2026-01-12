@@ -1,47 +1,49 @@
 import { useState, useMemo } from "react";
-import { League, Match } from "@/types/sports";
-import StatsOverview from "@/components/StatsOverview";
-import { useToast } from "@/hooks/use-toast";
-import ConfidentPicks from "@/components/ConfidentPicks";
-import ArbitrageOpportunitiesSection from "@/components/ArbitrageOpportunitiesSection";
-import AlgorithmsSection from "@/components/AlgorithmsSection";
-import PremiumSubscribeCard from "@/components/PremiumSubscribeCard";
-import PageFooter from "@/components/PageFooter";
+import { Match } from "@/types/sports";
 import NavBar from "@/components/NavBar";
-import QuickStatsDashboard from "@/components/QuickStatsDashboard";
-import CLVLeaderboard from "@/components/CLVLeaderboard";
-import LineMovementsCard from "@/components/LineMovementsCard";
+import PageFooter from "@/components/PageFooter";
 import { useSportsData } from "@/hooks/useSportsData";
 import { SportCategory } from "@/types/LeagueRegistry";
 import { useArbitrageCalculator } from "@/hooks/useArbitrageCalculator";
 import { usePreferences } from "@/hooks/usePreferences";
-import SportsSidebar from "@/components/layout/SportsSidebar";
-import MainContentTabs from "@/components/layout/MainContentTabs";
-import QuickActions from "@/components/layout/QuickActions";
-import UpcomingGamesTab from "@/components/LiveESPNTabs/UpcomingGamesTab";
-import LiveMatchesTab from "@/components/LiveESPNTabs/LiveMatchesTab";
-import FinishedMatchesTab from "@/components/LiveESPNTabs/FinishedMatchesTab";
-import FavoritesTab from "@/components/FavoritesTab";
-import SmartScoreSection from "@/components/SmartScoreSection";
+import { useBetTracking } from "@/hooks/useBetTracking";
 import { applySmartScores } from "@/utils/smartScoreCalculator";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+
+// Layout Components
+import DashboardHeader from "@/components/layout/DashboardHeader";
+import SportCategoryNav from "@/components/layout/SportCategoryNav";
+import StatsBar from "@/components/layout/StatsBar";
+import ContentSection from "@/components/layout/ContentSection";
+import MatchesGrid from "@/components/layout/MatchesGrid";
+
+// Feature Components
+import ConfidentPicks from "@/components/ConfidentPicks";
+import SmartScoreSection from "@/components/SmartScoreSection";
+import ArbitrageOpportunitiesSection from "@/components/ArbitrageOpportunitiesSection";
+import LineMovementsCard from "@/components/LineMovementsCard";
+import CLVLeaderboard from "@/components/CLVLeaderboard";
+import AlgorithmsSection from "@/components/AlgorithmsSection";
+import StatsOverview from "@/components/StatsOverview";
+
+import { Radio, Clock, CheckCircle2, TrendingUp, Zap, BarChart3, DollarSign, Brain } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Card } from "@/components/ui/card";
 
 const Index = () => {
-  const [selectedLeague, setSelectedLeague] = useState<string>("ALL");
   const [selectedCategory, setSelectedCategory] = useState<SportCategory | "ALL">("ALL");
-  const [activeTab, setActiveTab] = useState("upcoming");
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [selectedLeague, setSelectedLeague] = useState<string>("ALL");
+  const [activeSection, setActiveSection] = useState("overview");
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
   const { toast } = useToast();
   const { preferences } = usePreferences();
+  const { stats } = useBetTracking();
 
   const {
     upcomingMatches: rawUpcoming,
     liveMatches: rawLive,
     finishedMatches: rawFinished,
     isLoading,
-    error,
     refetchWithTimestamp,
   } = useSportsData({
     league: selectedLeague as any,
@@ -54,271 +56,255 @@ const Index = () => {
   const liveMatches = useMemo(() => applySmartScores(rawLive), [rawLive]);
   const finishedMatches = useMemo(() => rawFinished, [rawFinished]);
 
-  // Filter matches by category and league
-  const filterMatches = (matches: Match[]) => {
+  // Filter matches by category
+  const filterByCategory = (matches: Match[]) => {
+    if (selectedCategory === "ALL") return matches;
     return matches.filter(match => {
-      if (selectedLeague !== "ALL" && match.league !== selectedLeague) {
-        return false;
-      }
-      if (selectedCategory !== "ALL") {
-        const leagueCategory = getLeagueCategory(match.league);
-        if (leagueCategory !== selectedCategory) {
-          return false;
-        }
-      }
-      return true;
+      const categoryMap: Record<string, SportCategory> = {
+        NBA: "basketball", NCAAB: "basketball",
+        NFL: "football", NCAAF: "football",
+        MLB: "baseball", NHL: "hockey",
+        EPL: "soccer", MLS: "soccer",
+      };
+      return categoryMap[match.league?.toUpperCase()] === selectedCategory;
     });
   };
 
-  const getLeagueCategory = (league?: string): SportCategory | undefined => {
-    if (!league) return undefined;
-    const categoryMap: Record<string, SportCategory> = {
-      NBA: "basketball",
-      NCAAB: "basketball",
-      NFL: "football", 
-      NCAAF: "football",
-      MLB: "baseball",
-      NHL: "hockey",
-      EPL: "soccer",
-      MLS: "soccer",
-    };
-    return categoryMap[league.toUpperCase()];
-  };
+  const filteredUpcoming = useMemo(() => filterByCategory(upcomingMatches), [upcomingMatches, selectedCategory]);
+  const filteredLive = useMemo(() => filterByCategory(liveMatches), [liveMatches, selectedCategory]);
+  const filteredFinished = useMemo(() => filterByCategory(finishedMatches), [finishedMatches, selectedCategory]);
 
-  const filteredUpcoming = useMemo(() => filterMatches(upcomingMatches), [upcomingMatches, selectedLeague, selectedCategory]);
-  const filteredLive = useMemo(() => filterMatches(liveMatches), [liveMatches, selectedLeague, selectedCategory]);
-  const filteredFinished = useMemo(() => filterMatches(finishedMatches), [finishedMatches, selectedLeague, selectedCategory]);
-
-  // Calculate match counts per category
+  // Match counts per category
   const matchCounts = useMemo(() => {
     const allMatches = [...rawUpcoming, ...rawLive];
     const counts: Record<string, number> = { total: allMatches.length };
-    
+    const categoryMap: Record<string, SportCategory> = {
+      NBA: "basketball", NCAAB: "basketball",
+      NFL: "football", NCAAF: "football",
+      MLB: "baseball", NHL: "hockey",
+      EPL: "soccer", MLS: "soccer",
+    };
     allMatches.forEach(match => {
-      const category = getLeagueCategory(match.league);
-      if (category) {
-        counts[category] = (counts[category] || 0) + 1;
-      }
+      const category = categoryMap[match.league?.toUpperCase()];
+      if (category) counts[category] = (counts[category] || 0) + 1;
     });
-    
     return counts;
   }, [rawUpcoming, rawLive]);
 
-  // Favorites count
-  const allMatches = useMemo(() => [...filteredUpcoming, ...filteredLive, ...filteredFinished], [filteredUpcoming, filteredLive, filteredFinished]);
-  const favoritesCount = preferences.favorites.matches.length + 
-    allMatches.filter(match => {
-      const homeTeam = match.homeTeam?.shortName || match.homeTeam?.name || "";
-      const awayTeam = match.awayTeam?.shortName || match.awayTeam?.name || "";
-      return preferences.favorites.teams.some(team => 
-        homeTeam.toLowerCase().includes(team.toLowerCase()) ||
-        awayTeam.toLowerCase().includes(team.toLowerCase())
-      ) && !preferences.favorites.matches.includes(match.id);
-    }).length;
-
-  // Arbitrage opportunities
+  // Arbitrage
   const allMatchesWithOdds = useMemo(() => 
     [...filteredUpcoming, ...filteredLive].filter(m => m.liveOdds && m.liveOdds.length >= 2),
     [filteredUpcoming, filteredLive]
   );
-  const { opportunities: calculatedArbitrage } = useArbitrageCalculator(allMatchesWithOdds);
-  const arbitrageOpportunitiesToShow = calculatedArbitrage.slice(0, 6);
+  const { opportunities } = useArbitrageCalculator(allMatchesWithOdds);
 
-  const handleRefreshData = () => {
+  // Stats for the bar
+  const dashboardStats = {
+    liveGames: filteredLive.length,
+    upcomingGames: filteredUpcoming.length,
+    arbOpportunities: opportunities.length,
+    winRate: stats?.total_bets ? ((stats.wins || 0) / stats.total_bets) * 100 : 0,
+    profit: stats?.total_profit || 0,
+    streak: stats?.current_streak || 0,
+  };
+
+  const handleRefresh = () => {
     refetchWithTimestamp();
     setLastRefresh(new Date());
     toast({
-      title: "Refreshing data",
-      description: "Fetching the latest sports data",
-      variant: "default"
+      title: "Data refreshed",
+      description: "Latest sports data loaded",
     });
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-background via-secondary/30 to-accent/10">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-background via-background to-accent/5">
       <NavBar />
       
-      <div className="flex flex-1">
-        {/* Sports Sidebar - Hidden on mobile */}
-        <aside className="hidden lg:block">
-          <SportsSidebar
-            selectedCategory={selectedCategory}
-            onCategoryChange={setSelectedCategory}
-            selectedLeague={selectedLeague}
-            onLeagueChange={setSelectedLeague}
-            matchCounts={matchCounts}
-            collapsed={sidebarCollapsed}
-            onCollapsedChange={setSidebarCollapsed}
-          />
-        </aside>
+      {/* Dashboard Header */}
+      <DashboardHeader
+        onRefresh={handleRefresh}
+        isLoading={isLoading}
+        lastUpdated={lastRefresh}
+        liveCount={filteredLive.length}
+      />
 
-        {/* Main Content Area */}
-        <main className="flex-1 overflow-y-auto">
-          <div className="container px-4 py-4 max-w-7xl mx-auto">
-            {/* Quick Stats Row */}
-            <section className="mb-4">
-              <QuickStatsDashboard />
-            </section>
+      {/* Sport Category Navigation */}
+      <SportCategoryNav
+        selectedCategory={selectedCategory}
+        onCategoryChange={setSelectedCategory}
+        matchCounts={matchCounts}
+      />
 
-            {/* Actions Bar */}
-            <section className="mb-4">
-              <QuickActions 
-                onRefresh={handleRefreshData} 
-                isLoading={isLoading}
-                lastUpdated={lastRefresh}
-              />
-            </section>
+      {/* Main Content */}
+      <main className="flex-1 container px-4 py-6 mx-auto max-w-7xl">
+        {/* Stats Bar */}
+        <section className="mb-6">
+          <StatsBar stats={dashboardStats} />
+        </section>
 
-            {/* Main Tabs Content */}
-            <MainContentTabs
-              activeTab={activeTab}
-              onTabChange={setActiveTab}
-              upcomingCount={filteredUpcoming.length}
-              liveCount={filteredLive.length}
-              finishedCount={filteredFinished.length}
-              favoritesCount={favoritesCount}
-            >
-              {{
-                upcoming: (
-                  <div className="space-y-6">
-                    {/* Smart Score + Confident Picks Row */}
-                    <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-                      <div className="xl:col-span-2">
-                        <ConfidentPicks />
-                      </div>
-                      <div className="xl:col-span-1">
-                        <SmartScoreSection matches={filteredUpcoming.slice(0, 5)} />
-                      </div>
-                    </div>
+        {/* Section Tabs */}
+        <Tabs value={activeSection} onValueChange={setActiveSection} className="space-y-6">
+          <TabsList className="bg-muted/50 p-1">
+            <TabsTrigger value="overview" className="gap-2">
+              <BarChart3 className="h-4 w-4" />
+              Overview
+            </TabsTrigger>
+            <TabsTrigger value="live" className="gap-2">
+              <Radio className="h-4 w-4" />
+              Live
+              {filteredLive.length > 0 && (
+                <span className="ml-1 px-1.5 py-0.5 text-[10px] bg-red-500 text-white rounded-full">
+                  {filteredLive.length}
+                </span>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="upcoming" className="gap-2">
+              <Clock className="h-4 w-4" />
+              Upcoming
+            </TabsTrigger>
+            <TabsTrigger value="insights" className="gap-2">
+              <Brain className="h-4 w-4" />
+              Insights
+            </TabsTrigger>
+            <TabsTrigger value="algorithms" className="gap-2">
+              <Zap className="h-4 w-4" />
+              Algorithms
+            </TabsTrigger>
+          </TabsList>
 
-                    {/* Arbitrage Section */}
-                    {arbitrageOpportunitiesToShow.length > 0 && (
-                      <ArbitrageOpportunitiesSection
-                        selectedLeague={selectedLeague as any}
-                        arbitrageOpportunitiesToShow={arbitrageOpportunitiesToShow}
-                      />
-                    )}
+          {/* Overview Tab */}
+          <TabsContent value="overview" className="space-y-6 mt-6">
+            {/* Live Games Section */}
+            {filteredLive.length > 0 && (
+              <ContentSection
+                title="Live Games"
+                icon={Radio}
+                badge={filteredLive.length}
+                badgeVariant="destructive"
+                action={{ label: "View All", onClick: () => setActiveSection("live") }}
+              >
+                <MatchesGrid matches={filteredLive} type="live" maxItems={3} isLoading={isLoading} />
+              </ContentSection>
+            )}
 
-                    {/* Matches Grid */}
-                    <Card>
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-lg flex items-center gap-2">
-                          Upcoming Games
-                          <span className="text-sm font-normal text-muted-foreground">
-                            ({filteredUpcoming.length})
-                          </span>
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="p-0">
-                        <UpcomingGamesTab isLoading={isLoading} matches={filteredUpcoming} />
-                      </CardContent>
-                    </Card>
-                  </div>
-                ),
-                
-                live: (
-                  <div className="space-y-6">
-                    <Card>
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-lg flex items-center gap-2">
-                          🔴 Live Games
-                          <span className="text-sm font-normal text-muted-foreground">
-                            ({filteredLive.length})
-                          </span>
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="p-0">
-                        <LiveMatchesTab isLoading={isLoading} liveMatches={filteredLive} />
-                      </CardContent>
-                    </Card>
-                  </div>
-                ),
-                
-                finished: (
-                  <div className="space-y-6">
-                    <Card>
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-lg flex items-center gap-2">
-                          Completed Games
-                          <span className="text-sm font-normal text-muted-foreground">
-                            ({filteredFinished.length})
-                          </span>
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="p-0">
-                        <FinishedMatchesTab isLoading={isLoading} finishedMatches={filteredFinished} />
-                      </CardContent>
-                    </Card>
-                  </div>
-                ),
-                
-                favorites: (
-                  <FavoritesTab allMatches={allMatches} />
-                ),
-                
-                insights: (
-                  <div className="space-y-6">
-                    {/* Insights Grid */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                      <LineMovementsCard />
-                      <CLVLeaderboard />
-                    </div>
-                    
-                    {/* Stats Overview */}
-                    <Card className="p-4">
-                      <StatsOverview />
-                    </Card>
-                  </div>
-                ),
-                
-                algorithms: (
-                  <div className="space-y-6">
-                    <AlgorithmsSection />
-                    <PremiumSubscribeCard />
-                  </div>
-                ),
-              }}
-            </MainContentTabs>
-          </div>
-        </main>
+            {/* Two Column Layout */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Main Column */}
+              <div className="lg:col-span-2 space-y-6">
+                {/* Top Picks */}
+                <ContentSection
+                  title="Confident Picks"
+                  subtitle="AI-powered betting recommendations"
+                  icon={TrendingUp}
+                >
+                  <ConfidentPicks />
+                </ContentSection>
 
-        {/* Right Sidebar for Desktop - Quick Stats */}
-        <aside className="hidden xl:block w-72 border-l border-border/50 bg-card/30 p-4 overflow-y-auto">
-          <div className="space-y-4">
-            <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider">
-              Quick Stats
-            </h3>
-            
-            <Card className="p-3">
-              <div className="text-xs text-muted-foreground mb-1">Total Games Today</div>
-              <div className="text-2xl font-bold">{matchCounts.total || 0}</div>
-            </Card>
-            
-            <Card className="p-3">
-              <div className="text-xs text-muted-foreground mb-1">Live Now</div>
-              <div className="text-2xl font-bold text-red-500">{filteredLive.length}</div>
-            </Card>
-            
-            <Card className="p-3">
-              <div className="text-xs text-muted-foreground mb-1">Arb Opportunities</div>
-              <div className="text-2xl font-bold text-green-500">{calculatedArbitrage.length}</div>
-            </Card>
+                {/* Upcoming Games */}
+                <ContentSection
+                  title="Upcoming Games"
+                  icon={Clock}
+                  badge={filteredUpcoming.length}
+                  action={{ label: "View All", onClick: () => setActiveSection("upcoming") }}
+                >
+                  <MatchesGrid matches={filteredUpcoming} type="upcoming" maxItems={6} isLoading={isLoading} />
+                </ContentSection>
+              </div>
 
-            {/* Category breakdown */}
-            <div className="space-y-2 pt-2">
-              <h4 className="text-xs text-muted-foreground uppercase tracking-wider">By Sport</h4>
-              {Object.entries(matchCounts)
-                .filter(([key]) => key !== "total")
-                .map(([category, count]) => (
-                  <div key={category} className="flex items-center justify-between text-sm">
-                    <span className="capitalize">{category}</span>
-                    <span className="font-medium">{count}</span>
-                  </div>
-                ))}
+              {/* Sidebar */}
+              <div className="space-y-6">
+                {/* Smart Scores */}
+                <ContentSection
+                  title="Smart Scores"
+                  subtitle="Top rated matches"
+                  icon={Zap}
+                >
+                  <SmartScoreSection matches={filteredUpcoming.slice(0, 5)} />
+                </ContentSection>
+
+                {/* Arbitrage */}
+                {opportunities.length > 0 && (
+                  <ContentSection
+                    title="Arbitrage"
+                    icon={DollarSign}
+                    badge={opportunities.length}
+                  >
+                    <ArbitrageOpportunitiesSection
+                      selectedLeague={selectedLeague as any}
+                      arbitrageOpportunitiesToShow={opportunities.slice(0, 3)}
+                    />
+                  </ContentSection>
+                )}
+              </div>
             </div>
-          </div>
-        </aside>
-      </div>
+
+            {/* Finished Games */}
+            {filteredFinished.length > 0 && (
+              <ContentSection
+                title="Recent Results"
+                icon={CheckCircle2}
+                badge={filteredFinished.length}
+              >
+                <MatchesGrid matches={filteredFinished} type="finished" maxItems={6} isLoading={isLoading} />
+              </ContentSection>
+            )}
+          </TabsContent>
+
+          {/* Live Tab */}
+          <TabsContent value="live" className="mt-6">
+            <ContentSection
+              title="Live Games"
+              subtitle="Currently in progress"
+              icon={Radio}
+              badge={filteredLive.length}
+              badgeVariant="destructive"
+            >
+              {filteredLive.length > 0 ? (
+                <MatchesGrid matches={filteredLive} type="live" maxItems={50} isLoading={isLoading} />
+              ) : (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Radio className="h-12 w-12 mx-auto mb-4 opacity-30" />
+                  <p>No live games at the moment</p>
+                  <p className="text-sm mt-1">Check back soon for live action</p>
+                </div>
+              )}
+            </ContentSection>
+          </TabsContent>
+
+          {/* Upcoming Tab */}
+          <TabsContent value="upcoming" className="mt-6">
+            <ContentSection
+              title="Upcoming Games"
+              subtitle="Scheduled matches"
+              icon={Clock}
+              badge={filteredUpcoming.length}
+            >
+              <MatchesGrid matches={filteredUpcoming} type="upcoming" maxItems={50} isLoading={isLoading} />
+            </ContentSection>
+          </TabsContent>
+
+          {/* Insights Tab */}
+          <TabsContent value="insights" className="space-y-6 mt-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <ContentSection title="Line Movements" icon={TrendingUp}>
+                <LineMovementsCard />
+              </ContentSection>
+              <ContentSection title="CLV Leaderboard" icon={BarChart3}>
+                <CLVLeaderboard />
+              </ContentSection>
+            </div>
+            <ContentSection title="Performance Overview" icon={BarChart3}>
+              <StatsOverview />
+            </ContentSection>
+          </TabsContent>
+
+          {/* Algorithms Tab */}
+          <TabsContent value="algorithms" className="mt-6">
+            <AlgorithmsSection />
+          </TabsContent>
+        </Tabs>
+      </main>
 
       <PageFooter />
     </div>
