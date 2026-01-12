@@ -24,10 +24,11 @@ import SmartScoreSection from "@/components/SmartScoreSection";
 import ArbitrageOpportunitiesSection from "@/components/ArbitrageOpportunitiesSection";
 import { HighValueAlertBanner } from "@/components/HighValueAlertBanner";
 import { useHighValueAlerts } from "@/hooks/useHighValueAlerts";
+import { SharpMoneySection } from "@/components/SharpMoney";
 
 import { 
   Radio, Clock, TrendingUp, RefreshCw, ChevronRight, 
-  Trophy, Zap, DollarSign, Activity, Calendar
+  Trophy, Zap, DollarSign, Activity, Calendar, Brain, TrendingDown
 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -39,6 +40,7 @@ import { Separator } from "@/components/ui/separator";
 // League tabs for filtering
 const LEAGUE_TABS = [
   { id: 'ALL', label: 'All', icon: Activity },
+  { id: 'SHARP', label: 'Sharp Money', icon: Brain },
   { id: 'NBA', label: 'NBA', icon: Trophy },
   { id: 'NFL', label: 'NFL', icon: Trophy },
   { id: 'NCAAB', label: 'NCAAB', icon: Trophy },
@@ -50,6 +52,7 @@ const LEAGUE_TABS = [
 const Index = () => {
   const navigate = useNavigate();
   const [selectedLeague, setSelectedLeague] = useState<string>("ALL");
+  const [showSharpOnly, setShowSharpOnly] = useState(false);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
   const { toast } = useToast();
   const { stats } = useBetTracking();
@@ -77,13 +80,16 @@ const Index = () => {
 
   // Filter by league
   const filterByLeague = (matches: Match[]) => {
-    if (selectedLeague === "ALL") return matches;
+    if (selectedLeague === "ALL" || selectedLeague === "SHARP") return matches;
     return matches.filter(m => m.league?.toUpperCase() === selectedLeague);
   };
 
   const filteredUpcoming = useMemo(() => filterByLeague(upcomingMatches), [upcomingMatches, selectedLeague]);
   const filteredLive = useMemo(() => filterByLeague(liveMatches), [liveMatches, selectedLeague]);
   const filteredFinished = useMemo(() => filterByLeague(finishedMatches), [finishedMatches, selectedLeague]);
+
+  // Determine if we're in Sharp Money mode
+  const isSharpMode = selectedLeague === "SHARP";
 
   // Arbitrage
   const allMatchesWithOdds = useMemo(() => 
@@ -135,14 +141,19 @@ const Index = () => {
               <div className="flex items-center justify-between py-2">
                 <ScrollArea className="flex-1">
                   <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1">
                     {LEAGUE_TABS.map((tab) => (
                       <Button
                         key={tab.id}
                         variant={selectedLeague === tab.id ? "default" : "ghost"}
                         size="sm"
                         onClick={() => setSelectedLeague(tab.id)}
-                        className="shrink-0"
+                        className={cn(
+                          "shrink-0",
+                          tab.id === 'SHARP' && "text-purple-600 dark:text-purple-400"
+                        )}
                       >
+                        {tab.id === 'SHARP' && <Brain className="h-3.5 w-3.5 mr-1" />}
                         {tab.label}
                         {tab.id === 'ALL' && (
                           <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-[10px]">
@@ -151,6 +162,7 @@ const Index = () => {
                         )}
                       </Button>
                     ))}
+                  </div>
                   </div>
                 </ScrollArea>
                 
@@ -188,80 +200,114 @@ const Index = () => {
             <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
               {/* Main Scoreboard - 3 cols */}
               <div className="xl:col-span-3 space-y-6">
-                {/* Live Games */}
-                {filteredLive.length > 0 && (
-                  <Card>
-                    <CardHeader className="py-3 px-4 flex flex-row items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Radio className="h-4 w-4 text-red-500" />
-                        <CardTitle className="text-base">Live Games</CardTitle>
-                        <Badge variant="destructive" className="animate-pulse">
-                          {filteredLive.length}
-                        </Badge>
-                      </div>
-                      <Button variant="ghost" size="sm" onClick={() => navigate('/live')}>
-                        See All <ChevronRight className="h-4 w-4 ml-1" />
-                      </Button>
-                    </CardHeader>
-                    <CardContent className="p-0">
-                      <div className="divide-y">
-                        {filteredLive.slice(0, 5).map((match) => (
-                          <ScoreboardRow key={match.id} match={match} />
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
+                {/* Sharp Money Mode */}
+                {isSharpMode ? (
+                  <SharpMoneySection 
+                    matches={allActiveMatches} 
+                    league="ALL"
+                    maxItems={20}
+                    showFilter={true}
+                    compact={false}
+                  />
+                ) : (
+                  <>
+                    {/* Live Games */}
+                    {filteredLive.length > 0 && (
+                      <Card>
+                        <CardHeader className="py-3 px-4 flex flex-row items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Radio className="h-4 w-4 text-red-500" />
+                            <CardTitle className="text-base">Live Games</CardTitle>
+                            <Badge variant="destructive" className="animate-pulse">
+                              {filteredLive.length}
+                            </Badge>
+                          </div>
+                          <Button variant="ghost" size="sm" onClick={() => navigate('/live')}>
+                            See All <ChevronRight className="h-4 w-4 ml-1" />
+                          </Button>
+                        </CardHeader>
+                        <CardContent className="p-0">
+                          <div className="divide-y">
+                            {filteredLive.slice(0, 5).map((match) => (
+                              <ScoreboardRow key={match.id} match={match} />
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
 
-                {/* Upcoming Games */}
-                <Card>
-                  <CardHeader className="py-3 px-4 flex flex-row items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-primary" />
-                      <CardTitle className="text-base">Upcoming Games</CardTitle>
-                      <Badge variant="secondary">{filteredUpcoming.length}</Badge>
-                    </div>
-                    <Button variant="ghost" size="sm" onClick={() => navigate('/games')}>
-                      Full Schedule <ChevronRight className="h-4 w-4 ml-1" />
-                    </Button>
-                  </CardHeader>
-                  <CardContent className="p-0">
-                    <div className="divide-y">
-                      {filteredUpcoming.slice(0, 10).map((match) => (
-                        <ScoreboardRow key={match.id} match={match} />
-                      ))}
-                      {filteredUpcoming.length === 0 && (
-                        <div className="py-12 text-center text-muted-foreground">
-                          <Clock className="h-8 w-8 mx-auto mb-2 opacity-30" />
-                          <p>No upcoming games</p>
+                    {/* Upcoming Games */}
+                    <Card>
+                      <CardHeader className="py-3 px-4 flex flex-row items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-4 w-4 text-primary" />
+                          <CardTitle className="text-base">Upcoming Games</CardTitle>
+                          <Badge variant="secondary">{filteredUpcoming.length}</Badge>
                         </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
+                        <Button variant="ghost" size="sm" onClick={() => navigate('/games')}>
+                          Full Schedule <ChevronRight className="h-4 w-4 ml-1" />
+                        </Button>
+                      </CardHeader>
+                      <CardContent className="p-0">
+                        <div className="divide-y">
+                          {filteredUpcoming.slice(0, 10).map((match) => (
+                            <ScoreboardRow key={match.id} match={match} />
+                          ))}
+                          {filteredUpcoming.length === 0 && (
+                            <div className="py-12 text-center text-muted-foreground">
+                              <Clock className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                              <p>No upcoming games</p>
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
 
-                {/* Recent Results */}
-                {filteredFinished.length > 0 && (
-                  <Card>
-                    <CardHeader className="py-3 px-4 flex flex-row items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Trophy className="h-4 w-4 text-muted-foreground" />
-                        <CardTitle className="text-base">Recent Results</CardTitle>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="p-0">
-                      <div className="divide-y">
-                        {filteredFinished.slice(0, 5).map((match) => (
-                          <ScoreboardRow key={match.id} match={match} showOdds={false} />
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
+                    {/* Recent Results */}
+                    {filteredFinished.length > 0 && (
+                      <Card>
+                        <CardHeader className="py-3 px-4 flex flex-row items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Trophy className="h-4 w-4 text-muted-foreground" />
+                            <CardTitle className="text-base">Recent Results</CardTitle>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="p-0">
+                          <div className="divide-y">
+                            {filteredFinished.slice(0, 5).map((match) => (
+                              <ScoreboardRow key={match.id} match={match} showOdds={false} />
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </>
                 )}
               </div>
 
               {/* Right Sidebar - 1 col */}
               <div className="space-y-6">
+                {/* Sharp Money Mini Section (only when not in sharp mode) */}
+                {!isSharpMode && (
+                  <Card className="border-purple-500/30 bg-purple-500/5">
+                    <CardHeader className="py-3 px-4">
+                      <div className="flex items-center gap-2">
+                        <Brain className="h-4 w-4 text-purple-500" />
+                        <CardTitle className="text-base">Sharp Money</CardTitle>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <SharpMoneySection 
+                        matches={allActiveMatches} 
+                        league={selectedLeague as any}
+                        maxItems={3}
+                        showFilter={false}
+                        compact={true}
+                      />
+                    </CardContent>
+                  </Card>
+                )}
+
                 {/* AI Picks */}
                 <Card>
                   <CardHeader className="py-3 px-4">
