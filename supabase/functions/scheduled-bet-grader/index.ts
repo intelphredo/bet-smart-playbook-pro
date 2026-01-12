@@ -35,10 +35,11 @@ Deno.serve(async (req) => {
     console.log("Starting scheduled bet grading...");
 
     let totalBetsGraded = 0;
+    let totalSharpPredictionsGraded = 0;
     let totalAlertsCreated = 0;
     let clvCalculated = 0;
 
-    // Step 1: Grade pending bets
+    // Step 1: Grade pending bets AND sharp money predictions
     const gradeBetsUrl = `${supabaseUrl}/functions/v1/grade-bets`;
     const gradeResponse = await fetch(gradeBetsUrl, {
       method: "POST",
@@ -50,9 +51,10 @@ Deno.serve(async (req) => {
 
     if (gradeResponse.ok) {
       const gradeData = await gradeResponse.json();
-      totalBetsGraded = gradeData.betsGraded || 0;
-      totalAlertsCreated = gradeData.alertsCreated || 0;
-      console.log(`Graded ${totalBetsGraded} bets, created ${totalAlertsCreated} alerts`);
+      totalBetsGraded = gradeData.data?.betsGraded || 0;
+      totalSharpPredictionsGraded = gradeData.data?.sharpPredictionsGraded || 0;
+      totalAlertsCreated = gradeData.data?.alerts_created || 0;
+      console.log(`Graded ${totalBetsGraded} bets, ${totalSharpPredictionsGraded} sharp predictions, created ${totalAlertsCreated} alerts`);
     } else {
       console.warn("grade-bets returned non-OK status:", gradeResponse.status);
     }
@@ -83,9 +85,10 @@ Deno.serve(async (req) => {
         .update({
           status: "success",
           completed_at: new Date().toISOString(),
-          records_processed: totalBetsGraded + clvCalculated,
+          records_processed: totalBetsGraded + totalSharpPredictionsGraded + clvCalculated,
           metadata: {
             bets_graded: totalBetsGraded,
+            sharp_predictions_graded: totalSharpPredictionsGraded,
             clv_calculated: clvCalculated,
             alerts_created: totalAlertsCreated,
           },
@@ -97,6 +100,7 @@ Deno.serve(async (req) => {
       JSON.stringify({
         success: true,
         betsGraded: totalBetsGraded,
+        sharpPredictionsGraded: totalSharpPredictionsGraded,
         clvCalculated,
         alertsCreated: totalAlertsCreated,
         timestamp: new Date().toISOString(),

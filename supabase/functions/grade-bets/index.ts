@@ -210,6 +210,92 @@ function determineTotalOutcome(
   return { status: "lost", resultProfit: -bet.stake };
 }
 
+// Grade sharp money predictions based on game results
+async function gradeSharpPredictions(
+  supabase: any,
+  game: ESPNGame,
+  matchId: string
+): Promise<number> {
+  const competition = game.competitions[0];
+  if (!competition?.competitors) return 0;
+
+  const homeTeam = competition.competitors.find(c => c.homeAway === "home");
+  const awayTeam = competition.competitors.find(c => c.homeAway === "away");
+  
+  if (!homeTeam || !awayTeam) return 0;
+
+  const homeScore = parseInt(homeTeam.score, 10);
+  const awayScore = parseInt(awayTeam.score, 10);
+
+  // Fetch pending sharp money predictions for this match
+  const { data: predictions, error } = await supabase
+    .from("sharp_money_predictions")
+    .select("*")
+    .eq("match_id", matchId)
+    .eq("game_result", "pending");
+
+  if (error || !predictions || predictions.length === 0) {
+    return 0;
+  }
+
+  let gradedCount = 0;
+
+  for (const pred of predictions) {
+    let result = "pending";
+    const scoreDiff = homeScore - awayScore;
+
+    if (pred.market_type === "spread") {
+      // Spread betting: sharp_side wins if their team covers
+      if (pred.sharp_side === "home") {
+        const adjustedDiff = scoreDiff + (pred.detection_line || 0);
+        result = adjustedDiff > 0 ? "won" : adjustedDiff < 0 ? "lost" : "push";
+      } else {
+        const adjustedDiff = -scoreDiff + (pred.detection_line || 0);
+        result = adjustedDiff > 0 ? "won" : adjustedDiff < 0 ? "lost" : "push";
+      }
+    } else if (pred.market_type === "moneyline") {
+      if (pred.sharp_side === "home") {
+        result = scoreDiff > 0 ? "won" : scoreDiff < 0 ? "lost" : "push";
+      } else {
+        result = scoreDiff < 0 ? "won" : scoreDiff > 0 ? "lost" : "push";
+      }
+    } else if (pred.market_type === "total") {
+      const totalScore = homeScore + awayScore;
+      const line = pred.detection_line || 0;
+      if (pred.sharp_side === "over") {
+        result = totalScore > line ? "won" : totalScore < line ? "lost" : "push";
+      } else {
+        result = totalScore < line ? "won" : totalScore > line ? "lost" : "push";
+      }
+    }
+
+    if (result !== "pending") {
+      const { error: updateError } = await supabase
+        .from("sharp_money_predictions")
+        .update({
+          game_result: result,
+          actual_score_home: homeScore,
+          actual_score_away: awayScore,
+          result_verified_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", pred.id)
+        .eq("game_result", "pending"); // Idempotency check
+
+      if (!updateError) {
+        gradedCount++;
+        log.info(`Graded sharp prediction ${pred.id}`, {
+          signalType: pred.signal_type,
+          result,
+          matchId: pred.match_id,
+        });
+      }
+    }
+  }
+
+  return gradedCount;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -246,33 +332,74 @@ Deno.serve(async (req) => {
       throw betsError;
     }
 
-    if (!pendingBets || pendingBets.length === 0) {
-      log.info("No pending bets found");
+    // Also get pending sharp money predictions
+    const { data: pendingSharpPredictions, error: sharpError } = await supabase
+      .from("sharp_money_predictions")
+      .select("match_id, league")
+      .eq("game_result", "pending")
+      .limit(100);
+
+    if (sharpError) {
+      log.error("Error fetching pending sharp predictions", sharpError);
+    }
+
+    // Combine unique match IDs from both bets and sharp predictions
+    const matchIdsToCheck = new Set<string>();
+    const matchLeagues = new Map<string, string>();
+
+    pendingBets?.forEach((bet: PendingBet) => {
+      matchIdsToCheck.add(bet.match_id);
+      matchLeagues.set(bet.match_id, bet.league || "NFL");
+    });
+
+    pendingSharpPredictions?.forEach((pred: { match_id: string; league: string }) => {
+      matchIdsToCheck.add(pred.match_id);
+      if (!matchLeagues.has(pred.match_id)) {
+        matchLeagues.set(pred.match_id, pred.league || "NFL");
+      }
+    });
+
+    if (matchIdsToCheck.size === 0) {
+      log.info("No pending bets or sharp predictions found");
       return new Response(
-        JSON.stringify({ success: true, data: { message: "No pending bets to grade", graded: 0 } }),
+        JSON.stringify({ success: true, data: { message: "No pending items to grade", graded: 0 } }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    log.info(`Found ${pendingBets.length} pending bets to check`);
+    log.info(`Checking ${matchIdsToCheck.size} matches for completed games`);
 
-    let gradedCount = 0;
+    let gradedBetsCount = 0;
+    let gradedSharpCount = 0;
     const alertsToCreate: any[] = [];
+    const completedGames = new Map<string, ESPNGame>();
 
-    for (const bet of pendingBets as PendingBet[]) {
-      // Fetch game data from ESPN
-      const game = await fetchESPNGame(bet.match_id, bet.league || "NFL");
+    // Fetch all games and check completion status
+    for (const matchId of matchIdsToCheck) {
+      const league = matchLeagues.get(matchId) || "NFL";
+      const game = await fetchESPNGame(matchId, league);
       
       if (!game) {
-        console.log(`Could not fetch game data for ${bet.match_id}`);
+        console.log(`Could not fetch game data for ${matchId}`);
         continue;
       }
 
-      // Check if game is completed
       if (!game.status?.type?.completed) {
-        console.log(`Game ${bet.match_id} not yet completed`);
+        console.log(`Game ${matchId} not yet completed`);
         continue;
       }
+
+      completedGames.set(matchId, game);
+
+      // Grade sharp money predictions for this completed game
+      const sharpGraded = await gradeSharpPredictions(supabase, game, matchId);
+      gradedSharpCount += sharpGraded;
+    }
+
+    // Now grade user bets
+    for (const bet of (pendingBets || []) as PendingBet[]) {
+      const game = completedGames.get(bet.match_id);
+      if (!game) continue;
 
       let outcome: { status: "won" | "lost" | "push"; resultProfit: number } | null = null;
 
@@ -311,7 +438,7 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      gradedCount++;
+      gradedBetsCount++;
       log.info(`Graded bet ${bet.id}`, { 
         status: outcome.status, 
         profit: outcome.resultProfit,
@@ -356,13 +483,19 @@ Deno.serve(async (req) => {
     }
 
     const duration = Date.now() - startTime;
-    log.info(`Bet grading completed`, { gradedCount, alertsCreated: alertsToCreate.length, durationMs: duration });
+    log.info(`Bet grading completed`, { 
+      gradedBetsCount, 
+      gradedSharpCount,
+      alertsCreated: alertsToCreate.length, 
+      durationMs: duration 
+    });
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         data: {
-          graded: gradedCount,
+          betsGraded: gradedBetsCount,
+          sharpPredictionsGraded: gradedSharpCount,
           alerts_created: alertsToCreate.length,
           duration_ms: duration
         }
