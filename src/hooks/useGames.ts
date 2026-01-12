@@ -1,6 +1,7 @@
 // src/hooks/useGames.ts
 
 import { useQuery } from "@tanstack/react-query";
+import { useEffect, useRef } from "react";
 import { mergeGames } from "@/services/data-providers/merge";
 import { getESPNGames } from "@/services/data-providers/espn";
 import { getSportradarGames } from "@/services/data-providers/sportradar";
@@ -22,6 +23,8 @@ export interface UnifiedGame {
 }
 
 export const useGames = () => {
+  const hasShownMockToast = useRef(false);
+
   const query = useQuery<UnifiedGame[]>({
     queryKey: ["games"],
     queryFn: async () => {
@@ -46,19 +49,22 @@ export const useGames = () => {
     },
 
     // Refresh frequently for live data
-    staleTime: 5000, // 5 seconds
-    refetchInterval: 5000,
-    refetchOnWindowFocus: true,
+    staleTime: 30000, // 30 seconds
+    refetchInterval: 60000, // 1 minute
+    refetchOnWindowFocus: false,
   });
 
-  // Warn if mock data is being used
-  if (query.data?.some((g) => g.source === "Mock")) {
-    toast({
-      title: "Mock Data Active",
-      description: "Live data unavailable — showing mock results.",
-      variant: "destructive",
-    });
-  }
+  // Show mock data warning in useEffect to prevent infinite loops
+  useEffect(() => {
+    if (query.data?.some((g) => g.source === "Mock") && !hasShownMockToast.current) {
+      hasShownMockToast.current = true;
+      toast({
+        title: "Mock Data Active",
+        description: "Live data unavailable — showing mock results.",
+        variant: "destructive",
+      });
+    }
+  }, [query.data]);
 
   return {
     games: query.data ?? [],
