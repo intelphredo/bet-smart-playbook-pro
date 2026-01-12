@@ -1,5 +1,5 @@
 // Sportradar Standings Service
-// Fetches and maps standings data for all sports
+// Fetches and maps standings data for all sports via edge function
 
 import { API_CONFIGS } from '@/config/apiConfig';
 import { SportLeague, SportradarStanding, PlayoffPosition } from '@/types/sportradar';
@@ -171,7 +171,7 @@ const mapApiStanding = (apiStanding: any, league: SportLeague): SportradarStandi
   };
 };
 
-// Fetch league standings
+// Fetch league standings via edge function
 export const fetchStandings = async (
   league: SportLeague, 
   season?: number
@@ -182,27 +182,9 @@ export const fetchStandings = async (
   }
 
   try {
-    const endpoints = API_CONFIGS.SPORTRADAR.ENDPOINTS[league];
-    if (!endpoints?.STANDINGS) {
-      console.warn(`[Standings] No standings endpoint for ${league}`);
-      return MOCK_STANDINGS[league] || [];
-    }
-
-    const seasonParams = getSeasonParams(league);
-    const params: Record<string, string | number> = {
-      ...seasonParams,
-      year: season || seasonParams.year,
-      league
-    };
-
-    // Soccer needs competition_id
-    if (league === 'SOCCER') {
-      params.competition_id = API_CONFIGS.SPORTRADAR.SOCCER_COMPETITIONS.PREMIER_LEAGUE;
-    }
-
     const response = await fetchSportradar<any>(
-      endpoints.STANDINGS,
-      params,
+      league,
+      'STANDINGS',
       { cacheDuration: STANDINGS_CACHE_DURATION }
     );
 

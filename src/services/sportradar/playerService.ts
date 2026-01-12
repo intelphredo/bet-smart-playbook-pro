@@ -1,5 +1,5 @@
 // Sportradar Player Service
-// Fetches player profiles, stats, and league leaders
+// Fetches player profiles, stats, and league leaders via edge function
 
 import { API_CONFIGS } from '@/config/apiConfig';
 import { 
@@ -114,7 +114,7 @@ const mapApiPlayer = (apiPlayer: any): SportradarPlayer => {
   };
 };
 
-// Fetch player profile
+// Fetch player profile via edge function
 export const fetchPlayerProfile = async (
   league: SportLeague,
   playerId: string
@@ -124,16 +124,13 @@ export const fetchPlayerProfile = async (
   }
 
   try {
-    const endpoints = API_CONFIGS.SPORTRADAR.ENDPOINTS[league];
-    if (!endpoints?.PLAYER_PROFILE) {
-      console.warn(`[Player] No player profile endpoint for ${league}`);
-      return null;
-    }
-
     const response = await fetchSportradar<any>(
-      endpoints.PLAYER_PROFILE,
-      { player_id: playerId, league },
-      { cacheDuration: CACHE_DURATION }
+      league,
+      'PLAYER_PROFILE',
+      { 
+        cacheDuration: CACHE_DURATION,
+        playerId
+      }
     );
 
     return mapApiPlayer(response.data.player || response.data);
@@ -143,7 +140,7 @@ export const fetchPlayerProfile = async (
   }
 };
 
-// Fetch league leaders
+// Fetch league leaders via edge function
 export const fetchLeagueLeaders = async (
   league: SportLeague,
   category?: string
@@ -156,26 +153,9 @@ export const fetchLeagueLeaders = async (
   }
 
   try {
-    const endpoints = API_CONFIGS.SPORTRADAR.ENDPOINTS[league];
-    if (!endpoints?.LEAGUE_LEADERS) {
-      console.warn(`[Player] No league leaders endpoint for ${league}`);
-      return [];
-    }
-
-    const seasonParams = getSeasonParams(league);
-    const params: Record<string, string | number> = {
-      ...seasonParams,
-      league
-    };
-
-    // Soccer needs competition_id
-    if (league === 'SOCCER') {
-      params.competition_id = API_CONFIGS.SPORTRADAR.SOCCER_COMPETITIONS.PREMIER_LEAGUE;
-    }
-
     const response = await fetchSportradar<any>(
-      endpoints.LEAGUE_LEADERS,
-      params,
+      league,
+      'LEADERS',
       { cacheDuration: CACHE_DURATION * 2 } // Leaders don't change often
     );
 
@@ -211,7 +191,7 @@ export const fetchLeagueLeaders = async (
   }
 };
 
-// Search players (simple implementation using team rosters)
+// Search players (simple implementation using mock data)
 export const searchPlayers = async (
   query: string,
   league?: SportLeague

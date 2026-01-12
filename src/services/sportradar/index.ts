@@ -9,7 +9,7 @@ export {
   setCachedData,
   clearCache,
   fetchSportradar,
-  buildUrl,
+  buildEdgeFunctionUrl,
   formatDateForApi,
   getSeasonParams
 } from './sportradarCore';

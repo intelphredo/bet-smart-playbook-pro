@@ -1,9 +1,11 @@
 // API Configuration for sports data providers
 
 export const API_CONFIGS = {
+  // Note: SportRadar API calls now go through the secure edge function (fetch-sportradar)
+  // The API key is stored as a server-side secret, not exposed to the client
   SPORTRADAR: {
-    BASE_URL: 'https://api.sportradar.com',
-    API_KEY: import.meta.env.VITE_SPORTRADAR_API_KEY || '',
+    // These endpoint definitions are kept for reference/documentation
+    // Actual API calls are made through the edge function
     ENDPOINTS: {
       // NBA v8 - Full Coverage
       NBA: {

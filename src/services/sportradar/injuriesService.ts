@@ -1,11 +1,9 @@
 // Sportradar Injuries Service
-// Fetches and maps injury data for all sports
+// Fetches and maps injury data for all sports via edge function
 
-import { API_CONFIGS } from '@/config/apiConfig';
 import { SportLeague, SportradarInjury, InjuryStatus } from '@/types/sportradar';
 import { 
   fetchSportradar, 
-  formatDateForApi, 
   INJURY_CACHE_DURATION, 
   shouldUseMockData 
 } from './sportradarCore';
@@ -214,7 +212,7 @@ const mapApiInjury = (apiInjury: any, league: SportLeague): SportradarInjury => 
   };
 };
 
-// Fetch league injuries
+// Fetch league injuries via edge function
 export const fetchLeagueInjuries = async (league: SportLeague): Promise<SportradarInjury[]> => {
   if (shouldUseMockData()) {
     console.log(`[Injuries] Using mock data for ${league}`);
@@ -222,15 +220,9 @@ export const fetchLeagueInjuries = async (league: SportLeague): Promise<Sportrad
   }
 
   try {
-    const endpoints = API_CONFIGS.SPORTRADAR.ENDPOINTS[league];
-    if (!endpoints?.INJURIES) {
-      console.warn(`[Injuries] No injury endpoint for ${league}`);
-      return MOCK_INJURIES[league] || [];
-    }
-
     const response = await fetchSportradar<any>(
-      endpoints.INJURIES,
-      { league },
+      league,
+      'INJURIES',
       { cacheDuration: INJURY_CACHE_DURATION }
     );
 
@@ -265,36 +257,13 @@ export const fetchLeagueInjuries = async (league: SportLeague): Promise<Sportrad
   }
 };
 
-// Fetch daily injuries for a specific date
+// Fetch daily injuries for a specific date (uses same INJURIES endpoint)
 export const fetchDailyInjuries = async (
   league: SportLeague, 
   date: Date = new Date()
 ): Promise<SportradarInjury[]> => {
-  if (shouldUseMockData()) {
-    return MOCK_INJURIES[league] || [];
-  }
-
-  try {
-    const endpoints = API_CONFIGS.SPORTRADAR.ENDPOINTS[league] as Record<string, string>;
-    const dailyEndpoint = endpoints?.DAILY_INJURIES || endpoints?.WEEKLY_INJURIES || endpoints?.INJURIES;
-    
-    if (!dailyEndpoint) {
-      return fetchLeagueInjuries(league);
-    }
-
-    const dateParams = formatDateForApi(date);
-    const response = await fetchSportradar<any>(
-      dailyEndpoint,
-      { ...dateParams, league },
-      { cacheDuration: INJURY_CACHE_DURATION }
-    );
-
-    const injuries = response.data.injuries || response.data.players || [];
-    return injuries.map((inj: any) => mapApiInjury(inj, league));
-  } catch (error) {
-    console.error(`[Injuries] Error fetching daily injuries:`, error);
-    return fetchLeagueInjuries(league);
-  }
+  // Edge function currently only supports INJURIES, not DAILY_INJURIES
+  return fetchLeagueInjuries(league);
 };
 
 // Get injuries for a specific team

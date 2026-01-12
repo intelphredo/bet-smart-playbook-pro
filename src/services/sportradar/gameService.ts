@@ -1,7 +1,6 @@
 // Sportradar Game Service
 // Fetches game data, boxscores, and match intelligence
 
-import { API_CONFIGS } from '@/config/apiConfig';
 import { 
   SportLeague, 
   SportradarGame,
@@ -9,7 +8,6 @@ import {
   SportradarMatchIntelligence
 } from '@/types/sportradar';
 import { 
-  fetchSportradar, 
   formatDateForApi,
   CACHE_DURATION, 
   shouldUseMockData 
@@ -93,45 +91,17 @@ const mapApiGame = (apiGame: any, league: SportLeague): SportradarGame => {
   };
 };
 
-// Fetch game boxscore
+// Fetch game boxscore (not currently supported via edge function)
 export const fetchGameBoxscore = async (
   league: SportLeague,
   gameId: string
 ): Promise<SportradarBoxscore | null> => {
-  if (shouldUseMockData()) {
-    return null;
-  }
-
-  try {
-    const endpoints = API_CONFIGS.SPORTRADAR.ENDPOINTS[league] as Record<string, string>;
-    const boxscoreEndpoint = endpoints?.GAME_BOXSCORE || endpoints?.MATCH_SUMMARY;
-    if (!boxscoreEndpoint) {
-      console.warn(`[Game] No boxscore endpoint for ${league}`);
-      return null;
-    }
-
-    const response = await fetchSportradar<any>(
-      boxscoreEndpoint,
-      { game_id: gameId, league },
-      { cacheDuration: 60000 } // 1 minute for live games
-    );
-
-    const data = response.data;
-    return {
-      game: mapApiGame(data, league),
-      homeTeamStats: data.home?.statistics || {},
-      awayTeamStats: data.away?.statistics || {},
-      homePlayerStats: data.home?.players || [],
-      awayPlayerStats: data.away?.players || [],
-      leaders: data.leaders
-    };
-  } catch (error) {
-    console.error(`[Game] Error fetching boxscore for ${gameId}:`, error);
-    return null;
-  }
+  // Edge function doesn't currently support game boxscores
+  console.debug(`[Game] Boxscore not supported via edge function for ${gameId}`);
+  return null;
 };
 
-// Fetch game summary
+// Fetch game summary (not currently supported via edge function)
 export const fetchGameSummary = async (
   league: SportLeague,
   gameId: string
@@ -140,29 +110,12 @@ export const fetchGameSummary = async (
     return MOCK_GAMES.find(g => g.id === gameId) || null;
   }
 
-  try {
-    const endpoints = API_CONFIGS.SPORTRADAR.ENDPOINTS[league] as Record<string, string>;
-    const summaryEndpoint = endpoints?.GAME_SUMMARY || endpoints?.GAME_BOXSCORE || endpoints?.MATCH_SUMMARY;
-    
-    if (!summaryEndpoint) {
-      console.warn(`[Game] No game summary endpoint for ${league}`);
-      return null;
-    }
-
-    const response = await fetchSportradar<any>(
-      summaryEndpoint,
-      { game_id: gameId, league },
-      { cacheDuration: 60000 }
-    );
-
-    return mapApiGame(response.data, league);
-  } catch (error) {
-    console.error(`[Game] Error fetching game summary for ${gameId}:`, error);
-    return null;
-  }
+  // Edge function doesn't currently support game summaries
+  console.debug(`[Game] Game summary not supported via edge function for ${gameId}`);
+  return MOCK_GAMES.find(g => g.id === gameId) || null;
 };
 
-// Fetch daily schedule
+// Fetch daily schedule (not currently supported via edge function)
 export const fetchDailySchedule = async (
   league: SportLeague,
   date: Date = new Date()
@@ -171,28 +124,10 @@ export const fetchDailySchedule = async (
     return MOCK_GAMES;
   }
 
-  try {
-    const endpoints = API_CONFIGS.SPORTRADAR.ENDPOINTS[league] as Record<string, string>;
-    const scheduleEndpoint = endpoints?.SCHEDULE;
-    
-    if (!scheduleEndpoint) {
-      console.warn(`[Game] No schedule endpoint for ${league}`);
-      return [];
-    }
-
-    const dateParams = formatDateForApi(date);
-    const response = await fetchSportradar<any>(
-      scheduleEndpoint,
-      { ...dateParams, league },
-      { cacheDuration: CACHE_DURATION }
-    );
-
-    const games = response.data.games || response.data.events || response.data.matches || [];
-    return games.map((g: any) => mapApiGame(g, league));
-  } catch (error) {
-    console.error(`[Game] Error fetching daily schedule:`, error);
-    return [];
-  }
+  // Edge function doesn't currently support schedules
+  // Live game data comes from ESPN which is more reliable
+  console.debug(`[Game] Daily schedule not supported via edge function, use ESPN instead`);
+  return [];
 };
 
 // Get comprehensive match intelligence
