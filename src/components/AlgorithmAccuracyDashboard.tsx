@@ -29,8 +29,12 @@ import {
   BarChart3,
   Layers,
   Award,
+  Download,
+  Upload,
+  Loader2,
 } from 'lucide-react';
 import { useAlgorithmAccuracy, useRecentPredictions, AlgorithmAccuracyStats, AlgorithmPrediction } from '@/hooks/useAlgorithmAccuracy';
+import { usePredictionSync } from '@/hooks/usePredictionSync';
 import { ALGORITHM_IDS } from '@/utils/predictions/algorithms';
 import { format, formatDistanceToNow } from 'date-fns';
 
@@ -188,7 +192,20 @@ export default function AlgorithmAccuracyDashboard() {
     isLoading: isLoadingPredictions,
   } = useRecentPredictions({ limit: 20, algorithmId });
 
+  const {
+    savePredictions,
+    gradePredictions,
+    syncAll,
+    isSaving,
+    isGrading,
+  } = usePredictionSync();
+
   const isLoading = isLoadingStats || isLoadingPredictions;
+
+  const handleSync = async () => {
+    await syncAll();
+    refetchStats();
+  };
 
   // Aggregate stats for overview
   const aggregateStats = accuracyStats?.reduce(
@@ -261,6 +278,21 @@ export default function AlgorithmAccuracyDashboard() {
               ))}
             </SelectContent>
           </Select>
+          
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="h-9"
+            onClick={handleSync}
+            disabled={isSaving || isGrading}
+          >
+            {isSaving || isGrading ? (
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            ) : (
+              <Upload className="h-4 w-4 mr-2" />
+            )}
+            Sync
+          </Button>
           
           <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => refetchStats()}>
             <RefreshCw className="h-4 w-4" />
