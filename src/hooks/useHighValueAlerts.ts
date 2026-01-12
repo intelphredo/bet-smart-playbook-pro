@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useMemo } from 'react';
 import { Match } from '@/types/sports';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -23,7 +23,7 @@ interface UseHighValueAlertsOptions {
   enabled?: boolean;
 }
 
-// Track which opportunities we've already alerted on
+// Track which opportunities we've already alerted on (module-level to persist across re-renders)
 const alertedOpportunities = new Set<string>();
 
 export function useHighValueAlerts({
@@ -35,6 +35,10 @@ export function useHighValueAlerts({
 }: UseHighValueAlertsOptions) {
   const { user } = useAuth();
   const previousMatchesRef = useRef<Map<string, Match>>(new Map());
+  const isProcessingRef = useRef(false);
+
+  // Memoize match IDs to prevent unnecessary re-runs
+  const matchIds = useMemo(() => matches.map(m => m.id).sort().join(','), [matches]);
 
   const detectHighValueOpportunities = useCallback((currentMatches: Match[]): HighValueOpportunity[] => {
     const opportunities: HighValueOpportunity[] = [];
@@ -61,7 +65,7 @@ export function useHighValueAlerts({
               matchId: match.id,
               type: 'high_confidence',
               title: '🎯 High Confidence Pick',
-              message: `${match.homeTeam?.shortName} vs ${match.awayTeam?.shortName} - ${Math.round(confidence)}% confidence`,
+              message: `${match.homeTeam?.shortName || match.homeTeam?.name} vs ${match.awayTeam?.shortName || match.awayTeam?.name} - ${Math.round(confidence)}% confidence`,
               value: confidence,
               match,
               timestamp: new Date(),
@@ -84,7 +88,7 @@ export function useHighValueAlerts({
               matchId: match.id,
               type: 'smart_score',
               title: '⚡ High SmartScore Match',
-              message: `${match.homeTeam?.shortName} vs ${match.awayTeam?.shortName} - SmartScore: ${Math.round(smartScore)}`,
+              message: `${match.homeTeam?.shortName || match.homeTeam?.name} vs ${match.awayTeam?.shortName || match.awayTeam?.name} - SmartScore: ${Math.round(smartScore)}`,
               value: smartScore,
               match,
               timestamp: new Date(),
@@ -107,7 +111,7 @@ export function useHighValueAlerts({
               matchId: match.id,
               type: 'positive_ev',
               title: '💰 Positive EV Opportunity',
-              message: `${match.homeTeam?.shortName} vs ${match.awayTeam?.shortName} - +${evPercentage.toFixed(1)}% EV`,
+              message: `${match.homeTeam?.shortName || match.homeTeam?.name} vs ${match.awayTeam?.shortName || match.awayTeam?.name} - +${evPercentage.toFixed(1)}% EV`,
               value: evPercentage,
               match,
               timestamp: new Date(),
@@ -129,7 +133,7 @@ export function useHighValueAlerts({
               matchId: match.id,
               type: 'arbitrage',
               title: '🔥 Arbitrage Detected',
-              message: `${match.homeTeam?.shortName} vs ${match.awayTeam?.shortName} - Risk-free profit available`,
+              message: `${match.homeTeam?.shortName || match.homeTeam?.name} vs ${match.awayTeam?.shortName || match.awayTeam?.name} - Risk-free profit available`,
               value: 100,
               match,
               timestamp: new Date(),
@@ -165,50 +169,38 @@ export function useHighValueAlerts({
   }, [user]);
 
   useEffect(() => {
-    if (!enabled || matches.length === 0) return;
+    if (!enabled || matches.length === 0 || isProcessingRef.current) return;
 
-    const opportunities = detectHighValueOpportunities(matches);
+    // Debounce processing to prevent rapid-fire updates
+    isProcessingRef.current = true;
+    
+    const timeoutId = setTimeout(() => {
+      const opportunities = detectHighValueOpportunities(matches);
 
-    // Show toast for each new opportunity
-    opportunities.forEach((opp) => {
-      const toastOptions = {
-        description: opp.message,
-        duration: 8000,
-        action: {
-          label: 'View',
-          onClick: () => {
-            // Could navigate to match or open modal
-            console.log('Navigate to match:', opp.matchId);
-          },
-        },
-      };
+      // Show toast for each new opportunity (limit to 3 at a time to prevent spam)
+      opportunities.slice(0, 3).forEach((opp) => {
+        toast(opp.title, {
+          description: opp.message,
+          duration: 6000,
+        });
 
-      switch (opp.type) {
-        case 'arbitrage':
-          toast.success(opp.title, toastOptions);
-          break;
-        case 'positive_ev':
-          toast.success(opp.title, toastOptions);
-          break;
-        case 'high_confidence':
-          toast(opp.title, toastOptions);
-          break;
-        case 'smart_score':
-          toast(opp.title, toastOptions);
-          break;
-        default:
-          toast(opp.title, toastOptions);
-      }
+        // Save to database for persistent notifications
+        saveAlertToDatabase(opp);
+      });
 
-      // Save to database for persistent notifications
-      saveAlertToDatabase(opp);
-    });
+      // Update previous matches reference
+      const newPrevMatches = new Map<string, Match>();
+      matches.forEach((match) => newPrevMatches.set(match.id, match));
+      previousMatchesRef.current = newPrevMatches;
+      
+      isProcessingRef.current = false;
+    }, 1000); // 1 second debounce
 
-    // Update previous matches reference
-    const newPrevMatches = new Map<string, Match>();
-    matches.forEach((match) => newPrevMatches.set(match.id, match));
-    previousMatchesRef.current = newPrevMatches;
-  }, [matches, enabled, detectHighValueOpportunities, saveAlertToDatabase]);
+    return () => {
+      clearTimeout(timeoutId);
+      isProcessingRef.current = false;
+    };
+  }, [matchIds, enabled, detectHighValueOpportunities, saveAlertToDatabase]);
 
   // Clear old alerted opportunities periodically (every hour)
   useEffect(() => {

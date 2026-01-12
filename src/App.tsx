@@ -12,6 +12,7 @@ import Injuries from "./pages/Injuries";
 import BetHistory from "./pages/BetHistory";
 import Settings from "./pages/Settings";
 import Auth from "./pages/Auth";
+import GameDetailPage from "./pages/GameDetailPage";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/useAuth";
 import { OddsFormatProvider } from "@/contexts/OddsFormatContext";
@@ -73,6 +74,7 @@ function App() {
                 <Router>
                   <Routes>
                     <Route path="/" element={<Index />} />
+                    <Route path="/game/:id" element={<GameDetailPage />} />
                     <Route path="/standings" element={<Standings />} />
                     <Route path="/injuries" element={<Injuries />} />
                     <Route path="/algorithms" element={<AlgorithmsComparison />} />
