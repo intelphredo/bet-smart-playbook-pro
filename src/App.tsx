@@ -17,6 +17,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/useAuth";
 import { OddsFormatProvider } from "@/contexts/OddsFormatContext";
 import { BetSlipProvider } from "@/components/BetSlip/BetSlipContext";
+import FloatingBetSlip from "@/components/BetSlip/FloatingBetSlip";
 import { PreferencesProvider } from "@/hooks/usePreferences";
 
 // Create a client
@@ -85,6 +86,7 @@ function App() {
                     <Route path="/settings" element={<Settings />} />
                     <Route path="/auth" element={<Auth />} />
                   </Routes>
+                  <FloatingBetSlip />
                 </Router>
                 <Toaster richColors position="top-center" />
               </TooltipProvider>
