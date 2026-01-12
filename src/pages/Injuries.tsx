@@ -1,28 +1,29 @@
 import { useState } from 'react';
 import { SportLeague } from '@/types/sportradar';
-import { useSportradarInjuries } from '@/hooks/useSportradarInjuries';
+import { useSportradarInjuries, ExtendedSportLeague } from '@/hooks/useSportradarInjuries';
 import NavBar from '@/components/NavBar';
 import PageFooter from '@/components/PageFooter';
 import AppBreadcrumb from '@/components/layout/AppBreadcrumb';
 import InjuryReportCard from '@/components/Sportradar/InjuryReportCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { AlertTriangle, RefreshCw, AlertCircle, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-type LeagueConfig = { id: SportLeague; label: string; icon: string };
+type LeagueConfig = { id: ExtendedSportLeague; label: string; icon: string };
 
 const LEAGUES: LeagueConfig[] = [
   { id: 'NBA', label: 'NBA', icon: '🏀' },
+  { id: 'NCAAB', label: 'NCAAB', icon: '🏀' },
   { id: 'NFL', label: 'NFL', icon: '🏈' },
   { id: 'MLB', label: 'MLB', icon: '⚾' },
   { id: 'NHL', label: 'NHL', icon: '🏒' },
   { id: 'SOCCER', label: 'Soccer', icon: '⚽' },
 ];
 
-function LeagueInjuries({ league }: { league: SportLeague }) {
+function LeagueInjuries({ league }: { league: ExtendedSportLeague }) {
   const [searchQuery, setSearchQuery] = useState('');
   const { data: injuries, isLoading, error, refetch } = useSportradarInjuries(league);
 
@@ -132,7 +133,7 @@ export default function Injuries() {
         </div>
 
         <Tabs value={activeLeague} onValueChange={setActiveLeague} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-flex">
+          <TabsList className="grid w-full grid-cols-6 lg:w-auto lg:inline-flex">
             {LEAGUES.map((league) => (
               <TabsTrigger
                 key={league.id}
