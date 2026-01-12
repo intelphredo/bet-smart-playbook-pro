@@ -22,6 +22,7 @@ export type Database = {
           algorithm_id: string | null
           confidence: number | null
           id: string
+          is_live_prediction: boolean | null
           league: string | null
           match_id: string
           predicted_at: string
@@ -38,6 +39,7 @@ export type Database = {
           algorithm_id?: string | null
           confidence?: number | null
           id?: string
+          is_live_prediction?: boolean | null
           league?: string | null
           match_id: string
           predicted_at?: string
@@ -54,6 +56,7 @@ export type Database = {
           algorithm_id?: string | null
           confidence?: number | null
           id?: string
+          is_live_prediction?: boolean | null
           league?: string | null
           match_id?: string
           predicted_at?: string

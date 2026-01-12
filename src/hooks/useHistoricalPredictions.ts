@@ -20,7 +20,7 @@ export interface HistoricalPrediction {
   accuracy_rating: number | null;
   predicted_at: string;
   result_updated_at: string | null;
-  is_live_prediction?: boolean;
+  is_live_prediction: boolean | null;
 }
 
 export interface DailyStats {
@@ -115,16 +115,15 @@ export const useHistoricalPredictions = (
         throw error;
       }
 
-      // Add is_live_prediction flag based on prediction timing
-      // A prediction is considered "live" if it was made close to game start
-      // For now, we'll infer this from match_id pattern or add it to predictions
+      // Use database column for is_live_prediction, with fallback for old records
       let predictions = (data || []).map(p => ({
         ...p,
-        // Infer live status - predictions with actual scores but no projected are likely live
-        // Or we can check if prediction was made after game started
-        is_live_prediction: p.match_id?.includes("live") || 
+        // Use the database column if set, otherwise infer for backwards compatibility
+        is_live_prediction: p.is_live_prediction ?? (
+          p.match_id?.includes("live") || 
           (p.actual_score_home !== null && p.projected_score_home === null) ||
           (p.algorithm_id?.includes("live"))
+        )
       })) as HistoricalPrediction[];
 
       // Filter by prediction type
