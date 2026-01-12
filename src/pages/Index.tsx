@@ -28,14 +28,14 @@ import CLVLeaderboard from "@/components/CLVLeaderboard";
 import AlgorithmsSection from "@/components/AlgorithmsSection";
 import StatsOverview from "@/components/StatsOverview";
 import HistoricalPredictionsSection from "@/components/HistoricalPredictionsSection";
-import { TeamScheduleView } from "@/components/TeamSchedule";
+import { TeamScheduleView, TeamComparisonTool } from "@/components/TeamSchedule";
 import { DateFilter } from "@/components/filters/DateFilter";
 import { WeeklySummaryCard } from "@/components/filters/WeeklySummaryCard";
 import { WeeklyCalendarGrid } from "@/components/filters/WeeklyCalendarGrid";
 import { HighValueAlertBanner } from "@/components/HighValueAlertBanner";
 import { useHighValueAlerts } from "@/hooks/useHighValueAlerts";
 
-import { Radio, Clock, CheckCircle2, TrendingUp, Zap, BarChart3, DollarSign, Brain, Target, History, CalendarDays } from "lucide-react";
+import { Radio, Clock, CheckCircle2, TrendingUp, Zap, BarChart3, DollarSign, Brain, Target, History, CalendarDays, GitCompare } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import TopLoader from "@/components/ui/TopLoader";
@@ -222,6 +222,10 @@ const Index = () => {
               <CalendarDays className="h-4 w-4" />
               Team Schedules
             </TabsTrigger>
+            <TabsTrigger value="compare" className="gap-2">
+              <GitCompare className="h-4 w-4" />
+              Compare
+            </TabsTrigger>
             <TabsTrigger value="insights" className="gap-2">
               <Brain className="h-4 w-4" />
               Insights
@@ -375,6 +379,14 @@ const Index = () => {
           {/* Team Schedule Tab */}
           <TabsContent value="schedule" className="mt-6">
             <TeamScheduleView 
+              matches={[...filteredUpcoming, ...filteredLive]} 
+              selectedLeague={selectedLeague as any}
+            />
+          </TabsContent>
+
+          {/* Team Comparison Tab */}
+          <TabsContent value="compare" className="mt-6">
+            <TeamComparisonTool 
               matches={[...filteredUpcoming, ...filteredLive]} 
               selectedLeague={selectedLeague as any}
             />
