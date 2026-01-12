@@ -159,13 +159,14 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Fetch upcoming games from all leagues
-    const allGames: { game: ESPNEvent; league: string }[] = [];
-    
-    for (const league of targetLeagues) {
+    // Fetch upcoming games from all leagues in parallel
+    const gamePromises = targetLeagues.map(async (league) => {
       const games = await fetchUpcomingGames(league);
-      games.forEach((game) => allGames.push({ game, league }));
-    }
+      return games.map((game) => ({ game, league }));
+    });
+    
+    const gamesResults = await Promise.all(gamePromises);
+    const allGames = gamesResults.flat();
 
     console.log(`Found ${allGames.length} upcoming games`);
 

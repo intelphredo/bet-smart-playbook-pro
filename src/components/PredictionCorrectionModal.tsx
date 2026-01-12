@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -27,6 +27,13 @@ interface PredictionCorrectionModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
+// Normalize status from DB format to UI format
+function normalizeStatus(status: string): 'pending' | 'win' | 'loss' {
+  if (status === 'won' || status === 'win') return 'win';
+  if (status === 'lost' || status === 'loss') return 'loss';
+  return 'pending';
+}
+
 export function PredictionCorrectionModal({
   prediction,
   open,
@@ -40,32 +47,45 @@ export function PredictionCorrectionModal({
   const [confidence, setConfidence] = useState('');
 
   // Reset form when prediction changes
-  const handleOpenChange = (isOpen: boolean) => {
-    if (isOpen && prediction) {
-      setHomeScore(prediction.actualScoreHome?.toString() || '');
-      setAwayScore(prediction.actualScoreAway?.toString() || '');
-      setStatus(prediction.status === 'won' ? 'win' : prediction.status === 'lost' ? 'loss' : 'pending');
-      setConfidence(prediction.confidence?.toString() || '');
+  useEffect(() => {
+    if (open && prediction) {
+      setHomeScore(prediction.actualScoreHome?.toString() ?? '');
+      setAwayScore(prediction.actualScoreAway?.toString() ?? '');
+      setStatus(normalizeStatus(prediction.status));
+      setConfidence(prediction.confidence?.toString() ?? '');
     }
-    onOpenChange(isOpen);
-  };
+  }, [open, prediction]);
 
   const handleSubmit = () => {
     if (!prediction) return;
 
     const updates: Record<string, unknown> = { id: prediction.id };
 
-    if (homeScore !== '' && awayScore !== '') {
-      updates.actual_score_home = parseInt(homeScore, 10);
-      updates.actual_score_away = parseInt(awayScore, 10);
+    const parsedHomeScore = homeScore !== '' ? parseInt(homeScore, 10) : null;
+    const parsedAwayScore = awayScore !== '' ? parseInt(awayScore, 10) : null;
+
+    if (parsedHomeScore !== null && !isNaN(parsedHomeScore)) {
+      updates.actual_score_home = parsedHomeScore;
+    }
+    if (parsedAwayScore !== null && !isNaN(parsedAwayScore)) {
+      updates.actual_score_away = parsedAwayScore;
     }
 
-    if (status !== 'pending') {
+    // Only include status if it's not pending (auto-calculate) or has changed
+    const originalStatus = normalizeStatus(prediction.status);
+    if (status !== 'pending' && status !== originalStatus) {
       updates.status = status;
     }
 
-    if (confidence !== '' && parseInt(confidence, 10) !== prediction.confidence) {
-      updates.confidence = parseInt(confidence, 10);
+    const parsedConfidence = confidence !== '' ? parseInt(confidence, 10) : null;
+    if (parsedConfidence !== null && !isNaN(parsedConfidence) && parsedConfidence !== prediction.confidence) {
+      updates.confidence = Math.max(0, Math.min(100, parsedConfidence));
+    }
+
+    // Only submit if there are actual changes
+    if (Object.keys(updates).length <= 1) {
+      onOpenChange(false);
+      return;
     }
 
     correctPrediction(updates as any, {
@@ -77,14 +97,16 @@ export function PredictionCorrectionModal({
 
   if (!prediction) return null;
 
-  const hasChanges =
-    (homeScore !== '' && homeScore !== prediction.actualScoreHome?.toString()) ||
-    (awayScore !== '' && awayScore !== prediction.actualScoreAway?.toString()) ||
-    (status !== 'pending' && status !== (prediction.status === 'won' ? 'win' : prediction.status === 'lost' ? 'loss' : 'pending')) ||
-    (confidence !== '' && parseInt(confidence, 10) !== prediction.confidence);
+  const originalStatus = normalizeStatus(prediction.status);
+  const hasScoreChanges = 
+    (homeScore !== '' && homeScore !== (prediction.actualScoreHome?.toString() ?? '')) ||
+    (awayScore !== '' && awayScore !== (prediction.actualScoreAway?.toString() ?? ''));
+  const hasStatusChange = status !== 'pending' && status !== originalStatus;
+  const hasConfidenceChange = confidence !== '' && parseInt(confidence, 10) !== prediction.confidence;
+  const hasChanges = hasScoreChanges || hasStatusChange || hasConfidenceChange;
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -100,15 +122,15 @@ export function PredictionCorrectionModal({
               <Badge variant="outline">{prediction.league}</Badge>
               <Badge
                 className={
-                  prediction.status === 'won'
-                    ? 'bg-green-500/20 text-green-600'
-                    : prediction.status === 'lost'
-                    ? 'bg-red-500/20 text-red-600'
+                  originalStatus === 'win'
+                    ? 'bg-green-500/20 text-green-600 border-green-500/30'
+                    : originalStatus === 'loss'
+                    ? 'bg-red-500/20 text-red-600 border-red-500/30'
                     : ''
                 }
-                variant={prediction.status === 'pending' ? 'outline' : 'default'}
+                variant={originalStatus === 'pending' ? 'outline' : 'default'}
               >
-                {prediction.status}
+                {originalStatus === 'win' ? 'Won' : originalStatus === 'loss' ? 'Lost' : 'Pending'}
               </Badge>
             </div>
             <p className="text-sm font-medium">{prediction.prediction}</p>
@@ -153,7 +175,7 @@ export function PredictionCorrectionModal({
           {/* Manual Status Override */}
           <div className="space-y-2">
             <Label>Status Override (optional)</Label>
-            <Select value={status} onValueChange={(v) => setStatus(v as any)}>
+            <Select value={status} onValueChange={(v) => setStatus(v as 'pending' | 'win' | 'loss')}>
               <SelectTrigger>
                 <SelectValue placeholder="Auto-calculate from scores" />
               </SelectTrigger>

@@ -51,6 +51,13 @@ export interface AlgorithmPrediction {
   resultUpdatedAt: string | null;
 }
 
+// Normalize status from various formats to standard DB format
+function normalizeStatus(status: string | null): 'pending' | 'won' | 'lost' {
+  if (status === 'won' || status === 'win') return 'won';
+  if (status === 'lost' || status === 'loss') return 'lost';
+  return 'pending';
+}
+
 interface UseAlgorithmAccuracyOptions {
   days?: number;
   algorithmId?: string;
@@ -242,7 +249,7 @@ export function useRecentPredictions(options: { limit?: number; algorithmId?: st
         projectedScoreAway: p.projected_score_away,
         actualScoreHome: p.actual_score_home,
         actualScoreAway: p.actual_score_away,
-        status: (p.status === 'won' ? 'won' : p.status === 'lost' ? 'lost' : 'pending') as 'pending' | 'won' | 'lost',
+        status: normalizeStatus(p.status),
         accuracyRating: p.accuracy_rating,
         predictedAt: p.predicted_at,
         resultUpdatedAt: p.result_updated_at,
