@@ -1,0 +1,138 @@
+// ESPN-style Scoreboard Strip - Horizontal scrolling live scores
+import { useRef } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Match } from '@/types/sports';
+import { useNavigate } from 'react-router-dom';
+import { cn } from '@/lib/utils';
+
+interface ScoreboardStripProps {
+  matches: Match[];
+  className?: string;
+}
+
+export function ScoreboardStrip({ matches, className }: ScoreboardStripProps) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
+
+  const scroll = (direction: 'left' | 'right') => {
+    if (scrollRef.current) {
+      const scrollAmount = 300;
+      scrollRef.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth'
+      });
+    }
+  };
+
+  if (matches.length === 0) return null;
+
+  return (
+    <div className={cn("relative bg-muted/30 border-b", className)}>
+      {/* Left Arrow */}
+      <Button
+        variant="ghost"
+        size="icon"
+        className="absolute left-0 top-1/2 -translate-y-1/2 z-10 h-full rounded-none bg-gradient-to-r from-background/90 to-transparent hover:from-background"
+        onClick={() => scroll('left')}
+      >
+        <ChevronLeft className="h-4 w-4" />
+      </Button>
+
+      {/* Scrollable Scores */}
+      <div
+        ref={scrollRef}
+        className="flex overflow-x-auto scrollbar-hide px-10 py-2 gap-1"
+        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+      >
+        {matches.map((match) => (
+          <ScoreCard key={match.id} match={match} onClick={() => navigate(`/game/${match.id}`)} />
+        ))}
+      </div>
+
+      {/* Right Arrow */}
+      <Button
+        variant="ghost"
+        size="icon"
+        className="absolute right-0 top-1/2 -translate-y-1/2 z-10 h-full rounded-none bg-gradient-to-l from-background/90 to-transparent hover:from-background"
+        onClick={() => scroll('right')}
+      >
+        <ChevronRight className="h-4 w-4" />
+      </Button>
+    </div>
+  );
+}
+
+function ScoreCard({ match, onClick }: { match: Match; onClick: () => void }) {
+  const isLive = match.status === 'live';
+  const isFinished = match.status === 'finished';
+
+  const formatTime = () => {
+    if (isLive) return match.score?.period || 'LIVE';
+    if (isFinished) return 'Final';
+    
+    const date = new Date(match.startTime);
+    return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  };
+
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        "flex-shrink-0 w-[140px] bg-card hover:bg-accent/50 rounded-lg p-2 border transition-colors text-left",
+        isLive && "border-red-500/50 bg-red-500/5"
+      )}
+    >
+      {/* League & Time */}
+      <div className="flex items-center justify-between mb-1.5">
+        <span className="text-[10px] text-muted-foreground font-medium uppercase">
+          {match.league}
+        </span>
+        <span className={cn(
+          "text-[10px] font-medium",
+          isLive ? "text-red-500" : "text-muted-foreground"
+        )}>
+          {formatTime()}
+        </span>
+      </div>
+
+      {/* Teams */}
+      <div className="space-y-1">
+        <TeamRow 
+          name={match.awayTeam?.shortName || match.awayTeam?.name || 'Away'} 
+          score={match.score?.away}
+          isWinning={isFinished && (match.score?.away || 0) > (match.score?.home || 0)}
+        />
+        <TeamRow 
+          name={match.homeTeam?.shortName || match.homeTeam?.name || 'Home'} 
+          score={match.score?.home}
+          isWinning={isFinished && (match.score?.home || 0) > (match.score?.away || 0)}
+        />
+      </div>
+    </button>
+  );
+}
+
+function TeamRow({ name, score, isWinning }: { name: string; score?: number; isWinning?: boolean }) {
+  return (
+    <div className="flex items-center justify-between">
+      <span className={cn(
+        "text-xs truncate max-w-[90px]",
+        isWinning ? "font-bold" : "font-medium"
+      )}>
+        {name}
+      </span>
+      {score !== undefined && (
+        <span className={cn(
+          "text-xs tabular-nums",
+          isWinning ? "font-bold" : "font-medium"
+        )}>
+          {score}
+        </span>
+      )}
+    </div>
+  );
+}
+
+export default ScoreboardStrip;

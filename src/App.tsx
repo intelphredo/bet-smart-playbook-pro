@@ -14,6 +14,8 @@ import BetHistory from "./pages/BetHistory";
 import Settings from "./pages/Settings";
 import Auth from "./pages/Auth";
 import GameDetailPage from "./pages/GameDetailPage";
+import LiveGamesPage from "./pages/LiveGamesPage";
+import GamesPage from "./pages/GamesPage";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/useAuth";
 import { OddsFormatProvider } from "@/contexts/OddsFormatContext";
@@ -78,9 +80,12 @@ function App() {
                   <Routes>
                     <Route path="/" element={<Index />} />
                     <Route path="/game/:id" element={<GameDetailPage />} />
+                    <Route path="/live" element={<LiveGamesPage />} />
+                    <Route path="/games" element={<GamesPage />} />
                     <Route path="/standings" element={<Standings />} />
                     <Route path="/injuries" element={<Injuries />} />
                     <Route path="/betting-trends" element={<BettingTrends />} />
+                    <Route path="/algorithms" element={<AlgorithmsComparison />} />
                     <Route path="/creator" element={<CreatorDashboard />} />
                     <Route path="/scenarios" element={<ScenarioGuide />} />
                     <Route path="/bankroll" element={<BankrollManager />} />
