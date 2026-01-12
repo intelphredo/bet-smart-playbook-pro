@@ -17,8 +17,6 @@ import LineMovementsCard from "@/components/LineMovementsCard";
 import { useSportsData } from "@/hooks/useSportsData";
 import { SportCategory } from "@/types/LeagueRegistry";
 import { DataViewSource } from "@/components/filters/DataSourceFilter";
-import DevToolsPanel from "@/components/DevToolsPanel";
-import { isDevMode } from "@/utils/devMode";
 import { useArbitrageCalculator } from "@/hooks/useArbitrageCalculator";
 
 const Index = () => {
@@ -205,7 +203,6 @@ const Index = () => {
         </div>
       </main>
       <PageFooter />
-      {isDevMode() && <DevToolsPanel />}
     </div>
   );
 };
