@@ -6,7 +6,6 @@ import { SkipLink } from "@/components/ui/skip-link";
 import { Home, BarChart2, BookOpen, Wallet, Trophy, AlertTriangle, History, Settings } from "lucide-react";
 import BetSlipDrawer from "@/components/BetSlip/BetSlipDrawer";
 import NotificationCenter from "@/components/NotificationCenter";
-import { isDevMode } from "@/utils/devMode";
 
 const navItems = [
   { path: "/", label: "Home", icon: Home },
@@ -26,7 +25,7 @@ export default function NavBar() {
   return (
     <>
       <SkipLink />
-      <header className="bg-background border-b shadow-sm sticky top-0 z-40">
+      <header className="bg-background/95 backdrop-blur-md border-b border-border/40 shadow-sm sticky top-0 z-40">
         <div className="container flex justify-between items-center py-3 px-4">
           <div className="flex items-center gap-3">
             <MobileNav />
@@ -38,11 +37,6 @@ export default function NavBar() {
               <span className="mr-1 tracking-tighter font-playfair">Bet</span>
               <span>Smart</span>
             </Link>
-            {isDevMode() && (
-              <span className="ml-2 px-1.5 py-0.5 text-[10px] font-bold bg-amber-500 text-white rounded">
-                DEV
-              </span>
-            )}
           </div>
           
           <nav role="navigation" aria-label="Main navigation" className="hidden md:block">

@@ -113,18 +113,18 @@ const StatsOverview = () => {
   const hasFilteredStats = leagueStats.some(stat => stat.isFiltered);
 
   return (
-    <Card>
-      <CardHeader className="pb-2">
+    <Card className="border-0 shadow-none bg-transparent">
+      <CardHeader className="pb-2 px-0">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-xl">Algorithm Performance</CardTitle>
+          <CardTitle className="text-xl font-bold">Algorithm Performance</CardTitle>
           {hasFilteredStats && (
-            <Badge variant="outline" className="ml-2">
+            <Badge variant="outline" className="ml-2 text-xs">
               Filtered View
             </Badge>
           )}
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-0">
         {isLoading ? (
           <div className="space-y-4">
             <Skeleton className="h-[250px] w-full" />
@@ -168,24 +168,26 @@ const StatsOverview = () => {
               </ResponsiveContainer>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mt-6">
               {leagueStats.map((item) => (
                 <button
                   type="button"
                   key={item.name}
-                  className="block text-center focus:outline-none focus:ring-2 rounded p-1 transition hover:bg-navy-50 dark:hover:bg-navy-800"
+                  className="group block text-center p-4 rounded-xl bg-card/60 border border-border/50 hover:bg-card hover:border-primary/20 hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-ring"
                   onClick={() => {
                     setSelectedLeague(item.name);
                     setModalOpen(true);
                   }}
                   aria-label={`Show ${item.name} picks and data`}
                 >
-                  <div className="text-2xl font-bold text-navy-500 dark:text-navy-200 underline">
+                  <div className="text-2xl font-bold text-primary group-hover:scale-105 transition-transform">
                     {item.winRate ? `${item.winRate}%` : "--"}
                   </div>
-                  <div className="text-xs text-muted-foreground">
-                    {item.name} | {item.totalPicks || item.picks || 0} pick{(item.totalPicks || item.picks) !== 1 ? "s" : ""}
-                    {item.isFiltered && " (filtered)"}
+                  <div className="text-xs text-muted-foreground mt-1 font-medium">
+                    {item.name}
+                  </div>
+                  <div className="text-[10px] text-muted-foreground/70">
+                    {item.totalPicks || item.picks || 0} picks
                   </div>
                 </button>
               ))}
