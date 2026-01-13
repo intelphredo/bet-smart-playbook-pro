@@ -51,6 +51,9 @@ export interface LeaguePerformance {
   winRate: number;
   totalPL: number;
   roi: number;
+  currentStreak: number; // Positive = wins, Negative = losses
+  bestStreak: number;
+  worstStreak: number;
 }
 
 export interface LeagueDailyStats {
@@ -355,7 +358,7 @@ export const useHistoricalPredictions = (
         ? (stats.totalPL / stats.totalUnitsStaked) * 100 
         : 0;
 
-      // Calculate league performance for chart with ROI
+      // Calculate league performance for chart with ROI and streaks
       stats.leaguePerformance = Object.entries(stats.byLeague).map(([league, data]) => {
         const total = data.won + data.lost + data.pending;
         const leagueSettled = data.won + data.lost;
@@ -363,7 +366,59 @@ export const useHistoricalPredictions = (
         // Calculate P/L and ROI per league (1 unit stakes, -110 odds)
         const totalPL = (data.won * 0.91) - data.lost;
         const roi = leagueSettled > 0 ? (totalPL / leagueSettled) * 100 : 0;
-        return { league, ...data, total, winRate, totalPL: parseFloat(totalPL.toFixed(2)), roi: parseFloat(roi.toFixed(1)) };
+        
+        // Calculate streaks for this league
+        const leaguePredictions = predictions
+          .filter(p => (p.league || "Unknown") === league && (p.status === "won" || p.status === "lost"))
+          .sort((a, b) => new Date(b.result_updated_at || b.predicted_at).getTime() - new Date(a.result_updated_at || a.predicted_at).getTime());
+        
+        let currentStreak = 0;
+        let bestStreak = 0;
+        let worstStreak = 0;
+        let tempStreak = 0;
+        
+        // Calculate current streak (from most recent)
+        if (leaguePredictions.length > 0) {
+          const firstStatus = leaguePredictions[0].status;
+          for (const pred of leaguePredictions) {
+            if (pred.status === firstStatus) {
+              currentStreak = firstStatus === 'won' ? currentStreak + 1 : currentStreak - 1;
+            } else {
+              break;
+            }
+          }
+        }
+        
+        // Calculate best and worst streaks
+        for (const pred of leaguePredictions) {
+          if (pred.status === 'won') {
+            if (tempStreak >= 0) {
+              tempStreak++;
+              bestStreak = Math.max(bestStreak, tempStreak);
+            } else {
+              tempStreak = 1;
+            }
+          } else {
+            if (tempStreak <= 0) {
+              tempStreak--;
+              worstStreak = Math.min(worstStreak, tempStreak);
+            } else {
+              tempStreak = -1;
+            }
+          }
+        }
+        
+        return { 
+          league, 
+          ...data, 
+          total, 
+          winRate, 
+          totalPL: parseFloat(totalPL.toFixed(2)), 
+          roi: parseFloat(roi.toFixed(1)),
+          currentStreak,
+          bestStreak,
+          worstStreak,
+        };
       }).sort((a, b) => b.total - a.total);
 
       // Calculate league daily trends (win rate over time per league)
