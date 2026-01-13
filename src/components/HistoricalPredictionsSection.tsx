@@ -6,6 +6,8 @@ import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -32,6 +34,7 @@ import {
   Download,
   RefreshCw,
   Loader2,
+  Filter,
 } from "lucide-react";
 import { toast } from "sonner";
 import { 
@@ -57,6 +60,7 @@ const HistoricalPredictionsSection = () => {
   const [timeRange, setTimeRange] = useState<TimeRange>("14d");
   const [predictionType, setPredictionType] = useState<PredictionType>("all");
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [settledOnly, setSettledOnly] = useState(false);
   
   const { data, isLoading, error, refetch } = useHistoricalPredictions(timeRange, predictionType);
 
@@ -75,6 +79,7 @@ const HistoricalPredictionsSection = () => {
   const filteredPredictions = predictions.filter(p => {
     if (leagueFilter !== "all" && p.league !== leagueFilter) return false;
     if (statusFilter !== "all" && p.status !== statusFilter) return false;
+    if (settledOnly && p.status !== "won" && p.status !== "lost") return false;
     return true;
   });
 
@@ -204,6 +209,22 @@ const HistoricalPredictionsSection = () => {
                   </TabsTrigger>
                 </TabsList>
               </Tabs>
+            </div>
+
+            {/* Settled Only Toggle */}
+            <div className="sm:w-auto flex items-end">
+              <div className="flex items-center gap-2 h-8 px-3 rounded-md border bg-background">
+                <Switch
+                  id="settled-only"
+                  checked={settledOnly}
+                  onCheckedChange={setSettledOnly}
+                  className="data-[state=checked]:bg-primary"
+                />
+                <Label htmlFor="settled-only" className="text-xs font-medium cursor-pointer flex items-center gap-1.5">
+                  <Filter className="h-3 w-3" />
+                  Settled Only
+                </Label>
+              </div>
             </div>
 
             {/* Refresh & Export Buttons */}
