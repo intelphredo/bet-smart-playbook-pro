@@ -30,6 +30,8 @@ import {
   Radio,
   PlayCircle,
   Download,
+  RefreshCw,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { 
@@ -54,8 +56,15 @@ const HistoricalPredictionsSection = () => {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [timeRange, setTimeRange] = useState<TimeRange>("14d");
   const [predictionType, setPredictionType] = useState<PredictionType>("all");
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
-  const { data, isLoading, error } = useHistoricalPredictions(timeRange, predictionType);
+  const { data, isLoading, error, refetch } = useHistoricalPredictions(timeRange, predictionType);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await refetch();
+    setIsRefreshing(false);
+  };
 
   const { predictions, stats } = data || { predictions: [], stats: null };
 
@@ -197,8 +206,22 @@ const HistoricalPredictionsSection = () => {
               </Tabs>
             </div>
 
-            {/* Export Button */}
-            <div className="sm:w-auto flex items-end">
+            {/* Refresh & Export Buttons */}
+            <div className="sm:w-auto flex items-end gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRefresh}
+                className="gap-2 h-8"
+                disabled={isRefreshing || isLoading}
+              >
+                {isRefreshing ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4" />
+                )}
+                Refresh
+              </Button>
               <Button
                 variant="outline"
                 size="sm"

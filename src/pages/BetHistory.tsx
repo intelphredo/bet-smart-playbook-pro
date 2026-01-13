@@ -30,7 +30,7 @@ import { UserBet, BetStatus } from '@/types/betting';
 import { format } from 'date-fns';
 import { isDevMode } from '@/utils/devMode';
 import WeeklyPerformanceSummary from '@/components/WeeklyPerformanceSummary';
-import RecommendedPicksSection from '@/components/RecommendedPicksSection';
+import HistoricalPredictionsSection from '@/components/HistoricalPredictionsSection';
 import AlgorithmAccuracyDashboard from '@/components/AlgorithmAccuracyDashboard';
 import VirtualizedList from '@/components/VirtualizedList';
 
@@ -313,7 +313,7 @@ export default function BetHistory() {
           </TabsContent>
 
           <TabsContent value="predictions" className="mt-6">
-            <RecommendedPicksSection />
+            <HistoricalPredictionsSection />
           </TabsContent>
 
           <TabsContent value="accuracy" className="mt-6">
