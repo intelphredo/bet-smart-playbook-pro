@@ -20,7 +20,7 @@ import {
   PieChart,
   Pie,
 } from "recharts";
-import { TrendingUp, BarChart3, PieChart as PieChartIcon, Activity } from "lucide-react";
+import { TrendingUp, BarChart3, PieChart as PieChartIcon, Activity, DollarSign } from "lucide-react";
 import { DailyStats, LeaguePerformance, LeagueDailyStats } from "@/hooks/useHistoricalPredictions";
 
 interface PredictionChartsProps {
@@ -67,15 +67,20 @@ const PredictionCharts = ({
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="trend" className="w-full">
-          <TabsList className="grid w-full grid-cols-5 mb-4">
+          <TabsList className="grid w-full grid-cols-6 mb-4">
             <TabsTrigger value="trend" className="text-xs gap-1">
               <TrendingUp className="h-3 w-3" />
               <span className="hidden sm:inline">Win Rate</span>
               <span className="sm:hidden">Trend</span>
             </TabsTrigger>
+            <TabsTrigger value="pl" className="text-xs gap-1">
+              <DollarSign className="h-3 w-3" />
+              <span className="hidden sm:inline">P/L</span>
+              <span className="sm:hidden">P/L</span>
+            </TabsTrigger>
             <TabsTrigger value="league-trends" className="text-xs gap-1">
               <Activity className="h-3 w-3" />
-              <span className="hidden sm:inline">League Trends</span>
+              <span className="hidden sm:inline">Leagues</span>
               <span className="sm:hidden">Leagues</span>
             </TabsTrigger>
             <TabsTrigger value="daily" className="text-xs gap-1">
@@ -90,7 +95,7 @@ const PredictionCharts = ({
             </TabsTrigger>
             <TabsTrigger value="confidence" className="text-xs gap-1">
               <Activity className="h-3 w-3" />
-              <span className="hidden sm:inline">Confidence</span>
+              <span className="hidden sm:inline">Conf</span>
               <span className="sm:hidden">Conf</span>
             </TabsTrigger>
           </TabsList>
@@ -167,6 +172,93 @@ const PredictionCharts = ({
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.won }} />
                 <span>Daily Win Rate</span>
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Cumulative P/L Chart */}
+          <TabsContent value="pl" className="mt-0">
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart data={dailyStats}>
+                  <defs>
+                    <linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={COLORS.won} stopOpacity={0.3} />
+                      <stop offset="95%" stopColor={COLORS.won} stopOpacity={0} />
+                    </linearGradient>
+                    <linearGradient id="colorLoss" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={COLORS.lost} stopOpacity={0} />
+                      <stop offset="95%" stopColor={COLORS.lost} stopOpacity={0.3} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis 
+                    dataKey="dateLabel" 
+                    tick={{ fontSize: 11 }}
+                    className="text-muted-foreground"
+                  />
+                  <YAxis 
+                    tick={{ fontSize: 11 }}
+                    tickFormatter={(value) => `${value > 0 ? '+' : ''}${value}u`}
+                    className="text-muted-foreground"
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "8px",
+                    }}
+                    formatter={(value: number, name: string) => {
+                      const formatted = `${value > 0 ? '+' : ''}${value.toFixed(2)} units`;
+                      if (name === "cumulativePL") return [formatted, "Cumulative P/L"];
+                      if (name === "dailyPL") return [formatted, "Daily P/L"];
+                      return [formatted, name];
+                    }}
+                    labelFormatter={(label) => `Date: ${label}`}
+                  />
+                  <ReferenceLine 
+                    y={0} 
+                    stroke="hsl(var(--muted-foreground))" 
+                    strokeWidth={2}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="cumulativePL"
+                    stroke={dailyStats.length > 0 && dailyStats[dailyStats.length - 1].cumulativePL >= 0 ? COLORS.won : COLORS.lost}
+                    strokeWidth={2}
+                    fill={dailyStats.length > 0 && dailyStats[dailyStats.length - 1].cumulativePL >= 0 ? "url(#colorProfit)" : "url(#colorLoss)"}
+                    name="Cumulative P/L"
+                  />
+                  <Bar 
+                    dataKey="dailyPL" 
+                    name="Daily P/L"
+                    radius={[4, 4, 0, 0]}
+                  >
+                    {dailyStats.map((entry, index) => (
+                      <Cell 
+                        key={`cell-${index}`} 
+                        fill={entry.dailyPL >= 0 ? COLORS.won : COLORS.lost}
+                        opacity={0.6}
+                      />
+                    ))}
+                  </Bar>
+                  <Legend />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="flex items-center justify-between mt-4 px-4">
+              <div className="text-xs text-muted-foreground">
+                Based on 1 unit stakes at -110 odds
+              </div>
+              <div className="flex items-center gap-4 text-xs">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded" style={{ backgroundColor: COLORS.won }} />
+                  <span>Profit</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded" style={{ backgroundColor: COLORS.lost }} />
+                  <span>Loss</span>
+                </div>
               </div>
             </div>
           </TabsContent>
