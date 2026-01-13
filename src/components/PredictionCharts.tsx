@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
 import {
   LineChart,
   Line,
@@ -29,6 +30,9 @@ interface PredictionChartsProps {
   confidenceVsAccuracy: { confidence: number; winRate: number; count: number }[];
   leagueDailyTrends: LeagueDailyStats[];
   overallWinRate: number;
+  totalPL: number;
+  totalUnitsStaked: number;
+  roi: number;
 }
 
 const COLORS = {
@@ -54,6 +58,9 @@ const PredictionCharts = ({
   confidenceVsAccuracy,
   leagueDailyTrends,
   overallWinRate,
+  totalPL,
+  totalUnitsStaked,
+  roi,
 }: PredictionChartsProps) => {
   // Get league names from leaguePerformance for the trends chart
   const topLeagues = leaguePerformance.slice(0, 6).map(l => l.league);
@@ -246,7 +253,32 @@ const PredictionCharts = ({
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
-            <div className="flex items-center justify-between mt-4 px-4">
+            {/* ROI Summary Cards */}
+            <div className="grid grid-cols-3 gap-3 mt-4">
+              <div className="bg-muted/30 rounded-lg p-3 text-center">
+                <div className="text-xs text-muted-foreground mb-1">Total P/L</div>
+                <div className={cn(
+                  "text-lg font-bold",
+                  totalPL >= 0 ? "text-green-500" : "text-red-500"
+                )}>
+                  {totalPL >= 0 ? "+" : ""}{totalPL.toFixed(2)}u
+                </div>
+              </div>
+              <div className="bg-muted/30 rounded-lg p-3 text-center">
+                <div className="text-xs text-muted-foreground mb-1">Units Staked</div>
+                <div className="text-lg font-bold">{totalUnitsStaked}u</div>
+              </div>
+              <div className="bg-muted/30 rounded-lg p-3 text-center">
+                <div className="text-xs text-muted-foreground mb-1">ROI</div>
+                <div className={cn(
+                  "text-lg font-bold",
+                  roi >= 0 ? "text-green-500" : "text-red-500"
+                )}>
+                  {roi >= 0 ? "+" : ""}{roi.toFixed(1)}%
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center justify-between mt-3 px-4">
               <div className="text-xs text-muted-foreground">
                 Based on 1 unit stakes at -110 odds
               </div>
