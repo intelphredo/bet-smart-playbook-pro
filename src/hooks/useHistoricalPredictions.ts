@@ -1,4 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { format, subDays, subWeeks, subMonths, startOfDay, eachDayOfInterval } from "date-fns";
 
@@ -97,8 +98,37 @@ export const useHistoricalPredictions = (
   timeRange: TimeRange = "14d",
   predictionType: PredictionType = "all"
 ) => {
+  const queryClient = useQueryClient();
+  const queryKey = ["historicalPredictions", timeRange, predictionType];
+
+  // Set up realtime subscription for prediction updates
+  useEffect(() => {
+    const channel = supabase
+      .channel('prediction-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'algorithm_predictions',
+        },
+        (payload) => {
+          console.log('Prediction update received:', payload.eventType);
+          // Invalidate and refetch when predictions are updated (e.g., graded)
+          queryClient.invalidateQueries({ queryKey: ["historicalPredictions"] });
+          queryClient.invalidateQueries({ queryKey: ["algorithmPerformance"] });
+          queryClient.invalidateQueries({ queryKey: ["algorithmAccuracy"] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
   return useQuery({
-    queryKey: ["historicalPredictions", timeRange, predictionType],
+    queryKey,
     queryFn: async (): Promise<{ predictions: HistoricalPrediction[]; stats: PredictionStats }> => {
       // Fetch all predictions matching time range - we'll sort client-side for proper ordering
       let query = supabase
