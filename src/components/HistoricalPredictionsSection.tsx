@@ -60,6 +60,7 @@ const TIME_RANGE_OPTIONS: { value: TimeRange; label: string }[] = [
 const HistoricalPredictionsSection = () => {
   const [leagueFilter, setLeagueFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [teamFilter, setTeamFilter] = useState<string>("all");
   const [timeRange, setTimeRange] = useState<TimeRange>("14d");
   const [predictionType, setPredictionType] = useState<PredictionType>("all");
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -78,11 +79,20 @@ const HistoricalPredictionsSection = () => {
   // Get unique leagues for filter
   const leagues = Array.from(new Set(predictions.map(p => p.league).filter(Boolean))) as string[];
 
+  // Get unique teams for filter (from home_team and away_team)
+  const teams = Array.from(new Set(
+    predictions.flatMap(p => [p.home_team, p.away_team].filter(Boolean))
+  )).sort() as string[];
+
   // Filter predictions
   const filteredPredictions = predictions.filter(p => {
     if (leagueFilter !== "all" && p.league !== leagueFilter) return false;
     if (statusFilter !== "all" && p.status !== statusFilter) return false;
     if (settledOnly && p.status !== "won" && p.status !== "lost") return false;
+    if (teamFilter !== "all") {
+      const matchesTeam = p.home_team === teamFilter || p.away_team === teamFilter;
+      if (!matchesTeam) return false;
+    }
     return true;
   });
 
@@ -212,6 +222,27 @@ const HistoricalPredictionsSection = () => {
                   </TabsTrigger>
                 </TabsList>
               </Tabs>
+            </div>
+
+            {/* Team Filter */}
+            <div className="sm:w-auto">
+              <div className="flex items-center gap-2 mb-2">
+                <Trophy className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium">Team</span>
+              </div>
+              <Select value={teamFilter} onValueChange={setTeamFilter}>
+                <SelectTrigger className="w-full sm:w-[180px] h-8 text-xs">
+                  <SelectValue placeholder="All Teams" />
+                </SelectTrigger>
+                <SelectContent className="max-h-[300px]">
+                  <SelectItem value="all" className="text-xs">All Teams</SelectItem>
+                  {teams.map(team => (
+                    <SelectItem key={team} value={team} className="text-xs">
+                      {team}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Settled Only Toggle */}
