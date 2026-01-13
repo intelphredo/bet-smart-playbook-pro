@@ -66,9 +66,13 @@ export function SharpMoneyLeaderboard({ className, compact = false }: SharpMoney
             <div className="space-y-2">
               {[1, 2, 3].map(i => <Skeleton key={i} className="h-12 w-full" />)}
             </div>
+          ) : !leaderboard || leaderboard.length === 0 ? (
+            <div className="text-center py-6 text-muted-foreground text-sm">
+              No sharp money data yet
+            </div>
           ) : (
             <div className="space-y-2">
-              {leaderboard?.slice(0, 5).map((stat, i) => (
+              {leaderboard.slice(0, 5).map((stat, i) => (
                 <CompactLeaderboardRow key={stat.signalType} stat={stat} rank={i + 1} />
               ))}
             </div>
@@ -116,10 +120,18 @@ export function SharpMoneyLeaderboard({ className, compact = false }: SharpMoney
               <div className="p-6 space-y-4">
                 {[1, 2, 3, 4, 5].map(i => <Skeleton key={i} className="h-24 w-full" />)}
               </div>
+            ) : !leaderboard || leaderboard.length === 0 ? (
+              <div className="p-12 text-center">
+                <Target className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+                <h3 className="font-medium text-lg mb-2">No Sharp Money Data Yet</h3>
+                <p className="text-sm text-muted-foreground">
+                  Sharp money signals will appear here as they are detected during live games.
+                </p>
+              </div>
             ) : (
               <ScrollArea className="h-[500px]">
                 <div className="divide-y">
-                  {leaderboard?.map((stat, i) => (
+                  {leaderboard.map((stat, i) => (
                     <LeaderboardRow key={stat.signalType} stat={stat} rank={i + 1} />
                   ))}
                 </div>
@@ -134,14 +146,22 @@ export function SharpMoneyLeaderboard({ className, compact = false }: SharpMoney
               <div className="p-6 space-y-4">
                 {[1, 2, 3, 4, 5].map(i => <Skeleton key={i} className="h-32 w-full" />)}
               </div>
+            ) : !roiData || roiData.length === 0 ? (
+              <div className="p-12 text-center">
+                <Wallet className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+                <h3 className="font-medium text-lg mb-2">No ROI Data Available</h3>
+                <p className="text-sm text-muted-foreground">
+                  ROI tracking will start once sharp money predictions are graded after games complete.
+                </p>
+              </div>
             ) : (
               <ScrollArea className="h-[500px]">
                 {/* ROI Summary */}
                 <div className="p-4 bg-gradient-to-r from-green-500/10 via-transparent to-red-500/10 border-b">
-                  <ROISummary roiData={roiData || []} />
+                  <ROISummary roiData={roiData} />
                 </div>
                 <div className="divide-y">
-                  {roiData?.map((roi, i) => (
+                  {roiData.map((roi, i) => (
                     <ROIRow key={roi.signalType} roi={roi} rank={i + 1} />
                   ))}
                 </div>
@@ -156,10 +176,18 @@ export function SharpMoneyLeaderboard({ className, compact = false }: SharpMoney
               <div className="p-6 space-y-4">
                 {[1, 2, 3, 4, 5].map(i => <Skeleton key={i} className="h-16 w-full" />)}
               </div>
+            ) : !recentPredictions || recentPredictions.length === 0 ? (
+              <div className="p-12 text-center">
+                <Clock className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+                <h3 className="font-medium text-lg mb-2">No Recent Predictions</h3>
+                <p className="text-sm text-muted-foreground">
+                  Recent sharp money picks will appear here as they are detected.
+                </p>
+              </div>
             ) : (
               <ScrollArea className="h-[500px]">
                 <div className="divide-y">
-                  {recentPredictions?.map((pred) => (
+                  {recentPredictions.map((pred) => (
                     <RecentPredictionRow key={pred.id} prediction={pred} />
                   ))}
                 </div>
