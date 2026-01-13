@@ -1,7 +1,8 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { format, subDays, subWeeks, subMonths, startOfDay, eachDayOfInterval } from "date-fns";
+import { format, subDays, subMonths, startOfDay, eachDayOfInterval } from "date-fns";
+import { toast } from "sonner";
 
 export type TimeRange = "1d" | "7d" | "14d" | "1m" | "3m" | "all";
 export type PredictionType = "all" | "live" | "prelive";
@@ -122,16 +123,49 @@ export const useHistoricalPredictions = (
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'UPDATE',
           schema: 'public',
           table: 'algorithm_predictions',
         },
         (payload) => {
-          console.log('Prediction update received:', payload.eventType);
-          // Invalidate and refetch when predictions are updated (e.g., graded)
+          const newRecord = payload.new as { status?: string; match_title?: string; home_team?: string; away_team?: string };
+          const oldRecord = payload.old as { status?: string };
+          
+          // Show toast when prediction is graded (status changed from pending to won/lost)
+          if (oldRecord?.status === 'pending' && (newRecord?.status === 'won' || newRecord?.status === 'lost')) {
+            const matchName = newRecord.match_title || 
+              (newRecord.home_team && newRecord.away_team 
+                ? `${newRecord.away_team} @ ${newRecord.home_team}` 
+                : 'Prediction');
+            
+            if (newRecord.status === 'won') {
+              toast.success(`✅ ${matchName} - Won!`, {
+                description: "Prediction graded successfully",
+                duration: 5000,
+              });
+            } else {
+              toast.error(`❌ ${matchName} - Lost`, {
+                description: "Prediction graded",
+                duration: 5000,
+              });
+            }
+          }
+          
+          // Invalidate and refetch when predictions are updated
           queryClient.invalidateQueries({ queryKey: ["historicalPredictions"] });
           queryClient.invalidateQueries({ queryKey: ["algorithmPerformance"] });
           queryClient.invalidateQueries({ queryKey: ["algorithmAccuracy"] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'algorithm_predictions',
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["historicalPredictions"] });
         }
       )
       .subscribe();

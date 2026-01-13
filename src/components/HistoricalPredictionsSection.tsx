@@ -661,23 +661,31 @@ const PredictionRow = ({ prediction, showTypeTag = true }: { prediction: Histori
         <div className="flex items-center gap-1.5 text-xs">
           <TeamLogo teamName={teams.away} />
           <span className="font-medium truncate max-w-[80px]">{teams.away}</span>
-          {hasActualScores && (
+          {hasActualScores ? (
             <span className={cn(
               "font-bold tabular-nums text-sm",
               prediction.actual_score_away! > prediction.actual_score_home! ? "text-green-500" : "text-muted-foreground"
             )}>
               {prediction.actual_score_away}
             </span>
+          ) : hasProjectedScores && (
+            <span className="text-muted-foreground/60 tabular-nums text-xs italic">
+              ({prediction.projected_score_away})
+            </span>
           )}
           <span className="text-muted-foreground">@</span>
           <TeamLogo teamName={teams.home} />
           <span className="font-medium truncate max-w-[80px]">{teams.home}</span>
-          {hasActualScores && (
+          {hasActualScores ? (
             <span className={cn(
               "font-bold tabular-nums text-sm",
               prediction.actual_score_home! > prediction.actual_score_away! ? "text-green-500" : "text-muted-foreground"
             )}>
               {prediction.actual_score_home}
+            </span>
+          ) : hasProjectedScores && (
+            <span className="text-muted-foreground/60 tabular-nums text-xs italic">
+              ({prediction.projected_score_home})
             </span>
           )}
         </div>
