@@ -18,8 +18,6 @@ import {
   ComposedChart,
   ReferenceLine,
   Cell,
-  PieChart,
-  Pie,
 } from "recharts";
 import { TrendingUp, BarChart3, PieChart as PieChartIcon, Activity, DollarSign } from "lucide-react";
 import { DailyStats, LeaguePerformance, LeagueDailyStats } from "@/hooks/useHistoricalPredictions";

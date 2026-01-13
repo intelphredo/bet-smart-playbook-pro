@@ -104,23 +104,24 @@ export default function AppBreadcrumb({ additionalItems, className }: AppBreadcr
     <Breadcrumb className={className}>
       <BreadcrumbList>
         {allItems.map((item, index) => (
-          <BreadcrumbItem key={`${item.path}-${index}`}>
+          <span key={`${item.path}-${index}`} className="contents">
             {index > 0 && <BreadcrumbSeparator />}
-            
-            {item.isCurrentPage ? (
-              <BreadcrumbPage className="flex items-center gap-1.5">
-                {index === 0 && <Home className="h-3.5 w-3.5" />}
-                {item.label}
-              </BreadcrumbPage>
-            ) : (
-              <BreadcrumbLink asChild>
-                <Link to={item.path} className="flex items-center gap-1.5">
+            <BreadcrumbItem>
+              {item.isCurrentPage ? (
+                <BreadcrumbPage className="flex items-center gap-1.5">
                   {index === 0 && <Home className="h-3.5 w-3.5" />}
                   {item.label}
-                </Link>
-              </BreadcrumbLink>
-            )}
-          </BreadcrumbItem>
+                </BreadcrumbPage>
+              ) : (
+                <BreadcrumbLink asChild>
+                  <Link to={item.path} className="flex items-center gap-1.5">
+                    {index === 0 && <Home className="h-3.5 w-3.5" />}
+                    {item.label}
+                  </Link>
+                </BreadcrumbLink>
+              )}
+            </BreadcrumbItem>
+          </span>
         ))}
       </BreadcrumbList>
     </Breadcrumb>
