@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Select,
   SelectContent,
@@ -44,6 +45,8 @@ import {
   PredictionType 
 } from "@/hooks/useHistoricalPredictions";
 import PredictionCharts from "./PredictionCharts";
+import { getTeamLogoUrl, getTeamInitials } from "@/utils/teamLogos";
+import { League } from "@/types/sports";
 
 const TIME_RANGE_OPTIONS: { value: TimeRange; label: string }[] = [
   { value: "1d", label: "24 Hours" },
@@ -583,6 +586,26 @@ const PredictionRow = ({ prediction, showTypeTag = true }: { prediction: Histori
   const teams = getTeamNames();
   const hasActualScores = prediction.actual_score_home !== null && prediction.actual_score_away !== null;
   const hasProjectedScores = prediction.projected_score_home !== null && prediction.projected_score_away !== null;
+  
+  // Get league for logo lookup
+  const league = (prediction.league?.toUpperCase() || "NBA") as League;
+
+  // Team Logo Component
+  const TeamLogo = ({ teamName, size = "sm" }: { teamName: string; size?: "sm" | "md" }) => {
+    const sizeClass = size === "sm" ? "h-5 w-5" : "h-6 w-6";
+    return (
+      <Avatar className={cn(sizeClass, "shrink-0")}>
+        <AvatarImage 
+          src={getTeamLogoUrl(teamName, league)} 
+          alt={teamName}
+          className="object-contain"
+        />
+        <AvatarFallback className="text-[8px] font-bold bg-muted">
+          {getTeamInitials(teamName)}
+        </AvatarFallback>
+      </Avatar>
+    );
+  };
 
   return (
     <div className="flex items-center gap-3 p-3 hover:bg-muted/30 transition-colors">
@@ -600,9 +623,10 @@ const PredictionRow = ({ prediction, showTypeTag = true }: { prediction: Histori
           </Badge>
         </div>
 
-        {/* Team Matchup with Scores */}
+        {/* Team Matchup with Logos and Scores */}
         <div className="flex items-center gap-1.5 text-xs">
-          <span className="font-medium truncate">{teams.away}</span>
+          <TeamLogo teamName={teams.away} />
+          <span className="font-medium truncate max-w-[80px]">{teams.away}</span>
           {hasActualScores && (
             <span className={cn(
               "font-bold tabular-nums text-sm",
@@ -612,7 +636,8 @@ const PredictionRow = ({ prediction, showTypeTag = true }: { prediction: Histori
             </span>
           )}
           <span className="text-muted-foreground">@</span>
-          <span className="font-medium truncate">{teams.home}</span>
+          <TeamLogo teamName={teams.home} />
+          <span className="font-medium truncate max-w-[80px]">{teams.home}</span>
           {hasActualScores && (
             <span className={cn(
               "font-bold tabular-nums text-sm",
