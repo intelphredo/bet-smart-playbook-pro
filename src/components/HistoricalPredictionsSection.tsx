@@ -362,6 +362,7 @@ const HistoricalPredictionsSection = () => {
           dailyStats={stats.dailyStats}
           leaguePerformance={stats.leaguePerformance}
           confidenceVsAccuracy={stats.confidenceVsAccuracy}
+          leagueDailyTrends={stats.leagueDailyTrends}
           overallWinRate={stats.winRate}
         />
       )}

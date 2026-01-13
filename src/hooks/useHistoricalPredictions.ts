@@ -48,6 +48,12 @@ export interface LeaguePerformance {
   winRate: number;
 }
 
+export interface LeagueDailyStats {
+  date: string;
+  dateLabel: string;
+  [league: string]: number | string; // Dynamic league win rates
+}
+
 export interface PredictionStats {
   total: number;
   won: number;
@@ -59,6 +65,7 @@ export interface PredictionStats {
   dailyStats: DailyStats[];
   leaguePerformance: LeaguePerformance[];
   confidenceVsAccuracy: { confidence: number; winRate: number; count: number }[];
+  leagueDailyTrends: LeagueDailyStats[];
   liveStats: { total: number; won: number; lost: number; pending: number; winRate: number };
   preliveStats: { total: number; won: number; lost: number; pending: number; winRate: number };
 }
@@ -214,6 +221,7 @@ export const useHistoricalPredictions = (
         dailyStats: [],
         leaguePerformance: [],
         confidenceVsAccuracy: [],
+        leagueDailyTrends: [],
         liveStats: calcTypeStats(livePredictions),
         preliveStats: calcTypeStats(prelivePredictions),
       };
@@ -294,6 +302,31 @@ export const useHistoricalPredictions = (
         const winRate = leagueSettled > 0 ? (data.won / leagueSettled) * 100 : 0;
         return { league, ...data, total, winRate };
       }).sort((a, b) => b.total - a.total);
+
+      // Calculate league daily trends (win rate over time per league)
+      const topLeagues = stats.leaguePerformance.slice(0, 6).map(l => l.league);
+      stats.leagueDailyTrends = dateRange.map(date => {
+        const dateStr = format(date, "yyyy-MM-dd");
+        const dayPredictions = predictions.filter(p => {
+          const predDate = format(new Date(p.predicted_at), "yyyy-MM-dd");
+          return predDate === dateStr;
+        });
+
+        const result: LeagueDailyStats = {
+          date: dateStr,
+          dateLabel: format(date, "MMM d"),
+        };
+
+        topLeagues.forEach(league => {
+          const leaguePreds = dayPredictions.filter(p => (p.league || "Unknown") === league);
+          const won = leaguePreds.filter(p => p.status === "won").length;
+          const lost = leaguePreds.filter(p => p.status === "lost").length;
+          const settled = won + lost;
+          result[league] = settled > 0 ? Math.round((won / settled) * 100) : 0;
+        });
+
+        return result;
+      });
 
       // Calculate confidence vs accuracy buckets
       const confidenceBuckets: Record<number, { won: number; lost: number }> = {};
