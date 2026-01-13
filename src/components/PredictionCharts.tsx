@@ -21,12 +21,13 @@ import {
   Pie,
 } from "recharts";
 import { TrendingUp, BarChart3, PieChart as PieChartIcon, Activity } from "lucide-react";
-import { DailyStats, LeaguePerformance } from "@/hooks/useHistoricalPredictions";
+import { DailyStats, LeaguePerformance, LeagueDailyStats } from "@/hooks/useHistoricalPredictions";
 
 interface PredictionChartsProps {
   dailyStats: DailyStats[];
   leaguePerformance: LeaguePerformance[];
   confidenceVsAccuracy: { confidence: number; winRate: number; count: number }[];
+  leagueDailyTrends: LeagueDailyStats[];
   overallWinRate: number;
 }
 
@@ -51,8 +52,11 @@ const PredictionCharts = ({
   dailyStats,
   leaguePerformance,
   confidenceVsAccuracy,
+  leagueDailyTrends,
   overallWinRate,
 }: PredictionChartsProps) => {
+  // Get league names from leaguePerformance for the trends chart
+  const topLeagues = leaguePerformance.slice(0, 6).map(l => l.league);
   return (
     <Card>
       <CardHeader className="pb-2">
@@ -63,15 +67,20 @@ const PredictionCharts = ({
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="trend" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-4">
+          <TabsList className="grid w-full grid-cols-5 mb-4">
             <TabsTrigger value="trend" className="text-xs gap-1">
               <TrendingUp className="h-3 w-3" />
-              <span className="hidden sm:inline">Win Rate Trend</span>
+              <span className="hidden sm:inline">Win Rate</span>
               <span className="sm:hidden">Trend</span>
+            </TabsTrigger>
+            <TabsTrigger value="league-trends" className="text-xs gap-1">
+              <Activity className="h-3 w-3" />
+              <span className="hidden sm:inline">League Trends</span>
+              <span className="sm:hidden">Leagues</span>
             </TabsTrigger>
             <TabsTrigger value="daily" className="text-xs gap-1">
               <BarChart3 className="h-3 w-3" />
-              <span className="hidden sm:inline">Daily Results</span>
+              <span className="hidden sm:inline">Daily</span>
               <span className="sm:hidden">Daily</span>
             </TabsTrigger>
             <TabsTrigger value="league" className="text-xs gap-1">
@@ -159,6 +168,67 @@ const PredictionCharts = ({
                 <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.won }} />
                 <span>Daily Win Rate</span>
               </div>
+            </div>
+          </TabsContent>
+
+          {/* League Win Rate Trends Over Time */}
+          <TabsContent value="league-trends" className="mt-0">
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={leagueDailyTrends}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis 
+                    dataKey="dateLabel" 
+                    tick={{ fontSize: 11 }}
+                    className="text-muted-foreground"
+                  />
+                  <YAxis 
+                    domain={[0, 100]}
+                    tick={{ fontSize: 11 }}
+                    tickFormatter={(value) => `${value}%`}
+                    className="text-muted-foreground"
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "8px",
+                    }}
+                    formatter={(value: number, name: string) => [`${value}%`, name]}
+                    labelFormatter={(label) => `Date: ${label}`}
+                  />
+                  <ReferenceLine 
+                    y={50} 
+                    stroke="hsl(var(--muted-foreground))" 
+                    strokeDasharray="3 3"
+                    label={{ value: "50%", position: "right", fontSize: 10 }}
+                  />
+                  <Legend />
+                  {topLeagues.map((league, index) => (
+                    <Line
+                      key={league}
+                      type="monotone"
+                      dataKey={league}
+                      stroke={LEAGUE_COLORS[index % LEAGUE_COLORS.length]}
+                      strokeWidth={2}
+                      dot={{ fill: LEAGUE_COLORS[index % LEAGUE_COLORS.length], r: 3 }}
+                      name={league}
+                      connectNulls
+                    />
+                  ))}
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="flex flex-wrap items-center justify-center gap-4 mt-4 text-xs text-muted-foreground">
+              {topLeagues.map((league, index) => (
+                <div key={league} className="flex items-center gap-2">
+                  <div 
+                    className="w-3 h-3 rounded-full" 
+                    style={{ backgroundColor: LEAGUE_COLORS[index % LEAGUE_COLORS.length] }} 
+                  />
+                  <span>{league}</span>
+                </div>
+              ))}
             </div>
           </TabsContent>
 
