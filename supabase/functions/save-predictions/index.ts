@@ -224,6 +224,10 @@ Deno.serve(async (req) => {
         ? `${homeTeam.team.displayName} Win`
         : `${awayTeam.team.displayName} Win`;
 
+      const homeTeamName = homeTeam.team.displayName;
+      const awayTeamName = awayTeam.team.displayName;
+      const matchTitle = `${awayTeamName} @ ${homeTeamName}`;
+
       predictionsToInsert.push({
         match_id: game.id,
         league,
@@ -235,6 +239,9 @@ Deno.serve(async (req) => {
         status: "pending",
         is_live_prediction: false,
         predicted_at: new Date().toISOString(),
+        home_team: homeTeamName,
+        away_team: awayTeamName,
+        match_title: matchTitle,
       });
     }
 

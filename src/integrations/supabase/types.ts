@@ -20,11 +20,14 @@ export type Database = {
           actual_score_away: number | null
           actual_score_home: number | null
           algorithm_id: string | null
+          away_team: string | null
           confidence: number | null
+          home_team: string | null
           id: string
           is_live_prediction: boolean | null
           league: string | null
           match_id: string
+          match_title: string | null
           predicted_at: string
           prediction: string | null
           projected_score_away: number | null
@@ -37,11 +40,14 @@ export type Database = {
           actual_score_away?: number | null
           actual_score_home?: number | null
           algorithm_id?: string | null
+          away_team?: string | null
           confidence?: number | null
+          home_team?: string | null
           id?: string
           is_live_prediction?: boolean | null
           league?: string | null
           match_id: string
+          match_title?: string | null
           predicted_at?: string
           prediction?: string | null
           projected_score_away?: number | null
@@ -54,11 +60,14 @@ export type Database = {
           actual_score_away?: number | null
           actual_score_home?: number | null
           algorithm_id?: string | null
+          away_team?: string | null
           confidence?: number | null
+          home_team?: string | null
           id?: string
           is_live_prediction?: boolean | null
           league?: string | null
           match_id?: string
+          match_title?: string | null
           predicted_at?: string
           prediction?: string | null
           projected_score_away?: number | null

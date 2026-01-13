@@ -500,61 +500,123 @@ const PredictionRow = ({ prediction }: { prediction: HistoricalPrediction }) => 
   const status = statusConfig[prediction.status as keyof typeof statusConfig] || statusConfig.pending;
   const StatusIcon = status.icon;
 
+  // Parse team names from match_title or prediction
+  const getTeamNames = () => {
+    if (prediction.home_team && prediction.away_team) {
+      return { home: prediction.home_team, away: prediction.away_team };
+    }
+    // Fallback: try to parse from match_title (format: "Away @ Home")
+    if (prediction.match_title) {
+      const parts = prediction.match_title.split(' @ ');
+      if (parts.length === 2) {
+        return { away: parts[0], home: parts[1] };
+      }
+    }
+    // Fallback: extract from prediction text
+    if (prediction.prediction) {
+      const teamName = prediction.prediction.replace(/ Win$| ML$| -[\d.]+$| \+[\d.]+$/i, '');
+      return { home: teamName, away: 'vs' };
+    }
+    return { home: 'Home', away: 'Away' };
+  };
+
+  const teams = getTeamNames();
+  const hasActualScores = prediction.actual_score_home !== null && prediction.actual_score_away !== null;
+  const hasProjectedScores = prediction.projected_score_home !== null && prediction.projected_score_away !== null;
+
   return (
-    <div className="flex items-center gap-4 p-4 hover:bg-muted/30 transition-colors">
+    <div className="flex items-center gap-3 p-4 hover:bg-muted/30 transition-colors">
       {/* Status Icon */}
-      <div className={cn("p-2 rounded-full", status.bg)}>
-        <StatusIcon className={cn("h-5 w-5", status.color)} />
+      <div className={cn("p-2 rounded-full shrink-0", status.bg)}>
+        <StatusIcon className={cn("h-4 w-4", status.color)} />
       </div>
 
       {/* Main Content */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-1 flex-wrap">
-          <Badge variant="outline" className="text-[10px]">
+        {/* Match Title with Teams */}
+        <div className="flex items-center gap-2 mb-1">
+          <Badge variant="outline" className="text-[10px] shrink-0">
             {prediction.league || "Unknown"}
           </Badge>
           {prediction.is_live_prediction ? (
-            <Badge variant="secondary" className="text-[10px] bg-orange-500/20 text-orange-500 border-orange-500/30">
+            <Badge variant="secondary" className="text-[10px] bg-orange-500/20 text-orange-500 border-orange-500/30 shrink-0">
               <Radio className="h-2.5 w-2.5 mr-1" />
               Live
             </Badge>
           ) : (
-            <Badge variant="secondary" className="text-[10px] bg-green-500/20 text-green-500 border-green-500/30">
+            <Badge variant="secondary" className="text-[10px] bg-green-500/20 text-green-500 border-green-500/30 shrink-0">
               <PlayCircle className="h-2.5 w-2.5 mr-1" />
               Pre-Live
             </Badge>
           )}
-          <span className="text-sm font-medium truncate">{prediction.prediction}</span>
         </div>
-        <div className="flex items-center gap-3 text-xs text-muted-foreground">
-          <span>{format(new Date(prediction.predicted_at), "MMM d, yyyy HH:mm")}</span>
+
+        {/* Team Matchup with Scores */}
+        <div className="flex items-center gap-2 text-sm">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="font-medium truncate">{teams.away}</span>
+            {hasActualScores && (
+              <span className={cn(
+                "font-bold tabular-nums",
+                prediction.actual_score_away! > prediction.actual_score_home! ? "text-green-500" : "text-muted-foreground"
+              )}>
+                {prediction.actual_score_away}
+              </span>
+            )}
+          </div>
+          <span className="text-muted-foreground text-xs">@</span>
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="font-medium truncate">{teams.home}</span>
+            {hasActualScores && (
+              <span className={cn(
+                "font-bold tabular-nums",
+                prediction.actual_score_home! > prediction.actual_score_away! ? "text-green-500" : "text-muted-foreground"
+              )}>
+                {prediction.actual_score_home}
+              </span>
+            )}
+          </div>
+          {hasActualScores && (
+            <Badge variant="outline" className="text-[10px] ml-1 shrink-0">Final</Badge>
+          )}
+        </div>
+
+        {/* Prediction & Metadata */}
+        <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+          <span className="font-medium text-foreground/80">Pick: {prediction.prediction}</span>
+          <span>•</span>
+          <span>{format(new Date(prediction.predicted_at), "MMM d, HH:mm")}</span>
           {prediction.confidence && (
-            <span className="flex items-center gap-1">
-              <Target className="h-3 w-3" />
-              {prediction.confidence}% confidence
-            </span>
+            <>
+              <span>•</span>
+              <span className="flex items-center gap-1">
+                <Target className="h-3 w-3" />
+                {prediction.confidence}%
+              </span>
+            </>
+          )}
+          {hasProjectedScores && !hasActualScores && (
+            <>
+              <span>•</span>
+              <span className="text-muted-foreground/70">
+                Proj: {prediction.projected_score_away}-{prediction.projected_score_home}
+              </span>
+            </>
           )}
         </div>
       </div>
 
-      {/* Scores if available */}
-      {(prediction.actual_score_home !== null || prediction.projected_score_home !== null) && (
-        <div className="text-right text-sm">
-          {prediction.actual_score_home !== null && prediction.actual_score_away !== null ? (
-            <div>
-              <p className="font-semibold">
-                {prediction.actual_score_away} - {prediction.actual_score_home}
-              </p>
-              <p className="text-xs text-muted-foreground">Final</p>
-            </div>
-          ) : prediction.projected_score_home !== null && prediction.projected_score_away !== null ? (
-            <div>
-              <p className="text-muted-foreground">
-                {prediction.projected_score_away} - {prediction.projected_score_home}
-              </p>
-              <p className="text-xs text-muted-foreground">Projected</p>
-            </div>
-          ) : null}
+      {/* Accuracy Rating (if available) */}
+      {prediction.accuracy_rating !== null && (
+        <div className="text-right shrink-0">
+          <p className={cn(
+            "text-lg font-bold tabular-nums",
+            prediction.accuracy_rating >= 80 ? "text-green-500" :
+            prediction.accuracy_rating >= 60 ? "text-yellow-500" : "text-red-500"
+          )}>
+            {prediction.accuracy_rating}
+          </p>
+          <p className="text-[10px] text-muted-foreground">Accuracy</p>
         </div>
       )}
 
