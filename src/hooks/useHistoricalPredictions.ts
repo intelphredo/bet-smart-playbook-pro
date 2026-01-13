@@ -68,6 +68,9 @@ export interface PredictionStats {
   leaguePerformance: LeaguePerformance[];
   confidenceVsAccuracy: { confidence: number; winRate: number; count: number }[];
   leagueDailyTrends: LeagueDailyStats[];
+  totalPL: number;
+  totalUnitsStaked: number;
+  roi: number;
   liveStats: { total: number; won: number; lost: number; pending: number; winRate: number };
   preliveStats: { total: number; won: number; lost: number; pending: number; winRate: number };
 }
@@ -224,6 +227,9 @@ export const useHistoricalPredictions = (
         leaguePerformance: [],
         confidenceVsAccuracy: [],
         leagueDailyTrends: [],
+        totalPL: 0,
+        totalUnitsStaked: 0,
+        roi: 0,
         liveStats: calcTypeStats(livePredictions),
         preliveStats: calcTypeStats(prelivePredictions),
       };
@@ -304,6 +310,14 @@ export const useHistoricalPredictions = (
           cumulativePL: parseFloat(cumulativePL.toFixed(2)),
         };
       });
+
+      // Calculate total P/L and ROI
+      const settledBets = stats.won + stats.lost;
+      stats.totalUnitsStaked = settledBets; // 1 unit per bet
+      stats.totalPL = (stats.won * 0.91) - stats.lost; // Won = +0.91 units, Lost = -1 unit at -110 odds
+      stats.roi = stats.totalUnitsStaked > 0 
+        ? (stats.totalPL / stats.totalUnitsStaked) * 100 
+        : 0;
 
       // Calculate league performance for chart
       stats.leaguePerformance = Object.entries(stats.byLeague).map(([league, data]) => {

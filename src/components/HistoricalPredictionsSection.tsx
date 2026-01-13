@@ -367,6 +367,9 @@ const HistoricalPredictionsSection = () => {
           confidenceVsAccuracy={stats.confidenceVsAccuracy}
           leagueDailyTrends={stats.leagueDailyTrends}
           overallWinRate={stats.winRate}
+          totalPL={stats.totalPL}
+          totalUnitsStaked={stats.totalUnitsStaked}
+          roi={stats.roi}
         />
       )}
 
