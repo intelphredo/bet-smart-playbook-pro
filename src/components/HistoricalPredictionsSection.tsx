@@ -602,19 +602,29 @@ const PredictionRow = ({ prediction, showTypeTag = true }: { prediction: Histori
     if (prediction.home_team && prediction.away_team) {
       return { home: prediction.home_team, away: prediction.away_team };
     }
-    // Fallback: try to parse from match_title (format: "Away @ Home")
+    // Fallback: try to parse from match_title (format: "Away @ Home" or "Away vs Home")
     if (prediction.match_title) {
-      const parts = prediction.match_title.split(' @ ');
-      if (parts.length === 2) {
-        return { away: parts[0], home: parts[1] };
+      const atParts = prediction.match_title.split(' @ ');
+      if (atParts.length === 2) {
+        return { away: atParts[0].trim(), home: atParts[1].trim() };
+      }
+      const vsParts = prediction.match_title.split(' vs ');
+      if (vsParts.length === 2) {
+        return { away: vsParts[0].trim(), home: vsParts[1].trim() };
       }
     }
-    // Fallback: extract from prediction text
+    // Fallback: extract from prediction text (e.g., "Lakers Win" or "Lakers ML")
     if (prediction.prediction) {
-      const teamName = prediction.prediction.replace(/ Win$| ML$| -[\d.]+$| \+[\d.]+$/i, '');
-      return { home: teamName, away: 'vs' };
+      const teamName = prediction.prediction
+        .replace(/ Win$| ML$| -[\d.]+$| \+[\d.]+$/i, '')
+        .trim();
+      // If we can identify the predicted team, show it
+      if (teamName && teamName !== prediction.prediction) {
+        return { home: teamName, away: 'Opponent' };
+      }
     }
-    return { home: 'Home', away: 'Away' };
+    // Last fallback: use match_id to show something
+    return { home: `Match ${prediction.match_id?.slice(-6) || 'Unknown'}`, away: '' };
   };
 
   const teams = getTeamNames();
