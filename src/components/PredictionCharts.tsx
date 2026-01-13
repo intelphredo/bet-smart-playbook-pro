@@ -468,7 +468,7 @@ const PredictionCharts = ({
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
-            {/* League ROI Breakdown */}
+            {/* League ROI & Streak Breakdown */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 mt-4">
               {leaguePerformance.slice(0, 6).map((league) => (
                 <div 
@@ -486,10 +486,25 @@ const PredictionCharts = ({
                     {league.totalPL >= 0 ? "+" : ""}{league.totalPL}u
                   </div>
                   <div className={cn(
-                    "text-xs font-medium",
+                    "text-xs font-medium mb-1",
                     league.roi >= 0 ? "text-green-500/80" : "text-red-500/80"
                   )}>
                     {league.roi >= 0 ? "+" : ""}{league.roi}% ROI
+                  </div>
+                  {/* Streak indicator */}
+                  <div className={cn(
+                    "text-[10px] font-medium px-1.5 py-0.5 rounded-full self-center",
+                    league.currentStreak > 0 
+                      ? "bg-green-500/20 text-green-600" 
+                      : league.currentStreak < 0 
+                        ? "bg-red-500/20 text-red-600"
+                        : "bg-muted text-muted-foreground"
+                  )}>
+                    {league.currentStreak > 0 
+                      ? `🔥 ${league.currentStreak}W streak`
+                      : league.currentStreak < 0 
+                        ? `${Math.abs(league.currentStreak)}L streak`
+                        : "No streak"}
                   </div>
                 </div>
               ))}
