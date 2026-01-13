@@ -21,6 +21,9 @@ export interface HistoricalPrediction {
   predicted_at: string;
   result_updated_at: string | null;
   is_live_prediction: boolean | null;
+  home_team: string | null;
+  away_team: string | null;
+  match_title: string | null;
 }
 
 export interface DailyStats {
