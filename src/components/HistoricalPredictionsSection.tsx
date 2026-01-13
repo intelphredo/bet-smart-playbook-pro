@@ -409,62 +409,100 @@ const HistoricalPredictionsSection = () => {
         </Card>
       )}
 
-      {/* Predictions List */}
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <BarChart3 className="h-4 w-4" />
-              Prediction History
-              <Badge variant="secondary" className="ml-2">
-                {filteredPredictions.length} results
-              </Badge>
-            </CardTitle>
-            <div className="flex items-center gap-2">
-              <Select value={leagueFilter} onValueChange={setLeagueFilter}>
-                <SelectTrigger className="w-[120px] h-8">
-                  <SelectValue placeholder="League" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Leagues</SelectItem>
-                  {leagues.map(league => (
-                    <SelectItem key={league} value={league}>
-                      {league}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[110px] h-8">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="won">Won</SelectItem>
-                  <SelectItem value="lost">Lost</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                </SelectContent>
-              </Select>
+      {/* Predictions List - Split by Pre-Live and Live */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Pre-Live Predictions Column */}
+        <Card className="border-green-500/20">
+          <CardHeader className="pb-3">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <PlayCircle className="h-4 w-4 text-green-500" />
+                Pre-Live Predictions
+                <Badge variant="secondary" className="ml-2 bg-green-500/10 text-green-500">
+                  {filteredPredictions.filter(p => !p.is_live_prediction).length}
+                </Badge>
+              </CardTitle>
+              <div className="flex items-center gap-2">
+                <Select value={leagueFilter} onValueChange={setLeagueFilter}>
+                  <SelectTrigger className="w-[100px] h-7 text-xs">
+                    <SelectValue placeholder="League" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Leagues</SelectItem>
+                    {leagues.map(league => (
+                      <SelectItem key={league} value={league}>
+                        {league}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-[90px] h-7 text-xs">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="won">Won</SelectItem>
+                    <SelectItem value="lost">Lost</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-          </div>
-        </CardHeader>
-        <CardContent className="p-0">
-          <ScrollArea className="h-[400px]">
-            <div className="divide-y divide-border">
-              {filteredPredictions.length > 0 ? (
-                filteredPredictions.map(prediction => (
-                  <PredictionRow key={prediction.id} prediction={prediction} />
-                ))
-              ) : (
-                <div className="text-center py-12 text-muted-foreground">
-                  <Target className="h-12 w-12 mx-auto mb-4 opacity-30" />
-                  <p>No predictions match your filters</p>
-                </div>
-              )}
+          </CardHeader>
+          <CardContent className="p-0">
+            <ScrollArea className="h-[450px]">
+              <div className="divide-y divide-border">
+                {filteredPredictions.filter(p => !p.is_live_prediction).length > 0 ? (
+                  filteredPredictions
+                    .filter(p => !p.is_live_prediction)
+                    .map(prediction => (
+                      <PredictionRow key={prediction.id} prediction={prediction} showTypeTag={false} />
+                    ))
+                ) : (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <PlayCircle className="h-12 w-12 mx-auto mb-4 opacity-30" />
+                    <p>No pre-live predictions</p>
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
+          </CardContent>
+        </Card>
+
+        {/* Live Predictions Column */}
+        <Card className="border-orange-500/20">
+          <CardHeader className="pb-3">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Radio className="h-4 w-4 text-orange-500 animate-pulse" />
+                Live Predictions
+                <Badge variant="secondary" className="ml-2 bg-orange-500/10 text-orange-500">
+                  {filteredPredictions.filter(p => p.is_live_prediction).length}
+                </Badge>
+              </CardTitle>
             </div>
-          </ScrollArea>
-        </CardContent>
-      </Card>
+          </CardHeader>
+          <CardContent className="p-0">
+            <ScrollArea className="h-[450px]">
+              <div className="divide-y divide-border">
+                {filteredPredictions.filter(p => p.is_live_prediction).length > 0 ? (
+                  filteredPredictions
+                    .filter(p => p.is_live_prediction)
+                    .map(prediction => (
+                      <PredictionRow key={prediction.id} prediction={prediction} showTypeTag={false} />
+                    ))
+                ) : (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <Radio className="h-12 w-12 mx-auto mb-4 opacity-30" />
+                    <p>No live predictions</p>
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };
@@ -496,7 +534,7 @@ const StatCard = ({
   </Card>
 );
 
-const PredictionRow = ({ prediction }: { prediction: HistoricalPrediction }) => {
+const PredictionRow = ({ prediction, showTypeTag = true }: { prediction: HistoricalPrediction; showTypeTag?: boolean }) => {
   const statusConfig = {
     won: {
       icon: CheckCircle2,
@@ -546,103 +584,60 @@ const PredictionRow = ({ prediction }: { prediction: HistoricalPrediction }) => 
   const hasProjectedScores = prediction.projected_score_home !== null && prediction.projected_score_away !== null;
 
   return (
-    <div className="flex items-center gap-3 p-4 hover:bg-muted/30 transition-colors">
+    <div className="flex items-center gap-3 p-3 hover:bg-muted/30 transition-colors">
       {/* Status Icon */}
-      <div className={cn("p-2 rounded-full shrink-0", status.bg)}>
-        <StatusIcon className={cn("h-4 w-4", status.color)} />
+      <div className={cn("p-1.5 rounded-full shrink-0", status.bg)}>
+        <StatusIcon className={cn("h-3.5 w-3.5", status.color)} />
       </div>
 
       {/* Main Content */}
       <div className="flex-1 min-w-0">
         {/* Match Title with Teams */}
-        <div className="flex items-center gap-2 mb-1">
-          <Badge variant="outline" className="text-[10px] shrink-0">
+        <div className="flex items-center gap-1.5 mb-0.5">
+          <Badge variant="outline" className="text-[9px] shrink-0 px-1.5 py-0">
             {prediction.league || "Unknown"}
           </Badge>
-          {prediction.is_live_prediction ? (
-            <Badge variant="secondary" className="text-[10px] bg-orange-500/20 text-orange-500 border-orange-500/30 shrink-0">
-              <Radio className="h-2.5 w-2.5 mr-1" />
-              Live
-            </Badge>
-          ) : (
-            <Badge variant="secondary" className="text-[10px] bg-green-500/20 text-green-500 border-green-500/30 shrink-0">
-              <PlayCircle className="h-2.5 w-2.5 mr-1" />
-              Pre-Live
-            </Badge>
-          )}
         </div>
 
         {/* Team Matchup with Scores */}
-        <div className="flex items-center gap-2 text-sm">
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="font-medium truncate">{teams.away}</span>
-            {hasActualScores && (
-              <span className={cn(
-                "font-bold tabular-nums",
-                prediction.actual_score_away! > prediction.actual_score_home! ? "text-green-500" : "text-muted-foreground"
-              )}>
-                {prediction.actual_score_away}
-              </span>
-            )}
-          </div>
-          <span className="text-muted-foreground text-xs">@</span>
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="font-medium truncate">{teams.home}</span>
-            {hasActualScores && (
-              <span className={cn(
-                "font-bold tabular-nums",
-                prediction.actual_score_home! > prediction.actual_score_away! ? "text-green-500" : "text-muted-foreground"
-              )}>
-                {prediction.actual_score_home}
-              </span>
-            )}
-          </div>
+        <div className="flex items-center gap-1.5 text-xs">
+          <span className="font-medium truncate">{teams.away}</span>
           {hasActualScores && (
-            <Badge variant="outline" className="text-[10px] ml-1 shrink-0">Final</Badge>
+            <span className={cn(
+              "font-bold tabular-nums text-sm",
+              prediction.actual_score_away! > prediction.actual_score_home! ? "text-green-500" : "text-muted-foreground"
+            )}>
+              {prediction.actual_score_away}
+            </span>
+          )}
+          <span className="text-muted-foreground">@</span>
+          <span className="font-medium truncate">{teams.home}</span>
+          {hasActualScores && (
+            <span className={cn(
+              "font-bold tabular-nums text-sm",
+              prediction.actual_score_home! > prediction.actual_score_away! ? "text-green-500" : "text-muted-foreground"
+            )}>
+              {prediction.actual_score_home}
+            </span>
           )}
         </div>
 
         {/* Prediction & Metadata */}
-        <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
-          <span className="font-medium text-foreground/80">Pick: {prediction.prediction}</span>
+        <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-0.5">
+          <span className="font-medium text-foreground/80">{prediction.prediction}</span>
           <span>•</span>
           <span>{format(new Date(prediction.predicted_at), "MMM d, HH:mm")}</span>
           {prediction.confidence && (
             <>
               <span>•</span>
-              <span className="flex items-center gap-1">
-                <Target className="h-3 w-3" />
-                {prediction.confidence}%
-              </span>
-            </>
-          )}
-          {hasProjectedScores && !hasActualScores && (
-            <>
-              <span>•</span>
-              <span className="text-muted-foreground/70">
-                Proj: {prediction.projected_score_away}-{prediction.projected_score_home}
-              </span>
+              <span>{prediction.confidence}%</span>
             </>
           )}
         </div>
       </div>
 
-      {/* Accuracy Rating (if available) */}
-      {prediction.accuracy_rating !== null && (
-        <div className="text-right shrink-0">
-          <p className={cn(
-            "text-lg font-bold tabular-nums",
-            prediction.accuracy_rating >= 80 ? "text-green-500" :
-            prediction.accuracy_rating >= 60 ? "text-yellow-500" : "text-red-500"
-          )}>
-            {prediction.accuracy_rating}
-          </p>
-          <p className="text-[10px] text-muted-foreground">Accuracy</p>
-        </div>
-      )}
-
       {/* Status Badge */}
-      <Badge variant="secondary" className={cn("shrink-0", status.color, status.bg)}>
+      <Badge variant="secondary" className={cn("shrink-0 text-[10px]", status.color, status.bg)}>
         {status.label}
       </Badge>
     </div>
