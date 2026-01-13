@@ -793,7 +793,9 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: undefined
       }
+      trigger_grade_predictions: { Args: never; Returns: undefined }
       trigger_record_odds: { Args: never; Returns: undefined }
+      trigger_save_predictions: { Args: never; Returns: undefined }
       update_user_preference: {
         Args: {
           new_value: Json
