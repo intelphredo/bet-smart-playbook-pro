@@ -37,6 +37,8 @@ export interface DailyStats {
   winRate: number;
   cumulativeWinRate: number;
   avgConfidence: number;
+  dailyPL: number;
+  cumulativePL: number;
 }
 
 export interface LeaguePerformance {
@@ -255,6 +257,7 @@ export const useHistoricalPredictions = (
 
       let cumulativeWon = 0;
       let cumulativeLost = 0;
+      let cumulativePL = 0;
 
       stats.dailyStats = dateRange.map(date => {
         const dateStr = format(date, "yyyy-MM-dd");
@@ -282,6 +285,11 @@ export const useHistoricalPredictions = (
           ? dayConfidences.reduce((a, b) => a + b, 0) / dayConfidences.length
           : 0;
 
+        // Calculate daily P/L (assuming 1 unit stake per bet, -110 odds)
+        // Won = +0.91 units, Lost = -1 unit
+        const dailyPL = (won * 0.91) - lost;
+        cumulativePL += dailyPL;
+
         return {
           date: dateStr,
           dateLabel: format(date, "MMM d"),
@@ -292,6 +300,8 @@ export const useHistoricalPredictions = (
           winRate,
           cumulativeWinRate,
           avgConfidence,
+          dailyPL: parseFloat(dailyPL.toFixed(2)),
+          cumulativePL: parseFloat(cumulativePL.toFixed(2)),
         };
       });
 
