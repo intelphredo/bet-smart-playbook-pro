@@ -218,7 +218,9 @@ Deno.serve(async (req) => {
           isCorrect
         );
 
-        // Queue update promise
+        // Queue update promise - also populate team names if missing
+        const matchTitle = `${result.awayTeam} @ ${result.homeTeam}`;
+        
         updatePromises.push(
           supabase
             .from("algorithm_predictions")
@@ -228,6 +230,10 @@ Deno.serve(async (req) => {
               actual_score_away: result.awayScore,
               accuracy_rating: accuracyRating,
               result_updated_at: new Date().toISOString(),
+              // Populate missing team data for old predictions
+              home_team: result.homeTeam,
+              away_team: result.awayTeam,
+              match_title: matchTitle,
             })
             .eq("id", prediction.id)
             .is("result_updated_at", null)
