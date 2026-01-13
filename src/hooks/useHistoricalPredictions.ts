@@ -48,6 +48,8 @@ export interface LeaguePerformance {
   pending: number;
   total: number;
   winRate: number;
+  totalPL: number;
+  roi: number;
 }
 
 export interface LeagueDailyStats {
@@ -319,12 +321,15 @@ export const useHistoricalPredictions = (
         ? (stats.totalPL / stats.totalUnitsStaked) * 100 
         : 0;
 
-      // Calculate league performance for chart
+      // Calculate league performance for chart with ROI
       stats.leaguePerformance = Object.entries(stats.byLeague).map(([league, data]) => {
         const total = data.won + data.lost + data.pending;
         const leagueSettled = data.won + data.lost;
         const winRate = leagueSettled > 0 ? (data.won / leagueSettled) * 100 : 0;
-        return { league, ...data, total, winRate };
+        // Calculate P/L and ROI per league (1 unit stakes, -110 odds)
+        const totalPL = (data.won * 0.91) - data.lost;
+        const roi = leagueSettled > 0 ? (totalPL / leagueSettled) * 100 : 0;
+        return { league, ...data, total, winRate, totalPL: parseFloat(totalPL.toFixed(2)), roi: parseFloat(roi.toFixed(1)) };
       }).sort((a, b) => b.total - a.total);
 
       // Calculate league daily trends (win rate over time per league)

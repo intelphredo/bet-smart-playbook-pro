@@ -470,16 +470,29 @@ const PredictionCharts = ({
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-4">
+            {/* League ROI Breakdown */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 mt-4">
               {leaguePerformance.slice(0, 6).map((league) => (
                 <div 
                   key={league.league}
-                  className="flex items-center justify-between p-2 bg-muted/30 rounded-lg text-xs"
+                  className="flex flex-col p-3 bg-muted/30 rounded-lg text-center"
                 >
-                  <Badge variant="outline" className="text-[10px]">{league.league}</Badge>
-                  <span className="font-medium">
+                  <Badge variant="outline" className="text-[10px] mb-2 self-center">{league.league}</Badge>
+                  <div className="text-xs text-muted-foreground mb-1">
                     {league.won}W-{league.lost}L
-                  </span>
+                  </div>
+                  <div className={cn(
+                    "text-sm font-bold",
+                    league.totalPL >= 0 ? "text-green-500" : "text-red-500"
+                  )}>
+                    {league.totalPL >= 0 ? "+" : ""}{league.totalPL}u
+                  </div>
+                  <div className={cn(
+                    "text-xs font-medium",
+                    league.roi >= 0 ? "text-green-500/80" : "text-red-500/80"
+                  )}>
+                    {league.roi >= 0 ? "+" : ""}{league.roi}% ROI
+                  </div>
                 </div>
               ))}
             </div>
