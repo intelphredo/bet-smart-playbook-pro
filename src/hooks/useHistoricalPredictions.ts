@@ -97,15 +97,16 @@ export const useHistoricalPredictions = (
   return useQuery({
     queryKey: ["historicalPredictions", timeRange, predictionType],
     queryFn: async (): Promise<{ predictions: HistoricalPrediction[]; stats: PredictionStats }> => {
+      // Fetch all predictions matching time range - we'll sort client-side for proper ordering
       let query = supabase
         .from("algorithm_predictions")
-        .select("*")
-        .order("predicted_at", { ascending: false });
+        .select("*");
 
-      // Apply time range filter
+      // Apply time range filter based on when prediction was created OR graded
       const startDate = getDateFromRange(timeRange);
       if (startDate) {
-        query = query.gte("predicted_at", startDate.toISOString());
+        // Include predictions made OR graded within the time range
+        query = query.or(`predicted_at.gte.${startDate.toISOString()},result_updated_at.gte.${startDate.toISOString()}`);
       }
 
       const { data, error } = await query;
@@ -116,6 +117,7 @@ export const useHistoricalPredictions = (
       }
 
       // Use database column for is_live_prediction, with fallback for old records
+      // Sort by most recent activity: graded predictions by result_updated_at, pending by predicted_at
       let predictions = (data || []).map(p => ({
         ...p,
         // Use the database column if set, otherwise infer for backwards compatibility
@@ -125,6 +127,22 @@ export const useHistoricalPredictions = (
           (p.algorithm_id?.includes("live"))
         )
       })) as HistoricalPrediction[];
+
+      // Sort: settled predictions (won/lost) by result_updated_at DESC, then pending by predicted_at DESC
+      predictions.sort((a, b) => {
+        const aIsSettled = a.status === 'won' || a.status === 'lost';
+        const bIsSettled = b.status === 'won' || b.status === 'lost';
+        
+        // Get the relevant timestamp for sorting
+        const aTime = aIsSettled && a.result_updated_at 
+          ? new Date(a.result_updated_at).getTime() 
+          : new Date(a.predicted_at).getTime();
+        const bTime = bIsSettled && b.result_updated_at 
+          ? new Date(b.result_updated_at).getTime() 
+          : new Date(b.predicted_at).getTime();
+        
+        return bTime - aTime; // Descending (most recent first)
+      });
 
       // Filter by prediction type
       if (predictionType === "live") {
