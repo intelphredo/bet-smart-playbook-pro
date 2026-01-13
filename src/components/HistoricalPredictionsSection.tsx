@@ -28,9 +28,12 @@ import {
   BarChart3,
   Trophy,
   AlertCircle,
+  AlertTriangle,
   Zap,
   Calendar,
   Radio,
+  Info,
+  Database,
   PlayCircle,
   Download,
   RefreshCw,
@@ -75,6 +78,34 @@ const HistoricalPredictionsSection = () => {
   };
 
   const { predictions, stats } = data || { predictions: [], stats: null };
+
+  // Calculate data quality metrics
+  const dataQualityMetrics = (() => {
+    if (!predictions.length) return null;
+    
+    const missingTeamData = predictions.filter(p => !p.home_team || !p.away_team);
+    const missingMatchTitle = predictions.filter(p => !p.match_title);
+    const missingLeague = predictions.filter(p => !p.league);
+    const missingConfidence = predictions.filter(p => p.confidence === null || p.confidence === undefined);
+    const missingProjectedScores = predictions.filter(p => 
+      p.projected_score_home === null || p.projected_score_away === null
+    );
+    
+    const totalIssues = missingTeamData.length + missingMatchTitle.length + 
+                        missingLeague.length + missingConfidence.length;
+    const qualityScore = Math.round(((predictions.length * 4 - totalIssues) / (predictions.length * 4)) * 100);
+    
+    return {
+      total: predictions.length,
+      missingTeamData: missingTeamData.length,
+      missingMatchTitle: missingMatchTitle.length,
+      missingLeague: missingLeague.length,
+      missingConfidence: missingConfidence.length,
+      missingProjectedScores: missingProjectedScores.length,
+      qualityScore,
+      hasIssues: totalIssues > 0,
+    };
+  })();
 
   // Get unique leagues for filter
   const leagues = Array.from(new Set(predictions.map(p => p.league).filter(Boolean))) as string[];
@@ -390,6 +421,9 @@ const HistoricalPredictionsSection = () => {
         </div>
       )}
 
+      {/* Data Quality Summary */}
+      <DataQualitySummary metrics={dataQualityMetrics} />
+
       {/* Charts Section */}
       {stats && stats.dailyStats.length > 0 && (
         <PredictionCharts
@@ -572,6 +606,148 @@ const StatCard = ({
   </Card>
 );
 
+// Data Quality Badge Component
+const DataQualityBadge = ({ prediction }: { prediction: HistoricalPrediction }) => {
+  const issues: string[] = [];
+  
+  if (!prediction.home_team || !prediction.away_team) {
+    issues.push("Missing team names");
+  }
+  if (!prediction.match_title) {
+    issues.push("Missing match title");
+  }
+  if (!prediction.league) {
+    issues.push("Missing league");
+  }
+  if (prediction.confidence === null || prediction.confidence === undefined) {
+    issues.push("Missing confidence");
+  }
+  
+  if (issues.length === 0) return null;
+  
+  return (
+    <div className="group relative">
+      <Badge 
+        variant="outline" 
+        className="text-[9px] px-1 py-0 border-amber-500/50 text-amber-500 bg-amber-500/10 cursor-help"
+      >
+        <AlertTriangle className="h-2.5 w-2.5 mr-0.5" />
+        {issues.length}
+      </Badge>
+      <div className="absolute bottom-full right-0 mb-1 hidden group-hover:block z-50">
+        <div className="bg-popover border rounded-md shadow-lg p-2 text-xs w-40">
+          <p className="font-medium text-foreground mb-1">Data Issues:</p>
+          <ul className="text-muted-foreground space-y-0.5">
+            {issues.map((issue, i) => (
+              <li key={i} className="flex items-center gap-1">
+                <span className="w-1 h-1 rounded-full bg-amber-500" />
+                {issue}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Data Quality Summary Card
+const DataQualitySummary = ({ metrics }: { 
+  metrics: {
+    total: number;
+    missingTeamData: number;
+    missingMatchTitle: number;
+    missingLeague: number;
+    missingConfidence: number;
+    missingProjectedScores: number;
+    qualityScore: number;
+    hasIssues: boolean;
+  } | null;
+}) => {
+  if (!metrics || !metrics.hasIssues) return null;
+  
+  const getScoreColor = (score: number) => {
+    if (score >= 90) return "text-green-500";
+    if (score >= 70) return "text-yellow-500";
+    return "text-red-500";
+  };
+  
+  const getScoreBg = (score: number) => {
+    if (score >= 90) return "bg-green-500";
+    if (score >= 70) return "bg-yellow-500";
+    return "bg-red-500";
+  };
+
+  return (
+    <Card className="border-amber-500/30 bg-amber-500/5">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm flex items-center gap-2">
+          <Database className="h-4 w-4 text-amber-500" />
+          Data Quality Report
+          <Badge 
+            variant="outline" 
+            className={cn("ml-auto", getScoreColor(metrics.qualityScore))}
+          >
+            {metrics.qualityScore}% Complete
+          </Badge>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="pt-0">
+        <div className="space-y-3">
+          {/* Quality Progress Bar */}
+          <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+            <div 
+              className={cn("h-full transition-all", getScoreBg(metrics.qualityScore))}
+              style={{ width: `${metrics.qualityScore}%` }}
+            />
+          </div>
+          
+          {/* Issue Breakdown */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+            {metrics.missingTeamData > 0 && (
+              <div className="flex items-center gap-1.5 p-2 rounded bg-muted/50">
+                <AlertTriangle className="h-3 w-3 text-amber-500 shrink-0" />
+                <span className="text-muted-foreground">
+                  <span className="font-medium text-foreground">{metrics.missingTeamData}</span> missing teams
+                </span>
+              </div>
+            )}
+            {metrics.missingMatchTitle > 0 && (
+              <div className="flex items-center gap-1.5 p-2 rounded bg-muted/50">
+                <AlertTriangle className="h-3 w-3 text-amber-500 shrink-0" />
+                <span className="text-muted-foreground">
+                  <span className="font-medium text-foreground">{metrics.missingMatchTitle}</span> missing titles
+                </span>
+              </div>
+            )}
+            {metrics.missingLeague > 0 && (
+              <div className="flex items-center gap-1.5 p-2 rounded bg-muted/50">
+                <AlertTriangle className="h-3 w-3 text-amber-500 shrink-0" />
+                <span className="text-muted-foreground">
+                  <span className="font-medium text-foreground">{metrics.missingLeague}</span> missing leagues
+                </span>
+              </div>
+            )}
+            {metrics.missingConfidence > 0 && (
+              <div className="flex items-center gap-1.5 p-2 rounded bg-muted/50">
+                <Info className="h-3 w-3 text-blue-500 shrink-0" />
+                <span className="text-muted-foreground">
+                  <span className="font-medium text-foreground">{metrics.missingConfidence}</span> no confidence
+                </span>
+              </div>
+            )}
+          </div>
+          
+          <p className="text-[10px] text-muted-foreground">
+            {metrics.total - metrics.missingTeamData} of {metrics.total} predictions have complete team data.
+            Missing data is auto-extracted from match titles when possible.
+          </p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
 const PredictionRow = ({ prediction, showTypeTag = true }: { prediction: HistoricalPrediction; showTypeTag?: boolean }) => {
   const statusConfig = {
     won: {
@@ -596,6 +772,10 @@ const PredictionRow = ({ prediction, showTypeTag = true }: { prediction: Histori
 
   const status = statusConfig[prediction.status as keyof typeof statusConfig] || statusConfig.pending;
   const StatusIcon = status.icon;
+  
+  // Check for data quality issues
+  const hasDataIssues = !prediction.home_team || !prediction.away_team || 
+                        !prediction.match_title || !prediction.league;
 
   // Parse team names from match_title or prediction
   const getTeamNames = () => {
@@ -714,10 +894,13 @@ const PredictionRow = ({ prediction, showTypeTag = true }: { prediction: Histori
         </div>
       </div>
 
-      {/* Status Badge */}
-      <Badge variant="secondary" className={cn("shrink-0 text-[10px]", status.color, status.bg)}>
-        {status.label}
-      </Badge>
+      {/* Data Quality Badge & Status Badge */}
+      <div className="flex items-center gap-1.5 shrink-0">
+        {hasDataIssues && <DataQualityBadge prediction={prediction} />}
+        <Badge variant="secondary" className={cn("text-[10px]", status.color, status.bg)}>
+          {status.label}
+        </Badge>
+      </div>
     </div>
   );
 };
