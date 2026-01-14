@@ -1,5 +1,5 @@
 // ESPN-style Live Games Page
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import NavBar from "@/components/NavBar";
 import PageFooter from "@/components/PageFooter";
 import { SidebarNav } from "@/components/layout/SidebarNav";
@@ -14,9 +14,12 @@ import { Badge } from "@/components/ui/badge";
 import { Radio, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { GroupedLeagueSelect } from "@/components/filters/GroupedLeagueSelect";
+import { getLeagueLogoUrl, getLeagueDisplayName } from "@/utils/teamLogos";
 
 export default function LiveGamesPage() {
   const { toast } = useToast();
+  const [leagueFilter, setLeagueFilter] = useState<string>("all");
   
   const {
     liveMatches: rawLive,
@@ -35,16 +38,27 @@ export default function LiveGamesPage() {
 
   const liveMatches = useMemo(() => applySmartScores(rawLive), [rawLive]);
 
+  // Filter by league
+  const filteredMatches = useMemo(() => {
+    if (leagueFilter === "all") return liveMatches;
+    return liveMatches.filter(m => m.league === leagueFilter);
+  }, [liveMatches, leagueFilter]);
+
+  // Get unique leagues from live matches
+  const availableLeagues = useMemo(() => {
+    return [...new Set(liveMatches.map(m => m.league).filter(Boolean))];
+  }, [liveMatches]);
+
   // Group by league
   const matchesByLeague = useMemo(() => {
-    const grouped: Record<string, typeof liveMatches> = {};
-    liveMatches.forEach(match => {
+    const grouped: Record<string, typeof filteredMatches> = {};
+    filteredMatches.forEach(match => {
       const league = match.league || 'OTHER';
       if (!grouped[league]) grouped[league] = [];
       grouped[league].push(match);
     });
     return grouped;
-  }, [liveMatches]);
+  }, [filteredMatches]);
 
   const handleRefresh = () => {
     refetchWithTimestamp();
@@ -82,35 +96,51 @@ export default function LiveGamesPage() {
                     </p>
                   </div>
                 </div>
-                <LiveRefreshIndicator
-                  hasLiveGames={hasLiveGames}
-                  secondsUntilRefresh={secondsUntilRefresh}
-                  isFetching={isFetching}
-                  lastRefresh={lastRefresh}
-                  activeInterval={activeInterval}
-                />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleRefresh}
-                  disabled={isLoading || isFetching}
-                >
-                  <RefreshCw className={cn("h-4 w-4 mr-2", (isLoading || isFetching) && "animate-spin")} />
-                  Refresh
-                </Button>
+                <div className="flex items-center gap-3">
+                  {availableLeagues.length > 1 && (
+                    <GroupedLeagueSelect
+                      value={leagueFilter}
+                      onValueChange={setLeagueFilter}
+                      leagues={availableLeagues}
+                      allLabel="All Live"
+                      className="w-[160px]"
+                    />
+                  )}
+                  <LiveRefreshIndicator
+                    hasLiveGames={hasLiveGames}
+                    secondsUntilRefresh={secondsUntilRefresh}
+                    isFetching={isFetching}
+                    lastRefresh={lastRefresh}
+                    activeInterval={activeInterval}
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleRefresh}
+                    disabled={isLoading || isFetching}
+                  >
+                    <RefreshCw className={cn("h-4 w-4 mr-2", (isLoading || isFetching) && "animate-spin")} />
+                    Refresh
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
 
           {/* Content */}
           <div className="container px-4 py-6">
-            {liveMatches.length === 0 ? (
+            {filteredMatches.length === 0 ? (
               <Card>
                 <CardContent className="py-16 text-center">
                   <Radio className="h-12 w-12 mx-auto mb-4 text-muted-foreground/30" />
-                  <h3 className="text-lg font-medium mb-1">No Live Games</h3>
+                  <h3 className="text-lg font-medium mb-1">
+                    {leagueFilter !== "all" ? `No Live ${getLeagueDisplayName(leagueFilter)} Games` : "No Live Games"}
+                  </h3>
                   <p className="text-muted-foreground">
-                    Check back soon for live action
+                    {leagueFilter !== "all" 
+                      ? "Try selecting a different league or check back soon"
+                      : "Check back soon for live action"
+                    }
                   </p>
                 </CardContent>
               </Card>
@@ -120,7 +150,15 @@ export default function LiveGamesPage() {
                   <Card key={league}>
                     <CardHeader className="py-3 px-4">
                       <div className="flex items-center gap-2">
-                        <CardTitle className="text-base">{league}</CardTitle>
+                        <img 
+                          src={getLeagueLogoUrl(league)} 
+                          alt={league} 
+                          className="w-5 h-5 object-contain"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
+                        />
+                        <CardTitle className="text-base">{getLeagueDisplayName(league)}</CardTitle>
                         <Badge variant="outline">{matches.length}</Badge>
                       </div>
                     </CardHeader>

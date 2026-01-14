@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
@@ -17,20 +16,16 @@ import {
 import { cn } from '@/lib/utils';
 import { League } from '@/types/sports';
 import { useBettingTrends } from '@/hooks/useBettingTrends';
-import { BettingTrend, SharpSignal } from '@/types/bettingTrends';
+import { BettingTrend } from '@/types/bettingTrends';
 import BettingTrendsCard from './BettingTrendsCard';
+import { GroupedLeagueSelect, LEAGUE_CATEGORIES } from '@/components/filters/GroupedLeagueSelect';
+import { getLeagueDisplayName } from '@/utils/teamLogos';
 
-interface BettingTrendsSectionProps {
-  league?: League;
-}
-
-const LEAGUES: { id: League; label: string; icon: string }[] = [
-  { id: 'NBA', label: 'NBA', icon: '🏀' },
-  { id: 'NFL', label: 'NFL', icon: '🏈' },
-  { id: 'MLB', label: 'MLB', icon: '⚾' },
-  { id: 'NHL', label: 'NHL', icon: '🏒' },
-  { id: 'NCAAB', label: 'NCAAB', icon: '🏀' },
-  { id: 'NCAAF', label: 'NCAAF', icon: '🏈' },
+// All available leagues for the filter
+const ALL_LEAGUES: League[] = [
+  'NBA', 'NFL', 'MLB', 'NHL', 'NCAAB', 'NCAAF', 
+  'WNBA', 'EPL', 'LA_LIGA', 'SERIE_A', 'BUNDESLIGA', 
+  'LIGUE_1', 'MLS', 'CHAMPIONS_LEAGUE', 'UFC'
 ];
 
 function TrendSummaryRow({ trend, onClick }: { trend: BettingTrend; onClick: () => void }) {
@@ -98,6 +93,10 @@ function TrendSummaryRow({ trend, onClick }: { trend: BettingTrend; onClick: () 
   );
 }
 
+interface BettingTrendsSectionProps {
+  league?: League;
+}
+
 export function BettingTrendsSection({ league: initialLeague }: BettingTrendsSectionProps) {
   const [activeLeague, setActiveLeague] = useState<League>(initialLeague || 'NBA');
   const [selectedTrend, setSelectedTrend] = useState<BettingTrend | null>(null);
@@ -151,17 +150,17 @@ export function BettingTrendsSection({ league: initialLeague }: BettingTrendsSec
         </Button>
       </div>
       
-      {/* League Tabs */}
-      <Tabs value={activeLeague} onValueChange={(v) => setActiveLeague(v as League)}>
-        <TabsList className="grid w-full grid-cols-6 lg:w-auto lg:inline-flex">
-          {LEAGUES.map((league) => (
-            <TabsTrigger key={league.id} value={league.id} className="gap-1">
-              <span className="hidden sm:inline">{league.icon}</span>
-              <span>{league.label}</span>
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </Tabs>
+      {/* League Selector */}
+      <div className="flex items-center gap-3">
+        <span className="text-sm font-medium text-muted-foreground">League:</span>
+        <GroupedLeagueSelect
+          value={activeLeague}
+          onValueChange={(v) => setActiveLeague(v as League)}
+          leagues={ALL_LEAGUES}
+          showAllOption={false}
+          className="w-[200px]"
+        />
+      </div>
       
       {/* Stats Summary */}
       {!isLoading && trends && (
