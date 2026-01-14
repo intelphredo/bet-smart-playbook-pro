@@ -171,11 +171,17 @@ export function useHighValueAlerts({
   useEffect(() => {
     if (!enabled || matches.length === 0 || isProcessingRef.current) return;
 
+    // Don't process if matches don't have score data loaded yet
+    const hasValidData = matches.some(m => m.homeTeam?.name && m.awayTeam?.name);
+    if (!hasValidData) return;
+
     // Debounce processing to prevent rapid-fire updates
     isProcessingRef.current = true;
     
     const timeoutId = setTimeout(() => {
-      const opportunities = detectHighValueOpportunities(matches);
+      // Create a stable copy of matches for processing
+      const matchesCopy = matches.map(m => ({ ...m }));
+      const opportunities = detectHighValueOpportunities(matchesCopy);
 
       // Show toast for each new opportunity (limit to 3 at a time to prevent spam)
       opportunities.slice(0, 3).forEach((opp) => {
@@ -188,13 +194,13 @@ export function useHighValueAlerts({
         saveAlertToDatabase(opp);
       });
 
-      // Update previous matches reference
+      // Update previous matches reference with the copy
       const newPrevMatches = new Map<string, Match>();
-      matches.forEach((match) => newPrevMatches.set(match.id, match));
+      matchesCopy.forEach((match) => newPrevMatches.set(match.id, match));
       previousMatchesRef.current = newPrevMatches;
       
       isProcessingRef.current = false;
-    }, 1000); // 1 second debounce
+    }, 2000); // 2 second debounce to let data stabilize
 
     return () => {
       clearTimeout(timeoutId);

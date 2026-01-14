@@ -37,6 +37,10 @@ export function useESPNData({
     },
     refetchInterval: activeInterval,
     staleTime: activeInterval / 2,
+    // Keep previous data while refetching to prevent flicker
+    placeholderData: (previousData) => previousData,
+    // Don't refetch on window focus to prevent data loss
+    refetchOnWindowFocus: false,
   });
 
   const { upcomingMatches, liveMatches, finishedMatches } = useMemo(() => {
