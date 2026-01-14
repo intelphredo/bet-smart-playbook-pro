@@ -227,9 +227,10 @@ describe('Validation Schemas', () => {
     it('should return errors for invalid input', () => {
       const result = safeValidate(StakeSchema, -100);
       expect(result.success).toBe(false);
-      if (!result.success) {
+      if (result.success === false) {
         expect(result.errors.length).toBeGreaterThan(0);
       }
+    });
   });
 
   describe('validateOrThrow helper', () => {
