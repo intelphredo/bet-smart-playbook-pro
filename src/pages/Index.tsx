@@ -28,6 +28,8 @@ import { SharpMoneySection, SteamMoveMonitor, SharpMoneyLeaderboard } from "@/co
 import LiveRefreshIndicator from "@/components/LiveRefreshIndicator";
 import FavoritesTab from "@/components/FavoritesTab";
 import { AnimatedBadge } from "@/components/ui/AnimatedBadge";
+import { SpotlightHeader, UpcomingAlertsBadge } from "@/components/SpotlightValuePicks";
+import { useSmartNotifications } from "@/hooks/useSmartNotifications";
 
 import { 
   Radio, Clock, TrendingUp, RefreshCw, ChevronRight, 
@@ -144,6 +146,15 @@ const Index = () => {
     enabled: true,
   });
 
+  // Smart 24/2 notifications
+  const { alerts: smartAlerts, alertsToday, remainingAlerts } = useSmartNotifications({
+    matches: allActiveMatches,
+    enabled: true,
+    valueThreshold: 5,
+    confidenceThreshold: 70,
+    maxAlertsPerDay: 2,
+  });
+
   const handleRefresh = () => {
     refetchWithTimestamp();
     setLastRefresh(new Date());
@@ -207,6 +218,12 @@ const Index = () => {
               </ScrollArea>
               
               <div className="flex items-center gap-3 shrink-0">
+                <UpcomingAlertsBadge 
+                  alerts={smartAlerts}
+                  alertsToday={alertsToday}
+                  remainingAlerts={remainingAlerts}
+                  onViewMatch={(matchId) => navigate(`/game/${matchId}`)}
+                />
                 <SteamMoveMonitor matches={allActiveMatches} enabled={true} />
                 <LiveRefreshIndicator
                   hasLiveGames={hasLiveGames}
@@ -268,6 +285,15 @@ const Index = () => {
                 <AnimatedBadge count={opportunities.length} variant="success" />
               </TabsTrigger>
             </TabsList>
+
+            {/* Spotlight Value Picks - "Bet with Rights" header */}
+            <SpotlightHeader
+              matches={allActiveMatches}
+              onViewMatch={handleMatchClick}
+              maxPicks={3}
+              minConfidence={65}
+              minEV={3}
+            />
 
             {/* High Value Alerts - Always visible */}
             <HighValueAlertBanner
