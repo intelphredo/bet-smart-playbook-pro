@@ -1,8 +1,10 @@
 import { Badge } from "@/components/ui/badge";
 import { LiveOdds } from "@/types/sports";
 import { getPrimaryOdds, formatAmericanOdds, PRIMARY_SPORTSBOOK } from "@/utils/sportsbook";
-import { Star, TrendingUp, TrendingDown } from "lucide-react";
+import { Star, TrendingUp, TrendingDown, Minus, Activity } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { OddsMovementIndicator, MovementDirection } from "./OddsMovementIndicator";
+import { useSimulatedMovement } from "@/hooks/useOddsMovement";
 
 interface FanDuelOddsBadgeProps {
   liveOdds?: LiveOdds[];
@@ -10,6 +12,7 @@ interface FanDuelOddsBadgeProps {
   awayTeam?: string;
   compact?: boolean;
   showSpread?: boolean;
+  matchId?: string;
 }
 
 export function FanDuelOddsBadge({ 
@@ -17,9 +20,11 @@ export function FanDuelOddsBadge({
   homeTeam = "Home",
   awayTeam = "Away",
   compact = false,
-  showSpread = true 
+  showSpread = true,
+  matchId
 }: FanDuelOddsBadgeProps) {
   const primaryOdds = getPrimaryOdds(liveOdds || []);
+  const movement = useSimulatedMovement(liveOdds);
   
   if (!primaryOdds) return null;
 
@@ -42,6 +47,8 @@ export function FanDuelOddsBadge({
     return spread > 0 ? `+${spread}` : `${spread}`;
   };
 
+  const hasMovement = movement && (movement.homeDirection !== 'stable' || movement.awayDirection !== 'stable');
+
   if (compact) {
     return (
       <div className="flex items-center gap-1.5">
@@ -49,9 +56,27 @@ export function FanDuelOddsBadge({
           <Star className="h-3 w-3 text-primary fill-primary" />
         )}
         <div className="flex items-center gap-2 text-xs">
-          <span className="text-muted-foreground">{awayML || '-'}</span>
+          <span className="flex items-center gap-0.5 text-muted-foreground">
+            {awayML || '-'}
+            {movement?.awayDirection && movement.awayDirection !== 'stable' && (
+              <OddsMovementIndicator 
+                direction={movement.awayDirection} 
+                compact 
+                showTooltip={false}
+              />
+            )}
+          </span>
           <span className="text-muted-foreground/50">|</span>
-          <span className="text-muted-foreground">{homeML || '-'}</span>
+          <span className="flex items-center gap-0.5 text-muted-foreground">
+            {homeML || '-'}
+            {movement?.homeDirection && movement.homeDirection !== 'stable' && (
+              <OddsMovementIndicator 
+                direction={movement.homeDirection} 
+                compact 
+                showTooltip={false}
+              />
+            )}
+          </span>
         </div>
       </div>
     );
@@ -59,11 +84,19 @@ export function FanDuelOddsBadge({
 
   return (
     <div className={cn(
-      "rounded-lg border p-3",
+      "rounded-lg border p-3 relative",
       isFanDuel 
         ? "bg-primary/5 border-primary/30" 
         : "bg-accent/30 border-border/50"
     )}>
+      {/* Live movement indicator dot */}
+      {hasMovement && movement.isRecent && (
+        <span className="absolute top-2 right-2 flex h-2 w-2">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+        </span>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-1.5">
@@ -79,6 +112,12 @@ export function FanDuelOddsBadge({
             </Badge>
           )}
         </div>
+        {hasMovement && (
+          <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+            <Activity className="h-3 w-3" />
+            <span>Line moving</span>
+          </div>
+        )}
       </div>
 
       {/* Odds Grid */}
@@ -86,13 +125,19 @@ export function FanDuelOddsBadge({
         {/* Away Team */}
         <div className="space-y-1">
           <p className="text-[10px] text-muted-foreground truncate">{awayTeam}</p>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <span className={cn(
-              "text-sm font-bold tabular-nums",
+              "text-sm font-bold tabular-nums relative",
               awayML && awayML.startsWith('+') ? "text-green-500" : "text-foreground"
             )}>
               {awayML || '-'}
             </span>
+            {movement?.awayDirection && movement.awayDirection !== 'stable' && (
+              <OddsMovementIndicator 
+                direction={movement.awayDirection}
+                change={movement.awayChange}
+              />
+            )}
             {showSpread && awaySpread !== undefined && (
               <span className="text-xs text-muted-foreground tabular-nums">
                 ({formatSpread(awaySpread)})
@@ -104,13 +149,19 @@ export function FanDuelOddsBadge({
         {/* Home Team */}
         <div className="space-y-1">
           <p className="text-[10px] text-muted-foreground truncate">{homeTeam}</p>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <span className={cn(
-              "text-sm font-bold tabular-nums",
+              "text-sm font-bold tabular-nums relative",
               homeML && homeML.startsWith('+') ? "text-green-500" : "text-foreground"
             )}>
               {homeML || '-'}
             </span>
+            {movement?.homeDirection && movement.homeDirection !== 'stable' && (
+              <OddsMovementIndicator 
+                direction={movement.homeDirection}
+                change={movement.homeChange}
+              />
+            )}
             {showSpread && homeSpread !== undefined && (
               <span className="text-xs text-muted-foreground tabular-nums">
                 ({formatSpread(homeSpread)})
@@ -126,6 +177,13 @@ export function FanDuelOddsBadge({
           <span className="text-muted-foreground">Total</span>
           <div className="flex items-center gap-2">
             <span className="font-medium">O/U {primaryOdds.totals.total}</span>
+            {movement?.totalDirection && movement.totalDirection !== 'stable' && (
+              <OddsMovementIndicator 
+                direction={movement.totalDirection}
+                change={movement.totalChange}
+                compact
+              />
+            )}
           </div>
         </div>
       )}
