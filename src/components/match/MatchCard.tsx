@@ -26,10 +26,12 @@ export const MatchCard: React.FC<MatchCardProps> = ({ game }) => {
   };
 
   return (
-    <Card className={cn(
-      "w-full shadow-sm border border-muted/40",
-      isLive && "border-red-500/50 bg-red-500/5"
+    <Card variant="premium" className={cn(
+      "w-full overflow-hidden",
+      isLive && "border-red-500/30 ring-1 ring-red-500/20"
     )}>
+      {/* Premium gold accent line */}
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
       <CardHeader className="flex flex-row items-center justify-between py-3 px-4">
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="text-xs">

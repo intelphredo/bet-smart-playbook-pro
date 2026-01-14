@@ -1,10 +1,9 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { BarChart as BarChartIcon } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import React, { useState, useMemo } from "react";
 import LeagueStatsModal from "./LeagueStatsModal";
 import { Match } from "@/types/sports";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useSportsData } from "@/hooks/useSportsData";
 import { Badge } from "@/components/ui/badge";
 import { useAlgorithmPerformance } from "@/hooks/useAlgorithmPerformance";
@@ -113,30 +112,38 @@ const StatsOverview = () => {
   const hasFilteredStats = leagueStats.some(stat => stat.isFiltered);
 
   return (
-    <Card className="border-0 shadow-none bg-transparent">
-      <CardHeader className="pb-2 px-0">
+    <Card variant="premium" className="border-primary/10 overflow-hidden">
+      {/* Gold accent line */}
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+      
+      <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-xl font-bold">Algorithm Performance</CardTitle>
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-primary/10 border border-primary/20">
+              <BarChartIcon className="h-5 w-5 text-primary" />
+            </div>
+            <CardTitle className="text-xl font-bold">Algorithm Performance</CardTitle>
+          </div>
           {hasFilteredStats && (
-            <Badge variant="outline" className="ml-2 text-xs">
+            <Badge variant="outline" className="ml-2 text-xs bg-primary/10 border-primary/30 text-primary">
               Filtered View
             </Badge>
           )}
         </div>
       </CardHeader>
-      <CardContent className="px-0">
+      <CardContent>
         {isLoading ? (
           <div className="space-y-4">
-            <Skeleton className="h-[250px] w-full" />
+            <div className="skeleton-card-premium h-[250px] w-full rounded-xl" />
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-4">
               {Array.from({length: 5}).map((_, i) => (
-                <Skeleton key={i} className="h-16 w-full" />
+                <div key={i} className="skeleton-card-premium h-20 w-full rounded-xl" />
               ))}
             </div>
           </div>
         ) : (
           <>
-            <div className="h-[250px] w-full">
+            <div className="h-[250px] w-full p-4 rounded-xl bg-gradient-to-br from-card via-card to-primary/5 border border-border/30">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={leagueStats}
@@ -147,21 +154,26 @@ const StatsOverview = () => {
                     bottom: 5,
                   }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis domain={[0, 100]} tickFormatter={v => `${v}%`} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+                  <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                  <YAxis domain={[0, 100]} tickFormatter={v => `${v}%`} stroke="hsl(var(--muted-foreground))" fontSize={12} />
                   <Tooltip
                     formatter={(value, name) => [
                       `${value}%`,
                       hasFilteredStats ? "Filtered Win Rate" : "All-Time Win Rate"
                     ]}
                     labelFormatter={(value) => `${value} League`}
+                    contentStyle={{
+                      backgroundColor: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--primary) / 0.2)',
+                      borderRadius: '0.75rem',
+                      boxShadow: '0 10px 40px -10px hsl(var(--primary) / 0.2)',
+                    }}
                   />
                   <Bar
                     dataKey="winRate"
-                    fill="#ffd700"
-                    className="fill-gold-500 dark:fill-gold-400"
-                    radius={[4, 4, 0, 0]}
+                    fill="hsl(var(--primary))"
+                    radius={[6, 6, 0, 0]}
                     isAnimationActive={true}
                   />
                 </BarChart>
@@ -169,25 +181,31 @@ const StatsOverview = () => {
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mt-6">
-              {leagueStats.map((item) => (
+              {leagueStats.map((item, index) => (
                 <button
                   type="button"
                   key={item.name}
-                  className="group block text-center p-4 rounded-xl bg-card/60 border border-border/50 hover:bg-card hover:border-primary/20 hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="group relative block text-center p-4 rounded-xl bg-gradient-to-br from-card via-card to-primary/5 border border-border/50 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/10 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary/50 overflow-hidden"
                   onClick={() => {
                     setSelectedLeague(item.name);
                     setModalOpen(true);
                   }}
                   aria-label={`Show ${item.name} picks and data`}
+                  style={{ animationDelay: `${index * 50}ms` }}
                 >
-                  <div className="text-2xl font-bold text-primary group-hover:scale-105 transition-transform">
-                    {item.winRate ? `${item.winRate}%` : "--"}
-                  </div>
-                  <div className="text-xs text-muted-foreground mt-1 font-medium">
-                    {item.name}
-                  </div>
-                  <div className="text-[10px] text-muted-foreground/70">
-                    {item.totalPicks || item.picks || 0} picks
+                  {/* Hover shimmer */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+                  
+                  <div className="relative">
+                    <div className="text-2xl font-bold bg-gradient-to-r from-primary to-amber-400 bg-clip-text text-transparent group-hover:scale-110 transition-transform duration-200">
+                      {item.winRate ? `${item.winRate}%` : "--"}
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1.5 font-semibold">
+                      {item.name}
+                    </div>
+                    <div className="text-[10px] text-primary/60 mt-0.5">
+                      {item.totalPicks || item.picks || 0} picks
+                    </div>
                   </div>
                 </button>
               ))}
