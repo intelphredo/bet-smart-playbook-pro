@@ -7,9 +7,9 @@ import { League } from '@/types/sports';
 
 // League priority tiers for polling frequency
 export const LEAGUE_TIERS = {
-  TIER_1: ['NBA', 'NFL', 'EPL', 'CHAMPIONS_LEAGUE'] as League[],
+  TIER_1: ['NBA', 'NFL', 'EPL', 'CHAMPIONS_LEAGUE', 'NCAAB'] as League[],
   TIER_2: ['MLB', 'NHL', 'LA_LIGA', 'SERIE_A', 'BUNDESLIGA'] as League[],
-  TIER_3: ['NCAAB', 'NCAAF', 'WNBA', 'MLS', 'LIGUE_1', 'UFC', 'ATP', 'WTA', 'PGA', 'CFL', 'XFL', 'SOCCER'] as League[],
+  TIER_3: ['NCAAF', 'WNBA', 'MLS', 'LIGUE_1', 'UFC', 'ATP', 'WTA', 'PGA', 'CFL', 'XFL', 'SOCCER'] as League[],
 } as const;
 
 // Polling intervals in milliseconds
