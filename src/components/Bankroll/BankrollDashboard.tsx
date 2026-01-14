@@ -1,5 +1,5 @@
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { BankrollSettings, BankrollScenario, DEFAULT_BANKROLL_SETTINGS } from "@/types/bankroll";
+import { BankrollScenario, DEFAULT_BANKROLL_SETTINGS } from "@/types/bankroll";
 import { BANKROLL_SCENARIOS, getRecommendedScenario } from "@/utils/scenarioAnalysis/bankrollScenarios";
 import { 
   generateBankrollProjections, 
@@ -22,21 +22,48 @@ import {
 } from "recharts";
 import { 
   Wallet, TrendingUp, AlertTriangle, Shield, Settings, ChartLine, 
-  Target, Gauge, DollarSign, Percent, Calculator, ChevronRight, PieChart, Lock
+  Target, Gauge, DollarSign, Percent, Calculator, ChevronRight, PieChart, Lock, Save
 } from "lucide-react";
 import { useBetTracking } from "@/hooks/useBetTracking";
+import { useBankrollSettings } from "@/hooks/useBankrollSettings";
 import { RiskExposureDashboard } from "./RiskExposureDashboard";
 import { WithdrawalScheduler } from "./WithdrawalScheduler";
 import { GuardrailsPanel } from "./GuardrailsPanel";
 import { GoalTracker } from "./GoalTracker";
+import { toast } from "sonner";
+
+const SIMULATION_STORAGE_KEY = "bankroll_simulation_settings";
 
 export function BankrollDashboard() {
-  const [settings, setSettings] = useState<BankrollSettings>(DEFAULT_BANKROLL_SETTINGS);
+  const { settings, setSettings, resetSettings, isLoaded } = useBankrollSettings();
   const [selectedScenario, setSelectedScenario] = useState<BankrollScenario>(
     getRecommendedScenario(0, 0.54, 'intermediate')
   );
   const [winRate, setWinRate] = useState(54);
   const [avgOdds, setAvgOdds] = useState(1.9);
+  
+  // Load simulation settings from localStorage
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(SIMULATION_STORAGE_KEY);
+      if (stored) {
+        const { winRate: wr, avgOdds: ao } = JSON.parse(stored);
+        if (wr) setWinRate(wr);
+        if (ao) setAvgOdds(ao);
+      }
+    } catch (error) {
+      console.error("Failed to load simulation settings:", error);
+    }
+  }, []);
+  
+  // Save simulation settings when they change
+  useEffect(() => {
+    try {
+      localStorage.setItem(SIMULATION_STORAGE_KEY, JSON.stringify({ winRate, avgOdds }));
+    } catch (error) {
+      console.error("Failed to save simulation settings:", error);
+    }
+  }, [winRate, avgOdds]);
   
   // Get user bets for risk exposure
   const { bets, stats } = useBetTracking();
@@ -598,13 +625,19 @@ export function BankrollDashboard() {
                 <Button 
                   variant="outline" 
                   onClick={() => {
-                    setSettings(DEFAULT_BANKROLL_SETTINGS);
+                    resetSettings();
                     setWinRate(54);
                     setAvgOdds(1.9);
+                    localStorage.removeItem(SIMULATION_STORAGE_KEY);
+                    toast.success("Settings reset to defaults");
                   }}
                 >
                   Reset to Defaults
                 </Button>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground ml-auto">
+                  <Save className="h-4 w-4" />
+                  <span>Settings auto-save</span>
+                </div>
               </div>
             </CardContent>
           </Card>
