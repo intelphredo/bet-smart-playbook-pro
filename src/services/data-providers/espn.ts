@@ -11,6 +11,11 @@ export interface ESPNGame {
   odds?: any;
   injuries?: any;
   league?: string;
+  score?: {
+    home: number;
+    away: number;
+    period?: string;
+  };
 }
 
 export async function getESPNGames(): Promise<ESPNGame[]> {
@@ -29,6 +34,11 @@ export async function getESPNGames(): Promise<ESPNGame[]> {
       odds: g.odds,
       injuries: g.injuries,
       league: g.league,
+      score: g.score ? {
+        home: g.score.home ?? 0,
+        away: g.score.away ?? 0,
+        period: g.score.period,
+      } : undefined,
     }));
   } catch (error) {
     console.warn("Failed to fetch ESPN games:", error);

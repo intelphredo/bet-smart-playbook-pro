@@ -20,6 +20,11 @@ export interface UnifiedGame {
   league?: string;
   source: string;
   lastUpdated: string;
+  score?: {
+    home: number;
+    away: number;
+    period?: string;
+  };
 }
 
 export const useGames = () => {
