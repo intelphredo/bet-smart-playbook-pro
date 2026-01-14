@@ -146,7 +146,7 @@ Deno.serve(async (req) => {
     console.log("Starting prediction save process");
 
     // Get request body for optional parameters
-    let targetLeagues = ["NBA", "NFL", "MLB", "NHL"];
+    let targetLeagues = ["NBA", "NFL", "MLB", "NHL", "NCAAB", "NCAAF", "SOCCER"];
     let algorithmId = ALGORITHM_IDS.STATISTICAL_EDGE;
 
     if (req.method === "POST") {
