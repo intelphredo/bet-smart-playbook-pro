@@ -7,8 +7,9 @@ import AlgorithmSetupTool from "./AlgorithmSetupTool";
 import NetworkMonitor from "./DevTools/NetworkMonitor";
 import StateInspector from "./DevTools/StateInspector";
 import PerformanceMetrics from "./DevTools/PerformanceMetrics";
+import LiveScoreMonitor from "./DevTools/LiveScoreMonitor";
 import { exportDevToolsData } from "./DevTools/exportDevToolsData";
-import { X, Bug, Network, Database, Gauge, Wrench, ScrollText, Download } from "lucide-react";
+import { X, Bug, Network, Database, Gauge, Wrench, ScrollText, Download, Activity } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { toast } from "sonner";
 
@@ -71,7 +72,7 @@ const DevToolsPanel = () => {
               value={activeTab} 
               onValueChange={setActiveTab}
             >
-              <TabsList className="grid w-full grid-cols-6 mb-4">
+              <TabsList className="grid w-full grid-cols-7 mb-4">
                 <TabsTrigger value="network" className="flex items-center gap-1.5">
                   <Network className="h-3.5 w-3.5" />
                   <span className="hidden sm:inline">Network</span>
@@ -83,6 +84,10 @@ const DevToolsPanel = () => {
                 <TabsTrigger value="performance" className="flex items-center gap-1.5">
                   <Gauge className="h-3.5 w-3.5" />
                   <span className="hidden sm:inline">Perf</span>
+                </TabsTrigger>
+                <TabsTrigger value="livescores" className="flex items-center gap-1.5">
+                  <Activity className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Live</span>
                 </TabsTrigger>
                 <TabsTrigger value="algorithms" className="flex items-center gap-1.5">
                   <Wrench className="h-3.5 w-3.5" />
@@ -108,6 +113,10 @@ const DevToolsPanel = () => {
               
               <TabsContent value="performance">
                 <PerformanceMetrics />
+              </TabsContent>
+
+              <TabsContent value="livescores">
+                <LiveScoreMonitor />
               </TabsContent>
               
               <TabsContent value="algorithms">

@@ -29,6 +29,7 @@ import {
   GameState,
 } from '@/config/live-scores';
 import { liveScoreWebSocket } from '@/services/live-score-websocket';
+import { liveScoreMonitor } from '@/services/live-score-monitoring';
 import { isMatchLive, isMatchFinished } from '@/utils/matchStatus';
 import { fetchESPNEvents } from '@/services/espnApi';
 
@@ -165,8 +166,13 @@ export function useLiveScores({
    * Fetch scores for a batch of matches in a league
    */
   const fetchLeagueScores = useCallback(async (league: League, matchIds: string[]): Promise<LiveScoreData[]> => {
+    const startTime = performance.now();
     try {
       const events = await fetchESPNEvents(league);
+      const latency = performance.now() - startTime;
+      
+      // Record successful request to monitor
+      liveScoreMonitor.recordRequest(league, true, latency);
       
       // Filter to only requested matches and convert
       const liveScores: LiveScoreData[] = [];
@@ -187,6 +193,8 @@ export function useLiveScores({
       
       return liveScores;
     } catch (err) {
+      const latency = performance.now() - startTime;
+      liveScoreMonitor.recordRequest(league, false, latency);
       console.error(`[LiveScores] Error fetching ${league}:`, err);
       throw err;
     }
@@ -201,6 +209,10 @@ export function useLiveScores({
       updated.set(liveScore.matchId, liveScore);
       return updated;
     });
+
+    // Record update to monitor
+    liveScoreMonitor.recordScoreUpdate(liveScore.matchId);
+    liveScoreMonitor.recordMatchState(liveScore.matchId, liveScore.league, liveScore.gameState === 'live');
 
     // Check for score changes
     const prevScore = previousScoresRef.current.get(liveScore.matchId);
