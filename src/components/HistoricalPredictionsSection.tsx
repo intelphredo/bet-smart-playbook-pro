@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Select,
@@ -605,10 +606,7 @@ const HistoricalPredictionsSection = () => {
                 </Select>
               </div>
               {preLiveTotalPages > 1 && (
-                <>
-                  <span className="text-xs text-muted-foreground">
-                    Page {preLivePage} of {preLiveTotalPages}
-                  </span>
+                <div className="flex items-center gap-2">
                   <div className="flex items-center gap-1">
                     <Button
                       variant="outline"
@@ -619,6 +617,22 @@ const HistoricalPredictionsSection = () => {
                     >
                       <ChevronLeft className="h-4 w-4" />
                     </Button>
+                    <div className="flex items-center gap-1">
+                      <Input
+                        type="number"
+                        min={1}
+                        max={preLiveTotalPages}
+                        value={preLivePage}
+                        onChange={(e) => {
+                          const page = parseInt(e.target.value);
+                          if (page >= 1 && page <= preLiveTotalPages) {
+                            setPreLivePage(page);
+                          }
+                        }}
+                        className="w-12 h-7 text-xs text-center p-1"
+                      />
+                      <span className="text-xs text-muted-foreground">/ {preLiveTotalPages}</span>
+                    </div>
                     <Button
                       variant="outline"
                       size="sm"
@@ -629,7 +643,7 @@ const HistoricalPredictionsSection = () => {
                       <ChevronRight className="h-4 w-4" />
                     </Button>
                   </div>
-                </>
+                </div>
               )}
             </div>
           </CardContent>
@@ -681,10 +695,7 @@ const HistoricalPredictionsSection = () => {
                 </Select>
               </div>
               {liveTotalPages > 1 && (
-                <>
-                  <span className="text-xs text-muted-foreground">
-                    Page {livePage} of {liveTotalPages}
-                  </span>
+                <div className="flex items-center gap-2">
                   <div className="flex items-center gap-1">
                     <Button
                       variant="outline"
@@ -695,6 +706,22 @@ const HistoricalPredictionsSection = () => {
                     >
                       <ChevronLeft className="h-4 w-4" />
                     </Button>
+                    <div className="flex items-center gap-1">
+                      <Input
+                        type="number"
+                        min={1}
+                        max={liveTotalPages}
+                        value={livePage}
+                        onChange={(e) => {
+                          const page = parseInt(e.target.value);
+                          if (page >= 1 && page <= liveTotalPages) {
+                            setLivePage(page);
+                          }
+                        }}
+                        className="w-12 h-7 text-xs text-center p-1"
+                      />
+                      <span className="text-xs text-muted-foreground">/ {liveTotalPages}</span>
+                    </div>
                     <Button
                       variant="outline"
                       size="sm"
@@ -705,7 +732,7 @@ const HistoricalPredictionsSection = () => {
                       <ChevronRight className="h-4 w-4" />
                     </Button>
                   </div>
-                </>
+                </div>
               )}
             </div>
           </CardContent>
