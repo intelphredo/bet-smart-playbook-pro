@@ -9,7 +9,7 @@ import FloatingBetSlip from "@/components/BetSlip/FloatingBetSlip";
 import { PreferencesProvider } from "@/hooks/usePreferences";
 import SharpMoneyMonitor from "@/components/SharpMoneyMonitor";
 import AnimatedRoutes from "@/components/layout/AnimatedRoutes";
-
+import OnboardingModal from "@/components/onboarding/OnboardingModal";
 // Create a client
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -66,6 +66,7 @@ function App() {
                   <AnimatedRoutes />
                   <FloatingBetSlip />
                   <SharpMoneyMonitor />
+                  <OnboardingModal />
                 </Router>
                 <Toaster richColors position="top-center" />
               </TooltipProvider>
