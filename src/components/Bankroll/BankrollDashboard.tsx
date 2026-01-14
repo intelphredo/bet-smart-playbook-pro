@@ -429,18 +429,65 @@ export function BankrollDashboard() {
                   <div className="space-y-2">
                     <Label>Current Bankroll ($)</Label>
                     <Input 
-                      type="number" 
-                      value={settings.currentBankroll}
-                      onChange={(e) => setSettings(s => ({ ...s, currentBankroll: parseFloat(e.target.value) || 0 }))}
+                      type="text"
+                      inputMode="decimal"
+                      value={String(settings.currentBankroll)}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                          setSettings(s => ({ ...s, currentBankroll: val === '' ? 0 : parseFloat(val) || 0 }));
+                        }
+                      }}
+                      placeholder="1000"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label>Starting Bankroll ($)</Label>
+                    <Input 
+                      type="text"
+                      inputMode="decimal"
+                      value={String(settings.startingBankroll)}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                          setSettings(s => ({ ...s, startingBankroll: val === '' ? 0 : parseFloat(val) || 0 }));
+                        }
+                      }}
+                      placeholder="1000"
                     />
                   </div>
                   
                   <div className="space-y-2">
                     <Label>Unit Size ($)</Label>
                     <Input 
-                      type="number" 
-                      value={settings.unitSize}
-                      onChange={(e) => setSettings(s => ({ ...s, unitSize: parseFloat(e.target.value) || 0 }))}
+                      type="text"
+                      inputMode="decimal"
+                      value={String(settings.unitSize)}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                          setSettings(s => ({ ...s, unitSize: val === '' ? 0 : parseFloat(val) || 0 }));
+                        }
+                      }}
+                      placeholder="20"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label>Kelly Fraction (%)</Label>
+                    <Input 
+                      type="text"
+                      inputMode="decimal"
+                      value={String(settings.kellyFraction * 100)}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                          const pct = val === '' ? 0 : parseFloat(val) || 0;
+                          setSettings(s => ({ ...s, kellyFraction: Math.min(100, Math.max(0, pct)) / 100 }));
+                        }
+                      }}
+                      placeholder="25"
                     />
                   </div>
                   
@@ -448,7 +495,7 @@ export function BankrollDashboard() {
                     <Label>Risk Tolerance</Label>
                     <Select 
                       value={settings.riskTolerance}
-                      onValueChange={(v) => setSettings(s => ({ ...s, riskTolerance: v as any }))}
+                      onValueChange={(v) => setSettings(s => ({ ...s, riskTolerance: v as 'conservative' | 'moderate' | 'aggressive' }))}
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -466,39 +513,95 @@ export function BankrollDashboard() {
                   <div className="space-y-2">
                     <Label>Win Rate (%)</Label>
                     <Input 
-                      type="number" 
-                      value={winRate}
-                      onChange={(e) => setWinRate(parseFloat(e.target.value) || 50)}
-                      min={40}
-                      max={70}
+                      type="text"
+                      inputMode="decimal"
+                      value={String(winRate)}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                          const pct = val === '' ? 50 : parseFloat(val) || 50;
+                          setWinRate(Math.min(100, Math.max(0, pct)));
+                        }
+                      }}
+                      placeholder="54"
                     />
                   </div>
                   
                   <div className="space-y-2">
-                    <Label>Average Odds</Label>
+                    <Label>Average Odds (Decimal)</Label>
                     <Input 
-                      type="number" 
-                      step="0.1"
-                      value={avgOdds}
-                      onChange={(e) => setAvgOdds(parseFloat(e.target.value) || 1.9)}
+                      type="text"
+                      inputMode="decimal"
+                      value={String(avgOdds)}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                          setAvgOdds(val === '' ? 1.9 : parseFloat(val) || 1.9);
+                        }
+                      }}
+                      placeholder="1.9"
                     />
                   </div>
                   
                   <div className="space-y-2">
                     <Label>Max Bet Percentage (%)</Label>
                     <Input 
-                      type="number" 
-                      value={settings.maxBetPercentage}
-                      onChange={(e) => setSettings(s => ({ ...s, maxBetPercentage: parseFloat(e.target.value) || 5 }))}
+                      type="text"
+                      inputMode="decimal"
+                      value={String(settings.maxBetPercentage)}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                          const pct = val === '' ? 5 : parseFloat(val) || 5;
+                          setSettings(s => ({ ...s, maxBetPercentage: Math.min(100, Math.max(0, pct)) }));
+                        }
+                      }}
+                      placeholder="5"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label>Daily Loss Limit ($)</Label>
+                    <Input 
+                      type="text"
+                      inputMode="decimal"
+                      value={String(settings.dailyLossLimit ?? '')}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                          setSettings(s => ({ ...s, dailyLossLimit: val === '' ? undefined : parseFloat(val) || 0 }));
+                        }
+                      }}
+                      placeholder="100"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label>Weekly Loss Limit ($)</Label>
+                    <Input 
+                      type="text"
+                      inputMode="decimal"
+                      value={String(settings.weeklyLossLimit ?? '')}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                          setSettings(s => ({ ...s, weeklyLossLimit: val === '' ? undefined : parseFloat(val) || 0 }));
+                        }
+                      }}
+                      placeholder="250"
                     />
                   </div>
                 </div>
               </div>
               
-              <div className="pt-4 border-t">
+              <div className="pt-4 border-t flex gap-3">
                 <Button 
                   variant="outline" 
-                  onClick={() => setSettings(DEFAULT_BANKROLL_SETTINGS)}
+                  onClick={() => {
+                    setSettings(DEFAULT_BANKROLL_SETTINGS);
+                    setWinRate(54);
+                    setAvgOdds(1.9);
+                  }}
                 >
                   Reset to Defaults
                 </Button>
