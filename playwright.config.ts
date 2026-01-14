@@ -31,6 +31,25 @@ export default defineConfig({
     video: 'on-first-retry',
   },
 
+  /* Visual regression snapshot settings */
+  expect: {
+    toHaveScreenshot: {
+      /* Maximum allowed ratio of different pixels (0-1) */
+      maxDiffPixelRatio: 0.01,
+      /* Threshold for considering pixels different (0-1) */
+      threshold: 0.2,
+      /* Animation timeout - wait for animations to complete */
+      animations: 'disabled',
+    },
+    toMatchSnapshot: {
+      maxDiffPixelRatio: 0.01,
+      threshold: 0.2,
+    },
+  },
+
+  /* Snapshot path configuration */
+  snapshotPathTemplate: '{testDir}/__screenshots__/{testFilePath}/{arg}{ext}',
+
   /* Configure projects for major browsers */
   projects: [
     {
