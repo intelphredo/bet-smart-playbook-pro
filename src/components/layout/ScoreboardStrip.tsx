@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import AnimatedScore from '@/components/ui/AnimatedScore';
 import { TeamLogoImage } from '@/components/ui/TeamLogoImage';
+import { isMatchLive } from '@/utils/matchStatus';
 
 interface ScoreboardStripProps {
   matches: Match[];
@@ -91,13 +92,6 @@ export function ScoreboardStrip({ matches, className }: ScoreboardStripProps) {
   );
 }
 
-// Helper to check if a match is live
-const isMatchLive = (status: string): boolean => {
-  const s = status?.toLowerCase() || "";
-  return s === "live" || s === "in" || s === "in_progress" || 
-         s.includes("half") || s.includes("ot") || s.includes("overtime") ||
-         ["1st", "2nd", "3rd", "4th"].some(p => s.includes(p));
-};
 
 function ScoreCard({ match, onClick, index }: { match: Match; onClick: () => void; index: number }) {
   const isLive = isMatchLive(match.status);

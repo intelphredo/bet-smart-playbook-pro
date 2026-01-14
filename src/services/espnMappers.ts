@@ -88,23 +88,37 @@ export const mapESPNEventToMatch = (event: ESPNEvent, league: League): Match => 
       recentForm: awayRecentForm
     };
     
-    // Enhanced status mapping with better NCAAB/college sports support
+    // Enhanced status mapping with comprehensive live detection
     let status: Match["status"];
     const eventState = (event.status?.type?.state || "pre").toLowerCase();
     const stateDescription = (event.status?.type?.description || "").toLowerCase();
+    const period = event.status?.period || 0;
     
-    // Check for various live/in-progress indicators
-    const isLiveIndicator = eventState === "in" || 
+    // Check for various live/in-progress indicators - expanded for all sports
+    const isLiveIndicator = 
+      eventState === "in" || 
+      eventState === "live" ||
       stateDescription.includes("in progress") || 
       stateDescription.includes("halftime") ||
-      stateDescription.includes("end of") ||
-      (event.status?.period > 0 && eventState !== "post" && eventState !== "pre");
+      stateDescription.includes("half") ||
+      stateDescription.includes("quarter") ||
+      stateDescription.includes("period") ||
+      stateDescription.includes("end of 1st") ||
+      stateDescription.includes("end of 2nd") ||
+      stateDescription.includes("end of 3rd") ||
+      stateDescription.includes("ot") ||
+      stateDescription.includes("overtime") ||
+      stateDescription.includes("extra time") ||
+      (period > 0 && eventState !== "post" && eventState !== "pre" && eventState !== "scheduled");
     
     // Check for finished indicators  
-    const isFinishedIndicator = eventState === "post" || 
-      stateDescription.includes("final") ||
+    const isFinishedIndicator = 
+      eventState === "post" || 
+      stateDescription === "final" ||
+      stateDescription.includes("final/") ||
       stateDescription.includes("end of game") ||
-      stateDescription.includes("full time");
+      stateDescription.includes("full time") ||
+      stateDescription.includes("game over");
     
     if (isFinishedIndicator) {
       status = "finished";
@@ -136,12 +150,20 @@ export const mapESPNEventToMatch = (event: ESPNEvent, league: League): Match => 
       ...(league === "SOCCER" && { draw: baseDrawOdds })
     };
     
-    // Handle score values safely:
-    // - If ESPN omits the score field temporarily, do NOT coerce to 0 (that looks like a real score)
-    // - If ESPN provides "0", that IS a real score (e.g. 0-0)
-    const parseScoreMaybe = (scoreValue: string | undefined): number | null => {
-      if (scoreValue === undefined || scoreValue === null || scoreValue === "") return null;
-      const parsed = parseInt(scoreValue, 10);
+    // Handle score values safely - supports string, number, undefined, null
+    const parseScoreMaybe = (scoreValue: string | number | undefined | null): number | null => {
+      if (scoreValue === undefined || scoreValue === null) return null;
+      
+      // Handle number type directly
+      if (typeof scoreValue === 'number') {
+        return Number.isFinite(scoreValue) ? scoreValue : null;
+      }
+      
+      // Handle string type
+      const trimmed = String(scoreValue).trim();
+      if (trimmed === "") return null;
+      
+      const parsed = parseInt(trimmed, 10);
       return Number.isFinite(parsed) ? parsed : null;
     };
 
@@ -152,25 +174,62 @@ export const mapESPNEventToMatch = (event: ESPNEvent, league: League): Match => 
     const hasValidScores = homeParsed !== null && awayParsed !== null;
     const shouldHaveScores = status === "live" || status === "finished";
     
-    // Generate period display text based on league
+    // Generate period display text based on league - uses ESPN's description when meaningful
     const getPeriodDisplay = (): string => {
-      const period = event.status?.period || 1;
-      const clock = event.status?.displayClock || "00:00";
+      const periodNum = event.status?.period || 1;
+      const clock = event.status?.displayClock || "";
       const description = event.status?.type?.description || "";
       
-      // Use description if available (more accurate for college sports)
-      if (description && description !== "Scheduled" && description !== "In Progress") {
+      // ESPN provides accurate descriptions - use them directly when meaningful
+      // Examples: "1st Half 15:23", "Halftime", "End of 1st Half", "Q3 5:22", "Final"
+      if (description && 
+          description !== "Scheduled" && 
+          description !== "In Progress" &&
+          description !== "Final" &&
+          description.toLowerCase() !== "in") {
         return description;
       }
       
-      // Format based on league
-      if (league === "NCAAB" || league === "NBA" || league === "WNBA") {
-        if (period === 1) return `1st Half - ${clock}`;
-        if (period === 2) return `2nd Half - ${clock}`;
-        return `OT${period - 2} - ${clock}`;
+      // For generic "In Progress" or missing description, build period + clock display
+      if (clock) {
+        // NCAAB uses halves (1st half, 2nd half)
+        if (league === "NCAAB") {
+          if (periodNum === 1) return `1st Half ${clock}`;
+          if (periodNum === 2) return `2nd Half ${clock}`;
+          return `OT${periodNum - 2} ${clock}`;
+        }
+        
+        // NBA/WNBA use quarters
+        if (league === "NBA" || league === "WNBA") {
+          if (periodNum <= 4) return `Q${periodNum} ${clock}`;
+          return `OT${periodNum - 4} ${clock}`;
+        }
+        
+        // NFL/NCAAF use quarters
+        if (league === "NFL" || league === "NCAAF") {
+          if (periodNum <= 4) return `Q${periodNum} ${clock}`;
+          return `OT ${clock}`;
+        }
+        
+        // NHL uses periods
+        if (league === "NHL") {
+          if (periodNum <= 3) return `P${periodNum} ${clock}`;
+          return `OT ${clock}`;
+        }
+        
+        // Soccer uses halves
+        const soccerLeagues = ["SOCCER", "EPL", "LA_LIGA", "SERIE_A", "BUNDESLIGA", "LIGUE_1", "MLS", "CHAMPIONS_LEAGUE"];
+        if (soccerLeagues.includes(league)) {
+          return periodNum === 1 ? `1H ${clock}` : `2H ${clock}`;
+        }
+        
+        // MLB uses innings
+        if (league === "MLB") {
+          return `${periodNum}${periodNum === 1 ? 'st' : periodNum === 2 ? 'nd' : periodNum === 3 ? 'rd' : 'th'} ${clock}`;
+        }
       }
       
-      return `Period ${period} - ${clock}`;
+      return description || `Period ${periodNum}`;
     };
 
     const score =
