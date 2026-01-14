@@ -23,6 +23,7 @@ import ArbitrageOpportunitiesSection from "@/components/ArbitrageOpportunitiesSe
 import { HighValueAlertBanner } from "@/components/HighValueAlertBanner";
 import { useHighValueAlerts } from "@/hooks/useHighValueAlerts";
 import { SharpMoneySection, SteamMoveMonitor, SharpMoneyLeaderboard } from "@/components/SharpMoney";
+import LiveRefreshIndicator from "@/components/LiveRefreshIndicator";
 
 import { 
   Radio, Clock, TrendingUp, RefreshCw, ChevronRight, 
@@ -56,7 +57,12 @@ const Index = () => {
     liveMatches: rawLive,
     finishedMatches: rawFinished,
     isLoading,
+    isFetching,
     refetchWithTimestamp,
+    hasLiveGames,
+    lastRefresh: dataLastRefresh,
+    secondsUntilRefresh,
+    activeInterval,
   } = useSportsData({
     league: selectedLeague as any,
     refreshInterval: 60000,
@@ -146,11 +152,15 @@ const Index = () => {
               
               <div className="flex items-center gap-3 shrink-0">
                 <SteamMoveMonitor matches={allActiveMatches} enabled={true} />
-                <span className="text-xs text-muted-foreground hidden sm:block">
-                  {lastRefresh.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
-                </span>
-                <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isLoading}>
-                  <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
+                <LiveRefreshIndicator
+                  hasLiveGames={hasLiveGames}
+                  secondsUntilRefresh={secondsUntilRefresh}
+                  isFetching={isFetching}
+                  lastRefresh={dataLastRefresh}
+                  activeInterval={activeInterval}
+                />
+                <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isLoading || isFetching}>
+                  <RefreshCw className={cn("h-4 w-4", (isLoading || isFetching) && "animate-spin")} />
                 </Button>
               </div>
             </div>

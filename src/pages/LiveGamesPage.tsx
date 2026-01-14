@@ -7,6 +7,7 @@ import { ScoreboardRow } from "@/components/layout/ScoreboardRow";
 import { useSportsData } from "@/hooks/useSportsData";
 import { applySmartScores } from "@/utils/smartScoreCalculator";
 import TopLoader from "@/components/ui/TopLoader";
+import LiveRefreshIndicator from "@/components/LiveRefreshIndicator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,10 +21,15 @@ export default function LiveGamesPage() {
   const {
     liveMatches: rawLive,
     isLoading,
+    isFetching,
     refetchWithTimestamp,
+    hasLiveGames,
+    lastRefresh,
+    secondsUntilRefresh,
+    activeInterval,
   } = useSportsData({
     league: 'ALL' as any,
-    refreshInterval: 30000, // 30 seconds for live games
+    refreshInterval: 30000, // 30 seconds base
     useExternalApis: true,
   });
 
@@ -76,13 +82,20 @@ export default function LiveGamesPage() {
                     </p>
                   </div>
                 </div>
+                <LiveRefreshIndicator
+                  hasLiveGames={hasLiveGames}
+                  secondsUntilRefresh={secondsUntilRefresh}
+                  isFetching={isFetching}
+                  lastRefresh={lastRefresh}
+                  activeInterval={activeInterval}
+                />
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={handleRefresh}
-                  disabled={isLoading}
+                  disabled={isLoading || isFetching}
                 >
-                  <RefreshCw className={cn("h-4 w-4 mr-2", isLoading && "animate-spin")} />
+                  <RefreshCw className={cn("h-4 w-4 mr-2", (isLoading || isFetching) && "animate-spin")} />
                   Refresh
                 </Button>
               </div>

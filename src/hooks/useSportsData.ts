@@ -49,11 +49,17 @@ export function useSportsData({
     liveMatches: espnLiveMatches,
     finishedMatches: espnFinishedMatches,
     isLoading: isLoadingESPN,
+    isFetching: isFetchingESPN,
     error: espnError,
-    refetch: refetchESPN
+    refetch: refetchESPN,
+    hasLiveGames,
+    lastRefresh: espnLastRefresh,
+    secondsUntilRefresh,
+    activeInterval,
   } = useESPNData({
     league,
     refreshInterval,
+    liveRefreshInterval: 15000, // 15 seconds for live games
     includeSchedule
   });
 
@@ -249,6 +255,7 @@ export function useSportsData({
     finishedMatches,
     allMatches: matchesWithOdds,
     isLoading,
+    isFetching: isFetchingESPN,
     error,
     refetchSchedule,
     divisionsStandings: selectedDivisionsStandings,
@@ -263,5 +270,10 @@ export function useSportsData({
     espnDataStatus,
     oddsApiStatus,
     oddsApiMatches,
+    // Live refresh metadata
+    hasLiveGames,
+    lastRefresh: espnLastRefresh,
+    secondsUntilRefresh,
+    activeInterval,
   };
 }
