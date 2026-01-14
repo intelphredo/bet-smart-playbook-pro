@@ -80,10 +80,15 @@ const fetchGamesForDate = async (league: League, date: Date): Promise<Match[]> =
   }
 };
 
-// Fetch games for next N days (default 7)
-export const fetchLeagueScheduleAdvanced = async (league: League, daysAhead: number = 7): Promise<Match[]> => {
+// Fetch games for next N days (default 7) AND past days for recent results
+export const fetchLeagueScheduleAdvanced = async (league: League, daysAhead: number = 7, daysBehind: number = 2): Promise<Match[]> => {
   const today = new Date();
   const dates: Date[] = [];
+  
+  // Include past days for recent results (yesterday and day before)
+  for (let i = daysBehind; i > 0; i--) {
+    dates.push(addDays(today, -i));
+  }
   
   // Generate dates for today + next N days
   for (let i = 0; i < daysAhead; i++) {
@@ -315,8 +320,8 @@ export const fetchLeagueSchedule = async (league: League): Promise<Match[]> => {
   return fetchLeagueScheduleAdvanced(league, 7);
 };
 
-// Fetch all schedules for all leagues - 7 days ahead
-export const fetchAllSchedules = async (daysAhead: number = 7): Promise<Match[]> => {
+// Fetch all schedules for all leagues - includes past 2 days for recent results + 7 days ahead
+export const fetchAllSchedules = async (daysAhead: number = 7, daysBehind: number = 2): Promise<Match[]> => {
   // Reset status for new fetch
   dataStatus = {
     source: "mock",
@@ -328,9 +333,9 @@ export const fetchAllSchedules = async (daysAhead: number = 7): Promise<Match[]>
   const leagues: League[] = ["NBA", "NFL", "MLB", "NHL", "SOCCER", "NCAAF", "NCAAB"];
   
   try {
-    // Fetch all leagues in parallel, each with 7 days of data
+    // Fetch all leagues in parallel, each with past + future days of data
     const results = await Promise.all(
-      leagues.map(league => fetchLeagueScheduleAdvanced(league, daysAhead))
+      leagues.map(league => fetchLeagueScheduleAdvanced(league, daysAhead, daysBehind))
     );
     const allMatches = results.flat();
     
@@ -339,17 +344,22 @@ export const fetchAllSchedules = async (daysAhead: number = 7): Promise<Match[]>
       new Map(allMatches.map(m => [m.id, m])).values()
     );
     
-    // Sort by start time
-    uniqueMatches.sort((a, b) => 
-      new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
-    );
+    // Sort by start time - most recent finished games first for Recent Results
+    uniqueMatches.sort((a, b) => {
+      // For finished games, sort by most recent first
+      if (a.status === 'finished' && b.status === 'finished') {
+        return new Date(b.startTime).getTime() - new Date(a.startTime).getTime();
+      }
+      // For upcoming/live, sort chronologically
+      return new Date(a.startTime).getTime() - new Date(b.startTime).getTime();
+    });
     
     // Check if we got any real data
     const hasRealData = uniqueMatches.some(m => !m.isMockData);
     dataStatus.source = hasRealData ? "live" : "mock";
     dataStatus.gamesLoaded = uniqueMatches.length;
     
-    console.log(`Fetched ${uniqueMatches.length} total games across ${daysAhead} days`);
+    console.log(`Fetched ${uniqueMatches.length} total games (${daysBehind} days back + ${daysAhead} days ahead)`);
     
     return uniqueMatches;
   } catch (error) {
