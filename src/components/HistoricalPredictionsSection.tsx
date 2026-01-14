@@ -36,6 +36,7 @@ import {
   Info,
   Database,
   PlayCircle,
+  Sparkles,
   Download,
   RefreshCw,
   Loader2,
@@ -52,6 +53,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { 
   useHistoricalPredictions, 
   HistoricalPrediction, 
@@ -80,6 +82,7 @@ const HistoricalPredictionsSection = () => {
   const [timeRange, setTimeRange] = useState<TimeRange>("14d");
   const [predictionType, setPredictionType] = useState<PredictionType>("all");
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isFetchingPredictions, setIsFetchingPredictions] = useState(false);
   const [settledOnly, setSettledOnly] = useState(false);
   const [preLivePage, setPreLivePage] = useState(1);
   const [livePage, setLivePage] = useState(1);
@@ -91,6 +94,33 @@ const HistoricalPredictionsSection = () => {
     setIsRefreshing(true);
     await refetch();
     setIsRefreshing(false);
+  };
+
+  const handleFetchNewPredictions = async () => {
+    setIsFetchingPredictions(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('save-predictions', {
+        body: { leagues: ['NBA', 'NFL', 'MLB', 'NHL'] }
+      });
+      
+      if (error) throw error;
+      
+      if (data?.success) {
+        toast.success(`Fetched ${data.data.saved} new predictions`, {
+          description: `Skipped ${data.data.skipped} existing predictions`
+        });
+        await refetch();
+      } else {
+        throw new Error(data?.error || 'Failed to fetch predictions');
+      }
+    } catch (error) {
+      console.error('Error fetching predictions:', error);
+      toast.error('Failed to fetch new predictions', {
+        description: error instanceof Error ? error.message : 'Unknown error'
+      });
+    } finally {
+      setIsFetchingPredictions(false);
+    }
   };
 
   const { predictions, stats } = data || { predictions: [], stats: null };
@@ -390,7 +420,28 @@ const HistoricalPredictionsSection = () => {
             </div>
 
             {/* Refresh & Export Buttons */}
-            <div className="sm:w-auto flex items-end gap-2">
+            <div className="sm:w-auto flex items-end gap-2 flex-wrap">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={handleFetchNewPredictions}
+                    className="gap-2 h-8"
+                    disabled={isFetchingPredictions}
+                  >
+                    {isFetchingPredictions ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Sparkles className="h-4 w-4" />
+                    )}
+                    Fetch New
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Fetch new predictions from ESPN for all leagues</p>
+                </TooltipContent>
+              </Tooltip>
               <Button
                 variant="outline"
                 size="sm"
