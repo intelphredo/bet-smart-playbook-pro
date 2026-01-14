@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -46,12 +46,19 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Keyboard,
+  FileText,
 } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { 
@@ -63,6 +70,8 @@ import {
 import PredictionCharts from "./PredictionCharts";
 import { getTeamLogoUrl, getTeamInitials } from "@/utils/teamLogos";
 import { League } from "@/types/sports";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
 const TIME_RANGE_OPTIONS: { value: TimeRange; label: string }[] = [
   { value: "1d", label: "24 Hours" },
@@ -83,10 +92,14 @@ const HistoricalPredictionsSection = () => {
   const [predictionType, setPredictionType] = useState<PredictionType>("all");
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isFetchingPredictions, setIsFetchingPredictions] = useState(false);
+  const [isExportingPDF, setIsExportingPDF] = useState(false);
   const [settledOnly, setSettledOnly] = useState(false);
   const [preLivePage, setPreLivePage] = useState(1);
   const [livePage, setLivePage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(25);
+  
+  const chartsRef = useRef<HTMLDivElement>(null);
+  const statsRef = useRef<HTMLDivElement>(null);
   
   const { data, isLoading, error, refetch } = useHistoricalPredictions(timeRange, predictionType);
 
@@ -301,6 +314,220 @@ const HistoricalPredictionsSection = () => {
     toast.success(`Exported ${filteredPredictions.length} predictions to CSV`);
   };
 
+  // PDF Export function
+  const exportToPDF = async () => {
+    if (!stats) {
+      toast.error("No data to export");
+      return;
+    }
+
+    setIsExportingPDF(true);
+    toast.info("Generating PDF report...", { duration: 2000 });
+
+    try {
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 15;
+      let yPos = margin;
+
+      // Helper function to add text
+      const addText = (text: string, x: number, y: number, options?: { fontSize?: number; fontStyle?: string; color?: [number, number, number] }) => {
+        pdf.setFontSize(options?.fontSize || 10);
+        if (options?.fontStyle) pdf.setFont('helvetica', options.fontStyle);
+        if (options?.color) pdf.setTextColor(...options.color);
+        else pdf.setTextColor(0, 0, 0);
+        pdf.text(text, x, y);
+        pdf.setFont('helvetica', 'normal');
+      };
+
+      // Title
+      addText('Prediction Performance Report', margin, yPos, { fontSize: 20, fontStyle: 'bold' });
+      yPos += 8;
+      addText(`Generated: ${format(new Date(), 'PPpp')}`, margin, yPos, { fontSize: 10, color: [100, 100, 100] });
+      yPos += 5;
+      addText(`Time Range: ${TIME_RANGE_OPTIONS.find(o => o.value === timeRange)?.label || timeRange}`, margin, yPos, { fontSize: 10, color: [100, 100, 100] });
+      yPos += 12;
+
+      // Overall Statistics Section
+      addText('Overall Statistics', margin, yPos, { fontSize: 14, fontStyle: 'bold' });
+      yPos += 8;
+
+      // Stats grid
+      const statsData = [
+        ['Total Predictions', predictions.length.toString()],
+        ['Win Rate', `${stats.winRate.toFixed(1)}%`],
+        ['Wins', stats.won.toString()],
+        ['Losses', stats.lost.toString()],
+        ['Pending', stats.pending.toString()],
+        ['Avg Confidence', `${stats.avgConfidence.toFixed(1)}%`],
+        ['Total P/L', `${stats.totalPL >= 0 ? '+' : ''}$${stats.totalPL.toFixed(2)}`],
+        ['ROI', `${stats.roi >= 0 ? '+' : ''}${stats.roi.toFixed(1)}%`],
+      ];
+
+      const colWidth = (pageWidth - 2 * margin) / 4;
+      statsData.forEach((stat, i) => {
+        const col = i % 4;
+        const row = Math.floor(i / 4);
+        const x = margin + col * colWidth;
+        const y = yPos + row * 12;
+        
+        addText(stat[0], x, y, { fontSize: 9, color: [100, 100, 100] });
+        addText(stat[1], x, y + 5, { fontSize: 11, fontStyle: 'bold' });
+      });
+      yPos += 30;
+
+      // Pre-Live vs Live Comparison
+      addText('Pre-Live vs Live Performance', margin, yPos, { fontSize: 14, fontStyle: 'bold' });
+      yPos += 8;
+
+      const comparisonData = [
+        ['', 'Pre-Live', 'Live'],
+        ['Total', stats.preliveStats.total.toString(), stats.liveStats.total.toString()],
+        ['Win Rate', `${stats.preliveStats.winRate.toFixed(1)}%`, `${stats.liveStats.winRate.toFixed(1)}%`],
+        ['Wins', stats.preliveStats.won.toString(), stats.liveStats.won.toString()],
+        ['Losses', stats.preliveStats.lost.toString(), stats.liveStats.lost.toString()],
+      ];
+
+      comparisonData.forEach((row, rowIdx) => {
+        row.forEach((cell, colIdx) => {
+          const x = margin + colIdx * 40;
+          const y = yPos + rowIdx * 6;
+          addText(cell, x, y, { 
+            fontSize: rowIdx === 0 ? 10 : 9, 
+            fontStyle: rowIdx === 0 ? 'bold' : 'normal',
+            color: colIdx === 0 ? [100, 100, 100] : [0, 0, 0]
+          });
+        });
+      });
+      yPos += 38;
+
+      // League Performance
+      if (stats.leaguePerformance && stats.leaguePerformance.length > 0) {
+        addText('Performance by League', margin, yPos, { fontSize: 14, fontStyle: 'bold' });
+        yPos += 8;
+
+        const leagueHeaders = ['League', 'Total', 'Win Rate', 'Wins', 'Losses'];
+        leagueHeaders.forEach((header, i) => {
+          addText(header, margin + i * 30, yPos, { fontSize: 9, fontStyle: 'bold', color: [100, 100, 100] });
+        });
+        yPos += 6;
+
+        stats.leaguePerformance.slice(0, 8).forEach((league) => {
+          const leagueRow = [
+            league.league,
+            league.total.toString(),
+            `${league.winRate.toFixed(1)}%`,
+            league.won.toString(),
+            league.lost.toString(),
+          ];
+          leagueRow.forEach((cell, i) => {
+            addText(cell, margin + i * 30, yPos, { fontSize: 9 });
+          });
+          yPos += 5;
+        });
+        yPos += 10;
+      }
+
+      // Capture charts if available
+      if (chartsRef.current) {
+        try {
+          // Check if we need a new page
+          if (yPos > pageHeight - 100) {
+            pdf.addPage();
+            yPos = margin;
+          }
+
+          addText('Performance Charts', margin, yPos, { fontSize: 14, fontStyle: 'bold' });
+          yPos += 8;
+
+          const canvas = await html2canvas(chartsRef.current, {
+            scale: 2,
+            backgroundColor: '#ffffff',
+            logging: false,
+          });
+          
+          const imgData = canvas.toDataURL('image/png');
+          const imgWidth = pageWidth - 2 * margin;
+          const imgHeight = (canvas.height * imgWidth) / canvas.width;
+          
+          // Check if image fits on current page
+          if (yPos + imgHeight > pageHeight - margin) {
+            pdf.addPage();
+            yPos = margin;
+          }
+          
+          pdf.addImage(imgData, 'PNG', margin, yPos, imgWidth, Math.min(imgHeight, pageHeight - yPos - margin));
+          yPos += imgHeight + 10;
+        } catch (chartError) {
+          console.warn('Could not capture charts:', chartError);
+        }
+      }
+
+      // Recent Predictions Table (new page)
+      pdf.addPage();
+      yPos = margin;
+      addText('Recent Predictions', margin, yPos, { fontSize: 14, fontStyle: 'bold' });
+      yPos += 8;
+
+      const tableHeaders = ['Date', 'Match', 'Prediction', 'Conf.', 'Status'];
+      const colWidths = [25, 55, 40, 20, 20];
+      
+      tableHeaders.forEach((header, i) => {
+        let x = margin;
+        for (let j = 0; j < i; j++) x += colWidths[j];
+        addText(header, x, yPos, { fontSize: 9, fontStyle: 'bold', color: [100, 100, 100] });
+      });
+      yPos += 6;
+
+      // Add predictions (limit to fit on pages)
+      const recentPredictions = filteredPredictions.slice(0, 30);
+      recentPredictions.forEach((p) => {
+        if (yPos > pageHeight - 15) {
+          pdf.addPage();
+          yPos = margin;
+        }
+
+        const matchTitle = p.match_title || `${p.home_team || '?'} vs ${p.away_team || '?'}`;
+        const row = [
+          format(new Date(p.predicted_at), 'MM/dd'),
+          matchTitle.length > 25 ? matchTitle.slice(0, 25) + '...' : matchTitle,
+          (p.prediction || '').length > 18 ? (p.prediction || '').slice(0, 18) + '...' : (p.prediction || ''),
+          `${p.confidence || 0}%`,
+          p.status.toUpperCase(),
+        ];
+
+        let x = margin;
+        row.forEach((cell, i) => {
+          const color: [number, number, number] = 
+            i === 4 && p.status === 'won' ? [22, 163, 74] :
+            i === 4 && p.status === 'lost' ? [220, 38, 38] :
+            [0, 0, 0];
+          addText(cell, x, yPos, { fontSize: 8, color });
+          x += colWidths[i];
+        });
+        yPos += 5;
+      });
+
+      // Footer
+      const totalPages = pdf.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        pdf.setPage(i);
+        addText(`Page ${i} of ${totalPages}`, pageWidth - margin - 20, pageHeight - 10, { fontSize: 8, color: [150, 150, 150] });
+        addText('Bet Smart - AI Predictions', margin, pageHeight - 10, { fontSize: 8, color: [150, 150, 150] });
+      }
+
+      // Save PDF
+      pdf.save(`prediction_report_${timeRange}_${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+      toast.success('PDF report generated successfully!');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error('Failed to generate PDF report');
+    } finally {
+      setIsExportingPDF(false);
+    }
+  };
+
   if (isLoading) {
     return <HistoricalPredictionsSkeleton />;
   }
@@ -456,16 +683,33 @@ const HistoricalPredictionsSection = () => {
                 )}
                 Refresh
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={exportToCSV}
-                className="gap-2 h-8"
-                disabled={!predictions.length}
-              >
-                <Download className="h-4 w-4" />
-                Export CSV
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2 h-8"
+                    disabled={!predictions.length || isExportingPDF}
+                  >
+                    {isExportingPDF ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Download className="h-4 w-4" />
+                    )}
+                    Export
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={exportToCSV} className="gap-2">
+                    <Download className="h-4 w-4" />
+                    Export as CSV
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={exportToPDF} className="gap-2">
+                    <FileText className="h-4 w-4" />
+                    Export as PDF Report
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </CardContent>
@@ -574,16 +818,18 @@ const HistoricalPredictionsSection = () => {
 
       {/* Charts Section */}
       {stats && stats.dailyStats.length > 0 && (
-        <PredictionCharts
-          dailyStats={stats.dailyStats}
-          leaguePerformance={stats.leaguePerformance}
-          confidenceVsAccuracy={stats.confidenceVsAccuracy}
-          leagueDailyTrends={stats.leagueDailyTrends}
-          overallWinRate={stats.winRate}
-          totalPL={stats.totalPL}
-          totalUnitsStaked={stats.totalUnitsStaked}
-          roi={stats.roi}
-        />
+        <div ref={chartsRef}>
+          <PredictionCharts
+            dailyStats={stats.dailyStats}
+            leaguePerformance={stats.leaguePerformance}
+            confidenceVsAccuracy={stats.confidenceVsAccuracy}
+            leagueDailyTrends={stats.leagueDailyTrends}
+            overallWinRate={stats.winRate}
+            totalPL={stats.totalPL}
+            totalUnitsStaked={stats.totalUnitsStaked}
+            roi={stats.roi}
+          />
+        </div>
       )}
 
       {/* League Breakdown */}
