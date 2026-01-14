@@ -1,5 +1,5 @@
-// ESPN-style Home Page - Tab-based clean dashboard
-import { useState, useMemo } from "react";
+// ESPN-style Home Page - Tab-based clean dashboard with performance optimizations
+import { useState, useMemo, useCallback, useDeferredValue, startTransition, memo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Match } from "@/types/sports";
 import NavBar from "@/components/NavBar";
@@ -15,7 +15,7 @@ import { usePreferences } from "@/hooks/usePreferences";
 
 // Layout Components
 import { ScoreboardStrip } from "@/components/layout/ScoreboardStrip";
-import { ScoreboardRow } from "@/components/layout/ScoreboardRow";
+import { MemoizedScoreboardRow } from "@/components/layout/MemoizedScoreboardRow";
 import TopLoader from "@/components/ui/TopLoader";
 
 // Feature Components
@@ -27,6 +27,7 @@ import { useHighValueAlerts } from "@/hooks/useHighValueAlerts";
 import { SharpMoneySection, SteamMoveMonitor, SharpMoneyLeaderboard } from "@/components/SharpMoney";
 import LiveRefreshIndicator from "@/components/LiveRefreshIndicator";
 import FavoritesTab from "@/components/FavoritesTab";
+import { AnimatedBadge } from "@/components/ui/AnimatedBadge";
 
 import { 
   Radio, Clock, TrendingUp, RefreshCw, ChevronRight, 
@@ -39,22 +40,53 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 
 const RESULTS_PER_PAGE_OPTIONS = [5, 10, 25, 50];
 
 // League filter options
-const LEAGUES = ['ALL', 'NBA', 'NFL', 'NCAAB', 'NHL', 'MLB', 'SOCCER'];
+const LEAGUES = ['ALL', 'NBA', 'NFL', 'NCAAB', 'NHL', 'MLB', 'SOCCER'] as const;
+
+// Tab persistence key
+const TAB_STORAGE_KEY = 'betly-active-tab';
 
 const Index = () => {
   const navigate = useNavigate();
   const [selectedLeague, setSelectedLeague] = useState<string>("ALL");
-  const [activeTab, setActiveTab] = useState<string>("scores");
+  // Tab persistence - restore from localStorage
+  const [activeTab, setActiveTab] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem(TAB_STORAGE_KEY) || 'scores';
+    }
+    return 'scores';
+  });
   const [recentResultsLimit, setRecentResultsLimit] = useState<number>(5);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
   const { toast } = useToast();
   const { stats } = useBetTracking();
   const { preferences } = usePreferences();
+
+  // Deferred league value for non-blocking filter updates
+  const deferredLeague = useDeferredValue(selectedLeague);
+
+  // Persist tab changes
+  useEffect(() => {
+    localStorage.setItem(TAB_STORAGE_KEY, activeTab);
+  }, [activeTab]);
+
+  // Optimized tab change with transition
+  const handleTabChange = useCallback((value: string) => {
+    startTransition(() => {
+      setActiveTab(value);
+    });
+  }, []);
+
+  // Optimized league change with transition
+  const handleLeagueChange = useCallback((league: string) => {
+    startTransition(() => {
+      setSelectedLeague(league);
+    });
+  }, []);
 
   // Count favorites for badge
   const favoritesCount = preferences.favorites.matches.length + preferences.favorites.teams.length;
@@ -193,39 +225,47 @@ const Index = () => {
 
         {/* Main Tabs */}
         <div className="container px-4 py-6">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            {/* Tab Navigation */}
-            <TabsList className="grid w-full max-w-2xl mx-auto grid-cols-4 h-12 bg-card/50 backdrop-blur-sm">
-              <TabsTrigger value="scores" className="gap-2 text-sm data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
-                <Activity className="h-4 w-4" />
-                <span className="hidden sm:inline">Scores</span>
-                {filteredLive.length > 0 && (
-                  <Badge variant="live" className="h-5 px-1.5 text-[10px]">
-                    {filteredLive.length}
-                  </Badge>
-                )}
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
+            {/* Tab Navigation - Premium Gold Styling */}
+            <TabsList className="relative grid w-full max-w-2xl mx-auto grid-cols-4 h-14 bg-gradient-to-r from-card/90 via-card to-card/90 backdrop-blur-md border border-primary/10 shadow-lg shadow-primary/5 rounded-xl p-1.5">
+              <TabsTrigger 
+                value="scores" 
+                className="relative gap-2 text-sm rounded-lg transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary/15 data-[state=active]:via-primary/10 data-[state=active]:to-transparent data-[state=active]:shadow-md data-[state=active]:shadow-primary/10"
+              >
+                <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
+                  <Activity className="h-4 w-4 group-data-[state=active]:text-primary transition-colors" />
+                </motion.div>
+                <span className="hidden sm:inline font-medium">Scores</span>
+                <AnimatedBadge count={filteredLive.length} variant="live" pulse />
               </TabsTrigger>
-              <TabsTrigger value="favorites" className="gap-2 text-sm data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
-                <Star className="h-4 w-4" />
-                <span className="hidden sm:inline">Favorites</span>
-                {favoritesCount > 0 && (
-                  <Badge variant="gold" className="h-5 px-1.5 text-[10px]">
-                    {favoritesCount}
-                  </Badge>
-                )}
+              <TabsTrigger 
+                value="favorites" 
+                className="relative gap-2 text-sm rounded-lg transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary/15 data-[state=active]:via-primary/10 data-[state=active]:to-transparent data-[state=active]:shadow-md data-[state=active]:shadow-primary/10"
+              >
+                <motion.div whileHover={{ scale: 1.1, rotate: 15 }} whileTap={{ scale: 0.95 }}>
+                  <Star className="h-4 w-4" />
+                </motion.div>
+                <span className="hidden sm:inline font-medium">Favorites</span>
+                <AnimatedBadge count={favoritesCount} variant="gold" />
               </TabsTrigger>
-              <TabsTrigger value="picks" className="gap-2 text-sm data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
-                <Target className="h-4 w-4" />
-                <span className="hidden sm:inline">Picks</span>
+              <TabsTrigger 
+                value="picks" 
+                className="relative gap-2 text-sm rounded-lg transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary/15 data-[state=active]:via-primary/10 data-[state=active]:to-transparent data-[state=active]:shadow-md data-[state=active]:shadow-primary/10"
+              >
+                <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
+                  <Target className="h-4 w-4" />
+                </motion.div>
+                <span className="hidden sm:inline font-medium">Picks</span>
               </TabsTrigger>
-              <TabsTrigger value="analytics" className="gap-2 text-sm data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
-                <BarChart3 className="h-4 w-4" />
-                <span className="hidden sm:inline">Analytics</span>
-                {opportunities.length > 0 && (
-                  <Badge variant="success" className="h-5 px-1.5 text-[10px]">
-                    {opportunities.length}
-                  </Badge>
-                )}
+              <TabsTrigger 
+                value="analytics" 
+                className="relative gap-2 text-sm rounded-lg transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary/15 data-[state=active]:via-primary/10 data-[state=active]:to-transparent data-[state=active]:shadow-md data-[state=active]:shadow-primary/10"
+              >
+                <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
+                  <BarChart3 className="h-4 w-4" />
+                </motion.div>
+                <span className="hidden sm:inline font-medium">Analytics</span>
+                <AnimatedBadge count={opportunities.length} variant="success" />
               </TabsTrigger>
             </TabsList>
 
@@ -241,303 +281,299 @@ const Index = () => {
 
             {/* Scores Tab */}
             <TabsContent value="scores" className="space-y-6 mt-0">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="space-y-6"
-                >
-                  {/* Live Games */}
-                  {filteredLive.length > 0 && (
-                    <Card className="border-destructive/30 premium-card">
-                      <CardHeader className="py-4 px-6 flex flex-row items-center justify-between bg-destructive/5">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 rounded-full bg-destructive/10">
-                            <Radio className="h-5 w-5 text-destructive animate-pulse" />
-                          </div>
-                          <div>
-                            <CardTitle className="text-lg">Live Now</CardTitle>
-                            <p className="text-sm text-muted-foreground">{filteredLive.length} games in progress</p>
-                          </div>
-                        </div>
-                        <Button variant="ghost" size="sm" onClick={() => navigate('/live')} className="text-primary hover:text-primary hover:bg-primary/10">
-                          View All <ChevronRight className="h-4 w-4 ml-1" />
-                        </Button>
-                      </CardHeader>
-                      <CardContent className="p-0">
-                        <div className="divide-y divide-border/50">
-                          {filteredLive.map((match) => (
-                            <ScoreboardRow key={match.id} match={match} />
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-
-                  {/* Upcoming Games */}
-                  <Card className="premium-card border-primary/20">
-                    <CardHeader className="py-4 px-6 flex flex-row items-center justify-between bg-gradient-to-r from-primary/5 to-transparent">
+              <motion.div
+                key="scores"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+                className="space-y-6"
+              >
+                {/* Live Games */}
+                {filteredLive.length > 0 && (
+                  <Card className="border-destructive/30 premium-card">
+                    <CardHeader className="py-4 px-6 flex flex-row items-center justify-between bg-destructive/5">
                       <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-full bg-primary/10">
-                          <Clock className="h-5 w-5 text-primary" />
+                        <div className="p-2 rounded-full bg-destructive/10">
+                          <Radio className="h-5 w-5 text-destructive animate-pulse" />
                         </div>
                         <div>
-                          <CardTitle className="text-lg">Upcoming</CardTitle>
-                          <p className="text-sm text-muted-foreground">{filteredUpcoming.length} scheduled games</p>
+                          <CardTitle className="text-lg">Live Now</CardTitle>
+                          <p className="text-sm text-muted-foreground">{filteredLive.length} games in progress</p>
                         </div>
                       </div>
-                      <Button variant="ghost" size="sm" onClick={() => navigate('/games')} className="text-primary hover:text-primary hover:bg-primary/10">
-                        Full Schedule <ChevronRight className="h-4 w-4 ml-1" />
+                      <Button variant="ghost" size="sm" onClick={() => navigate('/live')} className="text-primary hover:text-primary hover:bg-primary/10">
+                        View All <ChevronRight className="h-4 w-4 ml-1" />
                       </Button>
                     </CardHeader>
                     <CardContent className="p-0">
                       <div className="divide-y divide-border/50">
-                        {filteredUpcoming.slice(0, 8).map((match) => (
-                          <ScoreboardRow key={match.id} match={match} />
+                        {filteredLive.map((match) => (
+                          <MemoizedScoreboardRow key={match.id} match={match} />
                         ))}
-                        {filteredUpcoming.length === 0 && (
-                          <div className="py-16 text-center text-muted-foreground">
-                            <Clock className="h-10 w-10 mx-auto mb-3 opacity-30" />
-                            <p>No upcoming games</p>
-                          </div>
-                        )}
                       </div>
                     </CardContent>
                   </Card>
+                )}
 
-                  {/* Recent Results */}
-                  {filteredFinished.length > 0 && (
-                    <Card className="premium-card">
-                      <CardHeader className="py-4 px-6 flex flex-row items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 rounded-full bg-primary/10">
-                            <Trophy className="h-5 w-5 text-primary" />
-                          </div>
-                          <div>
-                            <CardTitle className="text-lg">Recent Results</CardTitle>
-                            <p className="text-sm text-muted-foreground">Latest completed games</p>
-                          </div>
+                {/* Upcoming Games */}
+                <Card className="premium-card border-primary/20">
+                  <CardHeader className="py-4 px-6 flex flex-row items-center justify-between bg-gradient-to-r from-primary/5 to-transparent">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-full bg-primary/10">
+                        <Clock className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-lg">Upcoming</CardTitle>
+                        <p className="text-sm text-muted-foreground">{filteredUpcoming.length} scheduled games</p>
+                      </div>
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={() => navigate('/games')} className="text-primary hover:text-primary hover:bg-primary/10">
+                      Full Schedule <ChevronRight className="h-4 w-4 ml-1" />
+                    </Button>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    <div className="divide-y divide-border/50">
+                      {filteredUpcoming.slice(0, 8).map((match) => (
+                        <MemoizedScoreboardRow key={match.id} match={match} />
+                      ))}
+                      {filteredUpcoming.length === 0 && (
+                        <div className="py-16 text-center text-muted-foreground">
+                          <Clock className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                          <p>No upcoming games</p>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Select value={String(recentResultsLimit)} onValueChange={(v) => setRecentResultsLimit(Number(v))}>
-                            <SelectTrigger className="w-[100px] h-8">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {RESULTS_PER_PAGE_OPTIONS.map(option => (
-                                <SelectItem key={option} value={String(option)}>
-                                  {option} results
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            onClick={() => navigate('/recent-results')}
-                            className="flex items-center gap-1"
-                          >
-                            View All
-                            <ChevronRight className="h-4 w-4" />
-                          </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Recent Results */}
+                {filteredFinished.length > 0 && (
+                  <Card className="premium-card">
+                    <CardHeader className="py-4 px-6 flex flex-row items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-full bg-primary/10">
+                          <Trophy className="h-5 w-5 text-primary" />
                         </div>
-                      </CardHeader>
-                      <CardContent className="p-0">
-                        <div className="divide-y">
-                          {filteredFinished.slice(0, recentResultsLimit).map((match) => (
-                            <ScoreboardRow key={match.id} match={match} showOdds={false} />
-                          ))}
+                        <div>
+                          <CardTitle className="text-lg">Recent Results</CardTitle>
+                          <p className="text-sm text-muted-foreground">Latest completed games</p>
                         </div>
-                      </CardContent>
-                    </Card>
-                  )}
-                </motion.div>
-              </AnimatePresence>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Select value={String(recentResultsLimit)} onValueChange={(v) => setRecentResultsLimit(Number(v))}>
+                          <SelectTrigger className="w-[100px] h-8">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {RESULTS_PER_PAGE_OPTIONS.map(option => (
+                              <SelectItem key={option} value={String(option)}>
+                                {option} results
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => navigate('/recent-results')}
+                          className="flex items-center gap-1"
+                        >
+                          View All
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                      <div className="divide-y">
+                        {filteredFinished.slice(0, recentResultsLimit).map((match) => (
+                          <MemoizedScoreboardRow key={match.id} match={match} showOdds={false} />
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </motion.div>
             </TabsContent>
 
             {/* Favorites Tab */}
             <TabsContent value="favorites" className="space-y-6 mt-0">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                >
-                  <FavoritesTab allMatches={[...filteredUpcoming, ...filteredLive, ...filteredFinished]} />
-                </motion.div>
-              </AnimatePresence>
+              <motion.div
+                key="favorites"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+              >
+                <FavoritesTab allMatches={[...filteredUpcoming, ...filteredLive, ...filteredFinished]} />
+              </motion.div>
             </TabsContent>
 
             {/* Picks Tab */}
             <TabsContent value="picks" className="space-y-6 mt-0">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="grid gap-6 md:grid-cols-2"
-                >
-                  {/* Sharp Money */}
-                  <Card className="border-purple-500/30 md:col-span-2">
-                    <CardHeader className="py-4 px-6 bg-purple-500/5">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-full bg-purple-500/10">
-                          <Brain className="h-5 w-5 text-purple-500" />
-                        </div>
-                        <div>
-                          <CardTitle className="text-lg">Sharp Money</CardTitle>
-                          <p className="text-sm text-muted-foreground">Professional betting action signals</p>
-                        </div>
+              <motion.div
+                key="picks"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+                className="grid gap-6 md:grid-cols-2"
+              >
+                {/* Sharp Money */}
+                <Card className="border-purple-500/30 md:col-span-2">
+                  <CardHeader className="py-4 px-6 bg-purple-500/5">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-full bg-purple-500/10">
+                        <Brain className="h-5 w-5 text-purple-500" />
                       </div>
-                    </CardHeader>
-                    <CardContent className="pt-4">
-                      <SharpMoneySection 
-                        matches={allActiveMatches} 
-                        league={selectedLeague as any}
-                        maxItems={6}
-                        showFilter={true}
-                        compact={false}
-                      />
-                    </CardContent>
-                  </Card>
+                      <div>
+                        <CardTitle className="text-lg">Sharp Money</CardTitle>
+                        <p className="text-sm text-muted-foreground">Professional betting action signals</p>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pt-4">
+                    <SharpMoneySection 
+                      matches={allActiveMatches} 
+                      league={selectedLeague as any}
+                      maxItems={6}
+                      showFilter={true}
+                      compact={false}
+                    />
+                  </CardContent>
+                </Card>
 
-                  {/* AI Picks */}
-                  <Card>
-                    <CardHeader className="py-4 px-6">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-full bg-primary/10">
-                          <Zap className="h-5 w-5 text-primary" />
-                        </div>
-                        <div>
-                          <CardTitle className="text-lg">AI Picks</CardTitle>
-                          <p className="text-sm text-muted-foreground">Algorithm-powered selections</p>
-                        </div>
+                {/* AI Picks - Pass matches to prevent duplicate fetch */}
+                <Card>
+                  <CardHeader className="py-4 px-6">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-full bg-primary/10">
+                        <Zap className="h-5 w-5 text-primary" />
                       </div>
-                    </CardHeader>
-                    <CardContent className="pt-0">
-                      <ConfidentPicks />
-                    </CardContent>
-                  </Card>
+                      <div>
+                        <CardTitle className="text-lg">AI Picks</CardTitle>
+                        <p className="text-sm text-muted-foreground">Algorithm-powered selections</p>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <ConfidentPicks matches={allActiveMatches} />
+                  </CardContent>
+                </Card>
 
-                  {/* Smart Scores */}
-                  <Card>
-                    <CardHeader className="py-4 px-6">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-full bg-green-500/10">
-                          <TrendingUp className="h-5 w-5 text-green-500" />
-                        </div>
-                        <div>
-                          <CardTitle className="text-lg">Top Rated</CardTitle>
-                          <p className="text-sm text-muted-foreground">Highest value opportunities</p>
-                        </div>
+                {/* Smart Scores */}
+                <Card>
+                  <CardHeader className="py-4 px-6">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-full bg-green-500/10">
+                        <TrendingUp className="h-5 w-5 text-green-500" />
                       </div>
-                    </CardHeader>
-                    <CardContent className="pt-0">
-                      <SmartScoreSection matches={filteredUpcoming.slice(0, 5)} />
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              </AnimatePresence>
+                      <div>
+                        <CardTitle className="text-lg">Top Rated</CardTitle>
+                        <p className="text-sm text-muted-foreground">Highest value opportunities</p>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <SmartScoreSection matches={filteredUpcoming.slice(0, 5)} />
+                  </CardContent>
+                </Card>
+              </motion.div>
             </TabsContent>
 
             {/* Analytics Tab */}
             <TabsContent value="analytics" className="space-y-6 mt-0">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="space-y-6"
-                >
-                  {/* Stats Overview */}
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                    <StatCard 
-                      icon={<Trophy className="h-5 w-5" />}
-                      label="Win Rate" 
-                      value={`${((stats?.wins || 0) / Math.max(stats?.total_bets || 1, 1) * 100).toFixed(0)}%`}
-                      positive={(stats?.wins || 0) / Math.max(stats?.total_bets || 1, 1) >= 0.5}
-                      color="primary"
-                    />
-                    <StatCard 
-                      icon={<DollarSign className="h-5 w-5" />}
-                      label="Profit/Loss" 
-                      value={`${(stats?.total_profit || 0) >= 0 ? '+' : ''}$${Math.abs(stats?.total_profit || 0).toFixed(0)}`}
-                      positive={(stats?.total_profit || 0) >= 0}
-                      color={(stats?.total_profit || 0) >= 0 ? "green" : "red"}
-                    />
-                    <StatCard 
-                      icon={<Activity className="h-5 w-5" />}
-                      label="Total Bets" 
-                      value={stats?.total_bets?.toString() || '0'}
-                      color="blue"
-                    />
-                    <StatCard 
-                      icon={<Flame className="h-5 w-5" />}
-                      label="Current Streak" 
-                      value={stats?.current_streak?.toString() || '0'}
-                      positive={(stats?.current_streak || 0) > 0}
-                      color={(stats?.current_streak || 0) > 0 ? "green" : "red"}
-                    />
-                  </div>
+              <motion.div
+                key="analytics"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+                className="space-y-6"
+              >
+                {/* Stats Overview */}
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  <StatCard 
+                    icon={<Trophy className="h-5 w-5" />}
+                    label="Win Rate" 
+                    value={`${((stats?.wins || 0) / Math.max(stats?.total_bets || 1, 1) * 100).toFixed(0)}%`}
+                    positive={(stats?.wins || 0) / Math.max(stats?.total_bets || 1, 1) >= 0.5}
+                    color="primary"
+                  />
+                  <StatCard 
+                    icon={<DollarSign className="h-5 w-5" />}
+                    label="Profit/Loss" 
+                    value={`${(stats?.total_profit || 0) >= 0 ? '+' : ''}$${Math.abs(stats?.total_profit || 0).toFixed(0)}`}
+                    positive={(stats?.total_profit || 0) >= 0}
+                    color={(stats?.total_profit || 0) >= 0 ? "green" : "red"}
+                  />
+                  <StatCard 
+                    icon={<Activity className="h-5 w-5" />}
+                    label="Total Bets" 
+                    value={stats?.total_bets?.toString() || '0'}
+                    color="blue"
+                  />
+                  <StatCard 
+                    icon={<Flame className="h-5 w-5" />}
+                    label="Current Streak" 
+                    value={stats?.current_streak?.toString() || '0'}
+                    positive={(stats?.current_streak || 0) > 0}
+                    color={(stats?.current_streak || 0) > 0 ? "green" : "red"}
+                  />
+                </div>
 
-                  {/* Arbitrage Opportunities */}
-                  <Card className={cn(
-                    opportunities.length > 0 && "border-green-500/30"
-                  )}>
-                    <CardHeader className="py-4 px-6 bg-green-500/5">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 rounded-full bg-green-500/10">
-                            <DollarSign className="h-5 w-5 text-green-500" />
-                          </div>
-                          <div>
-                            <CardTitle className="text-lg">Arbitrage Opportunities</CardTitle>
-                            <p className="text-sm text-muted-foreground">Risk-free profit opportunities</p>
-                          </div>
-                        </div>
-                        {opportunities.length > 0 && (
-                          <Badge className="bg-green-500 text-white">
-                            {opportunities.length} Found
-                          </Badge>
-                        )}
-                      </div>
-                    </CardHeader>
-                    <CardContent className="pt-4">
-                      {opportunities.length > 0 ? (
-                        <ArbitrageOpportunitiesSection
-                          selectedLeague={selectedLeague as any}
-                          arbitrageOpportunitiesToShow={opportunities.slice(0, 5)}
-                        />
-                      ) : (
-                        <div className="py-12 text-center text-muted-foreground">
-                          <DollarSign className="h-10 w-10 mx-auto mb-3 opacity-30" />
-                          <p>No arbitrage opportunities found</p>
-                          <p className="text-xs mt-1">Check back when more odds are available</p>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-
-                  {/* Sharp Money Leaderboard */}
-                  <Card>
-                    <CardHeader className="py-4 px-6">
+                {/* Arbitrage Opportunities */}
+                <Card className={cn(
+                  opportunities.length > 0 && "border-green-500/30"
+                )}>
+                  <CardHeader className="py-4 px-6 bg-green-500/5">
+                    <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-full bg-purple-500/10">
-                          <LineChart className="h-5 w-5 text-purple-500" />
+                        <div className="p-2 rounded-full bg-green-500/10">
+                          <DollarSign className="h-5 w-5 text-green-500" />
                         </div>
                         <div>
-                          <CardTitle className="text-lg">Sharp Money Performance</CardTitle>
-                          <p className="text-sm text-muted-foreground">Track professional betting signals</p>
+                          <CardTitle className="text-lg">Arbitrage Opportunities</CardTitle>
+                          <p className="text-sm text-muted-foreground">Risk-free profit opportunities</p>
                         </div>
                       </div>
-                    </CardHeader>
-                    <CardContent className="pt-0">
-                      <SharpMoneyLeaderboard />
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              </AnimatePresence>
+                      {opportunities.length > 0 && (
+                        <Badge className="bg-green-500 text-white">
+                          {opportunities.length} Found
+                        </Badge>
+                      )}
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pt-4">
+                    {opportunities.length > 0 ? (
+                      <ArbitrageOpportunitiesSection
+                        selectedLeague={selectedLeague as any}
+                        arbitrageOpportunitiesToShow={opportunities.slice(0, 5)}
+                      />
+                    ) : (
+                      <div className="py-12 text-center text-muted-foreground">
+                        <DollarSign className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                        <p>No arbitrage opportunities found</p>
+                        <p className="text-xs mt-1">Check back when more odds are available</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Sharp Money Leaderboard */}
+                <Card>
+                  <CardHeader className="py-4 px-6">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-full bg-purple-500/10">
+                        <LineChart className="h-5 w-5 text-purple-500" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-lg">Sharp Money Performance</CardTitle>
+                        <p className="text-sm text-muted-foreground">Track professional betting signals</p>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <SharpMoneyLeaderboard />
+                  </CardContent>
+                </Card>
+              </motion.div>
             </TabsContent>
           </Tabs>
         </div>
