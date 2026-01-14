@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 import { Radio, Star, TrendingUp, TrendingDown } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import SharpMoneyBadge from '@/components/MatchCard/SharpMoneyBadge';
-import { formatAmericanOdds, getPrimaryOdds, PRIMARY_SPORTSBOOK } from '@/utils/sportsbook';
+import { formatMoneylineOdds, getPrimaryOdds, PRIMARY_SPORTSBOOK } from '@/utils/sportsbook';
 import AnimatedScore from '@/components/ui/AnimatedScore';
 import { TeamLogoImage } from '@/components/ui/TeamLogoImage';
 import FavoriteButton from '@/components/FavoriteButton';
@@ -45,22 +45,10 @@ export function ScoreboardRow({ match, showOdds = true }: ScoreboardRowProps) {
     return homeSpread > 0 ? `+${homeSpread}` : homeSpread.toString();
   };
 
-  const formatMoneyline = (value: number | null | undefined): string | null => {
-    if (value === null || value === undefined) return null;
-
-    // If it looks like American odds already, keep it and round to whole number.
-    // (American: typically >= +100 or <= -100)
-    if (value >= 100) return `+${Math.round(value)}`;
-    if (value <= -100) return `${Math.round(value)}`;
-
-    // Otherwise treat it as decimal odds and format as whole-number American
-    return formatAmericanOdds(value);
-  };
-
   const getMoneyline = (isHome: boolean) => {
-    if (!primaryOdds) return null;
+    if (!primaryOdds) return '-';
     const ml = isHome ? primaryOdds.homeWin : primaryOdds.awayWin;
-    return formatMoneyline(ml);
+    return formatMoneylineOdds(ml);
   };
 
   const getMovementIcon = (isHome: boolean) => {

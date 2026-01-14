@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { LiveOdds } from "@/types/sports";
-import { getPrimaryOdds, formatAmericanOdds, PRIMARY_SPORTSBOOK } from "@/utils/sportsbook";
+import { getPrimaryOdds, formatMoneylineOdds, PRIMARY_SPORTSBOOK } from "@/utils/sportsbook";
 import { Star, TrendingUp, TrendingDown, Minus, Activity } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { OddsMovementIndicator, MovementDirection } from "./OddsMovementIndicator";
@@ -30,15 +30,8 @@ export function FanDuelOddsBadge({
 
   const isFanDuel = primaryOdds.sportsbook.id.toLowerCase().includes('fanduel');
   
-  const formatMoneyline = (value: number | null | undefined): string | null => {
-    if (value === null || value === undefined) return null;
-    if (value >= 100) return `+${Math.round(value)}`;
-    if (value <= -100) return `${Math.round(value)}`;
-    return formatAmericanOdds(value);
-  };
-
-  const homeML = formatMoneyline(primaryOdds.homeWin);
-  const awayML = formatMoneyline(primaryOdds.awayWin);
+  const homeML = formatMoneylineOdds(primaryOdds.homeWin);
+  const awayML = formatMoneylineOdds(primaryOdds.awayWin);
   const homeSpread = primaryOdds.spread?.homeSpread;
   const awaySpread = primaryOdds.spread?.awaySpread;
 

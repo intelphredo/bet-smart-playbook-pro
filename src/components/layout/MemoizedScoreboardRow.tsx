@@ -7,6 +7,7 @@ import { TeamLogoImage } from '@/components/ui/TeamLogoImage';
 import FavoriteButton from '@/components/FavoriteButton';
 import { format } from 'date-fns';
 import { Clock, Radio } from 'lucide-react';
+import { formatMoneylineOdds, getPrimaryOdds } from '@/utils/sportsbook';
 
 interface MemoizedScoreboardRowProps {
   match: Match;
@@ -23,6 +24,9 @@ const MemoizedScoreboardRow = memo(function MemoizedScoreboardRow({
   const isLive = match.status === 'live';
   const isFinished = match.status === 'finished';
   
+  // Get FanDuel odds as primary
+  const primaryOdds = getPrimaryOdds(match.liveOdds || []);
+  
   const formatGameTime = () => {
     if (isLive) return match.score?.period || 'LIVE';
     if (isFinished) return 'Final';
@@ -34,22 +38,15 @@ const MemoizedScoreboardRow = memo(function MemoizedScoreboardRow({
   };
 
   const getSpread = () => {
-    if (!showOdds || !match.liveOdds?.[0]?.spread?.homeSpread) return null;
-    const spread = match.liveOdds[0].spread.homeSpread;
+    if (!showOdds || !primaryOdds?.spread?.homeSpread) return null;
+    const spread = primaryOdds.spread.homeSpread;
     return spread > 0 ? `+${spread}` : spread.toString();
   };
 
-  const formatMoneyline = (value: number | null | undefined) => {
-    if (value == null) return '--';
-    return value > 0 ? `+${value}` : value.toString();
-  };
-
   const getMoneyline = (isHome: boolean) => {
-    if (!showOdds || !match.liveOdds?.[0]) return null;
-    const ml = isHome 
-      ? match.liveOdds[0].homeWin 
-      : match.liveOdds[0].awayWin;
-    return formatMoneyline(ml);
+    if (!showOdds || !primaryOdds) return '-';
+    const ml = isHome ? primaryOdds.homeWin : primaryOdds.awayWin;
+    return formatMoneylineOdds(ml);
   };
 
   const handleClick = () => {
