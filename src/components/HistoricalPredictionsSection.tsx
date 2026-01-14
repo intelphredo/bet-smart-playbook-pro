@@ -212,6 +212,9 @@ const HistoricalPredictionsSection = () => {
               <div className="flex items-center gap-2 mb-2">
                 <Calendar className="h-4 w-4 text-primary" />
                 <span className="text-sm font-medium">Time Range</span>
+                <Badge variant="secondary" className="text-xs font-medium">
+                  {predictions.length} predictions
+                </Badge>
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {TIME_RANGE_OPTIONS.map(option => (
