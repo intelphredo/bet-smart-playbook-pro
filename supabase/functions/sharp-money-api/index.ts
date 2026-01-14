@@ -1,5 +1,6 @@
 // Sharp Money API - Records and grades sharp money predictions
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from "../_shared/rate-limiter.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -30,6 +31,16 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Apply rate limiting based on request type
+    const rateLimitConfig = req.method === "GET" 
+      ? { ...RATE_LIMITS.PUBLIC_READ, endpoint: "sharp-money-api-read" }
+      : { ...RATE_LIMITS.WRITE, endpoint: "sharp-money-api-write" };
+    
+    const rateLimitResult = await checkRateLimit(req, rateLimitConfig);
+    if (!rateLimitResult.allowed) {
+      return rateLimitResponse(rateLimitResult, corsHeaders);
+    }
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
