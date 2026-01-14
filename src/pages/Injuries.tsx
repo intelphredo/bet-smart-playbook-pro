@@ -5,23 +5,15 @@ import NavBar from '@/components/NavBar';
 import PageFooter from '@/components/PageFooter';
 import AppBreadcrumb from '@/components/layout/AppBreadcrumb';
 import InjuryReportCard from '@/components/Sportradar/InjuryReportCard';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { AlertTriangle, RefreshCw, AlertCircle, Search } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { GroupedLeagueSelect, LEAGUE_CATEGORIES } from '@/components/filters/GroupedLeagueSelect';
+import { getLeagueLogoUrl, getLeagueDisplayName } from '@/utils/teamLogos';
 
-type LeagueConfig = { id: ExtendedSportLeague; label: string; icon: string };
-
-const LEAGUES: LeagueConfig[] = [
-  { id: 'NBA', label: 'NBA', icon: '🏀' },
-  { id: 'NCAAB', label: 'NCAAB', icon: '🏀' },
-  { id: 'NFL', label: 'NFL', icon: '🏈' },
-  { id: 'MLB', label: 'MLB', icon: '⚾' },
-  { id: 'NHL', label: 'NHL', icon: '🏒' },
-  { id: 'SOCCER', label: 'Soccer', icon: '⚽' },
-];
+// Get all available leagues from categories
+const ALL_LEAGUES = Object.values(LEAGUE_CATEGORIES).flatMap(cat => cat.leagues);
 
 function LeagueInjuries({ league }: { league: ExtendedSportLeague }) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -111,7 +103,7 @@ function LeagueInjuries({ league }: { league: ExtendedSportLeague }) {
 }
 
 export default function Injuries() {
-  const [activeLeague, setActiveLeague] = useState<string>('NBA');
+  const [activeLeague, setActiveLeague] = useState<ExtendedSportLeague>('NBA');
 
   return (
     <div className="min-h-screen bg-background">
@@ -121,39 +113,47 @@ export default function Injuries() {
         <AppBreadcrumb className="mb-4" />
         
         <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 rounded-lg bg-orange-500/10">
-              <AlertTriangle className="h-6 w-6 text-orange-500" />
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-orange-500/10">
+                <AlertTriangle className="h-6 w-6 text-orange-500" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold tracking-tight">Injury Reports</h1>
+                <p className="text-muted-foreground">
+                  Track player injuries across all leagues with impact analysis
+                </p>
+              </div>
             </div>
-            <h1 className="text-3xl font-bold tracking-tight">Injury Reports</h1>
+            <GroupedLeagueSelect
+              value={activeLeague}
+              onValueChange={(val) => setActiveLeague(val as ExtendedSportLeague)}
+              leagues={ALL_LEAGUES}
+              showAllOption={false}
+              className="w-[200px]"
+            />
           </div>
-          <p className="text-muted-foreground">
-            Track player injuries across all leagues with impact analysis and expected return dates
-          </p>
         </div>
 
-        <Tabs value={activeLeague} onValueChange={setActiveLeague} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6 lg:w-auto lg:inline-flex">
-            {LEAGUES.map((league) => (
-              <TabsTrigger
-                key={league.id}
-                value={league.id}
-                className={cn(
-                  'flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground'
-                )}
-              >
-                <span className="hidden sm:inline">{league.icon}</span>
-                <span>{league.label}</span>
-              </TabsTrigger>
-            ))}
-          </TabsList>
+        {/* Current League Header */}
+        <Card className="mb-6 border-primary/20">
+          <CardContent className="py-4">
+            <div className="flex items-center gap-3">
+              <img 
+                src={getLeagueLogoUrl(activeLeague)} 
+                alt={activeLeague}
+                className="w-8 h-8 object-contain"
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+              />
+              <div>
+                <h2 className="text-xl font-semibold">{getLeagueDisplayName(activeLeague)} Injuries</h2>
+                <p className="text-sm text-muted-foreground">Current injury reports and expected return dates</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-          {LEAGUES.map((league) => (
-            <TabsContent key={league.id} value={league.id} className="mt-6">
-              <LeagueInjuries league={league.id} />
-            </TabsContent>
-          ))}
-        </Tabs>
+        <LeagueInjuries league={activeLeague} />
       </main>
 
       <PageFooter />
