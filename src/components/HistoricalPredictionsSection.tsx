@@ -39,6 +39,8 @@ import {
   RefreshCw,
   Loader2,
   Filter,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { toast } from "sonner";
 import { 
@@ -60,6 +62,8 @@ const TIME_RANGE_OPTIONS: { value: TimeRange; label: string }[] = [
   { value: "all", label: "All Time" },
 ];
 
+const ITEMS_PER_PAGE = 25;
+
 const HistoricalPredictionsSection = () => {
   const [leagueFilter, setLeagueFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -68,6 +72,8 @@ const HistoricalPredictionsSection = () => {
   const [predictionType, setPredictionType] = useState<PredictionType>("all");
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [settledOnly, setSettledOnly] = useState(false);
+  const [preLivePage, setPreLivePage] = useState(1);
+  const [livePage, setLivePage] = useState(1);
   
   const { data, isLoading, error, refetch } = useHistoricalPredictions(timeRange, predictionType);
 
@@ -115,7 +121,7 @@ const HistoricalPredictionsSection = () => {
     predictions.flatMap(p => [p.home_team, p.away_team].filter(Boolean))
   )).sort() as string[];
 
-  // Filter predictions
+  // Filter predictions and reset pages when filters change
   const filteredPredictions = predictions.filter(p => {
     if (leagueFilter !== "all" && p.league !== leagueFilter) return false;
     if (statusFilter !== "all" && p.status !== statusFilter) return false;
@@ -126,6 +132,30 @@ const HistoricalPredictionsSection = () => {
     }
     return true;
   });
+
+  // Split predictions by type
+  const preLivePredictions = filteredPredictions.filter(p => !p.is_live_prediction);
+  const livePredictions = filteredPredictions.filter(p => p.is_live_prediction);
+
+  // Pagination calculations
+  const preLiveTotalPages = Math.ceil(preLivePredictions.length / ITEMS_PER_PAGE);
+  const liveTotalPages = Math.ceil(livePredictions.length / ITEMS_PER_PAGE);
+  
+  const paginatedPreLive = preLivePredictions.slice(
+    (preLivePage - 1) * ITEMS_PER_PAGE,
+    preLivePage * ITEMS_PER_PAGE
+  );
+  const paginatedLive = livePredictions.slice(
+    (livePage - 1) * ITEMS_PER_PAGE,
+    livePage * ITEMS_PER_PAGE
+  );
+
+  // Reset pages when filters change
+  const handleFilterChange = (setter: (val: string) => void, value: string) => {
+    setter(value);
+    setPreLivePage(1);
+    setLivePage(1);
+  };
 
   // CSV Export function
   const exportToCSV = () => {
@@ -494,11 +524,11 @@ const HistoricalPredictionsSection = () => {
                 <PlayCircle className="h-4 w-4 text-green-500" />
                 Pre-Live Predictions
                 <Badge variant="secondary" className="ml-2 bg-green-500/10 text-green-500">
-                  {filteredPredictions.filter(p => !p.is_live_prediction).length}
+                  {preLivePredictions.length}
                 </Badge>
               </CardTitle>
               <div className="flex items-center gap-2">
-                <Select value={leagueFilter} onValueChange={setLeagueFilter}>
+                <Select value={leagueFilter} onValueChange={(v) => handleFilterChange(setLeagueFilter, v)}>
                   <SelectTrigger className="w-[100px] h-7 text-xs">
                     <SelectValue placeholder="League" />
                   </SelectTrigger>
@@ -511,7 +541,7 @@ const HistoricalPredictionsSection = () => {
                     ))}
                   </SelectContent>
                 </Select>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <Select value={statusFilter} onValueChange={(v) => handleFilterChange(setStatusFilter, v)}>
                   <SelectTrigger className="w-[90px] h-7 text-xs">
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
@@ -528,12 +558,10 @@ const HistoricalPredictionsSection = () => {
           <CardContent className="p-0">
             <ScrollArea className="h-[450px]">
               <div className="divide-y divide-border">
-                {filteredPredictions.filter(p => !p.is_live_prediction).length > 0 ? (
-                  filteredPredictions
-                    .filter(p => !p.is_live_prediction)
-                    .map(prediction => (
-                      <PredictionRow key={prediction.id} prediction={prediction} showTypeTag={false} />
-                    ))
+                {paginatedPreLive.length > 0 ? (
+                  paginatedPreLive.map(prediction => (
+                    <PredictionRow key={prediction.id} prediction={prediction} showTypeTag={false} />
+                  ))
                 ) : (
                   <div className="text-center py-12 text-muted-foreground">
                     <PlayCircle className="h-12 w-12 mx-auto mb-4 opacity-30" />
@@ -542,6 +570,34 @@ const HistoricalPredictionsSection = () => {
                 )}
               </div>
             </ScrollArea>
+            {/* Pre-Live Pagination */}
+            {preLiveTotalPages > 1 && (
+              <div className="flex items-center justify-between px-4 py-3 border-t">
+                <span className="text-xs text-muted-foreground">
+                  Page {preLivePage} of {preLiveTotalPages}
+                </span>
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 w-7 p-0"
+                    onClick={() => setPreLivePage(p => Math.max(1, p - 1))}
+                    disabled={preLivePage === 1}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 w-7 p-0"
+                    onClick={() => setPreLivePage(p => Math.min(preLiveTotalPages, p + 1))}
+                    disabled={preLivePage === preLiveTotalPages}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -553,7 +609,7 @@ const HistoricalPredictionsSection = () => {
                 <Radio className="h-4 w-4 text-orange-500 animate-pulse" />
                 Live Predictions
                 <Badge variant="secondary" className="ml-2 bg-orange-500/10 text-orange-500">
-                  {filteredPredictions.filter(p => p.is_live_prediction).length}
+                  {livePredictions.length}
                 </Badge>
               </CardTitle>
             </div>
@@ -561,12 +617,10 @@ const HistoricalPredictionsSection = () => {
           <CardContent className="p-0">
             <ScrollArea className="h-[450px]">
               <div className="divide-y divide-border">
-                {filteredPredictions.filter(p => p.is_live_prediction).length > 0 ? (
-                  filteredPredictions
-                    .filter(p => p.is_live_prediction)
-                    .map(prediction => (
-                      <PredictionRow key={prediction.id} prediction={prediction} showTypeTag={false} />
-                    ))
+                {paginatedLive.length > 0 ? (
+                  paginatedLive.map(prediction => (
+                    <PredictionRow key={prediction.id} prediction={prediction} showTypeTag={false} />
+                  ))
                 ) : (
                   <div className="text-center py-12 text-muted-foreground">
                     <Radio className="h-12 w-12 mx-auto mb-4 opacity-30" />
@@ -575,6 +629,34 @@ const HistoricalPredictionsSection = () => {
                 )}
               </div>
             </ScrollArea>
+            {/* Live Pagination */}
+            {liveTotalPages > 1 && (
+              <div className="flex items-center justify-between px-4 py-3 border-t">
+                <span className="text-xs text-muted-foreground">
+                  Page {livePage} of {liveTotalPages}
+                </span>
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 w-7 p-0"
+                    onClick={() => setLivePage(p => Math.max(1, p - 1))}
+                    disabled={livePage === 1}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 w-7 p-0"
+                    onClick={() => setLivePage(p => Math.min(liveTotalPages, p + 1))}
+                    disabled={livePage === liveTotalPages}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
