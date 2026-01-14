@@ -144,7 +144,7 @@ export default function BetHistory() {
   const { bets, stats, isLoading, updateBetStatus, refetch } = useBetSlip();
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState<string>('bets');
+  const [activeTab, setActiveTab] = useState<string>(!user && !devMode ? 'predictions' : 'bets');
 
   const filteredBets = useMemo(() => {
     return statusFilter === 'all' 
@@ -186,26 +186,7 @@ export default function BetHistory() {
     };
   }, [stats]);
 
-  if (!user && !devMode) {
-    return (
-      <div className="min-h-screen flex flex-col bg-gradient-to-br from-background via-secondary/30 to-accent/10">
-        <NavBar />
-        <main className="flex-1 container px-4 py-12 flex items-center justify-center">
-          <Card className="max-w-md w-full">
-            <CardContent className="pt-6 text-center">
-              <TrendingUp className="h-16 w-16 mx-auto text-muted-foreground/50 mb-4" />
-              <h2 className="text-xl font-bold mb-2">Track Your Bets</h2>
-              <p className="text-muted-foreground mb-6">
-                Login to start tracking your betting performance and see detailed analytics.
-              </p>
-              <Button onClick={() => navigate('/auth')}>Login to Continue</Button>
-            </CardContent>
-          </Card>
-        </main>
-        <PageFooter />
-      </div>
-    );
-  }
+  const isAuthenticated = user || devMode;
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-background via-secondary/30 to-accent/10">
@@ -227,10 +208,12 @@ export default function BetHistory() {
         {/* Main Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
           <TabsList className="flex-wrap h-auto gap-1">
-            <TabsTrigger value="bets" className="flex items-center gap-2">
-              <Target className="h-4 w-4" />
-              Your Bets
-            </TabsTrigger>
+            {isAuthenticated && (
+              <TabsTrigger value="bets" className="flex items-center gap-2">
+                <Target className="h-4 w-4" />
+                Your Bets
+              </TabsTrigger>
+            )}
             <TabsTrigger value="predictions" className="flex items-center gap-2">
               <Zap className="h-4 w-4" />
               AI Predictions
@@ -239,78 +222,82 @@ export default function BetHistory() {
               <Award className="h-4 w-4" />
               Accuracy
             </TabsTrigger>
-            <TabsTrigger value="summary" className="flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              Weekly Summary
-            </TabsTrigger>
+            {isAuthenticated && (
+              <TabsTrigger value="summary" className="flex items-center gap-2">
+                <Calendar className="h-4 w-4" />
+                Weekly Summary
+              </TabsTrigger>
+            )}
           </TabsList>
 
-          <TabsContent value="bets" className="mt-6">
-            {/* Stats Overview */}
-            {statsDisplay && (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                <StatCard icon={Target} value={statsDisplay.totalBets} label="Total Bets" />
-                <StatCard icon={Percent} value={statsDisplay.winRate} label="Win Rate" />
-                <StatCard 
-                  icon={BarChart3} 
-                  value={statsDisplay.roi} 
-                  label="ROI" 
-                  valueClassName={statsDisplay.roiClass}
-                />
-                <StatCard 
-                  icon={DollarSign} 
-                  value={statsDisplay.profit} 
-                  label="Total Profit"
-                  valueClassName={statsDisplay.profitClass}
-                />
-              </div>
-            )}
-
-            {/* Bets List */}
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Your Bets</CardTitle>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-[140px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Bets</SelectItem>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="won">Won</SelectItem>
-                    <SelectItem value="lost">Lost</SelectItem>
-                    <SelectItem value="push">Push</SelectItem>
-                  </SelectContent>
-                </Select>
-              </CardHeader>
-              <CardContent>
-                {isLoading ? (
-                  <div className="flex items-center justify-center py-12">
-                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                  </div>
-                ) : filteredBets.length === 0 ? (
-                  <div className="text-center py-12">
-                    <TrendingUp className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-                    <p className="text-muted-foreground">
-                      {statusFilter === 'all' 
-                        ? 'No bets yet. Start tracking your bets to see them here.'
-                        : `No ${statusFilter} bets found.`}
-                    </p>
-                  </div>
-                ) : (
-                  <VirtualizedList
-                    items={filteredBets}
-                    renderItem={(bet) => (
-                      <BetRow bet={bet} onSettle={handleSettleBet} />
-                    )}
-                    estimatedItemHeight={100}
-                    maxHeight={600}
-                    className="space-y-3"
+          {isAuthenticated && (
+            <TabsContent value="bets" className="mt-6">
+              {/* Stats Overview */}
+              {statsDisplay && (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                  <StatCard icon={Target} value={statsDisplay.totalBets} label="Total Bets" />
+                  <StatCard icon={Percent} value={statsDisplay.winRate} label="Win Rate" />
+                  <StatCard 
+                    icon={BarChart3} 
+                    value={statsDisplay.roi} 
+                    label="ROI" 
+                    valueClassName={statsDisplay.roiClass}
                   />
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
+                  <StatCard 
+                    icon={DollarSign} 
+                    value={statsDisplay.profit} 
+                    label="Total Profit"
+                    valueClassName={statsDisplay.profitClass}
+                  />
+                </div>
+              )}
+
+              {/* Bets List */}
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle>Your Bets</CardTitle>
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="w-[140px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Bets</SelectItem>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="won">Won</SelectItem>
+                      <SelectItem value="lost">Lost</SelectItem>
+                      <SelectItem value="push">Push</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </CardHeader>
+                <CardContent>
+                  {isLoading ? (
+                    <div className="flex items-center justify-center py-12">
+                      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : filteredBets.length === 0 ? (
+                    <div className="text-center py-12">
+                      <TrendingUp className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+                      <p className="text-muted-foreground">
+                        {statusFilter === 'all' 
+                          ? 'No bets yet. Start tracking your bets to see them here.'
+                          : `No ${statusFilter} bets found.`}
+                      </p>
+                    </div>
+                  ) : (
+                    <VirtualizedList
+                      items={filteredBets}
+                      renderItem={(bet) => (
+                        <BetRow bet={bet} onSettle={handleSettleBet} />
+                      )}
+                      estimatedItemHeight={100}
+                      maxHeight={600}
+                      className="space-y-3"
+                    />
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
 
           <TabsContent value="predictions" className="mt-6">
             <HistoricalPredictionsSection />
@@ -320,9 +307,11 @@ export default function BetHistory() {
             <AlgorithmAccuracyDashboard />
           </TabsContent>
 
-          <TabsContent value="summary" className="mt-6">
-            <WeeklyPerformanceSummary />
-          </TabsContent>
+          {isAuthenticated && (
+            <TabsContent value="summary" className="mt-6">
+              <WeeklyPerformanceSummary />
+            </TabsContent>
+          )}
         </Tabs>
       </main>
       <PageFooter />
