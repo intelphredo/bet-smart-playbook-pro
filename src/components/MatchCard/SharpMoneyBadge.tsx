@@ -128,12 +128,21 @@ export function SharpMoneyBadge({
           </TooltipTrigger>
           <TooltipContent side="top" className="max-w-xs">
             <div className="space-y-1">
-              <p className="font-medium">Sharp Money Detected</p>
+              <p className="font-medium">
+                {sharpIndicator.type === 'steam_move' ? '⚡ Steam Move Detected' :
+                 sharpIndicator.type === 'reverse_line' ? '📈 Reverse Line Movement' :
+                 sharpIndicator.type === 'money_split' ? '⚖️ Money/Ticket Split' :
+                 sharpIndicator.type === 'whale_bet' ? '🐋 Whale Bet Detected' :
+                 '🧠 Sharp Action Detected'}
+              </p>
               <p className="text-xs text-muted-foreground">{sharpIndicator.description}</p>
               <div className="flex items-center gap-2 text-xs">
                 <span className="text-muted-foreground">Confidence:</span>
                 <span className="font-medium">{sharpIndicator.confidence}%</span>
               </div>
+              <p className="text-[10px] text-muted-foreground/70 italic mt-1">
+                Tap the ℹ️ in the nav bar for full glossary
+              </p>
             </div>
           </TooltipContent>
         </Tooltip>

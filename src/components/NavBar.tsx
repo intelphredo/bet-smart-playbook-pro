@@ -8,6 +8,7 @@ import { SkipLink } from "@/components/ui/skip-link";
 import { cn } from "@/lib/utils";
 import BetSlipDrawer from "@/components/BetSlip/BetSlipDrawer";
 import NotificationCenter from "@/components/NotificationCenter";
+import { GlossaryModal } from "@/components/ui/InfoExplainer";
 
 interface NavBarProps {
   className?: string;
@@ -60,11 +61,13 @@ export default function NavBar({ className }: NavBarProps) {
             {/* Right - Actions */}
             <div className="flex items-center gap-2">
               <div className="hidden sm:flex items-center gap-2">
+                <GlossaryModal />
                 <NotificationCenter />
                 <BetSlipDrawer />
               </div>
               <ModeToggle />
               <div className="sm:hidden flex items-center gap-1">
+                <GlossaryModal />
                 <NotificationCenter />
                 <BetSlipDrawer />
               </div>

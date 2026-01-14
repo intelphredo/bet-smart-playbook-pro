@@ -13,6 +13,7 @@ import { SharpMoneyFilter, SharpFilterType } from './SharpMoneyFilter';
 import { SharpMoneyCard } from './SharpMoneyCard';
 import { SharpSignal } from '@/types/bettingTrends';
 import { cn } from '@/lib/utils';
+import { InfoExplainer } from '@/components/ui/InfoExplainer';
 
 interface SharpMoneySectionProps {
   matches: Match[];
@@ -119,6 +120,7 @@ export function SharpMoneySection({
           <CardTitle className="flex items-center gap-2 text-base">
             <Brain className="h-4 w-4 text-primary" />
             Sharp Money
+            <InfoExplainer term="sharp_betting" size="sm" />
             <Badge variant="secondary" className="ml-1">
               {sharpGames.length}
             </Badge>
@@ -149,14 +151,17 @@ export function SharpMoneySection({
           <span className="flex items-center gap-1">
             <TrendingDown className="h-3.5 w-3.5 text-purple-500" />
             {stats.withRLM} RLM
+            <InfoExplainer term="reverse_line" size="sm" />
           </span>
           <span className="flex items-center gap-1">
             <Zap className="h-3.5 w-3.5 text-orange-500" />
             {stats.steamMoves} Steam
+            <InfoExplainer term="steam_move" size="sm" />
           </span>
           <span className="flex items-center gap-1">
             <BarChart3 className="h-3.5 w-3.5 text-green-500" />
             Avg {stats.avgConfidence}%
+            <InfoExplainer term="confidence" size="sm" />
           </span>
         </div>
       </CardHeader>
