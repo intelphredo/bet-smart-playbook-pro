@@ -4,6 +4,10 @@ import { useAuth } from '@/hooks/useAuth';
 import { UserBet, UserBettingStats, BetSlipItem, BetStatus } from '@/types/betting';
 import { useToast } from '@/hooks/use-toast';
 import { isDevMode } from '@/utils/devMode';
+import { 
+  StakeSchema, 
+  BetSlipItemSchema,
+} from '@/lib/validation';
 
 const LOCAL_BETS_KEY = 'dev_mode_bets';
 const LOCAL_STATS_KEY = 'dev_mode_betting_stats';
@@ -134,8 +138,32 @@ export function useBetTracking() {
     setBetSlip([]);
   }, []);
 
-  // Place a bet
+  // Place a bet with validation
   const placeBet = useCallback(async (item: BetSlipItem, stake: number) => {
+    // Validate stake amount
+    const stakeResult = StakeSchema.safeParse(stake);
+    if (!stakeResult.success) {
+      const errors = stakeResult.error.errors.map(e => e.message).join(', ');
+      toast({
+        title: 'Invalid stake',
+        description: errors,
+        variant: 'destructive',
+      });
+      return null;
+    }
+
+    // Validate bet slip item
+    const itemResult = BetSlipItemSchema.safeParse(item);
+    if (!itemResult.success) {
+      toast({
+        title: 'Invalid bet data',
+        description: 'Please check your selection and try again.',
+        variant: 'destructive',
+      });
+      console.error('Bet validation failed:', itemResult.error.errors);
+      return null;
+    }
+
     const potentialPayout = stake * item.odds;
 
     // In dev mode, save to localStorage
