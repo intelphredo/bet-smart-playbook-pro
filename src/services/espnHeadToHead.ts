@@ -25,10 +25,10 @@ export interface TeamSeasonRecord {
   losses: number;
   ties: number;
   winPercentage: number;
-  streak: string;
+  streak: string | number;
   homeRecord: string;
   awayRecord: string;
-  last10: string;
+  last10: string | null;
   pointsFor: number;
   pointsAgainst: number;
   pointDifferential: number;
@@ -271,7 +271,7 @@ const fetchTeamSeasonRecord = async (
       losses,
       ties,
       winPercentage: Math.round(winPct * 1000) / 10,
-      streak,
+      streak: streak || "-",
       homeRecord: homeRecord || `${Math.floor(wins / 2)}-${Math.floor(losses / 2)}`,
       awayRecord: awayRecord || `${Math.ceil(wins / 2)}-${Math.ceil(losses / 2)}`,
       last10: last10 || "",
