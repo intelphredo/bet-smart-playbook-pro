@@ -181,6 +181,30 @@ export const EXPLAINERS = {
     full: "Momentum measures a team's recent performance trend, including win streaks, scoring trends, and form. Teams on hot streaks may continue performing well, while slumping teams might struggle. However, momentum can also mean regression to the mean is coming.",
     icon: "🔥",
   },
+  consensus_pick: {
+    title: "Consensus Pick",
+    short: "When 2+ algorithms agree on the same prediction",
+    full: "A Consensus Pick occurs when multiple prediction algorithms agree on the same outcome. Research shows that when algorithms converge on the same pick, the win rate tends to be higher than when they disagree. Full consensus (all 3 algorithms agree) typically has the highest success rate.",
+    icon: "🤝",
+  },
+  head_to_head: {
+    title: "Head-to-Head Win Rate",
+    short: "How often Algorithm A beats Algorithm B when they disagree",
+    full: "Head-to-Head Win Rate measures which algorithm is more accurate when two algorithms make opposing predictions for the same match. This helps identify which algorithm to trust in split-decision situations.",
+    icon: "⚔️",
+  },
+  agreement_rate: {
+    title: "Agreement Rate",
+    short: "Percentage of matches where all algorithms picked the same outcome",
+    full: "Agreement Rate shows how often the prediction algorithms converge on the same pick. A high agreement rate combined with a high consensus win rate suggests the algorithms are working effectively together.",
+    icon: "📊",
+  },
+  algorithm_edge: {
+    title: "Algorithm Edge",
+    short: "The unique strength of each prediction model",
+    full: "Each algorithm has different strengths based on its methodology. ML Power Index excels at pattern recognition, Value Pick Finder specializes in odds analysis, and Statistical Edge focuses on situational factors. Understanding each algorithm's edge helps you know when to trust its predictions.",
+    icon: "💡",
+  },
 } as const;
 
 interface InfoExplainerProps {
