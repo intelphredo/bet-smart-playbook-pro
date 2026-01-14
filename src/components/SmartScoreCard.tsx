@@ -17,6 +17,7 @@ import {
   TrendingUp
 } from "lucide-react";
 import { InfoExplainer } from "@/components/ui/InfoExplainer";
+import { cn } from "@/lib/utils";
 
 interface SmartScoreCardProps {
   match: Match;
@@ -54,23 +55,30 @@ const SmartScoreCard = ({ match, showArbitrageAlert = false }: SmartScoreCardPro
   return (
     <>
       <Card 
-        className={`border cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-[1.02] premium-card ${hasArbitrageOpportunity && showArbitrageAlert ? 'border-primary/50 shadow-md' : ''}`}
+        variant="premium"
+        className={`cursor-pointer transition-all duration-300 hover:scale-[1.02] group ${hasArbitrageOpportunity && showArbitrageAlert ? 'border-primary/50 shadow-lg shadow-primary/10' : ''}`}
         onClick={() => setIsOpen(true)}
       >
+        {/* Gold accent line */}
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+        
         <CardHeader className="flex flex-row items-center justify-between py-2 relative">
           <h3 className="text-sm font-semibold">
             {match.homeTeam.shortName} vs {match.awayTeam.shortName}
           </h3>
           <div className="flex items-center gap-1">
             {hasArbitrageOpportunity && showArbitrageAlert && (
-              <Badge variant="gold" className="flex items-center gap-1">
+              <Badge variant="gold" className="flex items-center gap-1 badge-glow">
                 <AlertTriangle size={12} />
                 <span className="text-xs">Arbitrage</span>
               </Badge>
             )}
             <Badge 
               variant={overall >= 80 ? "gold-solid" : overall >= 65 ? "gold" : "outline"} 
-              className={overall < 65 ? getScoreColor(overall) : ""}
+              className={cn(
+                overall < 65 ? getScoreColor(overall) : "",
+                overall >= 80 && "animate-pulse"
+              )}
             >
               {overall}
             </Badge>

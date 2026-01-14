@@ -135,19 +135,19 @@ const OddsComparisonTable = ({ match }: Props) => {
     return (
       <td 
         className={cn(
-          "px-3 py-2 text-center transition-colors",
-          isBest && "bg-green-100 dark:bg-green-900/30",
+          "px-3 py-2 text-center transition-all duration-200",
+          isBest && "bg-gradient-to-br from-primary/20 via-primary/10 to-transparent",
           className
         )}
       >
         <div className="flex items-center justify-center gap-1">
           {isBest && (
-            <Trophy className="w-3 h-3 text-yellow-500 flex-shrink-0" />
+            <Trophy className="w-3 h-3 text-primary flex-shrink-0 animate-pulse" />
           )}
           <span 
             className={cn(
               "font-mono text-sm",
-              isBest && "font-bold text-green-700 dark:text-green-400"
+              isBest && "font-bold bg-gradient-to-r from-primary to-amber-400 bg-clip-text text-transparent"
             )}
           >
             {prefix}{formatOdds(value)}
@@ -178,19 +178,19 @@ const OddsComparisonTable = ({ match }: Props) => {
     return (
       <td 
         className={cn(
-          "px-3 py-2 text-center transition-colors",
-          isBest && "bg-green-100 dark:bg-green-900/30",
+          "px-3 py-2 text-center transition-all duration-200",
+          isBest && "bg-gradient-to-br from-primary/20 via-primary/10 to-transparent",
           className
         )}
       >
         <div className="flex flex-col items-center">
           {isBest && (
-            <Trophy className="w-3 h-3 text-yellow-500 mb-0.5" />
+            <Trophy className="w-3 h-3 text-primary mb-0.5 animate-pulse" />
           )}
           <span 
             className={cn(
               "font-mono text-sm",
-              isBest && "font-bold text-green-700 dark:text-green-400"
+              isBest && "font-bold bg-gradient-to-r from-primary to-amber-400 bg-clip-text text-transparent"
             )}
           >
             {spreadDisplay}
@@ -225,19 +225,19 @@ const OddsComparisonTable = ({ match }: Props) => {
     return (
       <td 
         className={cn(
-          "px-3 py-2 text-center transition-colors",
-          isBest && "bg-green-100 dark:bg-green-900/30",
+          "px-3 py-2 text-center transition-all duration-200",
+          isBest && "bg-gradient-to-br from-primary/20 via-primary/10 to-transparent",
           className
         )}
       >
         <div className="flex flex-col items-center">
           {isBest && (
-            <Trophy className="w-3 h-3 text-yellow-500 mb-0.5" />
+            <Trophy className="w-3 h-3 text-primary mb-0.5 animate-pulse" />
           )}
           <span 
             className={cn(
               "font-mono text-sm",
-              isBest && "font-bold text-green-700 dark:text-green-400"
+              isBest && "font-bold bg-gradient-to-r from-primary to-amber-400 bg-clip-text text-transparent"
             )}
           >
             {prefix} {total}
@@ -504,12 +504,13 @@ const OddsComparisonTable = ({ match }: Props) => {
     <div className="mb-4">
       <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
         <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
-          📊 Odds Comparison
+          <span className="p-1 rounded bg-primary/10">📊</span>
+          Odds Comparison
         </h4>
         <div className="flex items-center gap-2">
           <OddsFormatToggle />
           {bestOdds.home && (
-            <Badge variant="outline" className="text-xs bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800">
+            <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/30 badge-glow">
               <Trophy className="w-3 h-3 mr-1" />
               Best Value
             </Badge>
@@ -518,23 +519,23 @@ const OddsComparisonTable = ({ match }: Props) => {
       </div>
       
       <Tabs value={activeMarket} onValueChange={(v) => setActiveMarket(v as MarketType)}>
-        <TabsList className="mb-3 h-8">
-          <TabsTrigger value="moneyline" className="text-xs px-3 h-7">
+        <TabsList className="mb-3 h-8 bg-muted/50 border border-border/50">
+          <TabsTrigger value="moneyline" className="text-xs px-3 h-7 data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
             Moneyline
           </TabsTrigger>
           {hasSpreadMarket && (
-            <TabsTrigger value="spread" className="text-xs px-3 h-7">
+            <TabsTrigger value="spread" className="text-xs px-3 h-7 data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
               Spread
             </TabsTrigger>
           )}
           {hasTotalMarket && (
-            <TabsTrigger value="total" className="text-xs px-3 h-7">
+            <TabsTrigger value="total" className="text-xs px-3 h-7 data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
               Total
             </TabsTrigger>
           )}
         </TabsList>
 
-        <div className="overflow-x-auto rounded-lg border border-border">
+        <div className="overflow-x-auto rounded-xl border border-primary/10 bg-gradient-to-br from-card via-card to-primary/5">
           <TabsContent value="moneyline" className="m-0">
             <MoneylineTable />
           </TabsContent>
