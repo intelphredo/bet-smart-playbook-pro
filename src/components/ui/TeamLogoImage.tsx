@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { getTeamLogoUrl, getTeamInitials } from "@/utils/teamLogos";
 import { getNCAABTeamId } from "@/utils/ncaabTeamIds";
 import { League } from "@/types/sports";
@@ -84,6 +84,12 @@ export const TeamLogoImage: React.FC<TeamLogoImageProps> = ({
   const effectiveLogoUrl = normalizedLogoUrl || ncaaIdLogoUrl || getTeamLogoUrl(teamName, league);
   const initials = getTeamInitials(teamName);
   const altText = alt || `${teamName} logo`;
+
+  // If the logo URL changes on refresh, reset loading/error so it doesn't get "stuck"
+  useEffect(() => {
+    setHasError(false);
+    setIsLoading(true);
+  }, [effectiveLogoUrl]);
 
   if (hasError && showFallback) {
     return (

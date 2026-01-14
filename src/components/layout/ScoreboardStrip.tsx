@@ -105,20 +105,24 @@ function ScoreCard({ match, onClick }: { match: Match; onClick: () => void }) {
         <TeamRow 
           matchId={match.id}
           teamKey="away"
-          name={match.awayTeam?.shortName || match.awayTeam?.name || 'Away'} 
+          teamName={match.awayTeam?.name || match.awayTeam?.shortName || 'Away'}
+          displayName={match.awayTeam?.shortName || match.awayTeam?.name || 'Away'}
+          teamId={match.awayTeam?.id}
           logo={match.awayTeam?.logo}
           league={match.league}
-          score={showScores ? (match.score?.away ?? 0) : undefined}
+          score={showScores ? match.score?.away : undefined}
           isWinning={isFinished && (match.score?.away || 0) > (match.score?.home || 0)}
           isLive={isLive}
         />
         <TeamRow 
           matchId={match.id}
           teamKey="home"
-          name={match.homeTeam?.shortName || match.homeTeam?.name || 'Home'} 
+          teamName={match.homeTeam?.name || match.homeTeam?.shortName || 'Home'}
+          displayName={match.homeTeam?.shortName || match.homeTeam?.name || 'Home'}
+          teamId={match.homeTeam?.id}
           logo={match.homeTeam?.logo}
           league={match.league}
-          score={showScores ? (match.score?.home ?? 0) : undefined}
+          score={showScores ? match.score?.home : undefined}
           isWinning={isFinished && (match.score?.home || 0) > (match.score?.away || 0)}
           isLive={isLive}
         />
@@ -130,7 +134,9 @@ function ScoreCard({ match, onClick }: { match: Match; onClick: () => void }) {
 interface TeamRowProps {
   matchId: string;
   teamKey: 'home' | 'away';
-  name: string;
+  teamName: string;
+  displayName: string;
+  teamId?: string;
   logo?: string;
   league?: string;
   score?: number;
@@ -138,13 +144,13 @@ interface TeamRowProps {
   isLive?: boolean;
 }
 
-function TeamRow({ matchId, teamKey, name, logo, league, score, isWinning, isLive }: TeamRowProps) {
+function TeamRow({ matchId, teamKey, teamName, displayName, teamId, logo, league, score, isWinning, isLive }: TeamRowProps) {
   return (
     <div className="flex items-center justify-between gap-1.5">
       <div className="flex items-center gap-1.5 min-w-0 flex-1">
         <TeamLogoImage
-          teamName={name}
-          teamId={/^(\d+)$/.test(matchId) ? matchId : undefined}
+          teamName={teamName}
+          teamId={teamId}
           logoUrl={logo}
           league={league as any}
           size="xs"
@@ -154,7 +160,7 @@ function TeamRow({ matchId, teamKey, name, logo, league, score, isWinning, isLiv
           "text-xs truncate",
           isWinning ? "font-bold" : "font-medium"
         )}>
-          {name}
+          {displayName}
         </span>
       </div>
       {score !== undefined && (
