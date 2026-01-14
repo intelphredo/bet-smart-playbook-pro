@@ -34,43 +34,43 @@ const onboardingSteps: OnboardingStep[] = [
     icon: <Trophy className="w-8 h-8" />,
     title: "Welcome to BetSmart Pro",
     description:
-      "Your premium sports betting analytics platform. Get AI-powered predictions, real-time odds, and sharp money insights.",
-    highlight: "Premium Analytics",
+      "Find your edge with AI-powered value bets and bankroll management. Let's show you around!",
+    highlight: "Your Betting Edge",
   },
   {
-    icon: <Target className="w-8 h-8" />,
-    title: "Smart Predictions",
+    icon: <Sparkles className="w-8 h-8" />,
+    title: "Spotlight Value Picks",
     description:
-      "Our algorithms analyze thousands of data points to deliver high-confidence picks with proven accuracy rates.",
-    highlight: "85%+ Accuracy",
+      "Look for the golden 'Spotlight' cards at the top of your dashboard. These are our highest-confidence picks with the best expected value — start here!",
+    highlight: "Top AI Picks",
   },
   {
     icon: <TrendingUp className="w-8 h-8" />,
-    title: "Track Sharp Money",
+    title: "Sharp Money Tracker",
     description:
-      "Follow where the professionals are betting. Our sharp money indicators show you where the smart money flows.",
-    highlight: "Sharp Insights",
+      "The 'Sharp Money' tab shows where professional bettors are placing their money. Follow the smart money to find hidden value.",
+    highlight: "Pro Insights",
   },
   {
-    icon: <Zap className="w-8 h-8" />,
-    title: "Real-Time Odds",
+    icon: <Target className="w-8 h-8" />,
+    title: "Smart Score System",
     description:
-      "Compare odds across multiple sportsbooks instantly. Find the best value and maximize your potential returns.",
-    highlight: "Live Updates",
-  },
-  {
-    icon: <BarChart3 className="w-8 h-8" />,
-    title: "Advanced Analytics",
-    description:
-      "Deep dive into team stats, injury reports, weather impact, and historical performance data.",
+      "Each pick has a Smart Score (0-100) combining odds value, algorithm confidence, and market signals. Higher scores = stronger plays.",
     highlight: "Data-Driven",
   },
   {
-    icon: <Bell className="w-8 h-8" />,
-    title: "Smart Alerts",
+    icon: <BarChart3 className="w-8 h-8" />,
+    title: "Bankroll Management",
     description:
-      "Get notified about line movements, high-value opportunities, and when your tracked games start.",
-    highlight: "Never Miss Out",
+      "Visit the Bankroll tab to set your bankroll size and risk limits. Our Kelly Calculator helps you size bets optimally.",
+    highlight: "Risk Control",
+  },
+  {
+    icon: <Bell className="w-8 h-8" />,
+    title: "Stay Informed",
+    description:
+      "Use the tabs to switch between Scores, Favorites, Picks, and Analytics. The 'Picks' tab is your go-to for actionable bets!",
+    highlight: "Navigate Like a Pro",
   },
 ];
 

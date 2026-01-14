@@ -58,11 +58,21 @@ const PremiumHero = ({ liveGamesCount, upcomingGamesCount, highConfidencePicks }
 
       <div className="container relative px-4 py-12 md:py-16">
         <div className="max-w-4xl mx-auto text-center space-y-8">
+          {/* Value proposition tagline */}
+          <motion.p
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            className="text-sm md:text-base font-medium text-primary/90 tracking-wide"
+          >
+            Find your edge with AI-powered value bets and bankroll management
+          </motion.p>
+
           {/* Premium badge */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
+            transition={{ duration: 0.5, delay: 0.05 }}
           >
             <Badge 
               variant="gold" 
