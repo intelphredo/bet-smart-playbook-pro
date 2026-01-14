@@ -113,7 +113,7 @@ const getDaysForRange = (range: TimeRange): number => {
 };
 
 export const useHistoricalPredictions = (
-  timeRange: TimeRange = "14d",
+  timeRange: TimeRange = "all",
   predictionType: PredictionType = "all"
 ) => {
   const queryClient = useQueryClient();
