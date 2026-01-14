@@ -1,12 +1,14 @@
 // Smart Notification System (24/2) - Scans next 24 hours for critical alerts
 // Pushes maximum 2 alerts per user for high-priority opportunities
+// Includes major injury detection for line-moving news
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Match } from '@/types/sports';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { parseISO, addHours, isWithinInterval, isBefore } from 'date-fns';
+import { parseISO, addHours, isWithinInterval } from 'date-fns';
+import { useInjuryMonitor, MajorInjuryAlert } from './useInjuryMonitor';
 
 export interface SmartAlert {
   id: string;
@@ -16,6 +18,13 @@ export interface SmartAlert {
   title: string;
   message: string;
   timestamp: Date;
+  injuryData?: {
+    playerName: string;
+    position: string;
+    team: string;
+    status: string;
+    estimatedSpreadShift: number;
+  };
 }
 
 interface UseSmartNotificationsOptions {
@@ -24,6 +33,7 @@ interface UseSmartNotificationsOptions {
   valueThreshold?: number; // EV% threshold
   confidenceThreshold?: number;
   maxAlertsPerDay?: number; // Max push notifications
+  enableInjuryMonitoring?: boolean;
 }
 
 interface AlertedItem {
@@ -45,13 +55,119 @@ export function useSmartNotifications(options: UseSmartNotificationsOptions) {
     valueThreshold = 5, // 5% EV minimum
     confidenceThreshold = 70,
     maxAlertsPerDay = MAX_DAILY_ALERTS,
+    enableInjuryMonitoring = true,
   } = options;
   
   const { user } = useAuth();
   const [alerts, setAlerts] = useState<SmartAlert[]>([]);
   const [alertsToday, setAlertsToday] = useState(0);
+  const [injuryAlertsCount, setInjuryAlertsCount] = useState(0);
   const alertedItemsRef = useRef<AlertedItem[]>([]);
   const lastScanRef = useRef<number>(0);
+  
+  // Save alert to database (defined early for use in injury handler)
+  const saveAlertToDatabase = useCallback(async (alert: SmartAlert) => {
+    if (!user) return;
+    
+    try {
+      await supabase.from('user_alerts').insert({
+        user_id: user.id,
+        type: alert.type === 'major_injury' ? 'line_movement' : 
+              alert.type === 'value_threshold' ? 'clv_update' : 'line_movement',
+        title: alert.title,
+        message: alert.message,
+        match_id: alert.match.id,
+        metadata: {
+          alertType: alert.type,
+          priority: alert.priority,
+          confidence: alert.match.prediction?.confidence,
+          evPercentage: alert.match.prediction?.evPercentage,
+          injuryData: alert.injuryData,
+        },
+        is_read: false,
+      });
+    } catch (err) {
+      console.error('Error saving smart notification:', err);
+    }
+  }, [user]);
+  
+  // Handle major injury detection
+  const handleMajorInjury = useCallback((injuryAlert: MajorInjuryAlert) => {
+    if (!user) return;
+    
+    // Check if we've already alerted on this
+    const alertKey = `injury-${injuryAlert.player.name}-${injuryAlert.status}`;
+    const now = Date.now();
+    const hasAlerted = alertedItemsRef.current.some(
+      item => item.matchId === injuryAlert.matchId && 
+              item.alertType === alertKey &&
+              now - item.timestamp < ALERT_COOLDOWN_MS
+    );
+    
+    if (hasAlerted) return;
+    
+    // Create smart alert from injury
+    const spreadShift = Math.abs(injuryAlert.lineImpact.estimatedSpreadShift).toFixed(1);
+    const directionText = injuryAlert.lineImpact.direction === 'favorable_home' 
+      ? 'favoring ' + injuryAlert.match.homeTeam.shortName
+      : 'favoring ' + injuryAlert.match.awayTeam.shortName;
+    
+    const smartAlert: SmartAlert = {
+      id: injuryAlert.id,
+      type: 'major_injury',
+      priority: injuryAlert.impactLevel,
+      match: injuryAlert.match,
+      title: `🚨 Injury Alert: ${injuryAlert.player.name} (${injuryAlert.status.toUpperCase()})`,
+      message: `${injuryAlert.player.position} for ${injuryAlert.player.team} - ${injuryAlert.injuryType}. Est. ${spreadShift}pt line shift ${directionText}.`,
+      timestamp: injuryAlert.detectedAt,
+      injuryData: {
+        playerName: injuryAlert.player.name,
+        position: injuryAlert.player.position,
+        team: injuryAlert.player.team,
+        status: injuryAlert.status,
+        estimatedSpreadShift: injuryAlert.lineImpact.estimatedSpreadShift,
+      },
+    };
+    
+    // Show toast for critical/high injuries
+    if (injuryAlert.impactLevel === 'critical' || injuryAlert.impactLevel === 'high') {
+      toast(smartAlert.title, {
+        description: smartAlert.message,
+        duration: 12000,
+        action: {
+          label: 'View Game',
+          onClick: () => window.location.href = `/game/${injuryAlert.matchId}`,
+        },
+      });
+      
+      // Save to database
+      saveAlertToDatabase(smartAlert);
+      
+      // Record as alerted
+      alertedItemsRef.current.push({
+        matchId: injuryAlert.matchId,
+        alertType: alertKey,
+        timestamp: now,
+      });
+    }
+    
+    // Add to alerts state
+    setAlerts(prev => [smartAlert, ...prev].slice(0, 15));
+    setInjuryAlertsCount(prev => prev + 1);
+    
+  }, [user, saveAlertToDatabase]);
+  
+  // Injury monitoring hook
+  const { 
+    majorInjuries, 
+    criticalInjuries,
+    isScanning: isInjuryScanning,
+    newInjuriesCount 
+  } = useInjuryMonitor({
+    matches,
+    enabled: enabled && enableInjuryMonitoring,
+    onMajorInjury: handleMajorInjury,
+  });
   
   // Clean old alerted items and count today's alerts
   const cleanAlertedItems = useCallback(() => {
@@ -90,30 +206,6 @@ export function useSmartNotifications(options: UseSmartNotificationsOptions) {
       timestamp: Date.now(),
     });
   }, []);
-  
-  // Save alert to database
-  const saveAlertToDatabase = useCallback(async (alert: SmartAlert) => {
-    if (!user) return;
-    
-    try {
-      await supabase.from('user_alerts').insert({
-        user_id: user.id,
-        type: alert.type === 'value_threshold' ? 'clv_update' : 'line_movement',
-        title: alert.title,
-        message: alert.message,
-        match_id: alert.match.id,
-        metadata: {
-          alertType: alert.type,
-          priority: alert.priority,
-          confidence: alert.match.prediction?.confidence,
-          evPercentage: alert.match.prediction?.evPercentage,
-        },
-        is_read: false,
-      });
-    } catch (err) {
-      console.error('Error saving smart notification:', err);
-    }
-  }, [user]);
   
   // Scan matches for alert-worthy opportunities
   const scanForAlerts = useCallback(() => {
@@ -298,5 +390,11 @@ export function useSmartNotifications(options: UseSmartNotificationsOptions) {
     triggerScan,
     resetDailyLimit,
     isActive: enabled && !!user,
+    // Injury monitoring data
+    majorInjuries,
+    criticalInjuries,
+    injuryAlertsCount,
+    isInjuryScanning,
+    newInjuriesCount,
   };
 }

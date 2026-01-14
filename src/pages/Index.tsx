@@ -146,13 +146,20 @@ const Index = () => {
     enabled: true,
   });
 
-  // Smart 24/2 notifications
-  const { alerts: smartAlerts, alertsToday, remainingAlerts } = useSmartNotifications({
+  // Smart 24/2 notifications with injury monitoring
+  const { 
+    alerts: smartAlerts, 
+    alertsToday, 
+    remainingAlerts,
+    injuryAlertsCount,
+    isInjuryScanning 
+  } = useSmartNotifications({
     matches: allActiveMatches,
     enabled: true,
     valueThreshold: 5,
     confidenceThreshold: 70,
     maxAlertsPerDay: 2,
+    enableInjuryMonitoring: true,
   });
 
   const handleRefresh = () => {
@@ -222,6 +229,8 @@ const Index = () => {
                   alerts={smartAlerts}
                   alertsToday={alertsToday}
                   remainingAlerts={remainingAlerts}
+                  injuryAlertsCount={injuryAlertsCount}
+                  isInjuryScanning={isInjuryScanning}
                   onViewMatch={(matchId) => navigate(`/game/${matchId}`)}
                 />
                 <SteamMoveMonitor matches={allActiveMatches} enabled={true} />
