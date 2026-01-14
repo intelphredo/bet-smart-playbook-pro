@@ -451,175 +451,270 @@ export function BankrollDashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Current Bankroll ($)</Label>
-                    <Input 
-                      type="text"
-                      inputMode="decimal"
-                      value={String(settings.currentBankroll)}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        if (val === '' || /^\d*\.?\d*$/.test(val)) {
-                          setSettings(s => ({ ...s, currentBankroll: val === '' ? 0 : parseFloat(val) || 0 }));
-                        }
-                      }}
-                      placeholder="1000"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label>Starting Bankroll ($)</Label>
-                    <Input 
-                      type="text"
-                      inputMode="decimal"
-                      value={String(settings.startingBankroll)}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        if (val === '' || /^\d*\.?\d*$/.test(val)) {
-                          setSettings(s => ({ ...s, startingBankroll: val === '' ? 0 : parseFloat(val) || 0 }));
-                        }
-                      }}
-                      placeholder="1000"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label>Unit Size ($)</Label>
-                    <Input 
-                      type="text"
-                      inputMode="decimal"
-                      value={String(settings.unitSize)}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        if (val === '' || /^\d*\.?\d*$/.test(val)) {
-                          setSettings(s => ({ ...s, unitSize: val === '' ? 0 : parseFloat(val) || 0 }));
-                        }
-                      }}
-                      placeholder="20"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label>Kelly Fraction (%)</Label>
-                    <Input 
-                      type="text"
-                      inputMode="decimal"
-                      value={String(settings.kellyFraction * 100)}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        if (val === '' || /^\d*\.?\d*$/.test(val)) {
-                          const pct = val === '' ? 0 : parseFloat(val) || 0;
-                          setSettings(s => ({ ...s, kellyFraction: Math.min(100, Math.max(0, pct)) / 100 }));
-                        }
-                      }}
-                      placeholder="25"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label>Risk Tolerance</Label>
-                    <Select 
-                      value={settings.riskTolerance}
-                      onValueChange={(v) => setSettings(s => ({ ...s, riskTolerance: v as 'conservative' | 'moderate' | 'aggressive' }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="conservative">Conservative</SelectItem>
-                        <SelectItem value="moderate">Moderate</SelectItem>
-                        <SelectItem value="aggressive">Aggressive</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+              {/* Validation Rules */}
+              {(() => {
+                const errors = {
+                  currentBankroll: settings.currentBankroll < 10 ? "Minimum $10 recommended" : 
+                                   settings.currentBankroll > 10000000 ? "Value too high" : null,
+                  startingBankroll: settings.startingBankroll < 10 ? "Minimum $10 recommended" :
+                                    settings.startingBankroll > 10000000 ? "Value too high" : null,
+                  unitSize: settings.unitSize <= 0 ? "Must be greater than 0" :
+                            settings.unitSize > settings.currentBankroll * 0.1 ? "Should be ≤10% of bankroll" : null,
+                  kellyFraction: settings.kellyFraction < 0.1 ? "Minimum 10% recommended" :
+                                 settings.kellyFraction > 1 ? "Maximum 100%" : null,
+                  winRate: winRate < 40 ? "Below 40% is not profitable" :
+                           winRate > 80 ? "Unrealistic win rate" : null,
+                  avgOdds: avgOdds < 1.1 ? "Minimum odds 1.10" :
+                           avgOdds > 10 ? "Odds above 10 are risky" : null,
+                  maxBetPercentage: settings.maxBetPercentage < 1 ? "Minimum 1%" :
+                                    settings.maxBetPercentage > 25 ? "Max 25% recommended for safety" : null,
+                  dailyLossLimit: settings.dailyLossLimit !== undefined && 
+                                  settings.dailyLossLimit > settings.currentBankroll * 0.2 ? 
+                                  "Should be ≤20% of bankroll" : null,
+                  weeklyLossLimit: settings.weeklyLossLimit !== undefined && 
+                                   settings.weeklyLossLimit > settings.currentBankroll * 0.5 ? 
+                                   "Should be ≤50% of bankroll" : null,
+                };
                 
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Win Rate (%)</Label>
-                    <Input 
-                      type="text"
-                      inputMode="decimal"
-                      value={String(winRate)}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        if (val === '' || /^\d*\.?\d*$/.test(val)) {
-                          const pct = val === '' ? 50 : parseFloat(val) || 50;
-                          setWinRate(Math.min(100, Math.max(0, pct)));
-                        }
-                      }}
-                      placeholder="54"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label>Average Odds (Decimal)</Label>
-                    <Input 
-                      type="text"
-                      inputMode="decimal"
-                      value={String(avgOdds)}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        if (val === '' || /^\d*\.?\d*$/.test(val)) {
-                          setAvgOdds(val === '' ? 1.9 : parseFloat(val) || 1.9);
-                        }
-                      }}
-                      placeholder="1.9"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label>Max Bet Percentage (%)</Label>
-                    <Input 
-                      type="text"
-                      inputMode="decimal"
-                      value={String(settings.maxBetPercentage)}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        if (val === '' || /^\d*\.?\d*$/.test(val)) {
-                          const pct = val === '' ? 5 : parseFloat(val) || 5;
-                          setSettings(s => ({ ...s, maxBetPercentage: Math.min(100, Math.max(0, pct)) }));
-                        }
-                      }}
-                      placeholder="5"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label>Daily Loss Limit ($)</Label>
-                    <Input 
-                      type="text"
-                      inputMode="decimal"
-                      value={String(settings.dailyLossLimit ?? '')}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        if (val === '' || /^\d*\.?\d*$/.test(val)) {
-                          setSettings(s => ({ ...s, dailyLossLimit: val === '' ? undefined : parseFloat(val) || 0 }));
-                        }
-                      }}
-                      placeholder="100"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label>Weekly Loss Limit ($)</Label>
-                    <Input 
-                      type="text"
-                      inputMode="decimal"
-                      value={String(settings.weeklyLossLimit ?? '')}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        if (val === '' || /^\d*\.?\d*$/.test(val)) {
-                          setSettings(s => ({ ...s, weeklyLossLimit: val === '' ? undefined : parseFloat(val) || 0 }));
-                        }
-                      }}
-                      placeholder="250"
-                    />
-                  </div>
-                </div>
-              </div>
+                const hasErrors = Object.values(errors).some(e => e !== null);
+                
+                return (
+                  <>
+                    {hasErrors && (
+                      <div className="mb-4 p-3 bg-destructive/10 border border-destructive/30 rounded-lg">
+                        <p className="text-sm text-destructive font-medium flex items-center gap-2">
+                          <AlertTriangle className="h-4 w-4" />
+                          Some settings need attention
+                        </p>
+                      </div>
+                    )}
+                    
+                    <div className="grid md:grid-cols-2 gap-6">
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label className={errors.currentBankroll ? "text-destructive" : ""}>
+                            Current Bankroll ($)
+                          </Label>
+                          <Input 
+                            type="text"
+                            inputMode="decimal"
+                            value={String(settings.currentBankroll)}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                                setSettings(s => ({ ...s, currentBankroll: val === '' ? 0 : parseFloat(val) || 0 }));
+                              }
+                            }}
+                            placeholder="1000"
+                            className={errors.currentBankroll ? "border-destructive focus-visible:ring-destructive" : ""}
+                          />
+                          {errors.currentBankroll && (
+                            <p className="text-xs text-destructive">{errors.currentBankroll}</p>
+                          )}
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label className={errors.startingBankroll ? "text-destructive" : ""}>
+                            Starting Bankroll ($)
+                          </Label>
+                          <Input 
+                            type="text"
+                            inputMode="decimal"
+                            value={String(settings.startingBankroll)}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                                setSettings(s => ({ ...s, startingBankroll: val === '' ? 0 : parseFloat(val) || 0 }));
+                              }
+                            }}
+                            placeholder="1000"
+                            className={errors.startingBankroll ? "border-destructive focus-visible:ring-destructive" : ""}
+                          />
+                          {errors.startingBankroll && (
+                            <p className="text-xs text-destructive">{errors.startingBankroll}</p>
+                          )}
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label className={errors.unitSize ? "text-destructive" : ""}>
+                            Unit Size ($)
+                          </Label>
+                          <Input 
+                            type="text"
+                            inputMode="decimal"
+                            value={String(settings.unitSize)}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                                setSettings(s => ({ ...s, unitSize: val === '' ? 0 : parseFloat(val) || 0 }));
+                              }
+                            }}
+                            placeholder="20"
+                            className={errors.unitSize ? "border-destructive focus-visible:ring-destructive" : ""}
+                          />
+                          {errors.unitSize && (
+                            <p className="text-xs text-destructive">{errors.unitSize}</p>
+                          )}
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label className={errors.kellyFraction ? "text-destructive" : ""}>
+                            Kelly Fraction (%)
+                          </Label>
+                          <Input 
+                            type="text"
+                            inputMode="decimal"
+                            value={String(settings.kellyFraction * 100)}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                                const pct = val === '' ? 0 : parseFloat(val) || 0;
+                                setSettings(s => ({ ...s, kellyFraction: Math.min(100, Math.max(0, pct)) / 100 }));
+                              }
+                            }}
+                            placeholder="25"
+                            className={errors.kellyFraction ? "border-destructive focus-visible:ring-destructive" : ""}
+                          />
+                          {errors.kellyFraction && (
+                            <p className="text-xs text-destructive">{errors.kellyFraction}</p>
+                          )}
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label>Risk Tolerance</Label>
+                          <Select 
+                            value={settings.riskTolerance}
+                            onValueChange={(v) => setSettings(s => ({ ...s, riskTolerance: v as 'conservative' | 'moderate' | 'aggressive' }))}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="conservative">Conservative</SelectItem>
+                              <SelectItem value="moderate">Moderate</SelectItem>
+                              <SelectItem value="aggressive">Aggressive</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label className={errors.winRate ? "text-destructive" : ""}>
+                            Win Rate (%)
+                          </Label>
+                          <Input 
+                            type="text"
+                            inputMode="decimal"
+                            value={String(winRate)}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                                const pct = val === '' ? 50 : parseFloat(val) || 50;
+                                setWinRate(Math.min(100, Math.max(0, pct)));
+                              }
+                            }}
+                            placeholder="54"
+                            className={errors.winRate ? "border-destructive focus-visible:ring-destructive" : ""}
+                          />
+                          {errors.winRate && (
+                            <p className="text-xs text-destructive">{errors.winRate}</p>
+                          )}
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label className={errors.avgOdds ? "text-destructive" : ""}>
+                            Average Odds (Decimal)
+                          </Label>
+                          <Input 
+                            type="text"
+                            inputMode="decimal"
+                            value={String(avgOdds)}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                                setAvgOdds(val === '' ? 1.9 : parseFloat(val) || 1.9);
+                              }
+                            }}
+                            placeholder="1.9"
+                            className={errors.avgOdds ? "border-destructive focus-visible:ring-destructive" : ""}
+                          />
+                          {errors.avgOdds && (
+                            <p className="text-xs text-destructive">{errors.avgOdds}</p>
+                          )}
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label className={errors.maxBetPercentage ? "text-destructive" : ""}>
+                            Max Bet Percentage (%)
+                          </Label>
+                          <Input 
+                            type="text"
+                            inputMode="decimal"
+                            value={String(settings.maxBetPercentage)}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                                const pct = val === '' ? 5 : parseFloat(val) || 5;
+                                setSettings(s => ({ ...s, maxBetPercentage: Math.min(100, Math.max(0, pct)) }));
+                              }
+                            }}
+                            placeholder="5"
+                            className={errors.maxBetPercentage ? "border-destructive focus-visible:ring-destructive" : ""}
+                          />
+                          {errors.maxBetPercentage && (
+                            <p className="text-xs text-destructive">{errors.maxBetPercentage}</p>
+                          )}
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label className={errors.dailyLossLimit ? "text-destructive" : ""}>
+                            Daily Loss Limit ($) <span className="text-muted-foreground text-xs">(optional)</span>
+                          </Label>
+                          <Input 
+                            type="text"
+                            inputMode="decimal"
+                            value={String(settings.dailyLossLimit ?? '')}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                                setSettings(s => ({ ...s, dailyLossLimit: val === '' ? undefined : parseFloat(val) || 0 }));
+                              }
+                            }}
+                            placeholder="100"
+                            className={errors.dailyLossLimit ? "border-destructive focus-visible:ring-destructive" : ""}
+                          />
+                          {errors.dailyLossLimit && (
+                            <p className="text-xs text-destructive">{errors.dailyLossLimit}</p>
+                          )}
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label className={errors.weeklyLossLimit ? "text-destructive" : ""}>
+                            Weekly Loss Limit ($) <span className="text-muted-foreground text-xs">(optional)</span>
+                          </Label>
+                          <Input 
+                            type="text"
+                            inputMode="decimal"
+                            value={String(settings.weeklyLossLimit ?? '')}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                                setSettings(s => ({ ...s, weeklyLossLimit: val === '' ? undefined : parseFloat(val) || 0 }));
+                              }
+                            }}
+                            placeholder="250"
+                            className={errors.weeklyLossLimit ? "border-destructive focus-visible:ring-destructive" : ""}
+                          />
+                          {errors.weeklyLossLimit && (
+                            <p className="text-xs text-destructive">{errors.weeklyLossLimit}</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
               
               <div className="pt-4 border-t flex gap-3">
                 <Button 
