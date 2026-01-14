@@ -5,21 +5,37 @@ import PageFooter from "@/components/PageFooter";
 import { useSportsData } from "@/hooks/useSportsData";
 import { applySmartScores } from "@/utils/smartScoreCalculator";
 import { ScoreboardRow } from "@/components/layout/ScoreboardRow";
-import { ArrowLeft, Trophy, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, Trophy, ChevronLeft, ChevronRight, Calendar, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { format, isWithinInterval, startOfDay, endOfDay, subDays, subWeeks, startOfWeek, endOfWeek } from "date-fns";
+import { DateRange } from "react-day-picker";
+import { cn } from "@/lib/utils";
 
 const ITEMS_PER_PAGE_OPTIONS = [10, 25, 50, 100];
 const LEAGUES = ['ALL', 'NBA', 'NFL', 'NCAAB', 'NHL', 'MLB', 'SOCCER'];
+
+const DATE_PRESETS = [
+  { label: 'Today', getValue: () => ({ from: startOfDay(new Date()), to: endOfDay(new Date()) }) },
+  { label: 'Yesterday', getValue: () => ({ from: startOfDay(subDays(new Date(), 1)), to: endOfDay(subDays(new Date(), 1)) }) },
+  { label: 'Last 3 Days', getValue: () => ({ from: startOfDay(subDays(new Date(), 2)), to: endOfDay(new Date()) }) },
+  { label: 'Last 7 Days', getValue: () => ({ from: startOfDay(subDays(new Date(), 6)), to: endOfDay(new Date()) }) },
+  { label: 'This Week', getValue: () => ({ from: startOfWeek(new Date(), { weekStartsOn: 1 }), to: endOfWeek(new Date(), { weekStartsOn: 1 }) }) },
+  { label: 'Last Week', getValue: () => ({ from: startOfWeek(subWeeks(new Date(), 1), { weekStartsOn: 1 }), to: endOfWeek(subWeeks(new Date(), 1), { weekStartsOn: 1 }) }) },
+];
 
 const RecentResultsPage = () => {
   const navigate = useNavigate();
   const [selectedLeague, setSelectedLeague] = useState<string>("ALL");
   const [itemsPerPage, setItemsPerPage] = useState<number>(25);
   const [currentPage, setCurrentPage] = useState<number>(1);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
   const {
     finishedMatches: rawFinished,
@@ -32,11 +48,35 @@ const RecentResultsPage = () => {
 
   const finishedMatches = useMemo(() => applySmartScores(rawFinished), [rawFinished]);
 
-  // Filter by league
+  // Filter by league and date range
   const filteredMatches = useMemo(() => {
-    if (selectedLeague === 'ALL') return finishedMatches;
-    return finishedMatches.filter(m => m.league === selectedLeague);
-  }, [finishedMatches, selectedLeague]);
+    let matches = finishedMatches;
+    
+    // Filter by league
+    if (selectedLeague !== 'ALL') {
+      matches = matches.filter(m => m.league === selectedLeague);
+    }
+    
+    // Filter by date range
+    if (dateRange?.from) {
+      matches = matches.filter(m => {
+        const matchDate = new Date(m.startTime);
+        if (dateRange.to) {
+          return isWithinInterval(matchDate, { 
+            start: startOfDay(dateRange.from!), 
+            end: endOfDay(dateRange.to) 
+          });
+        }
+        // Single day selection
+        return isWithinInterval(matchDate, { 
+          start: startOfDay(dateRange.from!), 
+          end: endOfDay(dateRange.from!) 
+        });
+      });
+    }
+    
+    return matches;
+  }, [finishedMatches, selectedLeague, dateRange]);
 
   // Pagination logic
   const totalItems = filteredMatches.length;
@@ -54,6 +94,31 @@ const RecentResultsPage = () => {
   const handleItemsPerPageChange = (value: string) => {
     setItemsPerPage(Number(value));
     setCurrentPage(1);
+  };
+
+  const handleDateRangeSelect = (range: DateRange | undefined) => {
+    setDateRange(range);
+    setCurrentPage(1);
+  };
+
+  const handlePresetClick = (preset: typeof DATE_PRESETS[0]) => {
+    setDateRange(preset.getValue());
+    setCurrentPage(1);
+    setIsCalendarOpen(false);
+  };
+
+  const clearDateFilter = () => {
+    setDateRange(undefined);
+    setCurrentPage(1);
+  };
+
+  const formatDateRange = () => {
+    if (!dateRange?.from) return "Select dates";
+    if (!dateRange.to) return format(dateRange.from, "MMM d, yyyy");
+    if (format(dateRange.from, "MMM d, yyyy") === format(dateRange.to, "MMM d, yyyy")) {
+      return format(dateRange.from, "MMM d, yyyy");
+    }
+    return `${format(dateRange.from, "MMM d")} - ${format(dateRange.to, "MMM d, yyyy")}`;
   };
 
   return (
@@ -86,7 +151,8 @@ const RecentResultsPage = () => {
 
         {/* Filters */}
         <Card className="mb-6">
-          <CardContent className="py-4">
+          <CardContent className="py-4 space-y-4">
+            {/* Top row: League filter and date picker */}
             <div className="flex flex-wrap items-center justify-between gap-4">
               {/* League Filter */}
               <div className="flex flex-wrap gap-2">
@@ -106,6 +172,87 @@ const RecentResultsPage = () => {
                   </Button>
                 ))}
               </div>
+
+              {/* Date Range Picker */}
+              <div className="flex items-center gap-2">
+                <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "justify-start text-left font-normal min-w-[200px]",
+                        !dateRange?.from && "text-muted-foreground"
+                      )}
+                    >
+                      <Calendar className="mr-2 h-4 w-4" />
+                      {formatDateRange()}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="end">
+                    <div className="flex">
+                      {/* Presets */}
+                      <div className="border-r p-3 space-y-1">
+                        <p className="text-xs font-medium text-muted-foreground mb-2">Quick Select</p>
+                        {DATE_PRESETS.map((preset) => (
+                          <Button
+                            key={preset.label}
+                            variant="ghost"
+                            size="sm"
+                            className="w-full justify-start text-sm"
+                            onClick={() => handlePresetClick(preset)}
+                          >
+                            {preset.label}
+                          </Button>
+                        ))}
+                      </div>
+                      {/* Calendar */}
+                      <div className="p-3">
+                        <CalendarComponent
+                          mode="range"
+                          selected={dateRange}
+                          onSelect={handleDateRangeSelect}
+                          numberOfMonths={2}
+                          disabled={{ after: new Date() }}
+                          initialFocus
+                          className="pointer-events-auto"
+                        />
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+                
+                {dateRange?.from && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={clearDateFilter}
+                    className="h-8 w-8"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {/* Bottom row: Items per page and active filters */}
+            <div className="flex flex-wrap items-center justify-between gap-4 pt-2 border-t">
+              {/* Active date filter badge */}
+              {dateRange?.from && (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">Filtered:</span>
+                  <Badge variant="secondary" className="flex items-center gap-1">
+                    <Calendar className="h-3 w-3" />
+                    {formatDateRange()}
+                    <button onClick={clearDateFilter} className="ml-1 hover:text-destructive">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                </div>
+              )}
+              
+              {!dateRange?.from && (
+                <span className="text-sm text-muted-foreground">Showing all dates</span>
+              )}
 
               {/* Items per page */}
               <div className="flex items-center gap-2">
@@ -132,9 +279,14 @@ const RecentResultsPage = () => {
           <CardHeader className="py-4 px-6 border-b flex flex-row items-center justify-between">
             <CardTitle className="text-lg">
               {totalItems} {selectedLeague === 'ALL' ? 'Total' : selectedLeague} Results
+              {dateRange?.from && (
+                <span className="text-sm font-normal text-muted-foreground ml-2">
+                  ({formatDateRange()})
+                </span>
+              )}
             </CardTitle>
             <div className="text-sm text-muted-foreground">
-              Showing {startIndex + 1}-{Math.min(endIndex, totalItems)} of {totalItems}
+              {totalItems > 0 ? `Showing ${startIndex + 1}-${Math.min(endIndex, totalItems)} of ${totalItems}` : 'No results'}
             </div>
           </CardHeader>
           <CardContent className="p-0">
@@ -154,7 +306,17 @@ const RecentResultsPage = () => {
               </div>
             ) : (
               <div className="py-12 text-center text-muted-foreground">
-                No recent results found for {selectedLeague}
+                <Trophy className="h-12 w-12 mx-auto mb-4 opacity-20" />
+                <p>No results found for the selected filters</p>
+                {dateRange?.from && (
+                  <Button 
+                    variant="link" 
+                    onClick={clearDateFilter}
+                    className="mt-2"
+                  >
+                    Clear date filter
+                  </Button>
+                )}
               </div>
             )}
           </CardContent>
