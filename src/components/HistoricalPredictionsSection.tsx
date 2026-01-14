@@ -44,7 +44,13 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
+  Keyboard,
 } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { 
   useHistoricalPredictions, 
@@ -644,6 +650,23 @@ const HistoricalPredictionsSection = () => {
                     ))}
                   </SelectContent>
                 </Select>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground">
+                      <Keyboard className="h-3.5 w-3.5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="text-xs">
+                    <div className="space-y-1">
+                      <p className="font-medium">Keyboard Shortcuts</p>
+                      <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-muted-foreground">
+                        <span>← →</span><span>Prev / Next page</span>
+                        <span>Home</span><span>First page</span>
+                        <span>End</span><span>Last page</span>
+                      </div>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
               </div>
               {preLiveTotalPages > 1 && (
                 <div className="flex items-center gap-1">
@@ -753,6 +776,23 @@ const HistoricalPredictionsSection = () => {
                     ))}
                   </SelectContent>
                 </Select>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground">
+                      <Keyboard className="h-3.5 w-3.5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="text-xs">
+                    <div className="space-y-1">
+                      <p className="font-medium">Keyboard Shortcuts</p>
+                      <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-muted-foreground">
+                        <span>← →</span><span>Prev / Next page</span>
+                        <span>Home</span><span>First page</span>
+                        <span>End</span><span>Last page</span>
+                      </div>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
               </div>
               {liveTotalPages > 1 && (
                 <div className="flex items-center gap-1">
