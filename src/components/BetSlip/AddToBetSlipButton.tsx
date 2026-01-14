@@ -77,7 +77,7 @@ export default function AddToBetSlipButton({
         ) : (
           <Plus className="h-3 w-3" />
         )}
-        <span>{odds.toFixed(2)}</span>
+        <span>{odds > 0 ? '+' : ''}{Math.round(odds)}</span>
       </button>
     );
   }
@@ -102,7 +102,7 @@ export default function AddToBetSlipButton({
       ) : (
         <>
           <Plus className="h-4 w-4 mr-1" />
-          {odds.toFixed(2)}
+          {odds > 0 ? '+' : ''}{Math.round(odds)}
         </>
       )}
     </Button>

@@ -73,7 +73,7 @@ function PickCard({ pick, onViewDetails }: { pick: RecommendedPick; onViewDetail
               {pick.recommendedTeam}
             </Badge>
             <span className="text-xs text-muted-foreground">
-              @ {pick.odds.toFixed(2)}
+              @ {pick.odds > 0 ? '+' : ''}{Math.round(pick.odds)}
             </span>
           </div>
 
@@ -281,7 +281,7 @@ export default function RecommendedPicksSection() {
                     <Badge className="bg-green-500 text-white text-lg px-3 py-1">
                       {selectedPick.recommendedTeam}
                     </Badge>
-                    <span className="text-muted-foreground">@ {selectedPick.odds.toFixed(2)}</span>
+                    <span className="text-muted-foreground">@ {selectedPick.odds > 0 ? '+' : ''}{Math.round(selectedPick.odds)}</span>
                   </div>
                 </div>
 

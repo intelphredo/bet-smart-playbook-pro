@@ -167,7 +167,7 @@ export function useBetTracking() {
 
       toast({
         title: 'Bet placed! (Dev Mode)',
-        description: `$${stake.toFixed(2)} on ${item.selection} at ${item.odds.toFixed(2)}`,
+        description: `$${stake.toFixed(2)} on ${item.selection} at ${item.odds > 0 ? '+' : ''}${Math.round(item.odds)}`,
       });
 
       removeFromBetSlip(item.matchId, item.betType, item.selection);
@@ -208,7 +208,7 @@ export function useBetTracking() {
 
       toast({
         title: 'Bet placed!',
-        description: `$${stake.toFixed(2)} on ${item.selection} at ${item.odds.toFixed(2)}`,
+        description: `$${stake.toFixed(2)} on ${item.selection} at ${item.odds > 0 ? '+' : ''}${Math.round(item.odds)}`,
       });
 
       // Refresh bets and stats

@@ -283,7 +283,7 @@ export default function WeeklyPerformanceSummary() {
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm truncate">{bet.match_title}</p>
                       <p className="text-xs text-muted-foreground">
-                        {bet.selection} @ {bet.odds_at_placement.toFixed(2)}
+                        {bet.selection} @ {bet.odds_at_placement > 0 ? '+' : ''}{Math.round(bet.odds_at_placement)}
                       </p>
                       <div className="flex flex-wrap gap-1 mt-1">
                         {highlights.map((h) => (
