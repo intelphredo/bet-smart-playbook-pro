@@ -81,7 +81,10 @@ const MatchCard = memo(function MatchCard({ match }: MatchCardProps) {
   const hasAdvancedMetrics = match.prediction?.evPercentage || match.prediction?.kellyStakeUnits || match.prediction?.clvPercentage;
 
   return (
-    <Card className="match-card overflow-hidden border-border/50 bg-card/95 backdrop-blur-sm relative">
+    <Card variant="premium" className="match-card overflow-hidden relative group">
+      {/* Premium gold accent line */}
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
+      
       {/* Favorite Button - Positioned Absolutely */}
       <FavoriteButton 
         type="match" 
@@ -90,9 +93,9 @@ const MatchCard = memo(function MatchCard({ match }: MatchCardProps) {
       />
       
       {/* Compact Header */}
-      <CardHeader className="p-3 bg-card/80 backdrop-blur-sm border-b border-border/30 flex flex-row justify-between items-center space-y-0 pr-10">
+      <CardHeader className="p-3 bg-gradient-to-r from-card/90 via-card/80 to-card/90 backdrop-blur-sm border-b border-border/30 flex flex-row justify-between items-center space-y-0 pr-10">
         <div className="flex items-center gap-2">
-          <Badge variant="outline" className="text-xs font-medium bg-background/90 border-primary/20 text-primary h-5 px-2">
+          <Badge variant="outline" className="text-xs font-medium bg-primary/10 border-primary/30 text-primary h-5 px-2">
             {match.league}
           </Badge>
           {match.status === "live" && (
