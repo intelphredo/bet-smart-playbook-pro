@@ -1,4 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from "../_shared/rate-limiter.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -24,6 +25,15 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Apply rate limiting for odds API calls
+    const rateLimitResult = await checkRateLimit(req, {
+      ...RATE_LIMITS.PUBLIC_READ,
+      endpoint: "fetch-odds",
+    });
+    if (!rateLimitResult.allowed) {
+      return rateLimitResponse(rateLimitResult, corsHeaders);
+    }
+
     const apiKey = Deno.env.get("ODDS_API_KEY");
     if (!apiKey) {
       return new Response(
