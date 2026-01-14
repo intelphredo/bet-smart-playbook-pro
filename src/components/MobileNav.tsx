@@ -19,6 +19,7 @@ import {
   Settings,
   TrendingUp,
   Brain,
+  GitCompare,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -27,8 +28,8 @@ const navItems = [
   { path: "/standings", label: "Standings", icon: Trophy },
   { path: "/roi", label: "ROI Tracker", icon: TrendingUp },
   { path: "/ai-predictions", label: "AI History", icon: Brain },
+  { path: "/compare-algorithms", label: "Compare", icon: GitCompare },
   { path: "/injuries", label: "Injuries", icon: AlertTriangle },
-  { path: "/algorithms", label: "Algorithms", icon: BarChart2 },
   { path: "/scenarios", label: "Scenarios", icon: BookOpen },
   { path: "/bankroll", label: "Bankroll", icon: Wallet },
   { path: "/bet-history", label: "Bet History", icon: History },
