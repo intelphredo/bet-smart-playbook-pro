@@ -2,6 +2,8 @@
 import { Match } from "@/types/sports";
 import { generateAdvancedPrediction } from "../core/predictionEngine";
 import { TeamStrength } from "../types";
+import { applyConfidenceCalibration } from "@/utils/modelCalibration/calibrationIntegration";
+import { ALGORITHM_IDS } from "./index";
 
 /**
  * ML Power Index Algorithm
@@ -10,6 +12,9 @@ import { TeamStrength } from "../types";
  * - Higher weight on historical matchup data
  * - Advanced player statistics consideration
  * - Trend analysis from recent form
+ * 
+ * Now integrates with the automatic recalibration system to adjust
+ * confidence based on recent algorithm performance.
  */
 export function generateMLPowerIndexPrediction(match: Match): Match {
   // Clone the match to avoid mutation
@@ -25,13 +30,22 @@ export function generateMLPowerIndexPrediction(match: Match): Match {
   }
   
   // Apply ML Power Index specific adjustments
-  const adjustedConfidence = applyMLPowerAdjustments(basePrediction);
+  const rawConfidence = applyMLPowerAdjustments(basePrediction);
+  
+  // Apply calibration from the recalibration system
+  const algorithmId = ALGORITHM_IDS.ML_POWER_INDEX;
+  const calibrated = applyConfidenceCalibration(rawConfidence, algorithmId);
   
   // Create the ML Power Index algorithm-specific prediction
   enhancedMatch.prediction = {
     ...prediction,
-    confidence: Math.round(adjustedConfidence),
-    algorithmId: "f4ce9fdc-c41a-4a5c-9f18-5d732674c5b8" // ML Power Index algorithm UUID
+    confidence: calibrated.adjustedConfidence,
+    rawConfidence: calibrated.rawConfidence,
+    isCalibrated: calibrated.multiplier !== 1.0,
+    calibrationMultiplier: calibrated.multiplier,
+    meetsCalibrationThreshold: calibrated.meetsThreshold,
+    isPaused: calibrated.isPaused,
+    algorithmId
   };
   
   return enhancedMatch;

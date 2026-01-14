@@ -3,6 +3,8 @@ import { Match } from "@/types/sports";
 import { generateAdvancedPrediction } from "../core/predictionEngine";
 import { hasArbitrageOpportunity } from "../../smartScore/arbitrageFactors";
 import { calculateValueFactor } from "../../smartScore/valueFactors";
+import { applyConfidenceCalibration } from "@/utils/modelCalibration/calibrationIntegration";
+import { ALGORITHM_IDS } from "./index";
 
 /**
  * Value Pick Finder Algorithm
@@ -12,6 +14,9 @@ import { calculateValueFactor } from "../../smartScore/valueFactors";
  * - Line movement tracking
  * - Public betting percentage consideration (simulated)
  * - Market inefficiency detection
+ * 
+ * Now integrates with the automatic recalibration system to adjust
+ * confidence based on recent algorithm performance.
  */
 export function generateValuePickPrediction(match: Match): Match {
   // Clone the match to avoid mutation
@@ -27,13 +32,22 @@ export function generateValuePickPrediction(match: Match): Match {
   }
   
   // Apply Value Pick specific adjustments
-  const adjustedConfidence = applyValuePickAdjustments(basePrediction);
+  const rawConfidence = applyValuePickAdjustments(basePrediction);
+  
+  // Apply calibration from the recalibration system
+  const algorithmId = ALGORITHM_IDS.VALUE_PICK_FINDER;
+  const calibrated = applyConfidenceCalibration(rawConfidence, algorithmId);
   
   // Create the Value Pick algorithm-specific prediction
   enhancedMatch.prediction = {
     ...prediction,
-    confidence: Math.round(adjustedConfidence),
-    algorithmId: "3a7e2d9b-8c5f-4b1f-9e17-7b31a4dce6c2" // Value Pick Finder algorithm UUID
+    confidence: calibrated.adjustedConfidence,
+    rawConfidence: calibrated.rawConfidence,
+    isCalibrated: calibrated.multiplier !== 1.0,
+    calibrationMultiplier: calibrated.multiplier,
+    meetsCalibrationThreshold: calibrated.meetsThreshold,
+    isPaused: calibrated.isPaused,
+    algorithmId
   };
   
   return enhancedMatch;
