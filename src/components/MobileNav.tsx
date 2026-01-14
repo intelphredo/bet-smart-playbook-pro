@@ -27,7 +27,8 @@ import { useState } from "react";
 const navItems = [
   { path: "/", label: "Home", icon: Home },
   { path: "/standings", label: "Standings", icon: Trophy },
-  { path: "/roi", label: "ROI Tracker", icon: TrendingUp },
+  { path: "/betting-trends", label: "Betting Trends", icon: TrendingUp },
+  { path: "/roi", label: "ROI Tracker", icon: BarChart2 },
   { path: "/ai-predictions", label: "AI History", icon: Brain },
   { path: "/compare-algorithms", label: "Compare", icon: GitCompare },
   { path: "/backtest", label: "Backtest", icon: FlaskConical },

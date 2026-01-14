@@ -57,6 +57,7 @@ export default function NavBar({ className }: NavBarProps) {
               <NavLink href="/roi" label="ROI" />
               <NavLink href="/ai-predictions" label="AI History" />
               <NavLink href="/compare-algorithms" label="Compare" />
+              <NavLink href="/backtest" label="Backtest" />
             </nav>
 
             {/* Right - Actions */}
