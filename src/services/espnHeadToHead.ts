@@ -1,5 +1,6 @@
 import { League } from "@/types/sports";
 import { ESPN_API_BASE } from "./espnConstants";
+import { format, subMonths } from "date-fns";
 
 export interface ESPNHistoricalMatch {
   id: string;
@@ -44,7 +45,79 @@ const getESPNSportPath = (league: League): string => {
   return paths[league] || "basketball/nba";
 };
 
-// Fetch team schedule with results
+// Fetch completed games from scoreboard for past dates
+const fetchPastGames = async (
+  league: League,
+  daysBack: number = 30
+): Promise<ESPNHistoricalMatch[]> => {
+  const sportPath = getESPNSportPath(league);
+  const allGames: ESPNHistoricalMatch[] = [];
+  
+  // Fetch games from the past N days
+  const dates: string[] = [];
+  for (let i = 1; i <= daysBack; i++) {
+    const date = subMonths(new Date(), i / 30); // Spread over months
+    dates.push(format(date, "yyyyMMdd"));
+  }
+  
+  // Only fetch a sample of dates to avoid too many requests
+  const sampleDates = dates.filter((_, i) => i % 7 === 0).slice(0, 8);
+  
+  try {
+    const results = await Promise.all(
+      sampleDates.map(async (dateStr) => {
+        const url = `${ESPN_API_BASE}/${sportPath}/scoreboard?dates=${dateStr}`;
+        try {
+          const response = await fetch(url, { signal: AbortSignal.timeout(5000) });
+          if (!response.ok) return [];
+          
+          const data = await response.json();
+          const events = data?.events || [];
+          
+          return events
+            .filter((event: any) => event.status?.type?.completed)
+            .map((event: any) => {
+              const competition = event.competitions?.[0];
+              const homeTeam = competition?.competitors?.find((c: any) => c.homeAway === "home");
+              const awayTeam = competition?.competitors?.find((c: any) => c.homeAway === "away");
+              
+              const homeScore = parseInt(homeTeam?.score || "0", 10);
+              const awayScore = parseInt(awayTeam?.score || "0", 10);
+              
+              let winner: "home" | "away" | "tie" = "tie";
+              if (homeScore > awayScore) winner = "home";
+              else if (awayScore > homeScore) winner = "away";
+
+              return {
+                id: event.id,
+                date: event.date,
+                homeTeam: homeTeam?.team?.displayName || homeTeam?.team?.name || "Unknown",
+                homeTeamId: homeTeam?.team?.id || "",
+                awayTeam: awayTeam?.team?.displayName || awayTeam?.team?.name || "Unknown",
+                awayTeamId: awayTeam?.team?.id || "",
+                homeScore,
+                awayScore,
+                winner,
+                venue: competition?.venue?.fullName || competition?.venue?.address?.city || "",
+                season: event.season?.displayName || event.season?.year?.toString() || "",
+                seasonType: event.seasonType?.name || "Regular Season",
+                completed: true,
+              };
+            });
+        } catch {
+          return [];
+        }
+      })
+    );
+    
+    return results.flat();
+  } catch (error) {
+    console.warn("Error fetching past games:", error);
+    return [];
+  }
+};
+
+// Fetch team schedule with results (primary method)
 const fetchTeamSchedule = async (
   league: League,
   teamId: string
@@ -101,6 +174,32 @@ const fetchTeamSchedule = async (
   }
 };
 
+// Normalize team name for matching
+const normalizeTeamName = (name: string): string => {
+  return name.toLowerCase().replace(/[^a-z0-9]/g, "");
+};
+
+// Check if two team names match
+const teamsMatch = (name1: string, name2: string): boolean => {
+  const n1 = normalizeTeamName(name1);
+  const n2 = normalizeTeamName(name2);
+  
+  // Exact match
+  if (n1 === n2) return true;
+  
+  // One contains the other (e.g., "Lakers" in "Los Angeles Lakers")
+  if (n1.includes(n2) || n2.includes(n1)) return true;
+  
+  // Last word match (city names like "Lakers", "Celtics")
+  const lastWord1 = name1.split(" ").pop()?.toLowerCase() || "";
+  const lastWord2 = name2.split(" ").pop()?.toLowerCase() || "";
+  if (lastWord1 && lastWord2 && (lastWord1 === lastWord2 || lastWord1.includes(lastWord2) || lastWord2.includes(lastWord1))) {
+    return true;
+  }
+  
+  return false;
+};
+
 // Find common matchups between two teams
 export const fetchHeadToHeadHistory = async (
   league: League,
@@ -110,20 +209,29 @@ export const fetchHeadToHeadHistory = async (
   team2Name: string
 ): Promise<HeadToHeadHistory> => {
   try {
-    // Fetch schedules for both teams in parallel
-    const [team1Schedule, team2Schedule] = await Promise.all([
+    // Try multiple data sources in parallel
+    const [team1Schedule, team2Schedule, pastGames] = await Promise.all([
       fetchTeamSchedule(league, team1Id),
       fetchTeamSchedule(league, team2Id),
+      fetchPastGames(league, 90), // Last ~3 months
     ]);
 
+    // Combine all sources and find H2H games
+    const allGames = [...team1Schedule, ...team2Schedule, ...pastGames];
+    
+    // Deduplicate by game ID
+    const uniqueGames = Array.from(
+      new Map(allGames.map(g => [g.id, g])).values()
+    );
+
     // Find games where both teams played each other
-    const h2hGames = team1Schedule.filter((game) => {
-      const isVsTeam2 = 
-        game.homeTeamId === team2Id || 
-        game.awayTeamId === team2Id ||
-        game.homeTeam.toLowerCase().includes(team2Name.toLowerCase().split(" ").pop() || "") ||
-        game.awayTeam.toLowerCase().includes(team2Name.toLowerCase().split(" ").pop() || "");
-      return isVsTeam2 && game.completed;
+    const h2hGames = uniqueGames.filter((game) => {
+      const isTeam1Home = teamsMatch(game.homeTeam, team1Name) || game.homeTeamId === team1Id;
+      const isTeam1Away = teamsMatch(game.awayTeam, team1Name) || game.awayTeamId === team1Id;
+      const isTeam2Home = teamsMatch(game.homeTeam, team2Name) || game.homeTeamId === team2Id;
+      const isTeam2Away = teamsMatch(game.awayTeam, team2Name) || game.awayTeamId === team2Id;
+      
+      return ((isTeam1Home && isTeam2Away) || (isTeam1Away && isTeam2Home)) && game.completed;
     });
 
     // Sort by date (most recent first)
@@ -140,8 +248,7 @@ export const fetchHeadToHeadHistory = async (
     let team2TotalScore = 0;
 
     lastMeetings.forEach((game) => {
-      const team1IsHome = game.homeTeamId === team1Id || 
-        game.homeTeam.toLowerCase().includes(team1Name.toLowerCase().split(" ").pop() || "");
+      const team1IsHome = teamsMatch(game.homeTeam, team1Name) || game.homeTeamId === team1Id;
       
       const team1Score = team1IsHome ? game.homeScore : game.awayScore;
       const team2Score = team1IsHome ? game.awayScore : game.homeScore;
@@ -164,8 +271,7 @@ export const fetchHeadToHeadHistory = async (
 
     if (lastMeetings.length > 0) {
       const firstGame = lastMeetings[0];
-      const team1IsHome = firstGame.homeTeamId === team1Id || 
-        firstGame.homeTeam.toLowerCase().includes(team1Name.toLowerCase().split(" ").pop() || "");
+      const team1IsHome = teamsMatch(firstGame.homeTeam, team1Name) || firstGame.homeTeamId === team1Id;
       
       const team1Score = team1IsHome ? firstGame.homeScore : firstGame.awayScore;
       const team2Score = team1IsHome ? firstGame.awayScore : firstGame.homeScore;
@@ -176,8 +282,7 @@ export const fetchHeadToHeadHistory = async (
 
         for (let i = 1; i < lastMeetings.length; i++) {
           const game = lastMeetings[i];
-          const isHome = game.homeTeamId === team1Id || 
-            game.homeTeam.toLowerCase().includes(team1Name.toLowerCase().split(" ").pop() || "");
+          const isHome = teamsMatch(game.homeTeam, team1Name) || game.homeTeamId === team1Id;
           
           const t1Score = isHome ? game.homeScore : game.awayScore;
           const t2Score = isHome ? game.awayScore : game.homeScore;

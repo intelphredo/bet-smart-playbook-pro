@@ -93,8 +93,34 @@ const HeadToHeadHistory: React.FC<HeadToHeadHistoryProps> = ({
     );
   }
 
-  if (!h2hData) {
-    return null;
+  if (!h2hData || h2hData.totalGames === 0) {
+    return (
+      <Card className={cn("overflow-hidden", className)}>
+        <CardHeader className="bg-gradient-to-r from-muted/50 to-muted/30">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Trophy className="h-5 w-5 text-primary" />
+            Head-to-Head History
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="py-12 text-center">
+          <Trophy className="h-12 w-12 mx-auto mb-4 text-muted-foreground/30" />
+          <p className="text-muted-foreground mb-2">No head-to-head history found</p>
+          <p className="text-xs text-muted-foreground">
+            These teams may not have played each other recently
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => refetch()}
+            className="mt-4"
+            disabled={isFetching}
+          >
+            <RefreshCw className={cn("h-4 w-4 mr-2", isFetching && "animate-spin")} />
+            Refresh
+          </Button>
+        </CardContent>
+      </Card>
+    );
   }
 
   return (
