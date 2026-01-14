@@ -47,9 +47,14 @@ export function useESPNData({
     const upcoming = data.filter(match => match.status === "scheduled" || match.status === "pre") || [];
     const finished = data.filter(match => match.status === "finished") || [];
     
-    // Sort upcoming by start time
+    // Sort upcoming by start time (soonest first)
     upcoming.sort((a, b) => 
       new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
+    );
+    
+    // Sort finished by start time (most recent first)
+    finished.sort((a, b) => 
+      new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
     );
     
     return { upcomingMatches: upcoming, liveMatches: live, finishedMatches: finished };
