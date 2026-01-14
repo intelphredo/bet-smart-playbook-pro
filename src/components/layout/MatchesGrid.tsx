@@ -4,9 +4,10 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { Clock, Radio, CheckCircle2 } from "lucide-react";
+import { Clock, Radio, CheckCircle2, Star } from "lucide-react";
 import MatchDetailModal from "./MatchDetailModal";
 import { TeamLogoImage } from "@/components/ui/TeamLogoImage";
+import { getPrimaryOdds, formatAmericanOdds } from "@/utils/sportsbook";
 
 interface MatchesGridProps {
   matches: Match[];
@@ -88,6 +89,20 @@ const MatchCard = ({
   const awayScore = match.score?.away;
   const hasScores = homeScore !== undefined && awayScore !== undefined;
   const smartScoreValue = match.smartScore?.overall ?? 0;
+  
+  // Get FanDuel odds as primary
+  const primaryOdds = getPrimaryOdds(match.liveOdds || []);
+  const isFanDuel = primaryOdds?.sportsbook.id.toLowerCase().includes('fanduel');
+  
+  const formatMoneyline = (value: number | null | undefined): string | null => {
+    if (value === null || value === undefined) return null;
+    if (value >= 100) return `+${Math.round(value)}`;
+    if (value <= -100) return `${Math.round(value)}`;
+    return formatAmericanOdds(value);
+  };
+
+  const homeML = primaryOdds ? formatMoneyline(primaryOdds.homeWin) : null;
+  const awayML = primaryOdds ? formatMoneyline(primaryOdds.awayWin) : null;
 
   return (
     <Card 
@@ -141,6 +156,33 @@ const MatchCard = ({
           isHome
         />
       </div>
+
+      {/* FanDuel Odds - Primary Display */}
+      {primaryOdds && type !== "finished" && (
+        <div className={cn(
+          "mt-3 pt-3 border-t",
+          isFanDuel ? "border-primary/30" : "border-border/50"
+        )}>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-1">
+              {isFanDuel && <Star className="h-3 w-3 text-primary fill-primary" />}
+              <span className={cn("text-[10px] font-medium", isFanDuel ? "text-primary" : "text-muted-foreground")}>
+                {primaryOdds.sportsbook.name}
+              </span>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground truncate">{match.awayTeam?.shortName || 'Away'}</span>
+              <span className={cn("font-medium tabular-nums", isFanDuel && "text-primary")}>{awayML || '-'}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground truncate">{match.homeTeam?.shortName || 'Home'}</span>
+              <span className={cn("font-medium tabular-nums", isFanDuel && "text-primary")}>{homeML || '-'}</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Smart Score if available */}
       {smartScoreValue > 0 && (

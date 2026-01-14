@@ -19,6 +19,7 @@ import { WeatherDisplay, IndoorBadge } from "./WeatherDisplay";
 import InjuryImpactRow from "./MatchCard/InjuryImpactRow";
 import { Skeleton } from "@/components/ui/skeleton";
 import SharpMoneyBadge from "./MatchCard/SharpMoneyBadge";
+import { FanDuelOddsBadge } from "./MatchCard/FanDuelOddsBadge";
 
 // Lazy load heavy components that are only shown when expanded
 const BettingMetrics = lazy(() => import("./BettingMetrics"));
@@ -181,6 +182,17 @@ const MatchCard = memo(function MatchCard({ match }: MatchCardProps) {
           {weather && <WeatherDisplay weather={weather} venue={venue} league={match.league} compact />}
           {isIndoor && !['NBA', 'NHL'].includes(match.league) && <IndoorBadge venueName={venue?.venueName} />}
         </div>
+        
+        {/* FanDuel Odds - Primary Display */}
+        {hasOddsData && (
+          <div className="mb-3">
+            <FanDuelOddsBadge 
+              liveOdds={match.liveOdds}
+              homeTeam={match.homeTeam?.shortName || match.homeTeam?.name}
+              awayTeam={match.awayTeam?.shortName || match.awayTeam?.name}
+            />
+          </div>
+        )}
         
         {/* Core odds info */}
         <OddsComparisonTable match={match} />
