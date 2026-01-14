@@ -16,6 +16,7 @@ import {
   ExternalLink,
   TrendingUp
 } from "lucide-react";
+import { InfoExplainer } from "@/components/ui/InfoExplainer";
 
 interface SmartScoreCardProps {
   match: Match;
@@ -81,27 +82,30 @@ const SmartScoreCard = ({ match, showArbitrageAlert = false }: SmartScoreCardPro
           
           <div className="grid grid-cols-3 gap-1 mb-3">
             <div className="text-center">
-              <div className="text-xs text-muted-foreground flex items-center justify-center">
-                <ArrowBigUp size={14} className="mr-0.5" />
+              <div className="text-xs text-muted-foreground flex items-center justify-center gap-0.5">
+                <ArrowBigUp size={14} />
                 <span>Momentum</span>
+                <InfoExplainer term="momentum" size="sm" />
               </div>
               <div className={`text-sm font-medium ${getScoreColor(components.momentum)}`}>
                 {Math.round(components.momentum)}
               </div>
             </div>
             <div className="text-center">
-              <div className="text-xs text-muted-foreground flex items-center justify-center">
-                <Gauge size={14} className="mr-0.5" />
+              <div className="text-xs text-muted-foreground flex items-center justify-center gap-0.5">
+                <Gauge size={14} />
                 <span>Value</span>
+                <InfoExplainer term="expected_value" size="sm" />
               </div>
               <div className={`text-sm font-medium ${getScoreColor(components.value)}`}>
                 {Math.round(components.value)}
               </div>
             </div>
             <div className="text-center">
-              <div className="text-xs text-muted-foreground flex items-center justify-center">
-                <ArrowBigDown size={14} className="mr-0.5" />
+              <div className="text-xs text-muted-foreground flex items-center justify-center gap-0.5">
+                <ArrowBigDown size={14} />
                 <span>Odds Mvt</span>
+                <InfoExplainer term="line_movement" size="sm" />
               </div>
               <div className={`text-sm font-medium ${getScoreColor(components.oddsMovement)}`}>
                 {Math.round(components.oddsMovement)}
@@ -129,7 +133,10 @@ const SmartScoreCard = ({ match, showArbitrageAlert = false }: SmartScoreCardPro
           <div className="space-y-4">
             {/* Overall Score */}
             <div className="p-4 rounded-lg bg-muted/50 text-center">
-              <div className="text-sm text-muted-foreground mb-1">SmartScore™</div>
+              <div className="text-sm text-muted-foreground mb-1 flex items-center justify-center gap-1">
+                SmartScore™
+                <InfoExplainer term="smart_score" size="sm" />
+              </div>
               <div className={`text-4xl font-bold ${getScoreColor(overall)}`}>{overall}</div>
               <Progress 
                 value={overall} 

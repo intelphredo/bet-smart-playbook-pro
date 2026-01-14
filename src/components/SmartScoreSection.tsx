@@ -7,6 +7,7 @@ import SmartScoreCard from "./SmartScoreCard";
 import { hasArbitrageOpportunity } from "@/utils/smartScore/arbitrageFactors";
 import { useToast } from "@/hooks/use-toast";
 import { AlertTriangle, TrendingUp } from "lucide-react";
+import { InfoExplainer } from "@/components/ui/InfoExplainer";
 
 interface Props {
   matches: Match[];
@@ -58,10 +59,12 @@ const SmartScoreSection = ({ matches }: Props) => {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
           <h2 className="text-xl font-bold flex items-center gap-2">
             SmartScore™ Analysis
+            <InfoExplainer term="smart_score" size="md" />
             {arbitrageCount > 0 && (
               <Badge variant="destructive" className="ml-2">
                 <AlertTriangle size={14} className="mr-1" />
                 {arbitrageCount} Arbitrage Alert{arbitrageCount > 1 ? 's' : ''}
+                <InfoExplainer term="arbitrage" size="sm" className="ml-1" />
               </Badge>
             )}
           </h2>

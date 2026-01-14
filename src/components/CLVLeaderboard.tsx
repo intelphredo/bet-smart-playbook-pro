@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { isDevMode } from '@/utils/devMode';
 import { useNavigate } from 'react-router-dom';
+import { InfoExplainer } from '@/components/ui/InfoExplainer';
 
 function getRankBadge(rank: number) {
   const baseClasses = "w-6 h-6 flex items-center justify-center";
@@ -196,6 +197,7 @@ export default function CLVLeaderboard() {
           <CardTitle className="flex items-center gap-2 text-lg">
             <Trophy className="w-5 h-5 text-yellow-500" />
             CLV Leaderboard
+            <InfoExplainer term="clv" size="sm" />
           </CardTitle>
           {leaderboard.length > 0 && (
             <Badge variant="secondary" className="flex items-center gap-1">
