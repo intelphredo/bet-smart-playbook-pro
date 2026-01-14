@@ -6,11 +6,136 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import TeamLogo from "./TeamLogo";
 import { League } from "@/types/sports";
-import { Trophy, TrendingUp, Calendar, Minus, RefreshCw, Wifi, WifiOff, MapPin } from "lucide-react";
+import { Trophy, TrendingUp, Calendar, Minus, RefreshCw, Wifi, WifiOff, MapPin, BarChart3, Home, Plane, Zap } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useHeadToHead } from "@/hooks/useHeadToHead";
+import { TeamSeasonRecord } from "@/services/espnHeadToHead";
+
+interface SeasonRecordCardProps {
+  record: TeamSeasonRecord;
+  teamName: string;
+  league: League;
+  isHighlighted?: boolean;
+}
+
+const SeasonRecordCard: React.FC<SeasonRecordCardProps> = ({ 
+  record, 
+  teamName, 
+  league, 
+  isHighlighted = false 
+}) => {
+  const getStreakColor = (streak: string) => {
+    if (streak.startsWith("W")) return "text-green-500";
+    if (streak.startsWith("L")) return "text-red-500";
+    return "text-muted-foreground";
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className={cn(
+        "p-4 rounded-xl border transition-all",
+        isHighlighted 
+          ? "bg-primary/10 border-primary/30" 
+          : "bg-muted/30 border-muted"
+      )}
+    >
+      {/* Team Header */}
+      <div className="flex items-center gap-2 mb-3">
+        <TeamLogo teamName={teamName} league={league} size="sm" />
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-sm truncate">{record.teamName}</p>
+          <p className="text-xs text-muted-foreground">{record.season} Season</p>
+        </div>
+        {isHighlighted && (
+          <Badge variant="default" className="text-[10px] shrink-0">
+            Better Record
+          </Badge>
+        )}
+      </div>
+
+      {/* Main Record */}
+      <div className="flex items-center justify-center gap-1 mb-3 p-2 bg-background rounded-lg">
+        <span className="text-2xl font-bold text-green-500">{record.wins}</span>
+        <span className="text-xl text-muted-foreground">-</span>
+        <span className="text-2xl font-bold text-red-500">{record.losses}</span>
+        {record.ties > 0 && (
+          <>
+            <span className="text-xl text-muted-foreground">-</span>
+            <span className="text-2xl font-bold text-yellow-500">{record.ties}</span>
+          </>
+        )}
+        <span className="ml-2 text-sm text-muted-foreground">
+          ({record.winPercentage}%)
+        </span>
+      </div>
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-2 gap-2 text-xs">
+        {/* Home Record */}
+        <div className="flex items-center gap-1.5 p-2 bg-background/50 rounded">
+          <Home className="h-3 w-3 text-primary" />
+          <span className="text-muted-foreground">Home:</span>
+          <span className="font-medium">{record.homeRecord}</span>
+        </div>
+
+        {/* Away Record */}
+        <div className="flex items-center gap-1.5 p-2 bg-background/50 rounded">
+          <Plane className="h-3 w-3 text-secondary-foreground" />
+          <span className="text-muted-foreground">Away:</span>
+          <span className="font-medium">{record.awayRecord}</span>
+        </div>
+
+        {/* Streak */}
+        <div className="flex items-center gap-1.5 p-2 bg-background/50 rounded">
+          <Zap className={cn("h-3 w-3", getStreakColor(record.streak))} />
+          <span className="text-muted-foreground">Streak:</span>
+          <span className={cn("font-medium", getStreakColor(record.streak))}>
+            {record.streak}
+          </span>
+        </div>
+
+        {/* Point Differential */}
+        <div className="flex items-center gap-1.5 p-2 bg-background/50 rounded">
+          <TrendingUp className={cn(
+            "h-3 w-3",
+            record.pointDifferential > 0 ? "text-green-500" : 
+            record.pointDifferential < 0 ? "text-red-500" : "text-muted-foreground"
+          )} />
+          <span className="text-muted-foreground">Diff:</span>
+          <span className={cn(
+            "font-medium",
+            record.pointDifferential > 0 ? "text-green-500" : 
+            record.pointDifferential < 0 ? "text-red-500" : ""
+          )}>
+            {record.pointDifferential > 0 ? "+" : ""}{record.pointDifferential}
+          </span>
+        </div>
+
+        {/* Conference Record */}
+        {record.conferenceRecord && (
+          <div className="flex items-center gap-1.5 p-2 bg-background/50 rounded col-span-2">
+            <Trophy className="h-3 w-3 text-amber-500" />
+            <span className="text-muted-foreground">Conference:</span>
+            <span className="font-medium">{record.conferenceRecord}</span>
+          </div>
+        )}
+
+        {/* Last 10 */}
+        {record.last10 && (
+          <div className="flex items-center gap-1.5 p-2 bg-background/50 rounded col-span-2">
+            <Calendar className="h-3 w-3 text-blue-500" />
+            <span className="text-muted-foreground">Last 10:</span>
+            <span className="font-medium">{record.last10}</span>
+          </div>
+        )}
+      </div>
+    </motion.div>
+  );
+};
 
 interface HeadToHeadHistoryProps {
   homeTeamId: string;
@@ -245,6 +370,48 @@ const HeadToHeadHistory: React.FC<HeadToHeadHistoryProps> = ({
         )}
 
         <Separator />
+
+        {/* Season Records Section */}
+        {(h2hData.team1SeasonRecord || h2hData.team2SeasonRecord) && (
+          <>
+            <div className="space-y-4">
+              <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                <BarChart3 className="h-4 w-4" />
+                Current Season Records
+              </h4>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Team 1 Season Record */}
+                {h2hData.team1SeasonRecord && (
+                  <SeasonRecordCard 
+                    record={h2hData.team1SeasonRecord} 
+                    teamName={homeTeamName}
+                    league={league}
+                    isHighlighted={
+                      (h2hData.team1SeasonRecord?.winPercentage || 0) > 
+                      (h2hData.team2SeasonRecord?.winPercentage || 0)
+                    }
+                  />
+                )}
+                
+                {/* Team 2 Season Record */}
+                {h2hData.team2SeasonRecord && (
+                  <SeasonRecordCard 
+                    record={h2hData.team2SeasonRecord} 
+                    teamName={awayTeamName}
+                    league={league}
+                    isHighlighted={
+                      (h2hData.team2SeasonRecord?.winPercentage || 0) > 
+                      (h2hData.team1SeasonRecord?.winPercentage || 0)
+                    }
+                  />
+                )}
+              </div>
+            </div>
+
+            <Separator />
+          </>
+        )}
 
         {/* Recent Matches */}
         <div className="space-y-3">

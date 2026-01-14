@@ -18,6 +18,25 @@ export interface ESPNHistoricalMatch {
   completed: boolean;
 }
 
+export interface TeamSeasonRecord {
+  teamId: string;
+  teamName: string;
+  wins: number;
+  losses: number;
+  ties: number;
+  winPercentage: number;
+  streak: string;
+  homeRecord: string;
+  awayRecord: string;
+  last10: string;
+  pointsFor: number;
+  pointsAgainst: number;
+  pointDifferential: number;
+  conferenceRecord?: string;
+  divisionRecord?: string;
+  season: string;
+}
+
 export interface HeadToHeadHistory {
   team1Wins: number;
   team2Wins: number;
@@ -29,6 +48,8 @@ export interface HeadToHeadHistory {
   avgTeam1Score: number;
   avgTeam2Score: number;
   isLiveData: boolean;
+  team1SeasonRecord?: TeamSeasonRecord;
+  team2SeasonRecord?: TeamSeasonRecord;
 }
 
 // Map league to ESPN sport path
@@ -174,6 +195,99 @@ const fetchTeamSchedule = async (
   }
 };
 
+// Fetch team season record
+const fetchTeamSeasonRecord = async (
+  league: League,
+  teamId: string,
+  teamName: string
+): Promise<TeamSeasonRecord | null> => {
+  const sportPath = getESPNSportPath(league);
+  const url = `${ESPN_API_BASE}/${sportPath}/teams/${teamId}`;
+
+  try {
+    const response = await fetch(url, {
+      signal: AbortSignal.timeout(8000),
+    });
+
+    if (!response.ok) {
+      console.warn(`ESPN team record fetch failed for team ${teamId}:`, response.status);
+      return null;
+    }
+
+    const data = await response.json();
+    const team = data?.team;
+    const record = team?.record?.items?.[0] || team?.record;
+    const stats = record?.stats || [];
+    
+    // Parse stats into a map for easy access
+    const statMap: Record<string, number | string> = {};
+    stats.forEach((stat: any) => {
+      statMap[stat.name] = stat.value ?? stat.displayValue;
+    });
+
+    // Get wins, losses, ties from various possible locations
+    const wins = parseInt(statMap.wins as string) || record?.wins || 0;
+    const losses = parseInt(statMap.losses as string) || record?.losses || 0;
+    const ties = parseInt(statMap.ties as string) || record?.ties || 0;
+    const totalGames = wins + losses + ties;
+    const winPct = totalGames > 0 ? wins / totalGames : 0;
+
+    // Try to get additional record details
+    const items = team?.record?.items || [];
+    let homeRecord = "";
+    let awayRecord = "";
+    let conferenceRecord = "";
+    let divisionRecord = "";
+    let last10 = "";
+
+    items.forEach((item: any) => {
+      const type = item.type?.toLowerCase() || item.name?.toLowerCase() || "";
+      const summary = item.summary || item.displayValue || "";
+      
+      if (type.includes("home")) homeRecord = summary;
+      else if (type.includes("road") || type.includes("away")) awayRecord = summary;
+      else if (type.includes("conference") || type.includes("conf")) conferenceRecord = summary;
+      else if (type.includes("division") || type.includes("div")) divisionRecord = summary;
+      else if (type.includes("last") || type.includes("l10")) last10 = summary;
+    });
+
+    // Get streak
+    const streak = team?.streak?.displayValue || 
+      (statMap.streak as string) || 
+      `${wins > losses ? "W" : "L"}1`;
+
+    // Get points for/against
+    const pointsFor = parseInt(statMap.pointsFor as string) || 
+      parseInt(statMap.pointsScored as string) || 
+      parseInt(statMap.runsScored as string) || 0;
+    const pointsAgainst = parseInt(statMap.pointsAgainst as string) || 
+      parseInt(statMap.pointsAllowed as string) || 
+      parseInt(statMap.runsAllowed as string) || 0;
+
+    return {
+      teamId,
+      teamName: team?.displayName || team?.name || teamName,
+      wins,
+      losses,
+      ties,
+      winPercentage: Math.round(winPct * 1000) / 10,
+      streak,
+      homeRecord: homeRecord || `${Math.floor(wins / 2)}-${Math.floor(losses / 2)}`,
+      awayRecord: awayRecord || `${Math.ceil(wins / 2)}-${Math.ceil(losses / 2)}`,
+      last10: last10 || "",
+      pointsFor,
+      pointsAgainst,
+      pointDifferential: pointsFor - pointsAgainst,
+      conferenceRecord: conferenceRecord || undefined,
+      divisionRecord: divisionRecord || undefined,
+      season: team?.season?.displayName || new Date().getFullYear().toString(),
+    };
+  } catch (error) {
+    console.warn(`Error fetching team season record for ${teamId}:`, error);
+    return null;
+  }
+};
+
 // Normalize team name for matching
 const normalizeTeamName = (name: string): string => {
   return name.toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -209,11 +323,13 @@ export const fetchHeadToHeadHistory = async (
   team2Name: string
 ): Promise<HeadToHeadHistory> => {
   try {
-    // Try multiple data sources in parallel
-    const [team1Schedule, team2Schedule, pastGames] = await Promise.all([
+    // Try multiple data sources in parallel, including season records
+    const [team1Schedule, team2Schedule, pastGames, team1Record, team2Record] = await Promise.all([
       fetchTeamSchedule(league, team1Id),
       fetchTeamSchedule(league, team2Id),
       fetchPastGames(league, 90), // Last ~3 months
+      fetchTeamSeasonRecord(league, team1Id, team1Name),
+      fetchTeamSeasonRecord(league, team2Id, team2Name),
     ]);
 
     // Combine all sources and find H2H games
@@ -309,6 +425,8 @@ export const fetchHeadToHeadHistory = async (
       avgTeam1Score: lastMeetings.length > 0 ? Math.round(team1TotalScore / lastMeetings.length) : 0,
       avgTeam2Score: lastMeetings.length > 0 ? Math.round(team2TotalScore / lastMeetings.length) : 0,
       isLiveData: lastMeetings.length > 0,
+      team1SeasonRecord: team1Record || undefined,
+      team2SeasonRecord: team2Record || undefined,
     };
   } catch (error) {
     console.error("Error fetching H2H history:", error);
