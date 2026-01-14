@@ -44,16 +44,14 @@ const QuickStatsDashboard = () => {
     return (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[...Array(4)].map((_, i) => (
-          <Card key={i} className="bg-card/80 backdrop-blur-sm">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-3">
-                <Skeleton shimmer className="h-3 w-16" />
-                <Skeleton shimmer className="h-7 w-7 rounded-lg" />
-              </div>
-              <Skeleton shimmer className="h-8 w-20 mb-1" />
-              <Skeleton shimmer className="h-3 w-14" />
-            </CardContent>
-          </Card>
+          <div key={i} className="skeleton-card-premium p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="skeleton-line h-3 w-16" />
+              <div className="skeleton-circle h-7 w-7" />
+            </div>
+            <div className="skeleton-line h-8 w-20 mb-2" />
+            <div className="skeleton-line h-3 w-14" />
+          </div>
         ))}
       </div>
     );
