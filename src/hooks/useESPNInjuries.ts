@@ -37,14 +37,27 @@ const mapESPNStatus = (status: string): InjuryStatus => {
 
 // Get ESPN sport path
 const getESPNSportPath = (league: League): { sport: string; leaguePath: string } | null => {
-  const mapping: Record<League, { sport: string; leaguePath: string }> = {
+  const mapping: Partial<Record<League, { sport: string; leaguePath: string }>> = {
     NBA: { sport: 'basketball', leaguePath: 'nba' },
     NFL: { sport: 'football', leaguePath: 'nfl' },
     MLB: { sport: 'baseball', leaguePath: 'mlb' },
     NHL: { sport: 'hockey', leaguePath: 'nhl' },
     SOCCER: { sport: 'soccer', leaguePath: 'eng.1' },
+    EPL: { sport: 'soccer', leaguePath: 'eng.1' },
+    LA_LIGA: { sport: 'soccer', leaguePath: 'esp.1' },
+    SERIE_A: { sport: 'soccer', leaguePath: 'ita.1' },
+    BUNDESLIGA: { sport: 'soccer', leaguePath: 'ger.1' },
+    LIGUE_1: { sport: 'soccer', leaguePath: 'fra.1' },
+    MLS: { sport: 'soccer', leaguePath: 'usa.1' },
+    CHAMPIONS_LEAGUE: { sport: 'soccer', leaguePath: 'uefa.champions' },
     NCAAF: { sport: 'football', leaguePath: 'college-football' },
     NCAAB: { sport: 'basketball', leaguePath: 'mens-college-basketball' },
+    WNBA: { sport: 'basketball', leaguePath: 'wnba' },
+    CFL: { sport: 'football', leaguePath: 'cfl' },
+    UFC: { sport: 'mma', leaguePath: 'ufc' },
+    ATP: { sport: 'tennis', leaguePath: 'atp' },
+    WTA: { sport: 'tennis', leaguePath: 'wta' },
+    PGA: { sport: 'golf', leaguePath: 'pga' },
   };
   
   return mapping[league] || null;
@@ -175,7 +188,7 @@ export const fetchTeamInjuriesByName = async (
 
 // Mock injuries for fallback
 const getMockInjuries = (league: League): ESPNInjury[] => {
-  const mockData: Record<League, ESPNInjury[]> = {
+  const mockData: Partial<Record<League, ESPNInjury[]>> = {
     NBA: [
       {
         id: 'mock-nba-1',
@@ -244,9 +257,6 @@ const getMockInjuries = (league: League): ESPNInjury[] => {
         updatedAt: new Date().toISOString(),
       },
     ],
-    SOCCER: [],
-    NCAAF: [],
-    NCAAB: [],
   };
   
   return mockData[league] || [];

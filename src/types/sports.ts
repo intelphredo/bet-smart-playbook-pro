@@ -1,5 +1,8 @@
 
-export type League = 'NBA' | 'NFL' | 'MLB' | 'NHL' | 'SOCCER' | 'NCAAF' | 'NCAAB';
+export type League = 
+  | 'NBA' | 'NFL' | 'MLB' | 'NHL' | 'NCAAF' | 'NCAAB' | 'WNBA'
+  | 'SOCCER' | 'EPL' | 'LA_LIGA' | 'SERIE_A' | 'BUNDESLIGA' | 'LIGUE_1' | 'MLS' | 'CHAMPIONS_LEAGUE'
+  | 'UFC' | 'ATP' | 'WTA' | 'PGA' | 'CFL' | 'XFL';
 
 export type PropType = 'points' | 'assists' | 'rebounds' | 'touchdowns' | 'goals' | 'saves' | 'shots' | 'hits';
 

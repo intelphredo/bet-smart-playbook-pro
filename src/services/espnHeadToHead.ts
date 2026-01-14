@@ -54,14 +54,27 @@ export interface HeadToHeadHistory {
 
 // Map league to ESPN sport path
 const getESPNSportPath = (league: League): string => {
-  const paths: Record<League, string> = {
+  const paths: Partial<Record<League, string>> = {
     NBA: "basketball/nba",
     NFL: "football/nfl",
     MLB: "baseball/mlb",
     NHL: "hockey/nhl",
     SOCCER: "soccer/eng.1",
+    EPL: "soccer/eng.1",
+    LA_LIGA: "soccer/esp.1",
+    SERIE_A: "soccer/ita.1",
+    BUNDESLIGA: "soccer/ger.1",
+    LIGUE_1: "soccer/fra.1",
+    MLS: "soccer/usa.1",
+    CHAMPIONS_LEAGUE: "soccer/uefa.champions",
     NCAAF: "football/college-football",
     NCAAB: "basketball/mens-college-basketball",
+    WNBA: "basketball/wnba",
+    CFL: "football/cfl",
+    UFC: "mma/ufc",
+    ATP: "tennis/atp",
+    WTA: "tennis/wta",
+    PGA: "golf/pga",
   };
   return paths[league] || "basketball/nba";
 };

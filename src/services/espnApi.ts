@@ -87,14 +87,27 @@ const formatDateForESPN = (date: Date): string => {
 // Get schedule endpoint with date for a league
 const getScheduleEndpoint = (league: League, date: Date): string | null => {
   const dateStr = formatDateForESPN(date);
-  const endpoints: Record<League, string> = {
+  const endpoints: Partial<Record<League, string>> = {
     NBA: `${ESPN_API_BASE}/basketball/nba/scoreboard?dates=${dateStr}`,
     NFL: `${ESPN_API_BASE}/football/nfl/scoreboard?dates=${dateStr}`,
     MLB: `${ESPN_API_BASE}/baseball/mlb/scoreboard?dates=${dateStr}`,
     NHL: `${ESPN_API_BASE}/hockey/nhl/scoreboard?dates=${dateStr}`,
     SOCCER: `${ESPN_API_BASE}/soccer/eng.1/scoreboard?dates=${dateStr}`,
+    EPL: `${ESPN_API_BASE}/soccer/eng.1/scoreboard?dates=${dateStr}`,
+    LA_LIGA: `${ESPN_API_BASE}/soccer/esp.1/scoreboard?dates=${dateStr}`,
+    SERIE_A: `${ESPN_API_BASE}/soccer/ita.1/scoreboard?dates=${dateStr}`,
+    BUNDESLIGA: `${ESPN_API_BASE}/soccer/ger.1/scoreboard?dates=${dateStr}`,
+    LIGUE_1: `${ESPN_API_BASE}/soccer/fra.1/scoreboard?dates=${dateStr}`,
+    MLS: `${ESPN_API_BASE}/soccer/usa.1/scoreboard?dates=${dateStr}`,
+    CHAMPIONS_LEAGUE: `${ESPN_API_BASE}/soccer/uefa.champions/scoreboard?dates=${dateStr}`,
     NCAAF: `${ESPN_API_BASE}/football/college-football/scoreboard?dates=${dateStr}`,
     NCAAB: `${ESPN_API_BASE}/basketball/mens-college-basketball/scoreboard?dates=${dateStr}`,
+    WNBA: `${ESPN_API_BASE}/basketball/wnba/scoreboard?dates=${dateStr}`,
+    CFL: `${ESPN_API_BASE}/football/cfl/scoreboard?dates=${dateStr}`,
+    UFC: `${ESPN_API_BASE}/mma/ufc/scoreboard?dates=${dateStr}`,
+    ATP: `${ESPN_API_BASE}/tennis/atp/scoreboard?dates=${dateStr}`,
+    WTA: `${ESPN_API_BASE}/tennis/wta/scoreboard?dates=${dateStr}`,
+    PGA: `${ESPN_API_BASE}/golf/pga/scoreboard?dates=${dateStr}`,
   };
   return endpoints[league] || null;
 };
@@ -216,14 +229,27 @@ export const fetchESPNEvents = async (league: League): Promise<Match[]> => {
 
 // Get the correct scoreboard endpoint for a league
 const getScoreboardEndpoint = (league: League): string | null => {
-  const endpoints: Record<League, string> = {
+  const endpoints: Partial<Record<League, string>> = {
     NBA: `${ESPN_API_BASE}/basketball/nba/scoreboard`,
     NFL: `${ESPN_API_BASE}/football/nfl/scoreboard`,
     MLB: `${ESPN_API_BASE}/baseball/mlb/scoreboard`,
     NHL: `${ESPN_API_BASE}/hockey/nhl/scoreboard`,
     SOCCER: `${ESPN_API_BASE}/soccer/eng.1/scoreboard`,
+    EPL: `${ESPN_API_BASE}/soccer/eng.1/scoreboard`,
+    LA_LIGA: `${ESPN_API_BASE}/soccer/esp.1/scoreboard`,
+    SERIE_A: `${ESPN_API_BASE}/soccer/ita.1/scoreboard`,
+    BUNDESLIGA: `${ESPN_API_BASE}/soccer/ger.1/scoreboard`,
+    LIGUE_1: `${ESPN_API_BASE}/soccer/fra.1/scoreboard`,
+    MLS: `${ESPN_API_BASE}/soccer/usa.1/scoreboard`,
+    CHAMPIONS_LEAGUE: `${ESPN_API_BASE}/soccer/uefa.champions/scoreboard`,
     NCAAF: `${ESPN_API_BASE}/football/college-football/scoreboard`,
     NCAAB: `${ESPN_API_BASE}/basketball/mens-college-basketball/scoreboard`,
+    WNBA: `${ESPN_API_BASE}/basketball/wnba/scoreboard`,
+    CFL: `${ESPN_API_BASE}/football/cfl/scoreboard`,
+    UFC: `${ESPN_API_BASE}/mma/ufc/scoreboard`,
+    ATP: `${ESPN_API_BASE}/tennis/atp/scoreboard`,
+    WTA: `${ESPN_API_BASE}/tennis/wta/scoreboard`,
+    PGA: `${ESPN_API_BASE}/golf/pga/scoreboard`,
   };
   return endpoints[league] || null;
 };
@@ -235,7 +261,7 @@ const generateMockEventsForLeague = (league: League): Match[] => {
   const tomorrow = new Date(now);
   tomorrow.setDate(tomorrow.getDate() + 1);
   
-  const mockTeams: Record<League, { id: string; name: string; shortName: string; logo: string }[]> = {
+  const mockTeams: Partial<Record<League, { id: string; name: string; shortName: string; logo: string }[]>> = {
     NBA: [
       { id: "1", name: "Los Angeles Lakers", shortName: "LAL", logo: "https://a.espncdn.com/i/teamlogos/nba/500/lal.png" },
       { id: "2", name: "Boston Celtics", shortName: "BOS", logo: "https://a.espncdn.com/i/teamlogos/nba/500/bos.png" },

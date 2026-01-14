@@ -243,14 +243,22 @@ export async function fetchTeamBettingHistory(
 
 // Helper functions
 function getESPNSportPath(league: League): { sport: string; leaguePath: string } | null {
-  const mapping: Record<League, { sport: string; leaguePath: string }> = {
+  const mapping: Partial<Record<League, { sport: string; leaguePath: string }>> = {
     NBA: { sport: 'basketball', leaguePath: 'nba' },
     NFL: { sport: 'football', leaguePath: 'nfl' },
     MLB: { sport: 'baseball', leaguePath: 'mlb' },
     NHL: { sport: 'hockey', leaguePath: 'nhl' },
     SOCCER: { sport: 'soccer', leaguePath: 'eng.1' },
+    EPL: { sport: 'soccer', leaguePath: 'eng.1' },
+    LA_LIGA: { sport: 'soccer', leaguePath: 'esp.1' },
+    SERIE_A: { sport: 'soccer', leaguePath: 'ita.1' },
+    BUNDESLIGA: { sport: 'soccer', leaguePath: 'ger.1' },
+    LIGUE_1: { sport: 'soccer', leaguePath: 'fra.1' },
+    MLS: { sport: 'soccer', leaguePath: 'usa.1' },
+    CHAMPIONS_LEAGUE: { sport: 'soccer', leaguePath: 'uefa.champions' },
     NCAAF: { sport: 'football', leaguePath: 'college-football' },
     NCAAB: { sport: 'basketball', leaguePath: 'mens-college-basketball' },
+    WNBA: { sport: 'basketball', leaguePath: 'wnba' },
   };
   return mapping[league] || null;
 }

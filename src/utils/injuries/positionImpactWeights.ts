@@ -84,7 +84,7 @@ const SOCCER_POSITIONS: PositionWeight[] = [
 ];
 
 // Sport configuration mapping
-export const SPORT_POSITION_WEIGHTS: Record<League, SportPositionWeights> = {
+export const SPORT_POSITION_WEIGHTS: Partial<Record<League, SportPositionWeights>> = {
   NBA: {
     league: 'NBA',
     positions: NBA_POSITIONS,
@@ -115,23 +115,87 @@ export const SPORT_POSITION_WEIGHTS: Record<League, SportPositionWeights> = {
     averagePointsPerGame: 1.5,
     averagePointsAllowed: 1.5,
   },
+  EPL: {
+    league: 'EPL',
+    positions: SOCCER_POSITIONS,
+    averagePointsPerGame: 1.5,
+    averagePointsAllowed: 1.5,
+  },
+  LA_LIGA: {
+    league: 'LA_LIGA',
+    positions: SOCCER_POSITIONS,
+    averagePointsPerGame: 1.4,
+    averagePointsAllowed: 1.4,
+  },
+  SERIE_A: {
+    league: 'SERIE_A',
+    positions: SOCCER_POSITIONS,
+    averagePointsPerGame: 1.4,
+    averagePointsAllowed: 1.4,
+  },
+  BUNDESLIGA: {
+    league: 'BUNDESLIGA',
+    positions: SOCCER_POSITIONS,
+    averagePointsPerGame: 1.6,
+    averagePointsAllowed: 1.6,
+  },
+  LIGUE_1: {
+    league: 'LIGUE_1',
+    positions: SOCCER_POSITIONS,
+    averagePointsPerGame: 1.3,
+    averagePointsAllowed: 1.3,
+  },
+  MLS: {
+    league: 'MLS',
+    positions: SOCCER_POSITIONS,
+    averagePointsPerGame: 1.5,
+    averagePointsAllowed: 1.5,
+  },
+  CHAMPIONS_LEAGUE: {
+    league: 'CHAMPIONS_LEAGUE',
+    positions: SOCCER_POSITIONS,
+    averagePointsPerGame: 1.5,
+    averagePointsAllowed: 1.5,
+  },
   NCAAF: {
     league: 'NCAAF',
-    positions: NFL_POSITIONS, // Use same as NFL
+    positions: NFL_POSITIONS,
     averagePointsPerGame: 28,
     averagePointsAllowed: 28,
   },
   NCAAB: {
     league: 'NCAAB',
-    positions: NBA_POSITIONS, // Use same as NBA
+    positions: NBA_POSITIONS,
     averagePointsPerGame: 72,
     averagePointsAllowed: 72,
+  },
+  WNBA: {
+    league: 'WNBA',
+    positions: NBA_POSITIONS,
+    averagePointsPerGame: 82,
+    averagePointsAllowed: 82,
+  },
+  CFL: {
+    league: 'CFL',
+    positions: NFL_POSITIONS,
+    averagePointsPerGame: 25,
+    averagePointsAllowed: 25,
   },
 };
 
 export function getPositionWeight(league: League, position: string): PositionWeight {
   const sportConfig = SPORT_POSITION_WEIGHTS[league];
   const normalizedPosition = position.toUpperCase();
+  
+  if (!sportConfig) {
+    // Default fallback for unsupported leagues
+    return {
+      position: normalizedPosition,
+      offensiveWeight: 0.3,
+      defensiveWeight: 0.3,
+      basePointsImpact: 1,
+    };
+  }
   
   const positionWeight = sportConfig.positions.find(
     p => p.position.toUpperCase() === normalizedPosition

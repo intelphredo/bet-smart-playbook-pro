@@ -9,14 +9,23 @@ import { calculateInjuryLineImpact } from '@/utils/injuries/injuryLineImpactCalc
 
 // Map our League type to Sportradar's SportLeague
 function mapToSportLeague(league: League): SportLeague {
-  const mapping: Record<League, SportLeague> = {
+  const mapping: Partial<Record<League, SportLeague>> = {
     'NBA': 'NBA',
     'NFL': 'NFL',
     'MLB': 'MLB',
     'NHL': 'NHL',
     'SOCCER': 'SOCCER',
-    'NCAAF': 'NFL', // Use NFL as fallback
-    'NCAAB': 'NBA', // Use NBA as fallback
+    'EPL': 'SOCCER',
+    'LA_LIGA': 'SOCCER',
+    'SERIE_A': 'SOCCER',
+    'BUNDESLIGA': 'SOCCER',
+    'LIGUE_1': 'SOCCER',
+    'MLS': 'SOCCER',
+    'CHAMPIONS_LEAGUE': 'SOCCER',
+    'NCAAF': 'NFL',
+    'NCAAB': 'NBA',
+    'WNBA': 'NBA',
+    'CFL': 'NFL',
   };
   return mapping[league] || 'NBA';
 }
