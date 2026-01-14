@@ -3,9 +3,10 @@ import { Match } from '@/types/sports';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { Clock, Radio } from 'lucide-react';
+import { Radio } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import SharpMoneyBadge from '@/components/MatchCard/SharpMoneyBadge';
+import { formatAmericanOdds } from '@/utils/sportsbook';
 
 interface ScoreboardRowProps {
   match: Match;
@@ -20,7 +21,7 @@ export function ScoreboardRow({ match, showOdds = true }: ScoreboardRowProps) {
   const formatGameTime = () => {
     if (isLive) return match.score?.period || 'LIVE';
     if (isFinished) return 'Final';
-    
+
     try {
       const date = parseISO(match.startTime);
       return format(date, 'h:mm a');
@@ -36,11 +37,23 @@ export function ScoreboardRow({ match, showOdds = true }: ScoreboardRowProps) {
     return homeSpread > 0 ? `+${homeSpread}` : homeSpread.toString();
   };
 
+  const formatMoneyline = (value: number | null | undefined): string | null => {
+    if (value === null || value === undefined) return null;
+
+    // If it looks like American odds already, keep it and round to whole number.
+    // (American: typically >= +100 or <= -100)
+    if (value >= 100) return `+${Math.round(value)}`;
+    if (value <= -100) return `${Math.round(value)}`;
+
+    // Otherwise treat it as decimal odds and format as whole-number American
+    return formatAmericanOdds(value);
+  };
+
   const getMoneyline = (isHome: boolean) => {
     const odds = match.liveOdds?.[0];
     if (!odds) return null;
     const ml = isHome ? odds.homeWin : odds.awayWin;
-    return ml > 0 ? `+${ml}` : ml.toString();
+    return formatMoneyline(ml);
   };
 
   const homeWinning = (match.score?.home || 0) > (match.score?.away || 0);
