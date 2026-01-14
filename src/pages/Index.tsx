@@ -42,12 +42,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { GroupedLeagueSelect, LEAGUE_CATEGORIES } from "@/components/filters/GroupedLeagueSelect";
 import { motion } from "framer-motion";
 
 const RESULTS_PER_PAGE_OPTIONS = [5, 10, 25, 50];
 
-// League filter options
-const LEAGUES = ['ALL', 'NBA', 'NFL', 'NCAAB', 'NHL', 'MLB', 'SOCCER'] as const;
+// Get all available leagues from categories
+const ALL_LEAGUES = Object.values(LEAGUE_CATEGORIES).flatMap(cat => cat.leagues);
 
 // Tab persistence key
 const TAB_STORAGE_KEY = 'betly-active-tab';
@@ -201,28 +202,16 @@ const Index = () => {
         <div className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-30">
           <div className="container px-4 py-3">
             <div className="flex items-center justify-between gap-4">
-              {/* League Pills */}
-              <ScrollArea className="flex-1 -mx-2">
-                <div className="flex items-center gap-2 px-2">
-                  {LEAGUES.map((league) => (
-                    <Button
-                      key={league}
-                      variant={selectedLeague === league ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setSelectedLeague(league)}
-                      className="shrink-0 rounded-full"
-                    >
-                      {league}
-                      {league === 'ALL' && (
-                        <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-[10px]">
-                          {rawUpcoming.length + rawLive.length}
-                        </Badge>
-                      )}
-                    </Button>
-                  ))}
-                </div>
-                <ScrollBar orientation="horizontal" />
-              </ScrollArea>
+              {/* League Filter */}
+              <div className="flex items-center gap-3">
+                <GroupedLeagueSelect
+                  value={selectedLeague === "ALL" ? "all" : selectedLeague}
+                  onValueChange={(val) => setSelectedLeague(val === "all" ? "ALL" : val)}
+                  leagues={ALL_LEAGUES}
+                  allLabel={`All Leagues (${rawUpcoming.length + rawLive.length})`}
+                  className="w-[200px]"
+                />
+              </div>
               
               <div className="flex items-center gap-3 shrink-0">
                 <UpcomingAlertsBadge 
