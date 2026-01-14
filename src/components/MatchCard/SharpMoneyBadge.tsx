@@ -53,7 +53,7 @@ export function SharpMoneyBadge({
                signal.type === 'whale_bet' ? 'Whale' : 'Sharp',
         icon: signal.type === 'steam_move' ? Zap : 
               signal.type === 'reverse_line' ? TrendingUp : Brain,
-        color: 'text-amber-500 bg-amber-500/10 border-amber-500/30',
+        color: 'text-primary bg-primary/10 border-primary/40',
         description: signal.description,
         confidence: sharpBetting.confidence,
       };
