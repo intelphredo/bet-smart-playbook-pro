@@ -35,26 +35,26 @@ const SmartScoreCard = ({ match, showArbitrageAlert = false }: SmartScoreCardPro
     hasArbitrageOpportunity
   } = match.smartScore;
   
-  // Determine color based on score
+  // Determine color based on score - gold accents for high scores
   const getScoreColor = (score: number) => {
-    if (score >= 80) return "text-green-500";
-    if (score >= 65) return "text-blue-500";
-    if (score >= 50) return "text-yellow-500";
-    return "text-red-500";
+    if (score >= 80) return "text-primary";
+    if (score >= 65) return "text-success";
+    if (score >= 50) return "text-warning";
+    return "text-destructive";
   };
   
-  // Determine progress color
+  // Determine progress color - gold for high scores
   const getProgressColor = (score: number) => {
-    if (score >= 80) return "bg-green-500";
-    if (score >= 65) return "bg-blue-500";
-    if (score >= 50) return "bg-yellow-500";
-    return "bg-red-500";
+    if (score >= 80) return "bg-gradient-to-r from-primary to-accent";
+    if (score >= 65) return "bg-success";
+    if (score >= 50) return "bg-warning";
+    return "bg-destructive";
   };
   
   return (
     <>
       <Card 
-        className={`border cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-[1.02] ${hasArbitrageOpportunity && showArbitrageAlert ? 'border-red-300 shadow-md' : ''}`}
+        className={`border cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-[1.02] premium-card ${hasArbitrageOpportunity && showArbitrageAlert ? 'border-primary/50 shadow-md' : ''}`}
         onClick={() => setIsOpen(true)}
       >
         <CardHeader className="flex flex-row items-center justify-between py-2 relative">
@@ -63,12 +63,15 @@ const SmartScoreCard = ({ match, showArbitrageAlert = false }: SmartScoreCardPro
           </h3>
           <div className="flex items-center gap-1">
             {hasArbitrageOpportunity && showArbitrageAlert && (
-              <Badge variant="destructive" className="flex items-center gap-1">
+              <Badge variant="gold" className="flex items-center gap-1">
                 <AlertTriangle size={12} />
                 <span className="text-xs">Arbitrage</span>
               </Badge>
             )}
-            <Badge variant="outline" className={`${getScoreColor(overall)} border-none`}>
+            <Badge 
+              variant={overall >= 80 ? "gold-solid" : overall >= 65 ? "gold" : "outline"} 
+              className={overall < 65 ? getScoreColor(overall) : ""}
+            >
               {overall}
             </Badge>
           </div>
@@ -196,8 +199,11 @@ const SmartScoreCard = ({ match, showArbitrageAlert = false }: SmartScoreCardPro
             
             {/* Recommendation */}
             {recommendation && recommendation.betOn && (
-              <div className="p-4 rounded-lg bg-primary/10 border border-primary/20">
-                <h4 className="font-semibold mb-1">AI Recommendation</h4>
+              <div className="p-4 rounded-lg bg-gradient-to-r from-primary/10 to-accent/5 border border-primary/20">
+                <h4 className="font-semibold mb-1 flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4 text-primary" />
+                  AI Recommendation
+                </h4>
                 <p className="text-lg font-bold text-primary">
                   {recommendation.betOn} 
                   {recommendation.confidence && ` (${recommendation.confidence} confidence)`}

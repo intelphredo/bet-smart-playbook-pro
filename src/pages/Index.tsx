@@ -195,34 +195,34 @@ const Index = () => {
         <div className="container px-4 py-6">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
             {/* Tab Navigation */}
-            <TabsList className="grid w-full max-w-2xl mx-auto grid-cols-4 h-12">
-              <TabsTrigger value="scores" className="gap-2 text-sm">
+            <TabsList className="grid w-full max-w-2xl mx-auto grid-cols-4 h-12 bg-card/50 backdrop-blur-sm">
+              <TabsTrigger value="scores" className="gap-2 text-sm data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
                 <Activity className="h-4 w-4" />
                 <span className="hidden sm:inline">Scores</span>
                 {filteredLive.length > 0 && (
-                  <Badge variant="destructive" className="h-5 px-1.5 text-[10px] animate-pulse">
+                  <Badge variant="live" className="h-5 px-1.5 text-[10px]">
                     {filteredLive.length}
                   </Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="favorites" className="gap-2 text-sm">
+              <TabsTrigger value="favorites" className="gap-2 text-sm data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
                 <Star className="h-4 w-4" />
                 <span className="hidden sm:inline">Favorites</span>
                 {favoritesCount > 0 && (
-                  <Badge className="bg-yellow-500 h-5 px-1.5 text-[10px]">
+                  <Badge variant="gold" className="h-5 px-1.5 text-[10px]">
                     {favoritesCount}
                   </Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="picks" className="gap-2 text-sm">
+              <TabsTrigger value="picks" className="gap-2 text-sm data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
                 <Target className="h-4 w-4" />
                 <span className="hidden sm:inline">Picks</span>
               </TabsTrigger>
-              <TabsTrigger value="analytics" className="gap-2 text-sm">
+              <TabsTrigger value="analytics" className="gap-2 text-sm data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
                 <BarChart3 className="h-4 w-4" />
                 <span className="hidden sm:inline">Analytics</span>
                 {opportunities.length > 0 && (
-                  <Badge className="bg-green-500 h-5 px-1.5 text-[10px]">
+                  <Badge variant="success" className="h-5 px-1.5 text-[10px]">
                     {opportunities.length}
                   </Badge>
                 )}
@@ -250,23 +250,23 @@ const Index = () => {
                 >
                   {/* Live Games */}
                   {filteredLive.length > 0 && (
-                    <Card className="border-red-500/30">
-                      <CardHeader className="py-4 px-6 flex flex-row items-center justify-between bg-red-500/5">
+                    <Card className="border-destructive/30 premium-card">
+                      <CardHeader className="py-4 px-6 flex flex-row items-center justify-between bg-destructive/5">
                         <div className="flex items-center gap-3">
-                          <div className="p-2 rounded-full bg-red-500/10">
-                            <Radio className="h-5 w-5 text-red-500 animate-pulse" />
+                          <div className="p-2 rounded-full bg-destructive/10">
+                            <Radio className="h-5 w-5 text-destructive animate-pulse" />
                           </div>
                           <div>
                             <CardTitle className="text-lg">Live Now</CardTitle>
                             <p className="text-sm text-muted-foreground">{filteredLive.length} games in progress</p>
                           </div>
                         </div>
-                        <Button variant="ghost" size="sm" onClick={() => navigate('/live')}>
+                        <Button variant="ghost" size="sm" onClick={() => navigate('/live')} className="text-primary hover:text-primary hover:bg-primary/10">
                           View All <ChevronRight className="h-4 w-4 ml-1" />
                         </Button>
                       </CardHeader>
                       <CardContent className="p-0">
-                        <div className="divide-y">
+                        <div className="divide-y divide-border/50">
                           {filteredLive.map((match) => (
                             <ScoreboardRow key={match.id} match={match} />
                           ))}
@@ -276,8 +276,8 @@ const Index = () => {
                   )}
 
                   {/* Upcoming Games */}
-                  <Card>
-                    <CardHeader className="py-4 px-6 flex flex-row items-center justify-between">
+                  <Card className="premium-card border-primary/20">
+                    <CardHeader className="py-4 px-6 flex flex-row items-center justify-between bg-gradient-to-r from-primary/5 to-transparent">
                       <div className="flex items-center gap-3">
                         <div className="p-2 rounded-full bg-primary/10">
                           <Clock className="h-5 w-5 text-primary" />
@@ -287,12 +287,12 @@ const Index = () => {
                           <p className="text-sm text-muted-foreground">{filteredUpcoming.length} scheduled games</p>
                         </div>
                       </div>
-                      <Button variant="ghost" size="sm" onClick={() => navigate('/games')}>
+                      <Button variant="ghost" size="sm" onClick={() => navigate('/games')} className="text-primary hover:text-primary hover:bg-primary/10">
                         Full Schedule <ChevronRight className="h-4 w-4 ml-1" />
                       </Button>
                     </CardHeader>
                     <CardContent className="p-0">
-                      <div className="divide-y">
+                      <div className="divide-y divide-border/50">
                         {filteredUpcoming.slice(0, 8).map((match) => (
                           <ScoreboardRow key={match.id} match={match} />
                         ))}
@@ -308,11 +308,11 @@ const Index = () => {
 
                   {/* Recent Results */}
                   {filteredFinished.length > 0 && (
-                    <Card>
+                    <Card className="premium-card">
                       <CardHeader className="py-4 px-6 flex flex-row items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <div className="p-2 rounded-full bg-muted">
-                            <Trophy className="h-5 w-5 text-muted-foreground" />
+                          <div className="p-2 rounded-full bg-primary/10">
+                            <Trophy className="h-5 w-5 text-primary" />
                           </div>
                           <div>
                             <CardTitle className="text-lg">Recent Results</CardTitle>
