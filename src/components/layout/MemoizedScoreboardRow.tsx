@@ -14,6 +14,14 @@ interface MemoizedScoreboardRowProps {
   showOdds?: boolean;
 }
 
+// Helper to check if a match is live
+const isMatchLive = (status: string): boolean => {
+  const s = status?.toLowerCase() || "";
+  return s === "live" || s === "in" || s === "in_progress" || 
+         s.includes("half") || s.includes("ot") || s.includes("overtime") ||
+         ["1st", "2nd", "3rd", "4th"].some(p => s.includes(p));
+};
+
 // Lightweight version without heavy hooks - optimized for list rendering
 const MemoizedScoreboardRow = memo(function MemoizedScoreboardRow({ 
   match, 
@@ -21,7 +29,7 @@ const MemoizedScoreboardRow = memo(function MemoizedScoreboardRow({
 }: MemoizedScoreboardRowProps) {
   const navigate = useNavigate();
   
-  const isLive = match.status === 'live';
+  const isLive = isMatchLive(match.status);
   const isFinished = match.status === 'finished';
   
   // Get FanDuel odds as primary
