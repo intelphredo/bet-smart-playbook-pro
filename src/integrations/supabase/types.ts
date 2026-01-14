@@ -796,6 +796,14 @@ export type Database = {
       clean_expired_weather_cache: { Args: never; Returns: undefined }
       cleanup_old_job_logs: { Args: never; Returns: number }
       cleanup_old_odds_history: { Args: never; Returns: undefined }
+      get_cron_job_status: {
+        Args: never
+        Returns: {
+          active: boolean
+          jobname: string
+          schedule: string
+        }[]
+      }
       get_user_preferences: { Args: { user_id_param: string }; Returns: Json }
       manual_record_odds: { Args: never; Returns: Json }
       recalculate_user_betting_stats: {
