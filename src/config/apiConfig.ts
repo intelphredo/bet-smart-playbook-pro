@@ -131,10 +131,10 @@ export const API_CONFIGS = {
       HISTORICAL: '/historical/sports/{{sport}}/odds'
     }
   },
+  // Betfair config - credentials intentionally removed (not currently used)
+  // If Betfair integration is needed, implement via edge function with server-side secrets
   BETFAIR: {
     BASE_URL: 'https://api.betfair.com/exchange/betting/rest/v1',
-    API_KEY: import.meta.env.VITE_BETFAIR_API_KEY || '',
-    SESSION_TOKEN: import.meta.env.VITE_BETFAIR_SESSION_TOKEN || '',
     ENDPOINTS: {
       LIST_EVENTS: '/listEvents',
       LIST_MARKET_CATALOGUE: '/listMarketCatalogue',

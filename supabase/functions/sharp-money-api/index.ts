@@ -34,6 +34,18 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // Require service role authentication for write operations (POST/PATCH)
+    if (req.method === "POST" || req.method === "PATCH") {
+      const authHeader = req.headers.get("authorization");
+      
+      if (!authHeader || !authHeader.includes(supabaseServiceKey)) {
+        return new Response(
+          JSON.stringify({ error: "Service role authentication required for write operations" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     const url = new URL(req.url);
     const action = url.searchParams.get("action") || "stats";
 
