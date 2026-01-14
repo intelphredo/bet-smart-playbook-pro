@@ -22,8 +22,13 @@ import {
 } from "recharts";
 import { 
   Wallet, TrendingUp, AlertTriangle, Shield, Settings, ChartLine, 
-  Target, Gauge, DollarSign, Percent, Calculator, ChevronRight
+  Target, Gauge, DollarSign, Percent, Calculator, ChevronRight, PieChart, Lock
 } from "lucide-react";
+import { useBetTracking } from "@/hooks/useBetTracking";
+import { RiskExposureDashboard } from "./RiskExposureDashboard";
+import { WithdrawalScheduler } from "./WithdrawalScheduler";
+import { GuardrailsPanel } from "./GuardrailsPanel";
+import { GoalTracker } from "./GoalTracker";
 
 export function BankrollDashboard() {
   const [settings, setSettings] = useState<BankrollSettings>(DEFAULT_BANKROLL_SETTINGS);
@@ -32,6 +37,11 @@ export function BankrollDashboard() {
   );
   const [winRate, setWinRate] = useState(54);
   const [avgOdds, setAvgOdds] = useState(1.9);
+  
+  // Get user bets for risk exposure
+  const { bets, stats } = useBetTracking();
+  const openBets = bets.filter(b => b.status === 'pending');
+  const currentROI = stats?.roi_percentage || 0;
   
   // Calculate projections
   const projections = useMemo(() => 
@@ -134,10 +144,23 @@ export function BankrollDashboard() {
       </div>
       
       <Tabs defaultValue="projections" className="space-y-4">
-        <TabsList className="grid grid-cols-4 w-full max-w-md">
+        <TabsList className="grid grid-cols-4 md:grid-cols-8 w-full">
           <TabsTrigger value="projections">Projections</TabsTrigger>
           <TabsTrigger value="scenarios">Strategies</TabsTrigger>
           <TabsTrigger value="simulation">Simulation</TabsTrigger>
+          <TabsTrigger value="exposure" className="flex items-center gap-1">
+            <PieChart className="h-3 w-3" />
+            Exposure
+          </TabsTrigger>
+          <TabsTrigger value="goals" className="flex items-center gap-1">
+            <Target className="h-3 w-3" />
+            Goals
+          </TabsTrigger>
+          <TabsTrigger value="guardrails" className="flex items-center gap-1">
+            <Lock className="h-3 w-3" />
+            Guardrails
+          </TabsTrigger>
+          <TabsTrigger value="withdraw">Withdraw</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
         
@@ -355,6 +378,40 @@ export function BankrollDashboard() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+        
+        {/* Risk Exposure Tab */}
+        <TabsContent value="exposure">
+          <RiskExposureDashboard 
+            openBets={openBets} 
+            bankroll={settings.currentBankroll} 
+          />
+        </TabsContent>
+        
+        {/* Goal Tracking Tab */}
+        <TabsContent value="goals">
+          <GoalTracker 
+            currentBankroll={settings.currentBankroll}
+            startingBankroll={settings.startingBankroll}
+            currentROI={currentROI}
+          />
+        </TabsContent>
+        
+        {/* Psychological Guardrails Tab */}
+        <TabsContent value="guardrails">
+          <GuardrailsPanel 
+            bets={bets}
+            bankroll={settings.currentBankroll}
+          />
+        </TabsContent>
+        
+        {/* Withdrawal Scheduler Tab */}
+        <TabsContent value="withdraw">
+          <WithdrawalScheduler 
+            currentBankroll={settings.currentBankroll}
+            startingBankroll={settings.startingBankroll}
+            currentROI={currentROI}
+          />
         </TabsContent>
         
         {/* Settings Tab */}
