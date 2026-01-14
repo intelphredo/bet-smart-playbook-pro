@@ -33,6 +33,7 @@ import {
   Info,
   Dices,
   GitCompare,
+  Gauge,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { 
@@ -46,6 +47,7 @@ import { useStrategyComparison } from "@/hooks/useStrategyComparison";
 import { MonteCarloCharts } from "@/components/MonteCarloCharts";
 import { StrategyComparisonView } from "@/components/StrategyComparisonView";
 import { InfoExplainer } from "@/components/ui/InfoExplainer";
+import { RecalibrationDashboard } from "@/components/ModelCalibration";
 
 const STRATEGIES: { value: BacktestStrategy; label: string; icon: string }[] = [
   { value: 'all_agree', label: 'All 3 Agree', icon: '🤝' },
@@ -485,6 +487,10 @@ export default function BacktestSimulator() {
                     <Dices className="h-4 w-4" />
                     Monte Carlo
                   </TabsTrigger>
+                  <TabsTrigger value="recalibration" className="gap-1">
+                    <Gauge className="h-4 w-4" />
+                    Auto-Calibration
+                  </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="results" className="space-y-6">
@@ -722,6 +728,26 @@ export default function BacktestSimulator() {
                       <MonteCarloCharts result={monteCarloResult} startingBankroll={startingBankroll} />
                     </>
                   )}
+                </TabsContent>
+
+                <TabsContent value="recalibration" className="space-y-6">
+                  <Card className="bg-muted/20 border-dashed">
+                    <CardContent className="pt-4">
+                      <div className="flex items-start gap-3">
+                        <Gauge className="h-5 w-5 text-primary mt-0.5" />
+                        <div className="text-sm">
+                          <p className="font-medium">Automatic Model Recalibration</p>
+                          <p className="text-muted-foreground">
+                            The system automatically adjusts algorithm weights and confidence thresholds based on recent performance.
+                            Underperforming models get reduced weight, while outperforming models get boosted.
+                            This helps dynamically adapt to changing conditions without manual intervention.
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  <RecalibrationDashboard />
                 </TabsContent>
               </Tabs>
             )}
