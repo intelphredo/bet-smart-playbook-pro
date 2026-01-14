@@ -68,8 +68,11 @@ Deno.serve(async (req) => {
     const leagues = url.searchParams.get("leagues")?.split(",") || Object.keys(SPORT_KEYS);
     const markets = "h2h,spreads,totals";
     const regions = "us";
+    // Prioritize FanDuel, then other major sportsbooks
+    const bookmakers = "fanduel,draftkings,betmgm,caesars,pointsbetus,betrivers,williamhill_us,unibet_us";
 
     console.log(`Recording odds for leagues: ${leagues.join(", ")}`);
+    console.log(`Prioritizing sportsbooks: ${bookmakers}`);
 
     const oddsRecords: OddsRecord[] = [];
     let totalEvents = 0;
@@ -83,7 +86,7 @@ Deno.serve(async (req) => {
       }
 
       try {
-        const oddsUrl = `${ODDS_API_BASE_URL}/sports/${sportKey}/odds?apiKey=${apiKey}&regions=${regions}&markets=${markets}&oddsFormat=decimal`;
+        const oddsUrl = `${ODDS_API_BASE_URL}/sports/${sportKey}/odds?apiKey=${apiKey}&regions=${regions}&markets=${markets}&bookmakers=${bookmakers}&oddsFormat=decimal`;
         
         console.log(`Fetching ${league}...`);
         const response = await fetch(oddsUrl);

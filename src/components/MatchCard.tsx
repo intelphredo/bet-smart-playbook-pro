@@ -190,6 +190,7 @@ const MatchCard = memo(function MatchCard({ match }: MatchCardProps) {
               liveOdds={match.liveOdds}
               homeTeam={match.homeTeam?.shortName || match.homeTeam?.name}
               awayTeam={match.awayTeam?.shortName || match.awayTeam?.name}
+              matchId={match.id}
             />
           </div>
         )}
