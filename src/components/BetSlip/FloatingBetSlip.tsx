@@ -48,12 +48,20 @@ export default function FloatingBetSlip() {
   const parlayOdds = calculateParlayOdds(betSlip);
   const parlayPayout = calculateParlayPayout(parlayOdds, parlayStakeNum);
 
-  // Calculate total potential payout for straight bets
+  // Calculate total potential payout for straight bets (American odds)
+  const calculatePayout = (odds: number, stakeAmount: number): number => {
+    if (odds > 0) {
+      return stakeAmount + (stakeAmount * (odds / 100));
+    } else {
+      return stakeAmount + (stakeAmount * (100 / Math.abs(odds)));
+    }
+  };
+
   const totalPotentialPayout = betSlip.reduce((sum, item) => {
     const key = `${item.matchId}-${item.betType}-${item.selection}`;
     const stakeNum = parseFloat(stakes[key] || '0') || 0;
     if (stakeNum <= 0) return sum;
-    return sum + stakeNum * item.odds;
+    return sum + calculatePayout(item.odds, stakeNum);
   }, 0);
 
   const totalStake = betSlip.reduce((sum, item) => {
@@ -206,9 +214,9 @@ export default function FloatingBetSlip() {
                                 Parlay Mode
                               </Label>
                               {isParlayMode && (
-                                <Badge variant="secondary" className="text-xs">
-                                  {parlayOdds > 0 ? '+' : ''}{parlayOdds}
-                                </Badge>
+                              <Badge variant="secondary" className="text-xs">
+                                {parlayOdds > 0 ? '+' : ''}{Math.round(parlayOdds)}
+                              </Badge>
                               )}
                             </div>
                             <Switch
@@ -225,7 +233,7 @@ export default function FloatingBetSlip() {
                             <div className="flex items-center justify-between">
                               <span className="text-sm font-medium">{betSlip.length}-Leg Parlay</span>
                               <span className="font-bold text-primary">
-                                {parlayOdds > 0 ? '+' : ''}{parlayOdds}
+                                {parlayOdds > 0 ? '+' : ''}{Math.round(parlayOdds)}
                               </span>
                             </div>
                             <div className="flex items-center gap-2">
@@ -318,9 +326,9 @@ export default function FloatingBetSlip() {
                                     {/* Selection & Odds */}
                                     <div className="flex items-center justify-between">
                                       <span className="text-sm font-semibold">{item.selection}</span>
-                                      <span className="text-lg font-bold text-primary font-mono">
-                                        {item.odds > 0 ? '+' : ''}{item.odds.toFixed(2)}
-                                      </span>
+                                    <span className="text-lg font-bold text-primary font-mono">
+                                      {item.odds > 0 ? '+' : ''}{Math.round(item.odds)}
+                                    </span>
                                     </div>
 
                                     {/* Model Insights */}
@@ -389,7 +397,7 @@ export default function FloatingBetSlip() {
                                           <div className="flex justify-between text-sm bg-muted/50 rounded-md p-2">
                                             <span className="text-muted-foreground">To win:</span>
                                             <span className="font-semibold text-emerald-500">
-                                              +${(stakeNum * item.odds - stakeNum).toFixed(2)}
+                                              +${(calculatePayout(item.odds, stakeNum) - stakeNum).toFixed(2)}
                                             </span>
                                           </div>
                                         )}

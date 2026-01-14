@@ -63,7 +63,7 @@ const BetRow = memo(function BetRow({
               {bet.bet_type}
             </Badge>
             <span className="text-sm text-muted-foreground">
-              {bet.selection} @ {bet.odds_at_placement.toFixed(2)}
+              {bet.selection} @ {bet.odds_at_placement > 0 ? '+' : ''}{Math.round(bet.odds_at_placement)}
             </span>
           </div>
           <p className="text-xs text-muted-foreground mt-1">
