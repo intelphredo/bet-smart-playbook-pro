@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import NavBar from "@/components/NavBar";
 import PageFooter from "@/components/PageFooter";
 import AppBreadcrumb from "@/components/layout/AppBreadcrumb";
@@ -30,6 +30,7 @@ import {
   Flame,
   Snowflake,
   Info,
+  Dices,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { 
@@ -38,6 +39,8 @@ import {
   getStrategyDisplayName, 
   getStrategyDescription 
 } from "@/hooks/useBacktestSimulator";
+import { useMonteCarloSimulation } from "@/hooks/useMonteCarloSimulation";
+import { MonteCarloCharts } from "@/components/MonteCarloCharts";
 import { InfoExplainer } from "@/components/ui/InfoExplainer";
 
 const STRATEGIES: { value: BacktestStrategy; label: string; icon: string }[] = [
@@ -75,6 +78,8 @@ export default function BacktestSimulator() {
   const [days, setDays] = useState(30);
   const [league, setLeague] = useState('all');
   const [isRunning, setIsRunning] = useState(false);
+  const [activeTab, setActiveTab] = useState('results');
+  const [numSimulations, setNumSimulations] = useState(1000);
 
   const { data: result, isLoading, refetch } = useBacktestSimulator({
     strategy,
@@ -85,6 +90,18 @@ export default function BacktestSimulator() {
     days,
     league: league === 'all' ? undefined : league,
   });
+
+  // Monte Carlo simulation
+  const monteCarloResult = useMonteCarloSimulation(
+    result?.betHistory || [],
+    {
+      numSimulations,
+      startingBankroll,
+      stakeType,
+      stakeAmount,
+    },
+    !!result && result.betHistory.length >= 5
+  );
 
   const handleRunBacktest = () => {
     setIsRunning(true);
@@ -272,6 +289,28 @@ export default function BacktestSimulator() {
                 </p>
               </div>
 
+              {/* Monte Carlo Simulations */}
+              <div className="space-y-2">
+                <Label className="flex items-center gap-1">
+                  <Dices className="h-4 w-4" />
+                  Monte Carlo Simulations
+                </Label>
+                <Select value={String(numSimulations)} onValueChange={(v) => setNumSimulations(Number(v))}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="100">100 simulations</SelectItem>
+                    <SelectItem value="500">500 simulations</SelectItem>
+                    <SelectItem value="1000">1,000 simulations</SelectItem>
+                    <SelectItem value="5000">5,000 simulations</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  More simulations = more accurate probability estimates
+                </p>
+              </div>
+
               {/* Run Button */}
               <Button 
                 className="w-full" 
@@ -306,207 +345,255 @@ export default function BacktestSimulator() {
                 </CardContent>
               </Card>
             ) : (
-              <>
-                {/* Summary Stats */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <Card className={cn(
-                    "border-2",
-                    result.totalProfit >= 0 ? "border-green-500/30 bg-green-500/5" : "border-red-500/30 bg-red-500/5"
-                  )}>
-                    <CardContent className="pt-4">
-                      <div className="flex items-center gap-2">
-                        {result.totalProfit >= 0 ? (
-                          <TrendingUp className="h-5 w-5 text-green-500" />
-                        ) : (
-                          <TrendingDown className="h-5 w-5 text-red-500" />
-                        )}
-                        <div>
-                          <p className={cn(
-                            "text-2xl font-bold",
-                            result.totalProfit >= 0 ? "text-green-500" : "text-red-500"
-                          )}>
-                            {formatCurrency(result.totalProfit)}
-                          </p>
-                          <p className="text-xs text-muted-foreground">Total P/L</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+              <Tabs value={activeTab} onValueChange={setActiveTab}>
+                <TabsList className="mb-4">
+                  <TabsTrigger value="results" className="gap-1">
+                    <Activity className="h-4 w-4" />
+                    Results
+                  </TabsTrigger>
+                  <TabsTrigger value="montecarlo" className="gap-1">
+                    <Dices className="h-4 w-4" />
+                    Monte Carlo
+                  </TabsTrigger>
+                </TabsList>
 
-                  <Card>
-                    <CardContent className="pt-4">
-                      <div className="flex items-center gap-2">
-                        <Target className="h-5 w-5 text-blue-500" />
-                        <div>
-                          <p className="text-2xl font-bold">{result.winRate.toFixed(1)}%</p>
-                          <p className="text-xs text-muted-foreground">Win Rate ({result.wins}-{result.losses})</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardContent className="pt-4">
-                      <div className="flex items-center gap-2">
-                        <Activity className="h-5 w-5 text-purple-500" />
-                        <div>
-                          <p className={cn(
-                            "text-2xl font-bold",
-                            result.roi >= 0 ? "text-green-500" : "text-red-500"
-                          )}>
-                            {result.roi >= 0 ? '+' : ''}{result.roi.toFixed(1)}%
-                          </p>
-                          <p className="text-xs text-muted-foreground">ROI</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardContent className="pt-4">
-                      <div className="flex items-center gap-2">
-                        <DollarSign className="h-5 w-5 text-yellow-500" />
-                        <div>
-                          <p className="text-2xl font-bold">${result.finalBankroll.toFixed(0)}</p>
-                          <p className="text-xs text-muted-foreground">Final Bankroll</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                {/* Detailed Stats */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="bg-muted/30 rounded-lg p-3 text-center">
-                    <p className="text-lg font-bold">{result.totalBets}</p>
-                    <p className="text-xs text-muted-foreground">Total Bets</p>
-                  </div>
-                  <div className="bg-muted/30 rounded-lg p-3 text-center">
-                    <p className="text-lg font-bold text-red-500">-${result.maxDrawdown.toFixed(0)}</p>
-                    <p className="text-xs text-muted-foreground">Max Drawdown</p>
-                  </div>
-                  <div className="bg-muted/30 rounded-lg p-3 text-center flex items-center justify-center gap-1">
-                    <Flame className="h-4 w-4 text-orange-500" />
-                    <p className="text-lg font-bold">{result.longestWinStreak}</p>
-                    <p className="text-xs text-muted-foreground">Best Streak</p>
-                  </div>
-                  <div className="bg-muted/30 rounded-lg p-3 text-center flex items-center justify-center gap-1">
-                    <Snowflake className="h-4 w-4 text-blue-500" />
-                    <p className="text-lg font-bold">{result.longestLoseStreak}</p>
-                    <p className="text-xs text-muted-foreground">Cold Streak</p>
-                  </div>
-                </div>
-
-                {/* Chart */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Cumulative P/L Over Time</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {result.profitByDay.length > 0 ? (
-                      <div className="h-[250px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <AreaChart data={result.profitByDay}>
-                            <defs>
-                              <linearGradient id="profitGradient" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="hsl(var(--chart-1))" stopOpacity={0.3}/>
-                                <stop offset="95%" stopColor="hsl(var(--chart-1))" stopOpacity={0}/>
-                              </linearGradient>
-                            </defs>
-                            <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                            <XAxis dataKey="date" tick={{ fontSize: 12 }} />
-                            <YAxis tickFormatter={(v) => `$${v}`} />
-                            <Tooltip content={<CustomTooltip />} />
-                            <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" />
-                            <Area 
-                              type="monotone" 
-                              dataKey="cumulative" 
-                              stroke="hsl(var(--chart-1))" 
-                              fill="url(#profitGradient)"
-                              strokeWidth={2}
-                            />
-                          </AreaChart>
-                        </ResponsiveContainer>
-                      </div>
-                    ) : (
-                      <p className="text-center text-muted-foreground py-8">No data to display</p>
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* Bet History Table */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Bet History</CardTitle>
-                    <CardDescription>All simulated bets for this strategy</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="rounded-md border overflow-auto max-h-[400px]">
-                      <Table>
-                        <TableHeader className="sticky top-0 bg-background z-10">
-                          <TableRow>
-                            <TableHead>Date</TableHead>
-                            <TableHead>Match</TableHead>
-                            <TableHead>Prediction</TableHead>
-                            <TableHead>Conf</TableHead>
-                            <TableHead>Stake</TableHead>
-                            <TableHead>Result</TableHead>
-                            <TableHead>P/L</TableHead>
-                            <TableHead>Bankroll</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {result.betHistory.length === 0 ? (
-                            <TableRow>
-                              <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                                No bets matched the strategy criteria
-                              </TableCell>
-                            </TableRow>
+                <TabsContent value="results" className="space-y-6">
+                  {/* Summary Stats */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <Card className={cn(
+                      "border-2",
+                      result.totalProfit >= 0 ? "border-green-500/30 bg-green-500/5" : "border-red-500/30 bg-red-500/5"
+                    )}>
+                      <CardContent className="pt-4">
+                        <div className="flex items-center gap-2">
+                          {result.totalProfit >= 0 ? (
+                            <TrendingUp className="h-5 w-5 text-green-500" />
                           ) : (
-                            result.betHistory.slice(0, 50).map((bet, idx) => (
-                              <TableRow key={idx}>
-                                <TableCell className="text-xs">{bet.date}</TableCell>
-                                <TableCell className="max-w-[150px] truncate text-xs" title={bet.matchTitle}>
-                                  {bet.matchTitle}
-                                </TableCell>
-                                <TableCell className="text-xs">{bet.prediction.substring(0, 20)}</TableCell>
-                                <TableCell>
-                                  <Badge variant="secondary" className="text-xs">
-                                    {bet.confidence}%
-                                  </Badge>
-                                </TableCell>
-                                <TableCell className="text-xs">${bet.stake.toFixed(0)}</TableCell>
-                                <TableCell>
-                                  <Badge className={cn(
-                                    "text-xs",
-                                    bet.result === 'won' 
-                                      ? "bg-green-500/20 text-green-600" 
-                                      : "bg-red-500/20 text-red-600"
-                                  )}>
-                                    {bet.result}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell className={cn(
-                                  "text-xs font-medium",
-                                  bet.profit >= 0 ? "text-green-500" : "text-red-500"
-                                )}>
-                                  {formatCurrency(bet.profit)}
-                                </TableCell>
-                                <TableCell className="text-xs">${bet.bankrollAfter.toFixed(0)}</TableCell>
-                              </TableRow>
-                            ))
+                            <TrendingDown className="h-5 w-5 text-red-500" />
                           )}
-                        </TableBody>
-                      </Table>
+                          <div>
+                            <p className={cn(
+                              "text-2xl font-bold",
+                              result.totalProfit >= 0 ? "text-green-500" : "text-red-500"
+                            )}>
+                              {formatCurrency(result.totalProfit)}
+                            </p>
+                            <p className="text-xs text-muted-foreground">Total P/L</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardContent className="pt-4">
+                        <div className="flex items-center gap-2">
+                          <Target className="h-5 w-5 text-blue-500" />
+                          <div>
+                            <p className="text-2xl font-bold">{result.winRate.toFixed(1)}%</p>
+                            <p className="text-xs text-muted-foreground">Win Rate ({result.wins}-{result.losses})</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardContent className="pt-4">
+                        <div className="flex items-center gap-2">
+                          <Activity className="h-5 w-5 text-purple-500" />
+                          <div>
+                            <p className={cn(
+                              "text-2xl font-bold",
+                              result.roi >= 0 ? "text-green-500" : "text-red-500"
+                            )}>
+                              {result.roi >= 0 ? '+' : ''}{result.roi.toFixed(1)}%
+                            </p>
+                            <p className="text-xs text-muted-foreground">ROI</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardContent className="pt-4">
+                        <div className="flex items-center gap-2">
+                          <DollarSign className="h-5 w-5 text-yellow-500" />
+                          <div>
+                            <p className="text-2xl font-bold">${result.finalBankroll.toFixed(0)}</p>
+                            <p className="text-xs text-muted-foreground">Final Bankroll</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Detailed Stats */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="bg-muted/30 rounded-lg p-3 text-center">
+                      <p className="text-lg font-bold">{result.totalBets}</p>
+                      <p className="text-xs text-muted-foreground">Total Bets</p>
                     </div>
-                    {result.betHistory.length > 50 && (
-                      <p className="text-xs text-muted-foreground text-center mt-2">
-                        Showing 50 of {result.betHistory.length} bets
-                      </p>
-                    )}
-                  </CardContent>
-                </Card>
-              </>
+                    <div className="bg-muted/30 rounded-lg p-3 text-center">
+                      <p className="text-lg font-bold text-red-500">-${result.maxDrawdown.toFixed(0)}</p>
+                      <p className="text-xs text-muted-foreground">Max Drawdown</p>
+                    </div>
+                    <div className="bg-muted/30 rounded-lg p-3 text-center flex items-center justify-center gap-1">
+                      <Flame className="h-4 w-4 text-orange-500" />
+                      <p className="text-lg font-bold">{result.longestWinStreak}</p>
+                      <p className="text-xs text-muted-foreground">Best Streak</p>
+                    </div>
+                    <div className="bg-muted/30 rounded-lg p-3 text-center flex items-center justify-center gap-1">
+                      <Snowflake className="h-4 w-4 text-blue-500" />
+                      <p className="text-lg font-bold">{result.longestLoseStreak}</p>
+                      <p className="text-xs text-muted-foreground">Cold Streak</p>
+                    </div>
+                  </div>
+
+                  {/* Chart */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Cumulative P/L Over Time</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {result.profitByDay.length > 0 ? (
+                        <div className="h-[250px]">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={result.profitByDay}>
+                              <defs>
+                                <linearGradient id="profitGradient" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="5%" stopColor="hsl(var(--chart-1))" stopOpacity={0.3}/>
+                                  <stop offset="95%" stopColor="hsl(var(--chart-1))" stopOpacity={0}/>
+                                </linearGradient>
+                              </defs>
+                              <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                              <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+                              <YAxis tickFormatter={(v) => `$${v}`} />
+                              <Tooltip content={<CustomTooltip />} />
+                              <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" />
+                              <Area 
+                                type="monotone" 
+                                dataKey="cumulative" 
+                                stroke="hsl(var(--chart-1))" 
+                                fill="url(#profitGradient)"
+                                strokeWidth={2}
+                              />
+                            </AreaChart>
+                          </ResponsiveContainer>
+                        </div>
+                      ) : (
+                        <p className="text-center text-muted-foreground py-8">No data to display</p>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* Bet History Table */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Bet History</CardTitle>
+                      <CardDescription>All simulated bets for this strategy</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="rounded-md border overflow-auto max-h-[400px]">
+                        <Table>
+                          <TableHeader className="sticky top-0 bg-background z-10">
+                            <TableRow>
+                              <TableHead>Date</TableHead>
+                              <TableHead>Match</TableHead>
+                              <TableHead>Prediction</TableHead>
+                              <TableHead>Conf</TableHead>
+                              <TableHead>Stake</TableHead>
+                              <TableHead>Result</TableHead>
+                              <TableHead>P/L</TableHead>
+                              <TableHead>Bankroll</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {result.betHistory.length === 0 ? (
+                              <TableRow>
+                                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                                  No bets matched the strategy criteria
+                                </TableCell>
+                              </TableRow>
+                            ) : (
+                              result.betHistory.slice(0, 50).map((bet, idx) => (
+                                <TableRow key={idx}>
+                                  <TableCell className="text-xs">{bet.date}</TableCell>
+                                  <TableCell className="max-w-[150px] truncate text-xs" title={bet.matchTitle}>
+                                    {bet.matchTitle}
+                                  </TableCell>
+                                  <TableCell className="text-xs">{bet.prediction.substring(0, 20)}</TableCell>
+                                  <TableCell>
+                                    <Badge variant="secondary" className="text-xs">
+                                      {bet.confidence}%
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell className="text-xs">${bet.stake.toFixed(0)}</TableCell>
+                                  <TableCell>
+                                    <Badge className={cn(
+                                      "text-xs",
+                                      bet.result === 'won' 
+                                        ? "bg-green-500/20 text-green-600" 
+                                        : "bg-red-500/20 text-red-600"
+                                    )}>
+                                      {bet.result}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell className={cn(
+                                    "text-xs font-medium",
+                                    bet.profit >= 0 ? "text-green-500" : "text-red-500"
+                                  )}>
+                                    {formatCurrency(bet.profit)}
+                                  </TableCell>
+                                  <TableCell className="text-xs">${bet.bankrollAfter.toFixed(0)}</TableCell>
+                                </TableRow>
+                              ))
+                            )}
+                          </TableBody>
+                        </Table>
+                      </div>
+                      {result.betHistory.length > 50 && (
+                        <p className="text-xs text-muted-foreground text-center mt-2">
+                          Showing 50 of {result.betHistory.length} bets
+                        </p>
+                      )}
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                <TabsContent value="montecarlo" className="space-y-6">
+                  {!monteCarloResult ? (
+                    <Card>
+                      <CardContent className="py-12 text-center">
+                        <Dices className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                        <h3 className="text-lg font-medium mb-2">Insufficient Data</h3>
+                        <p className="text-muted-foreground text-sm">
+                          Need at least 5 historical bets to run Monte Carlo simulation.
+                          <br />
+                          Current bets: {result.betHistory.length}
+                        </p>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    <>
+                      <Card className="bg-muted/20 border-dashed">
+                        <CardContent className="pt-4">
+                          <div className="flex items-start gap-3">
+                            <Info className="h-5 w-5 text-blue-500 mt-0.5" />
+                            <div className="text-sm">
+                              <p className="font-medium">What is Monte Carlo Simulation?</p>
+                              <p className="text-muted-foreground">
+                                We run {numSimulations.toLocaleString()} simulations by randomly reordering your bets to show the range of possible outcomes. 
+                                This helps you understand the uncertainty and risk in your strategy beyond just the historical result.
+                              </p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                      
+                      <MonteCarloCharts result={monteCarloResult} startingBankroll={startingBankroll} />
+                    </>
+                  )}
+                </TabsContent>
+              </Tabs>
             )}
           </div>
         </div>
