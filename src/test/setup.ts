@@ -27,6 +27,30 @@ Object.defineProperty(window, 'matchMedia', {
   })),
 });
 
+// Mock ResizeObserver
+class ResizeObserverMock {
+  observe = vi.fn();
+  unobserve = vi.fn();
+  disconnect = vi.fn();
+}
+global.ResizeObserver = ResizeObserverMock;
+
+// Mock IntersectionObserver
+class IntersectionObserverMock {
+  constructor(callback: IntersectionObserverCallback) {
+    this.callback = callback;
+  }
+  callback: IntersectionObserverCallback;
+  root = null;
+  rootMargin = '';
+  thresholds = [];
+  observe = vi.fn();
+  unobserve = vi.fn();
+  disconnect = vi.fn();
+  takeRecords = vi.fn().mockReturnValue([]);
+}
+global.IntersectionObserver = IntersectionObserverMock as unknown as typeof IntersectionObserver;
+
 // Reset mocks between tests
 beforeEach(() => {
   vi.clearAllMocks();
