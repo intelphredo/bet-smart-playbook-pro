@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Match } from "@/types/sports";
 import NavBar from "@/components/NavBar";
 import PageFooter from "@/components/PageFooter";
+import PremiumHero from "@/components/PremiumHero";
 import { useSportsData } from "@/hooks/useSportsData";
 import { useArbitrageCalculator } from "@/hooks/useArbitrageCalculator";
 import { useBetTracking } from "@/hooks/useBetTracking";
@@ -123,10 +124,23 @@ const Index = () => {
     [filteredLive, filteredFinished, filteredUpcoming]
   );
 
+  // Calculate high confidence picks count
+  const highConfidencePicks = useMemo(() => 
+    [...filteredUpcoming, ...filteredLive].filter(m => (m.prediction?.confidence || 0) >= 75).length,
+    [filteredUpcoming, filteredLive]
+  );
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <TopLoader isLoading={isLoading} />
       <NavBar />
+
+      {/* Premium Hero Section */}
+      <PremiumHero 
+        liveGamesCount={filteredLive.length}
+        upcomingGamesCount={filteredUpcoming.length}
+        highConfidencePicks={highConfidencePicks}
+      />
 
       {/* Scores Ticker */}
       <ScoreboardStrip matches={allScores.slice(0, 20)} />
