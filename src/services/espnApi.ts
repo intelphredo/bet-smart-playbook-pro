@@ -4,6 +4,49 @@ import { ESPN_API_BASE } from "./espnConstants";
 import { mapESPNEventToMatch, ESPNResponse } from "./espnMappers";
 import { format, addDays } from "date-fns";
 
+const statusRank: Record<Match["status"], number> = {
+  live: 3,
+  finished: 2,
+  scheduled: 1,
+  pre: 1,
+};
+
+const hasUsableScore = (m: Match) =>
+  (m.status === "live" || m.status === "finished") &&
+  m.score !== undefined &&
+  Number.isFinite(m.score.home) &&
+  Number.isFinite(m.score.away);
+
+const scoreTotal = (m: Match) => (m.score ? (m.score.home ?? 0) + (m.score.away ?? 0) : -1);
+
+const selectBetterMatch = (a: Match, b: Match): Match => {
+  // Prefer higher-status (live > finished > scheduled)
+  const rankA = statusRank[a.status] ?? 0;
+  const rankB = statusRank[b.status] ?? 0;
+  if (rankA !== rankB) return rankB > rankA ? b : a;
+
+  // Prefer the one that actually has score data (important for live accuracy)
+  const aHasScore = hasUsableScore(a);
+  const bHasScore = hasUsableScore(b);
+  if (aHasScore !== bHasScore) return bHasScore ? b : a;
+
+  // If both have scores, prefer the one that looks "later" (higher total points)
+  if (aHasScore && bHasScore) {
+    const aTotal = scoreTotal(a);
+    const bTotal = scoreTotal(b);
+    if (aTotal !== bTotal) return bTotal > aTotal ? b : a;
+  }
+
+  // Prefer the one with logos present
+  const aHasLogos = Boolean(a.homeTeam?.logo) && Boolean(a.awayTeam?.logo);
+  const bHasLogos = Boolean(b.homeTeam?.logo) && Boolean(b.awayTeam?.logo);
+  if (aHasLogos !== bHasLogos) return bHasLogos ? b : a;
+
+  // Otherwise prefer the newer one (b)
+  return b;
+};
+
+
 // Data source tracking
 export interface ESPNDataStatus {
   source: "live" | "mock";
@@ -97,20 +140,27 @@ export const fetchLeagueScheduleAdvanced = async (league: League, daysAhead: num
   
   try {
     // Fetch all dates in parallel
-    const results = await Promise.all(
-      dates.map(date => fetchGamesForDate(league, date))
-    );
-    
+    const results = await Promise.all(dates.map((date) => fetchGamesForDate(league, date)));
+
     const allMatches = results.flat();
-    
+
+    // De-dupe by id, preferring the best/most complete match (fixes live score staleness)
+    const byId = new Map<string, Match>();
+    for (const m of allMatches) {
+      const existing = byId.get(m.id);
+      byId.set(m.id, existing ? selectBetterMatch(existing, m) : m);
+    }
+
+    const dedupedMatches = Array.from(byId.values());
+
     // Update status if we got real data
-    if (allMatches.length > 0 && !allMatches.some(m => m.isMockData)) {
+    if (dedupedMatches.length > 0 && !dedupedMatches.some((m) => m.isMockData)) {
       dataStatus.source = "live";
       dataStatus.lastUpdated = new Date();
-      dataStatus.gamesLoaded += allMatches.length;
+      dataStatus.gamesLoaded += dedupedMatches.length;
     }
-    
-    return allMatches;
+
+    return dedupedMatches;
   } catch (error) {
     console.error(`Error fetching ${league} schedule:`, error);
     return generateMockEventsForLeague(league);
@@ -339,9 +389,13 @@ export const fetchAllSchedules = async (daysAhead: number = 7, daysBehind: numbe
     );
     const allMatches = results.flat();
     
-    // Deduplicate by match ID
+    // Deduplicate by match ID, preferring the best/most complete record
     const uniqueMatches = Array.from(
-      new Map(allMatches.map(m => [m.id, m])).values()
+      allMatches.reduce((map, m) => {
+        const existing = map.get(m.id);
+        map.set(m.id, existing ? selectBetterMatch(existing, m) : m);
+        return map;
+      }, new Map<string, Match>()).values()
     );
     
     // Sort by start time - most recent finished games first for Recent Results

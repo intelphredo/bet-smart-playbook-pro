@@ -97,6 +97,7 @@ export function ScoreboardRow({ match, showOdds = true }: ScoreboardRowProps) {
           <div className="flex items-center gap-2.5 min-w-0">
             <TeamLogoImage
               teamName={match.awayTeam?.name || 'Away'}
+              teamId={match.awayTeam?.id}
               logoUrl={match.awayTeam?.logo}
               league={match.league}
               size="xs"
@@ -131,6 +132,7 @@ export function ScoreboardRow({ match, showOdds = true }: ScoreboardRowProps) {
           <div className="flex items-center gap-2.5 min-w-0">
             <TeamLogoImage
               teamName={match.homeTeam?.name || 'Home'}
+              teamId={match.homeTeam?.id}
               logoUrl={match.homeTeam?.logo}
               league={match.league}
               size="xs"

@@ -144,6 +144,7 @@ function TeamRow({ matchId, teamKey, name, logo, league, score, isWinning, isLiv
       <div className="flex items-center gap-1.5 min-w-0 flex-1">
         <TeamLogoImage
           teamName={name}
+          teamId={/^(\d+)$/.test(matchId) ? matchId : undefined}
           logoUrl={logo}
           league={league as any}
           size="xs"

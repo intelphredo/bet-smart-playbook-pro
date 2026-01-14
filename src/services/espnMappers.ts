@@ -122,18 +122,26 @@ export const mapESPNEventToMatch = (event: ESPNEvent, league: League): Match => 
       ...(league === "SOCCER" && { draw: baseDrawOdds })
     };
     
-    // Handle both string and number scores
-    const parseScore = (scoreValue: string | undefined) => {
-      if (scoreValue === undefined) return 0;
-      // Try to parse as number, default to 0 if it fails
-      return parseInt(scoreValue, 10) || 0;
+    // Handle score values safely:
+    // - If ESPN omits the score field temporarily, do NOT coerce to 0 (that looks like a real score)
+    // - If ESPN provides "0", that IS a real score (e.g. 0-0)
+    const parseScoreMaybe = (scoreValue: string | undefined): number | null => {
+      if (scoreValue === undefined) return null;
+      const parsed = parseInt(scoreValue, 10);
+      return Number.isFinite(parsed) ? parsed : 0;
     };
-    
-    const score = status !== "scheduled" ? {
-      home: parseScore(homeCompetitor.score),
-      away: parseScore(awayCompetitor.score),
-      period: `Period ${event.status?.period || 1} - ${event.status?.displayClock || "00:00"}`,
-    } : undefined;
+
+    const homeParsed = parseScoreMaybe(homeCompetitor.score);
+    const awayParsed = parseScoreMaybe(awayCompetitor.score);
+
+    const score =
+      status !== "scheduled" && homeParsed !== null && awayParsed !== null
+        ? {
+            home: homeParsed,
+            away: awayParsed,
+            period: `Period ${event.status?.period || 1} - ${event.status?.displayClock || "00:00"}`,
+          }
+        : undefined;
     
     // Generate more balanced prediction
     const homeTeamFavored = homeStrength > awayStrength;
