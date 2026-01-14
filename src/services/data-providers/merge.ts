@@ -16,6 +16,11 @@ export interface UnifiedGame {
   league?: string;
   source: string;
   lastUpdated: string;
+  score?: {
+    home: number;
+    away: number;
+    period?: string;
+  };
 }
 
 interface MergeInput {
@@ -54,6 +59,7 @@ export function mergeGames({
         league: game.league,
         source: "ESPN",
         lastUpdated: now,
+        score: game.score,
       });
     }
   }
@@ -76,6 +82,7 @@ export function mergeGames({
         league: game.league,
         source: "Sportradar",
         lastUpdated: now,
+        score: game.score,
       });
     }
   }

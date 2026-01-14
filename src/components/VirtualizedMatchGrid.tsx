@@ -14,14 +14,21 @@ interface VirtualizedMatchGridProps {
 
 // Simplified MatchCard for initial render (reduces DOM nodes significantly)
 const CompactMatchCard = ({ match }: { match: Match }) => {
+  const isLive = match.status === "live";
+  const isFinished = match.status === "finished";
+  const hasScore = match.score && (match.score.home !== undefined || match.score.away !== undefined);
+  
   return (
     <div className="p-4 rounded-xl border bg-card text-card-foreground shadow-sm">
       <div className="flex items-center justify-between mb-3">
         <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-0.5 rounded">
           {match.league}
         </span>
-        {match.status === "live" && (
-          <span className="text-xs text-destructive font-medium">● LIVE</span>
+        {isLive && (
+          <span className="text-xs text-destructive font-medium animate-pulse">● LIVE</span>
+        )}
+        {isFinished && (
+          <span className="text-xs text-muted-foreground font-medium">Final</span>
         )}
       </div>
       <div className="flex items-center justify-between gap-2">
@@ -34,8 +41,30 @@ const CompactMatchCard = ({ match }: { match: Match }) => {
             className="mx-auto mb-1"
           />
           <p className="text-sm font-medium truncate">{match.homeTeam?.shortName}</p>
+          {hasScore && (
+            <p className={cn(
+              "text-lg font-bold mt-1",
+              isLive && "text-destructive",
+              isFinished && (match.score?.home || 0) > (match.score?.away || 0) && "text-green-500"
+            )}>
+              {match.score?.home ?? 0}
+            </p>
+          )}
         </div>
-        <div className="text-muted-foreground text-sm">vs</div>
+        <div className="text-center">
+          {hasScore ? (
+            <div className="space-y-1">
+              <span className="text-muted-foreground text-lg font-bold">-</span>
+              {isLive && match.score?.period && (
+                <p className="text-[10px] text-muted-foreground bg-accent/50 px-1.5 py-0.5 rounded">
+                  {match.score.period}
+                </p>
+              )}
+            </div>
+          ) : (
+            <span className="text-muted-foreground text-sm">vs</span>
+          )}
+        </div>
         <div className="flex-1 text-center">
           <TeamLogoImage
             teamName={match.awayTeam?.name || "Away"}
@@ -45,9 +74,18 @@ const CompactMatchCard = ({ match }: { match: Match }) => {
             className="mx-auto mb-1"
           />
           <p className="text-sm font-medium truncate">{match.awayTeam?.shortName}</p>
+          {hasScore && (
+            <p className={cn(
+              "text-lg font-bold mt-1",
+              isLive && "text-destructive",
+              isFinished && (match.score?.away || 0) > (match.score?.home || 0) && "text-green-500"
+            )}>
+              {match.score?.away ?? 0}
+            </p>
+          )}
         </div>
       </div>
-      {match.prediction?.confidence && (
+      {!hasScore && match.prediction?.confidence && (
         <div className="mt-3 text-center">
           <span className="text-xs text-muted-foreground">
             Confidence: {match.prediction.confidence}%
