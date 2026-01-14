@@ -198,9 +198,12 @@ function PredictionRow({
 export default function AlgorithmAccuracyDashboard() {
   const [days, setDays] = useState(30);
   const [selectedAlgorithm, setSelectedAlgorithm] = useState('all');
+  const [recentResultsLimit, setRecentResultsLimit] = useState(20);
   const [editingPrediction, setEditingPrediction] = useState<AlgorithmPrediction | null>(null);
   const [correctionModalOpen, setCorrectionModalOpen] = useState(false);
   const [bulkCorrectionOpen, setBulkCorrectionOpen] = useState(false);
+
+  const RESULTS_PER_PAGE_OPTIONS = [10, 25, 50, 100];
 
   const algorithmId = selectedAlgorithm === 'all' ? undefined : selectedAlgorithm;
 
@@ -213,7 +216,7 @@ export default function AlgorithmAccuracyDashboard() {
   const {
     data: recentPredictions,
     isLoading: isLoadingPredictions,
-  } = useRecentPredictions({ limit: 20, algorithmId });
+  } = useRecentPredictions({ limit: recentResultsLimit, algorithmId });
 
   const {
     savePredictions,
@@ -433,10 +436,24 @@ export default function AlgorithmAccuracyDashboard() {
 
         {/* Recent Predictions */}
         <div className="space-y-4">
-          <h3 className="font-semibold flex items-center gap-2">
-            <Clock className="h-4 w-4" />
-            Recent Predictions
-          </h3>
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold flex items-center gap-2">
+              <Clock className="h-4 w-4" />
+              Recent Predictions
+            </h3>
+            <Select value={String(recentResultsLimit)} onValueChange={(v) => setRecentResultsLimit(Number(v))}>
+              <SelectTrigger className="w-[100px] h-8">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {RESULTS_PER_PAGE_OPTIONS.map(option => (
+                  <SelectItem key={option} value={String(option)}>
+                    {option} results
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <Card>
             <CardContent className="p-4">
               {recentPredictions && recentPredictions.length > 0 ? (
