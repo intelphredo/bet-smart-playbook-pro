@@ -26,9 +26,11 @@ const SeasonRecordCard: React.FC<SeasonRecordCardProps> = ({
   league, 
   isHighlighted = false 
 }) => {
-  const getStreakColor = (streak: string) => {
-    if (streak.startsWith("W")) return "text-green-500";
-    if (streak.startsWith("L")) return "text-red-500";
+  const getStreakColor = (streak: string | number | undefined | null) => {
+    if (!streak) return "text-muted-foreground";
+    const streakStr = String(streak);
+    if (streakStr.startsWith("W")) return "text-green-500";
+    if (streakStr.startsWith("L")) return "text-red-500";
     return "text-muted-foreground";
   };
 
