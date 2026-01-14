@@ -239,11 +239,20 @@ const HistoricalPredictionsSection = () => {
           <div className="flex flex-col sm:flex-row gap-4">
             {/* Time Range Selector */}
             <div className="flex-1">
-              <div className="flex items-center gap-2 mb-2">
+              <div className="flex items-center gap-2 mb-2 flex-wrap">
                 <Calendar className="h-4 w-4 text-primary" />
                 <span className="text-sm font-medium">Time Range</span>
                 <Badge variant="secondary" className="text-xs font-medium">
-                  {predictions.length} predictions
+                  {predictions.length} total
+                </Badge>
+                <Badge variant="outline" className="text-xs font-medium text-green-600 border-green-500/30 bg-green-500/10">
+                  {stats?.won || 0} W
+                </Badge>
+                <Badge variant="outline" className="text-xs font-medium text-red-600 border-red-500/30 bg-red-500/10">
+                  {stats?.lost || 0} L
+                </Badge>
+                <Badge variant="outline" className="text-xs font-medium text-yellow-600 border-yellow-500/30 bg-yellow-500/10">
+                  {stats?.pending || 0} P
                 </Badge>
               </div>
               <div className="flex flex-wrap gap-1.5">
