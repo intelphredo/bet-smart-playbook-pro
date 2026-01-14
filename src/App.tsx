@@ -1,26 +1,6 @@
-
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
+import { BrowserRouter as Router } from "react-router-dom";
 import { Toaster } from "sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import AlgorithmsComparison from "./pages/AlgorithmsComparison";
-import CompareAlgorithms from "./pages/CompareAlgorithms";
-import BacktestSimulator from "./pages/BacktestSimulator";
-import CreatorDashboard from "./pages/CreatorDashboard";
-import ScenarioGuide from "./pages/ScenarioGuide";
-import BankrollManager from "./pages/BankrollManager";
-import Standings from "./pages/Standings";
-import Injuries from "./pages/Injuries";
-import BettingTrends from "./pages/BettingTrends";
-import BetHistory from "./pages/BetHistory";
-import Settings from "./pages/Settings";
-import Auth from "./pages/Auth";
-import GameDetailPage from "./pages/GameDetailPage";
-import LiveGamesPage from "./pages/LiveGamesPage";
-import GamesPage from "./pages/GamesPage";
-import ROITracker from "./pages/ROITracker";
-import AIPredictions from "./pages/AIPredictions";
-import RecentResultsPage from "./pages/RecentResultsPage";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/useAuth";
 import { OddsFormatProvider } from "@/contexts/OddsFormatContext";
@@ -28,6 +8,7 @@ import { BetSlipProvider } from "@/components/BetSlip/BetSlipContext";
 import FloatingBetSlip from "@/components/BetSlip/FloatingBetSlip";
 import { PreferencesProvider } from "@/hooks/usePreferences";
 import SharpMoneyMonitor from "@/components/SharpMoneyMonitor";
+import AnimatedRoutes from "@/components/layout/AnimatedRoutes";
 
 // Create a client
 const queryClient = new QueryClient({
@@ -82,27 +63,7 @@ function App() {
             <BetSlipProvider>
               <TooltipProvider>
                 <Router>
-                  <Routes>
-                    <Route path="/" element={<Index />} />
-                    <Route path="/game/:id" element={<GameDetailPage />} />
-                    <Route path="/live" element={<LiveGamesPage />} />
-                    <Route path="/games" element={<GamesPage />} />
-                    <Route path="/standings" element={<Standings />} />
-                    <Route path="/injuries" element={<Injuries />} />
-                    <Route path="/betting-trends" element={<BettingTrends />} />
-                    <Route path="/roi" element={<ROITracker />} />
-                    <Route path="/ai-predictions" element={<AIPredictions />} />
-                    <Route path="/recent-results" element={<RecentResultsPage />} />
-                    <Route path="/algorithms" element={<AlgorithmsComparison />} />
-                    <Route path="/compare-algorithms" element={<CompareAlgorithms />} />
-                    <Route path="/backtest" element={<BacktestSimulator />} />
-                    <Route path="/creator" element={<CreatorDashboard />} />
-                    <Route path="/scenarios" element={<ScenarioGuide />} />
-                    <Route path="/bankroll" element={<BankrollManager />} />
-                    <Route path="/bet-history" element={<BetHistory />} />
-                    <Route path="/settings" element={<Settings />} />
-                    <Route path="/auth" element={<Auth />} />
-                  </Routes>
+                  <AnimatedRoutes />
                   <FloatingBetSlip />
                   <SharpMoneyMonitor />
                 </Router>
