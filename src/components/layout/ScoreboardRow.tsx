@@ -8,6 +8,7 @@ import { format, parseISO } from 'date-fns';
 import SharpMoneyBadge from '@/components/MatchCard/SharpMoneyBadge';
 import { formatAmericanOdds } from '@/utils/sportsbook';
 import AnimatedScore from '@/components/ui/AnimatedScore';
+import { TeamLogoImage } from '@/components/ui/TeamLogoImage';
 
 interface ScoreboardRowProps {
   match: Match;
@@ -90,13 +91,17 @@ export function ScoreboardRow({ match, showOdds = true }: ScoreboardRowProps) {
       </div>
 
       {/* Teams & Scores - 6 cols */}
-      <div className="col-span-6 space-y-1">
+      <div className="col-span-6 space-y-1.5">
         {/* Away Team */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 min-w-0">
-            {match.awayTeam?.logo && (
-              <img src={match.awayTeam.logo} alt="" className="w-5 h-5 object-contain" />
-            )}
+          <div className="flex items-center gap-2.5 min-w-0">
+            <TeamLogoImage
+              teamName={match.awayTeam?.name || 'Away'}
+              logoUrl={match.awayTeam?.logo}
+              league={match.league}
+              size="xs"
+              className="flex-shrink-0"
+            />
             <span className={cn(
               "text-sm truncate",
               awayWinning && isFinished && "font-bold"
@@ -123,10 +128,14 @@ export function ScoreboardRow({ match, showOdds = true }: ScoreboardRowProps) {
         
         {/* Home Team */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 min-w-0">
-            {match.homeTeam?.logo && (
-              <img src={match.homeTeam.logo} alt="" className="w-5 h-5 object-contain" />
-            )}
+          <div className="flex items-center gap-2.5 min-w-0">
+            <TeamLogoImage
+              teamName={match.homeTeam?.name || 'Home'}
+              logoUrl={match.homeTeam?.logo}
+              league={match.league}
+              size="xs"
+              className="flex-shrink-0"
+            />
             <span className={cn(
               "text-sm truncate",
               homeWinning && isFinished && "font-bold"

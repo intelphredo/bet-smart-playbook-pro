@@ -6,6 +6,7 @@ import { Match } from '@/types/sports';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import AnimatedScore from '@/components/ui/AnimatedScore';
+import { TeamLogoImage } from '@/components/ui/TeamLogoImage';
 
 interface ScoreboardStripProps {
   matches: Match[];
@@ -82,12 +83,12 @@ function ScoreCard({ match, onClick }: { match: Match; onClick: () => void }) {
     <button
       onClick={onClick}
       className={cn(
-        "flex-shrink-0 w-[140px] bg-card hover:bg-accent/50 rounded-lg p-2 border transition-colors text-left",
+        "flex-shrink-0 w-[160px] bg-card hover:bg-accent/50 rounded-lg p-2.5 border transition-colors text-left",
         isLive && "border-red-500/50 bg-red-500/5"
       )}
     >
       {/* League & Time */}
-      <div className="flex items-center justify-between mb-1.5">
+      <div className="flex items-center justify-between mb-2">
         <span className="text-[10px] text-muted-foreground font-medium uppercase">
           {match.league}
         </span>
@@ -100,11 +101,13 @@ function ScoreCard({ match, onClick }: { match: Match; onClick: () => void }) {
       </div>
 
       {/* Teams */}
-      <div className="space-y-1">
+      <div className="space-y-1.5">
         <TeamRow 
           matchId={match.id}
           teamKey="away"
           name={match.awayTeam?.shortName || match.awayTeam?.name || 'Away'} 
+          logo={match.awayTeam?.logo}
+          league={match.league}
           score={showScores ? (match.score?.away ?? 0) : undefined}
           isWinning={isFinished && (match.score?.away || 0) > (match.score?.home || 0)}
           isLive={isLive}
@@ -113,6 +116,8 @@ function ScoreCard({ match, onClick }: { match: Match; onClick: () => void }) {
           matchId={match.id}
           teamKey="home"
           name={match.homeTeam?.shortName || match.homeTeam?.name || 'Home'} 
+          logo={match.homeTeam?.logo}
+          league={match.league}
           score={showScores ? (match.score?.home ?? 0) : undefined}
           isWinning={isFinished && (match.score?.home || 0) > (match.score?.away || 0)}
           isLive={isLive}
@@ -126,20 +131,31 @@ interface TeamRowProps {
   matchId: string;
   teamKey: 'home' | 'away';
   name: string;
+  logo?: string;
+  league?: string;
   score?: number;
   isWinning?: boolean;
   isLive?: boolean;
 }
 
-function TeamRow({ matchId, teamKey, name, score, isWinning, isLive }: TeamRowProps) {
+function TeamRow({ matchId, teamKey, name, logo, league, score, isWinning, isLive }: TeamRowProps) {
   return (
-    <div className="flex items-center justify-between">
-      <span className={cn(
-        "text-xs truncate max-w-[90px]",
-        isWinning ? "font-bold" : "font-medium"
-      )}>
-        {name}
-      </span>
+    <div className="flex items-center justify-between gap-1.5">
+      <div className="flex items-center gap-1.5 min-w-0 flex-1">
+        <TeamLogoImage
+          teamName={name}
+          logoUrl={logo}
+          league={league as any}
+          size="xs"
+          className="flex-shrink-0"
+        />
+        <span className={cn(
+          "text-xs truncate",
+          isWinning ? "font-bold" : "font-medium"
+        )}>
+          {name}
+        </span>
+      </div>
       {score !== undefined && (
         <AnimatedScore
           score={score}

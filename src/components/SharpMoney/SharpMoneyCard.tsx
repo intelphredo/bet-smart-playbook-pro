@@ -11,6 +11,7 @@ import { SharpSignal } from '@/types/bettingTrends';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
+import { TeamLogoImage } from '@/components/ui/TeamLogoImage';
 
 interface SharpMoneyCardProps {
   game: SharpMoneyGame;
@@ -42,6 +43,8 @@ export function SharpMoneyCard({ game, onClick, compact = false }: SharpMoneyCar
   const awayTeamName = typeof match.awayTeam === 'string' ? match.awayTeam : match.awayTeam.name;
   const homeTeamShort = homeTeamName.split(' ').pop() || homeTeamName;
   const awayTeamShort = awayTeamName.split(' ').pop() || awayTeamName;
+  const homeTeamLogo = typeof match.homeTeam === 'object' ? match.homeTeam.logo : undefined;
+  const awayTeamLogo = typeof match.awayTeam === 'object' ? match.awayTeam.logo : undefined;
   
   const sharpTeamName = sharpSide === 'home' ? homeTeamName : sharpSide === 'away' ? awayTeamName : null;
   
@@ -75,9 +78,23 @@ export function SharpMoneyCard({ game, onClick, compact = false }: SharpMoneyCar
           
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <span className="font-medium text-sm truncate">
-                {awayTeamName} @ {homeTeamName}
-              </span>
+              <div className="flex items-center gap-1.5">
+                <TeamLogoImage
+                  teamName={awayTeamName}
+                  logoUrl={awayTeamLogo}
+                  league={match.league as any}
+                  size="xs"
+                />
+                <span className="text-sm font-medium">{awayTeamShort}</span>
+                <span className="text-muted-foreground text-xs">@</span>
+                <TeamLogoImage
+                  teamName={homeTeamName}
+                  logoUrl={homeTeamLogo}
+                  league={match.league as any}
+                  size="xs"
+                />
+                <span className="text-sm font-medium">{homeTeamShort}</span>
+              </div>
               <Badge variant="outline" className="text-[10px] shrink-0">
                 {match.league}
               </Badge>

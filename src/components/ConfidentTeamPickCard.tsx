@@ -5,6 +5,7 @@ import { Trophy, ChartLine, ExternalLink } from "lucide-react";
 import { Match } from "@/types/sports";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { TeamLogoImage } from "@/components/ui/TeamLogoImage";
 
 interface ConfidentTeamPickCardProps {
   match: Match;
@@ -37,7 +38,25 @@ const ConfidentTeamPickCard = ({ match }: ConfidentTeamPickCardProps) => {
         <CardHeader className="p-3 bg-muted/50">
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg flex items-center gap-2">
-              {match.homeTeam.shortName} vs {match.awayTeam.shortName}
+              <div className="flex items-center gap-2">
+                <TeamLogoImage
+                  teamName={match.homeTeam?.name || "Home"}
+                  logoUrl={match.homeTeam?.logo}
+                  league={match.league}
+                  size="xs"
+                />
+                <span>{match.homeTeam.shortName}</span>
+              </div>
+              <span className="text-muted-foreground">vs</span>
+              <div className="flex items-center gap-2">
+                <TeamLogoImage
+                  teamName={match.awayTeam?.name || "Away"}
+                  logoUrl={match.awayTeam?.logo}
+                  league={match.league}
+                  size="xs"
+                />
+                <span>{match.awayTeam.shortName}</span>
+              </div>
             </CardTitle>
             <Badge variant="outline">{match.league}</Badge>
           </div>
