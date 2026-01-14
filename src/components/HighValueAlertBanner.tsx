@@ -44,30 +44,30 @@ interface AlertItem {
 const ALERT_CONFIG = {
   high_confidence: {
     icon: Target,
-    color: 'text-green-500',
-    bg: 'bg-green-500/10',
-    border: 'border-green-500/30',
+    color: 'text-success',
+    bg: 'bg-success/10',
+    border: 'border-success/30',
     label: 'High Confidence',
   },
   smart_score: {
     icon: Zap,
-    color: 'text-yellow-500',
-    bg: 'bg-yellow-500/10',
-    border: 'border-yellow-500/30',
+    color: 'text-primary',
+    bg: 'bg-primary/10',
+    border: 'border-primary/30',
     label: 'High SmartScore',
   },
   positive_ev: {
     icon: TrendingUp,
-    color: 'text-blue-500',
-    bg: 'bg-blue-500/10',
-    border: 'border-blue-500/30',
+    color: 'text-primary',
+    bg: 'bg-primary/10',
+    border: 'border-primary/30',
     label: '+EV',
   },
   arbitrage: {
     icon: DollarSign,
-    color: 'text-purple-500',
-    bg: 'bg-purple-500/10',
-    border: 'border-purple-500/30',
+    color: 'text-primary',
+    bg: 'bg-primary/15',
+    border: 'border-primary/40',
     label: 'Arbitrage',
   },
 };
@@ -164,16 +164,21 @@ export const HighValueAlertBanner: React.FC<HighValueAlertBannerProps> = ({
         exit={{ opacity: 0, y: -20 }}
         className="mb-4"
       >
-        <Card className="border-primary/30 bg-gradient-to-r from-primary/5 via-background to-accent/5 overflow-hidden">
+        <Card className="gold-glow-card border-primary/30 bg-gradient-to-r from-primary/5 via-background to-accent/5 overflow-hidden">
+          {/* Shimmer overlay */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            <div className="absolute top-0 left-[-100%] w-1/2 h-full bg-gradient-to-r from-transparent via-primary/5 to-transparent animate-[cardShimmer_3s_ease-in-out_infinite]" />
+          </div>
+          
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-2 border-b border-border/50 bg-muted/30">
+          <div className="flex items-center justify-between px-4 py-2 border-b border-primary/20 bg-gradient-to-r from-primary/5 to-transparent relative">
             <div className="flex items-center gap-2">
-              <div className="relative">
+              <div className="relative high-value-indicator">
                 <Bell className="h-4 w-4 text-primary" />
-                <span className="absolute -top-1 -right-1 w-2 h-2 bg-destructive rounded-full animate-pulse" />
+                <span className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full animate-pulse" />
               </div>
-              <span className="text-sm font-medium">High-Value Opportunities</span>
-              <Badge variant="secondary" className="text-xs">
+              <span className="text-sm font-medium shimmer-text">High-Value Opportunities</span>
+              <Badge variant="gold" className="text-xs badge-glow">
                 {alerts.length} active
               </Badge>
             </div>
@@ -229,8 +234,9 @@ export const HighValueAlertBanner: React.FC<HighValueAlertBannerProps> = ({
                                 <button
                                   onClick={() => onMatchClick?.(alert.match)}
                                   className={cn(
-                                    "relative group flex items-center gap-3 px-4 py-3 rounded-lg border transition-all",
-                                    "hover:scale-[1.02] hover:shadow-md",
+                                    "relative group flex items-center gap-3 px-4 py-3 rounded-xl border transition-all",
+                                    "hover:scale-[1.02] hover:shadow-lg glow-border",
+                                    alert.type === 'arbitrage' && "gold-glow-card",
                                     config.bg,
                                     config.border
                                   )}
