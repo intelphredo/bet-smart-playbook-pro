@@ -59,14 +59,54 @@ export const AVAILABLE_SPORTSBOOKS: Sportsbook[] = [
 ];
 
 /**
- * Formats American odds from decimal odds
+ * Formats odds to clean American format (whole numbers, no decimals)
+ * Handles both decimal odds (1.5-10+) and American odds (100+/-100-)
  */
-export function formatAmericanOdds(decimalOdds: number): string {
-  if (decimalOdds >= 2) {
-    return `+${Math.round((decimalOdds - 1) * 100)}`;
-  } else {
-    return `-${Math.round(100 / (decimalOdds - 1))}`;
+export function formatAmericanOdds(odds: number | null | undefined): string {
+  if (odds === null || odds === undefined) return '-';
+  
+  // Already American odds format (>= 100 or <= -100)
+  if (odds >= 100) {
+    return `+${Math.round(odds)}`;
   }
+  if (odds <= -100) {
+    return `${Math.round(odds)}`;
+  }
+  
+  // Decimal odds format (typically 1.01 to ~50)
+  if (odds > 0 && odds < 100) {
+    // Convert decimal to American
+    if (odds >= 2) {
+      // Positive American odds: (decimal - 1) * 100
+      return `+${Math.round((odds - 1) * 100)}`;
+    } else if (odds > 1) {
+      // Negative American odds: -100 / (decimal - 1)
+      return `${Math.round(-100 / (odds - 1))}`;
+    }
+  }
+  
+  // Fallback - treat as American and round
+  return odds > 0 ? `+${Math.round(odds)}` : `${Math.round(odds)}`;
+}
+
+/**
+ * Formats moneyline odds to clean American format
+ * This is the primary function to use for displaying odds
+ */
+export function formatMoneylineOdds(value: number | null | undefined): string {
+  if (value === null || value === undefined) return '-';
+  
+  // Already in American format
+  if (value >= 100) return `+${Math.round(value)}`;
+  if (value <= -100) return `${Math.round(value)}`;
+  
+  // Small positive values are decimal odds, convert them
+  if (value > 1 && value < 100) {
+    return formatAmericanOdds(value);
+  }
+  
+  // Edge case: between -100 and 100 but not decimal - just round
+  return value > 0 ? `+${Math.round(value)}` : `${Math.round(value)}`;
 }
 
 /**

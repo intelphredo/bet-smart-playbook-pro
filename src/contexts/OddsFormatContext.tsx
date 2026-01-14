@@ -17,13 +17,27 @@ function gcd(a: number, b: number): number {
   return b === 0 ? a : gcd(b, a % b);
 }
 
-// Convert decimal odds to American format
-function decimalToAmerican(decimal: number): string {
-  if (decimal >= 2) {
-    return `+${Math.round((decimal - 1) * 100)}`;
-  } else {
-    return `${Math.round(-100 / (decimal - 1))}`;
+// Convert odds to American format (handles both decimal and already-American input)
+function toAmerican(odds: number): string {
+  // Already in American format (>= 100 or <= -100)
+  if (odds >= 100) {
+    return `+${Math.round(odds)}`;
   }
+  if (odds <= -100) {
+    return `${Math.round(odds)}`;
+  }
+  
+  // Decimal odds format (typically 1.01 to ~50)
+  if (odds > 1 && odds < 100) {
+    if (odds >= 2) {
+      return `+${Math.round((odds - 1) * 100)}`;
+    } else {
+      return `${Math.round(-100 / (odds - 1))}`;
+    }
+  }
+  
+  // Fallback
+  return odds > 0 ? `+${Math.round(odds)}` : `${Math.round(odds)}`;
 }
 
 // Convert decimal odds to fractional format
@@ -109,18 +123,31 @@ export function OddsFormatProvider({ children }: { children: React.ReactNode }) 
     setFormatState(newFormat);
   }, []);
 
-  const formatOdds = useCallback((decimalOdds: number | undefined): string => {
-    if (!decimalOdds || decimalOdds <= 1) return '-';
+  const formatOdds = useCallback((odds: number | undefined): string => {
+    if (!odds || odds === 0) return '-';
+    
+    // For non-american formats, we need to convert to decimal first if it's already American
+    const getDecimalValue = (val: number): number => {
+      if (val >= 100) {
+        // Positive American to decimal
+        return 1 + (val / 100);
+      } else if (val <= -100) {
+        // Negative American to decimal
+        return 1 + (100 / Math.abs(val));
+      }
+      // Already decimal
+      return val;
+    };
     
     switch (format) {
       case 'american':
-        return decimalToAmerican(decimalOdds);
+        return toAmerican(odds);
       case 'decimal':
-        return formatDecimal(decimalOdds);
+        return formatDecimal(getDecimalValue(odds));
       case 'fractional':
-        return decimalToFractional(decimalOdds);
+        return decimalToFractional(getDecimalValue(odds));
       default:
-        return decimalToAmerican(decimalOdds);
+        return toAmerican(odds);
     }
   }, [format]);
 

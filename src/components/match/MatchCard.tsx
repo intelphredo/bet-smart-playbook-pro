@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { UnifiedGame } from "@/hooks/useGames";
 import { cn } from "@/lib/utils";
 import { Radio, Star } from "lucide-react";
-import { getPrimaryOdds, formatAmericanOdds, PRIMARY_SPORTSBOOK } from "@/utils/sportsbook";
+import { getPrimaryOdds, formatMoneylineOdds, PRIMARY_SPORTSBOOK } from "@/utils/sportsbook";
 import { LiveOdds } from "@/types/sports";
 
 interface MatchCardProps {
@@ -24,13 +24,6 @@ export const MatchCard: React.FC<MatchCardProps> = ({ game }) => {
     : [];
   const primaryOdds = getPrimaryOdds(liveOdds);
   const isFanDuel = primaryOdds?.sportsbook.id.toLowerCase().includes('fanduel');
-  
-  const formatMoneyline = (value: number | null | undefined): string | null => {
-    if (value === null || value === undefined) return null;
-    if (value >= 100) return `+${Math.round(value)}`;
-    if (value <= -100) return `${Math.round(value)}`;
-    return formatAmericanOdds(value);
-  };
 
   const formatTime = (timeString: string) => {
     try {
@@ -155,13 +148,13 @@ export const MatchCard: React.FC<MatchCardProps> = ({ game }) => {
               <div className="flex justify-between">
                 <span className="text-muted-foreground">{game.homeTeam}</span>
                 <span className={cn("font-bold tabular-nums", isFanDuel && "text-primary")}>
-                  {formatMoneyline(primaryOdds.homeWin) || '-'}
+                  {formatMoneylineOdds(primaryOdds.homeWin)}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">{game.awayTeam}</span>
                 <span className={cn("font-bold tabular-nums", isFanDuel && "text-primary")}>
-                  {formatMoneyline(primaryOdds.awayWin) || '-'}
+                  {formatMoneylineOdds(primaryOdds.awayWin)}
                 </span>
               </div>
             </div>

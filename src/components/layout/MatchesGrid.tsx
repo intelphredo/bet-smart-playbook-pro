@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { Clock, Radio, CheckCircle2, Star } from "lucide-react";
 import MatchDetailModal from "./MatchDetailModal";
 import { TeamLogoImage } from "@/components/ui/TeamLogoImage";
-import { getPrimaryOdds, formatAmericanOdds } from "@/utils/sportsbook";
+import { getPrimaryOdds, formatMoneylineOdds } from "@/utils/sportsbook";
 
 interface MatchesGridProps {
   matches: Match[];
@@ -94,15 +94,8 @@ const MatchCard = ({
   const primaryOdds = getPrimaryOdds(match.liveOdds || []);
   const isFanDuel = primaryOdds?.sportsbook.id.toLowerCase().includes('fanduel');
   
-  const formatMoneyline = (value: number | null | undefined): string | null => {
-    if (value === null || value === undefined) return null;
-    if (value >= 100) return `+${Math.round(value)}`;
-    if (value <= -100) return `${Math.round(value)}`;
-    return formatAmericanOdds(value);
-  };
-
-  const homeML = primaryOdds ? formatMoneyline(primaryOdds.homeWin) : null;
-  const awayML = primaryOdds ? formatMoneyline(primaryOdds.awayWin) : null;
+  const homeML = primaryOdds ? formatMoneylineOdds(primaryOdds.homeWin) : '-';
+  const awayML = primaryOdds ? formatMoneylineOdds(primaryOdds.awayWin) : '-';
 
   return (
     <Card 

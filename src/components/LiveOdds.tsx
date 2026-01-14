@@ -4,7 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { formatDistanceToNow, parseISO } from "date-fns";
 import { Trophy, Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { SPORTSBOOK_LOGOS, sortOddsByPriority, PRIMARY_SPORTSBOOK } from "@/utils/sportsbook";
+import { SPORTSBOOK_LOGOS, sortOddsByPriority, PRIMARY_SPORTSBOOK, formatMoneylineOdds } from "@/utils/sportsbook";
 import { cn } from "@/lib/utils";
 
 interface LiveOddsProps {
@@ -12,9 +12,6 @@ interface LiveOddsProps {
 }
 
 const LiveOdds = ({ odds }: LiveOddsProps) => {
-  const formatOdds = (odds: number) => {
-    return odds >= 2 ? `+${Math.round((odds - 1) * 100)}` : `-${Math.round(100 / (odds - 1))}`;
-  };
 
   const formatTime = (timeString: string) => {
     try {
@@ -101,15 +98,15 @@ const LiveOdds = ({ odds }: LiveOddsProps) => {
                     </div>
                   </TableCell>
                   <TableCell className={odd.homeWin === bestOdds.home ? "font-bold text-green-600" : ""}>
-                    {formatOdds(odd.homeWin)}
+                    {formatMoneylineOdds(odd.homeWin)}
                   </TableCell>
                   {odd.draw !== undefined && (
                     <TableCell className={odd.draw === bestOdds.draw ? "font-bold text-green-600" : ""}>
-                      {formatOdds(odd.draw)}
+                      {formatMoneylineOdds(odd.draw)}
                     </TableCell>
                   )}
                   <TableCell className={odd.awayWin === bestOdds.away ? "font-bold text-green-600" : ""}>
-                    {formatOdds(odd.awayWin)}
+                    {formatMoneylineOdds(odd.awayWin)}
                   </TableCell>
                   <TableCell className="text-muted-foreground text-sm">
                     {formatTime(odd.updatedAt)}
