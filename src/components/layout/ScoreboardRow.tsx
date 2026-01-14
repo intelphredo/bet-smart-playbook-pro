@@ -3,13 +3,14 @@ import { Match } from '@/types/sports';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { Radio, Star } from 'lucide-react';
+import { Radio, Star, TrendingUp, TrendingDown } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import SharpMoneyBadge from '@/components/MatchCard/SharpMoneyBadge';
 import { formatAmericanOdds, getPrimaryOdds, PRIMARY_SPORTSBOOK } from '@/utils/sportsbook';
 import AnimatedScore from '@/components/ui/AnimatedScore';
 import { TeamLogoImage } from '@/components/ui/TeamLogoImage';
 import FavoriteButton from '@/components/FavoriteButton';
+import { useSimulatedMovement } from '@/hooks/useOddsMovement';
 
 interface ScoreboardRowProps {
   match: Match;
@@ -36,6 +37,7 @@ export function ScoreboardRow({ match, showOdds = true }: ScoreboardRowProps) {
   // Get FanDuel odds as primary
   const primaryOdds = getPrimaryOdds(match.liveOdds || []);
   const isFanDuel = primaryOdds?.sportsbook.id.toLowerCase().includes('fanduel');
+  const movement = useSimulatedMovement(match.liveOdds);
 
   const getSpread = () => {
     if (!primaryOdds?.spread) return null;
@@ -59,6 +61,20 @@ export function ScoreboardRow({ match, showOdds = true }: ScoreboardRowProps) {
     if (!primaryOdds) return null;
     const ml = isHome ? primaryOdds.homeWin : primaryOdds.awayWin;
     return formatMoneyline(ml);
+  };
+
+  const getMovementIcon = (isHome: boolean) => {
+    if (!movement) return null;
+    const direction = isHome ? movement.homeDirection : movement.awayDirection;
+    if (direction === 'stable') return null;
+    
+    const isUp = direction === 'up';
+    // Green = shortening (better for bettor), Red = drifting (worse)
+    return isUp ? (
+      <TrendingUp className="h-2.5 w-2.5 text-red-500 animate-pulse" />
+    ) : (
+      <TrendingDown className="h-2.5 w-2.5 text-green-500" />
+    );
   };
 
   // Show scores for live and finished games, not for scheduled
@@ -174,11 +190,13 @@ export function ScoreboardRow({ match, showOdds = true }: ScoreboardRowProps) {
               <Star className="h-2.5 w-2.5 text-primary fill-primary" />
             </div>
           )}
-          <div className={cn("text-xs", isFanDuel ? "text-primary font-medium" : "text-muted-foreground")}>
+          <div className={cn("text-xs flex items-center justify-center gap-0.5", isFanDuel ? "text-primary font-medium" : "text-muted-foreground")}>
             {getMoneyline(false) || '-'}
+            {getMovementIcon(false)}
           </div>
-          <div className={cn("text-xs", isFanDuel ? "text-primary font-medium" : "text-muted-foreground")}>
+          <div className={cn("text-xs flex items-center justify-center gap-0.5", isFanDuel ? "text-primary font-medium" : "text-muted-foreground")}>
             {getMoneyline(true) || '-'}
+            {getMovementIcon(true)}
           </div>
         </div>
       )}
