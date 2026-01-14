@@ -1,5 +1,6 @@
 // Sharp Money API - Records and grades sharp money predictions
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { z } from "https://esm.sh/zod@3.23.8";
 import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from "../_shared/rate-limiter.ts";
 
 const corsHeaders = {
@@ -7,22 +8,50 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-interface SharpPrediction {
-  matchId: string;
-  matchTitle: string;
-  league: string;
-  homeTeam: string;
-  awayTeam: string;
-  signalType: string;
-  signalStrength: string;
-  sharpSide: string;
-  marketType: string;
-  confidence: number;
-  openingLine?: number;
-  detectionLine?: number;
-  publicPct?: number;
-  sharpPct?: number;
-  gameStartTime?: string;
+// ==================== Zod Validation Schemas ====================
+
+const SharpPredictionSchema = z.object({
+  matchId: z.string().min(1, "matchId is required").max(100),
+  matchTitle: z.string().min(1, "matchTitle is required").max(200),
+  league: z.string().min(1, "league is required").max(50),
+  homeTeam: z.string().min(1, "homeTeam is required").max(100),
+  awayTeam: z.string().min(1, "awayTeam is required").max(100),
+  signalType: z.enum(["STEAM_MOVE", "REVERSE_LINE", "SHARP_ACTION", "LINE_FREEZE"]),
+  signalStrength: z.enum(["weak", "moderate", "strong"]),
+  sharpSide: z.string().min(1, "sharpSide is required").max(100),
+  marketType: z.enum(["moneyline", "spread", "total"]),
+  confidence: z.number().min(0).max(100),
+  openingLine: z.number().optional(),
+  detectionLine: z.number().optional(),
+  publicPct: z.number().min(0).max(100).optional(),
+  sharpPct: z.number().min(0).max(100).optional(),
+  gameStartTime: z.string().datetime().optional(),
+});
+
+const GradeRequestSchema = z.object({
+  matchId: z.string().min(1, "matchId is required"),
+  homeScore: z.number().int().min(0).max(999),
+  awayScore: z.number().int().min(0).max(999),
+  closingLine: z.number().optional(),
+});
+
+const PredictionsArraySchema = z.object({
+  predictions: z.array(SharpPredictionSchema).min(1, "At least one prediction required"),
+});
+
+type SharpPrediction = z.infer<typeof SharpPredictionSchema>;
+
+// Helper for validation error responses
+function validationError(errors: z.ZodError): Response {
+  const messages = errors.errors.map(e => `${e.path.join('.')}: ${e.message}`);
+  return new Response(
+    JSON.stringify({ 
+      success: false, 
+      error: "Validation failed", 
+      details: messages 
+    }),
+    { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+  );
 }
 
 Deno.serve(async (req) => {
@@ -141,14 +170,17 @@ Deno.serve(async (req) => {
       }
     }
 
-    // POST - Record new prediction
+    // POST - Record new prediction with Zod validation
     if (req.method === "POST") {
       const body = await req.json();
-      const { predictions } = body as { predictions: SharpPrediction[] };
-
-      if (!predictions || !Array.isArray(predictions)) {
-        throw new Error("predictions array is required");
+      
+      // Validate the entire request body
+      const parseResult = PredictionsArraySchema.safeParse(body);
+      if (!parseResult.success) {
+        return validationError(parseResult.error);
       }
+      
+      const { predictions } = parseResult.data;
 
       const records = predictions.map((p) => ({
         match_id: p.matchId,
@@ -181,14 +213,17 @@ Deno.serve(async (req) => {
       });
     }
 
-    // PATCH - Grade predictions
+    // PATCH - Grade predictions with Zod validation
     if (req.method === "PATCH") {
       const body = await req.json();
-      const { matchId, homeScore, awayScore, closingLine } = body;
-
-      if (!matchId) {
-        throw new Error("matchId is required");
+      
+      // Validate the grade request
+      const parseResult = GradeRequestSchema.safeParse(body);
+      if (!parseResult.success) {
+        return validationError(parseResult.error);
       }
+      
+      const { matchId, homeScore, awayScore, closingLine } = parseResult.data;
 
       // Fetch predictions for this match
       const { data: predictions, error: fetchError } = await supabase
