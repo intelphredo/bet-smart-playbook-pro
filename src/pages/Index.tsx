@@ -37,7 +37,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { motion, AnimatePresence } from "framer-motion";
+
+const RESULTS_PER_PAGE_OPTIONS = [5, 10, 25, 50];
 
 // League filter options
 const LEAGUES = ['ALL', 'NBA', 'NFL', 'NCAAB', 'NHL', 'MLB', 'SOCCER'];
@@ -46,6 +49,7 @@ const Index = () => {
   const navigate = useNavigate();
   const [selectedLeague, setSelectedLeague] = useState<string>("ALL");
   const [activeTab, setActiveTab] = useState<string>("scores");
+  const [recentResultsLimit, setRecentResultsLimit] = useState<number>(5);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
   const { toast } = useToast();
   const { stats } = useBetTracking();
@@ -301,10 +305,22 @@ const Index = () => {
                             <p className="text-sm text-muted-foreground">Latest completed games</p>
                           </div>
                         </div>
+                        <Select value={String(recentResultsLimit)} onValueChange={(v) => setRecentResultsLimit(Number(v))}>
+                          <SelectTrigger className="w-[100px] h-8">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {RESULTS_PER_PAGE_OPTIONS.map(option => (
+                              <SelectItem key={option} value={String(option)}>
+                                {option} results
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </CardHeader>
                       <CardContent className="p-0">
                         <div className="divide-y">
-                          {filteredFinished.slice(0, 5).map((match) => (
+                          {filteredFinished.slice(0, recentResultsLimit).map((match) => (
                             <ScoreboardRow key={match.id} match={match} showOdds={false} />
                           ))}
                         </div>
