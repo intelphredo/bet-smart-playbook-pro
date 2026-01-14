@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Checkbox } from "@/components/ui/checkbox";
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
   AreaChart, Area, ReferenceLine 
@@ -31,6 +32,7 @@ import {
   Snowflake,
   Info,
   Dices,
+  GitCompare,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { 
@@ -40,7 +42,9 @@ import {
   getStrategyDescription 
 } from "@/hooks/useBacktestSimulator";
 import { useMonteCarloSimulation } from "@/hooks/useMonteCarloSimulation";
+import { useStrategyComparison } from "@/hooks/useStrategyComparison";
 import { MonteCarloCharts } from "@/components/MonteCarloCharts";
+import { StrategyComparisonView } from "@/components/StrategyComparisonView";
 import { InfoExplainer } from "@/components/ui/InfoExplainer";
 
 const STRATEGIES: { value: BacktestStrategy; label: string; icon: string }[] = [
@@ -51,6 +55,11 @@ const STRATEGIES: { value: BacktestStrategy; label: string; icon: string }[] = [
   { value: 'ml_power_index', label: 'ML Power Index', icon: '🤖' },
   { value: 'value_pick_finder', label: 'Value Pick Finder', icon: '💎' },
   { value: 'statistical_edge', label: 'Statistical Edge', icon: '📊' },
+];
+
+const ALL_STRATEGIES: BacktestStrategy[] = [
+  'all_agree', 'majority_agree', 'highest_confidence', 'best_performer',
+  'ml_power_index', 'value_pick_finder', 'statistical_edge'
 ];
 
 const TIME_RANGES = [
@@ -80,6 +89,9 @@ export default function BacktestSimulator() {
   const [isRunning, setIsRunning] = useState(false);
   const [activeTab, setActiveTab] = useState('results');
   const [numSimulations, setNumSimulations] = useState(1000);
+  const [mainView, setMainView] = useState<'single' | 'compare'>('single');
+  const [selectedStrategies, setSelectedStrategies] = useState<BacktestStrategy[]>(ALL_STRATEGIES);
+  const [runComparison, setRunComparison] = useState(false);
 
   const { data: result, isLoading, refetch } = useBacktestSimulator({
     strategy,
@@ -90,6 +102,21 @@ export default function BacktestSimulator() {
     days,
     league: league === 'all' ? undefined : league,
   });
+
+  // Strategy Comparison
+  const { 
+    data: comparisonData, 
+    isLoading: comparisonLoading,
+    refetch: refetchComparison 
+  } = useStrategyComparison({
+    strategies: selectedStrategies,
+    startingBankroll,
+    stakeType,
+    stakeAmount,
+    minConfidence,
+    days,
+    league: league === 'all' ? undefined : league,
+  }, runComparison && mainView === 'compare');
 
   // Monte Carlo simulation
   const monteCarloResult = useMonteCarloSimulation(
@@ -103,9 +130,29 @@ export default function BacktestSimulator() {
     !!result && result.betHistory.length >= 5
   );
 
-  const handleRunBacktest = () => {
+  const handleRunBacktest = async () => {
     setIsRunning(true);
-    refetch().finally(() => setIsRunning(false));
+    try {
+      await refetch();
+    } finally {
+      setIsRunning(false);
+    }
+  };
+
+  const handleRunComparison = () => {
+    setRunComparison(true);
+    setIsRunning(true);
+    // Allow state to update, then the query will run automatically
+    setTimeout(() => setIsRunning(false), 500);
+  };
+
+  const toggleStrategy = (strat: BacktestStrategy) => {
+    setSelectedStrategies(prev => 
+      prev.includes(strat) 
+        ? prev.filter(s => s !== strat)
+        : [...prev, strat]
+    );
+    setRunComparison(false); // Reset to require new run
   };
 
   const formatCurrency = (value: number) => {
@@ -152,6 +199,26 @@ export default function BacktestSimulator() {
           </p>
         </div>
 
+        {/* Mode Toggle */}
+        <div className="flex gap-2">
+          <Button
+            variant={mainView === 'single' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setMainView('single')}
+          >
+            <FlaskConical className="h-4 w-4 mr-1" />
+            Single Strategy
+          </Button>
+          <Button
+            variant={mainView === 'compare' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setMainView('compare')}
+          >
+            <GitCompare className="h-4 w-4 mr-1" />
+            Compare All
+          </Button>
+        </div>
+
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Configuration Panel */}
           <Card className="lg:col-span-1">
@@ -160,34 +227,71 @@ export default function BacktestSimulator() {
                 <Activity className="h-5 w-5" />
                 Configuration
               </CardTitle>
-              <CardDescription>Set up your backtest parameters</CardDescription>
+              <CardDescription>
+                {mainView === 'single' 
+                  ? 'Set up your backtest parameters' 
+                  : 'Compare all strategies side-by-side'}
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
-              {/* Strategy Selection */}
-              <div className="space-y-2">
-                <Label className="flex items-center gap-1">
-                  Strategy
-                  <InfoExplainer term="consensus_pick" size="sm" />
-                </Label>
-                <Select value={strategy} onValueChange={(v) => setStrategy(v as BacktestStrategy)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
+              {/* Strategy Selection - Only show for single mode */}
+              {mainView === 'single' && (
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-1">
+                    Strategy
+                    <InfoExplainer term="consensus_pick" size="sm" />
+                  </Label>
+                  <Select value={strategy} onValueChange={(v) => setStrategy(v as BacktestStrategy)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STRATEGIES.map(s => (
+                        <SelectItem key={s.value} value={s.value}>
+                          <span className="flex items-center gap-2">
+                            <span>{s.icon}</span>
+                            {s.label}
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    {getStrategyDescription(strategy)}
+                  </p>
+                </div>
+              )}
+
+              {/* Strategy Selection for Compare Mode */}
+              {mainView === 'compare' && (
+                <div className="space-y-3">
+                  <Label className="flex items-center gap-1">
+                    <GitCompare className="h-4 w-4" />
+                    Strategies to Compare
+                  </Label>
+                  <div className="space-y-2">
                     {STRATEGIES.map(s => (
-                      <SelectItem key={s.value} value={s.value}>
-                        <span className="flex items-center gap-2">
+                      <div key={s.value} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={s.value}
+                          checked={selectedStrategies.includes(s.value)}
+                          onCheckedChange={() => toggleStrategy(s.value)}
+                        />
+                        <label
+                          htmlFor={s.value}
+                          className="text-sm flex items-center gap-2 cursor-pointer"
+                        >
                           <span>{s.icon}</span>
                           {s.label}
-                        </span>
-                      </SelectItem>
+                        </label>
+                      </div>
                     ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  {getStrategyDescription(strategy)}
-                </p>
-              </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Select strategies to compare ({selectedStrategies.length} selected)
+                  </p>
+                </div>
+              )}
 
               {/* Time Range */}
               <div className="space-y-2">
@@ -289,43 +393,69 @@ export default function BacktestSimulator() {
                 </p>
               </div>
 
-              {/* Monte Carlo Simulations */}
-              <div className="space-y-2">
-                <Label className="flex items-center gap-1">
-                  <Dices className="h-4 w-4" />
-                  Monte Carlo Simulations
-                </Label>
-                <Select value={String(numSimulations)} onValueChange={(v) => setNumSimulations(Number(v))}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="100">100 simulations</SelectItem>
-                    <SelectItem value="500">500 simulations</SelectItem>
-                    <SelectItem value="1000">1,000 simulations</SelectItem>
-                    <SelectItem value="5000">5,000 simulations</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  More simulations = more accurate probability estimates
-                </p>
-              </div>
+              {/* Monte Carlo Simulations - Only for single mode */}
+              {mainView === 'single' && (
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-1">
+                    <Dices className="h-4 w-4" />
+                    Monte Carlo Simulations
+                  </Label>
+                  <Select value={String(numSimulations)} onValueChange={(v) => setNumSimulations(Number(v))}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="100">100 simulations</SelectItem>
+                      <SelectItem value="500">500 simulations</SelectItem>
+                      <SelectItem value="1000">1,000 simulations</SelectItem>
+                      <SelectItem value="5000">5,000 simulations</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    More simulations = more accurate probability estimates
+                  </p>
+                </div>
+              )}
 
               {/* Run Button */}
-              <Button 
-                className="w-full" 
-                onClick={handleRunBacktest}
-                disabled={isLoading || isRunning}
-              >
-                <Play className="h-4 w-4 mr-2" />
-                {isRunning ? 'Running...' : 'Run Backtest'}
-              </Button>
+              {mainView === 'single' ? (
+                <Button 
+                  className="w-full" 
+                  onClick={handleRunBacktest}
+                  disabled={isLoading || isRunning}
+                >
+                  <Play className="h-4 w-4 mr-2" />
+                  {isRunning ? 'Running...' : 'Run Backtest'}
+                </Button>
+              ) : (
+                <Button 
+                  className="w-full" 
+                  onClick={handleRunComparison}
+                  disabled={comparisonLoading || isRunning || selectedStrategies.length < 2}
+                >
+                  <GitCompare className="h-4 w-4 mr-2" />
+                  {comparisonLoading || isRunning ? 'Comparing...' : `Compare ${selectedStrategies.length} Strategies`}
+                </Button>
+              )}
+
+              {mainView === 'compare' && selectedStrategies.length < 2 && (
+                <p className="text-xs text-destructive text-center">
+                  Select at least 2 strategies to compare
+                </p>
+              )}
             </CardContent>
           </Card>
 
           {/* Results Panel */}
           <div className="lg:col-span-2 space-y-6">
-            {isLoading ? (
+            {mainView === 'compare' ? (
+              /* Strategy Comparison View */
+              <StrategyComparisonView 
+                data={comparisonData} 
+                isLoading={comparisonLoading} 
+                startingBankroll={startingBankroll}
+              />
+            ) : isLoading ? (
               <div className="space-y-4">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {[1, 2, 3, 4].map(i => (
