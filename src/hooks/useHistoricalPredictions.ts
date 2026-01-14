@@ -181,10 +181,12 @@ export const useHistoricalPredictions = (
   return useQuery({
     queryKey,
     queryFn: async (): Promise<{ predictions: HistoricalPrediction[]; stats: PredictionStats }> => {
-      // Fetch all predictions matching time range - we'll sort client-side for proper ordering
+      // Fetch all predictions matching time range - remove default 1000 row limit
       let query = supabase
         .from("algorithm_predictions")
-        .select("*");
+        .select("*")
+        .order("predicted_at", { ascending: false })
+        .limit(10000); // Explicit high limit to get all predictions
 
       // Apply time range filter based on when prediction was created OR graded
       const startDate = getDateFromRange(timeRange);
