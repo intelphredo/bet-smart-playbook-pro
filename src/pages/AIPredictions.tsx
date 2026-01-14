@@ -10,7 +10,10 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
+  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -62,6 +65,75 @@ function LeagueIcon({ league, size = 16 }: { league: string; size?: number }) {
       }}
     />
   );
+}
+
+// League categories for grouping
+const LEAGUE_CATEGORIES: Record<string, { label: string; icon: string; leagues: string[] }> = {
+  basketball: {
+    label: "Basketball",
+    icon: "🏀",
+    leagues: ["NBA", "NCAAB", "WNBA"],
+  },
+  football: {
+    label: "Football",
+    icon: "🏈",
+    leagues: ["NFL", "NCAAF", "CFL", "XFL"],
+  },
+  baseball: {
+    label: "Baseball",
+    icon: "⚾",
+    leagues: ["MLB"],
+  },
+  hockey: {
+    label: "Hockey",
+    icon: "🏒",
+    leagues: ["NHL"],
+  },
+  soccer: {
+    label: "Soccer",
+    icon: "⚽",
+    leagues: ["SOCCER", "EPL", "LA_LIGA", "SERIE_A", "BUNDESLIGA", "LIGUE_1", "MLS", "CHAMPIONS_LEAGUE"],
+  },
+  combat: {
+    label: "Combat Sports",
+    icon: "🥊",
+    leagues: ["UFC"],
+  },
+  tennis: {
+    label: "Tennis",
+    icon: "🎾",
+    leagues: ["ATP", "WTA"],
+  },
+  golf: {
+    label: "Golf",
+    icon: "⛳",
+    leagues: ["PGA"],
+  },
+};
+
+// Get category for a league
+function getLeagueCategory(league: string): string {
+  for (const [category, data] of Object.entries(LEAGUE_CATEGORIES)) {
+    if (data.leagues.includes(league)) {
+      return category;
+    }
+  }
+  return "other";
+}
+
+// Group leagues by category
+function groupLeaguesByCategory(leagues: string[]): Record<string, string[]> {
+  const grouped: Record<string, string[]> = {};
+  
+  for (const league of leagues) {
+    const category = getLeagueCategory(league);
+    if (!grouped[category]) {
+      grouped[category] = [];
+    }
+    grouped[category].push(league);
+  }
+  
+  return grouped;
 }
 
 const TIME_RANGE_OPTIONS: { value: TimeRange; label: string }[] = [
@@ -311,23 +383,37 @@ export default function AIPredictions() {
               </p>
               <div className="flex gap-2">
                 <Select value={leagueFilter} onValueChange={setLeagueFilter}>
-                  <SelectTrigger className="w-[160px]">
+                  <SelectTrigger className="w-[180px]">
                     <SelectValue placeholder="All Leagues" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="max-h-[300px]">
                     <SelectItem value="all">
                       <span className="flex items-center gap-2">
-                        All Leagues
+                        🌐 All Leagues
                       </span>
                     </SelectItem>
-                    {leagues.map(league => (
-                      <SelectItem key={league} value={league}>
-                        <span className="flex items-center gap-2">
-                          <LeagueIcon league={league} size={16} />
-                          {getLeagueDisplayName(league)}
-                        </span>
-                      </SelectItem>
-                    ))}
+                    <SelectSeparator />
+                    {Object.entries(groupLeaguesByCategory(leagues)).map(([category, categoryLeagues]) => {
+                      const categoryData = LEAGUE_CATEGORIES[category];
+                      if (!categoryData || categoryLeagues.length === 0) return null;
+                      
+                      return (
+                        <SelectGroup key={category}>
+                          <SelectLabel className="flex items-center gap-2 text-xs font-semibold text-muted-foreground px-2 py-1.5">
+                            <span>{categoryData.icon}</span>
+                            {categoryData.label}
+                          </SelectLabel>
+                          {categoryLeagues.map(league => (
+                            <SelectItem key={league} value={league}>
+                              <span className="flex items-center gap-2">
+                                <LeagueIcon league={league} size={16} />
+                                {getLeagueDisplayName(league)}
+                              </span>
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      );
+                    })}
                   </SelectContent>
                 </Select>
                 <Select value={predictionType} onValueChange={(v) => setPredictionType(v as PredictionType)}>
