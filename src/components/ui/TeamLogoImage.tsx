@@ -8,6 +8,8 @@ export interface TeamLogoImageProps {
   teamName: string;
   /** The league the team belongs to (used for ESPN CDN lookup) */
   league?: League;
+  /** Optional team id (ESPN numeric id is especially useful for NCAA logos) */
+  teamId?: string;
   /** Optional direct logo URL (takes precedence over CDN lookup) */
   logoUrl?: string;
   /** Size variant */
@@ -39,6 +41,7 @@ const fallbackTextSizes = {
 /**
  * Unified team logo component that handles:
  * - ESPN CDN logos via league + team name lookup
+ * - NCAA logos via ESPN numeric teamId when available
  * - Direct URL logos from API responses
  * - Fallback to team initials on error
  * - Loading states
@@ -46,6 +49,7 @@ const fallbackTextSizes = {
 export const TeamLogoImage: React.FC<TeamLogoImageProps> = ({
   teamName,
   league = "NBA",
+  teamId,
   logoUrl,
   size = "md",
   className,
@@ -55,8 +59,19 @@ export const TeamLogoImage: React.FC<TeamLogoImageProps> = ({
   const [hasError, setHasError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
+  const normalizedLogoUrl = logoUrl && logoUrl.trim().length > 0 ? logoUrl : undefined;
+
+  // NCAA (NCAAB/NCAAF) team logos on ESPN CDN are keyed by numeric team id.
+  const ncaaIdLogoUrl =
+    !normalizedLogoUrl &&
+    teamId &&
+    /^\d+$/.test(teamId) &&
+    (league === "NCAAB" || league === "NCAAF")
+      ? `https://a.espncdn.com/i/teamlogos/ncaa/500/${teamId}.png`
+      : undefined;
+
   // Use provided logo URL if available, otherwise generate from ESPN CDN
-  const effectiveLogoUrl = logoUrl || getTeamLogoUrl(teamName, league);
+  const effectiveLogoUrl = normalizedLogoUrl || ncaaIdLogoUrl || getTeamLogoUrl(teamName, league);
   const initials = getTeamInitials(teamName);
   const altText = alt || `${teamName} logo`;
 
