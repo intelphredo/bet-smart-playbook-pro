@@ -251,6 +251,12 @@
     100% { background-position: -200% 0; }
   }
 
+  /* Global shimmer animation for gold effects */
+  @keyframes shimmerGold {
+    0% { background-position: 200% center; }
+    100% { background-position: -200% center; }
+  }
+
   /* Gradient border for premium cards - Gold accent */
   .gradient-border {
     @apply relative;
