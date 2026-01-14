@@ -269,9 +269,9 @@
 
   /* Premium card elevation */
   .premium-card {
-    @apply bg-card border border-border/50 rounded-xl;
+    @apply bg-card border border-border/50 rounded-xl relative overflow-hidden;
     box-shadow: 0 2px 12px -2px hsl(220 25% 10% / 0.06), 0 8px 24px -4px hsl(220 25% 10% / 0.08);
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .dark .premium-card {
@@ -287,17 +287,114 @@
     box-shadow: 0 4px 16px -2px hsl(0 0% 0% / 0.4), 0 12px 32px -4px hsl(0 0% 0% / 0.6), inset 0 1px 0 0 hsl(40 15% 95% / 0.05);
   }
 
+  /* Premium card with shimmer effect */
+  .premium-card-shimmer {
+    @apply premium-card;
+  }
+
+  .premium-card-shimmer::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      hsl(38 90% 55% / 0.03),
+      hsl(38 90% 55% / 0.06),
+      hsl(38 90% 55% / 0.03),
+      transparent
+    );
+    animation: cardShimmer 3s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  @keyframes cardShimmer {
+    0% { left: -100%; }
+    50%, 100% { left: 150%; }
+  }
+
+  /* Gold glow card - for high-value items */
+  .gold-glow-card {
+    @apply premium-card;
+    animation: goldGlowPulse 3s ease-in-out infinite;
+  }
+
+  @keyframes goldGlowPulse {
+    0%, 100% { 
+      box-shadow: 0 0 20px -5px hsl(38 90% 55% / 0.15), 0 2px 12px -2px hsl(220 25% 10% / 0.06);
+    }
+    50% { 
+      box-shadow: 0 0 30px -5px hsl(38 90% 55% / 0.25), 0 4px 16px -2px hsl(220 25% 10% / 0.1);
+    }
+  }
+
+  .dark .gold-glow-card {
+    animation: goldGlowPulseDark 3s ease-in-out infinite;
+  }
+
+  @keyframes goldGlowPulseDark {
+    0%, 100% { 
+      box-shadow: 0 0 25px -5px hsl(38 90% 55% / 0.2), 0 2px 12px -2px hsl(0 0% 0% / 0.3);
+    }
+    50% { 
+      box-shadow: 0 0 40px -5px hsl(38 90% 55% / 0.35), 0 4px 16px -2px hsl(0 0% 0% / 0.4);
+    }
+  }
+
   /* Gold accent button */
   .btn-gold {
-    @apply bg-primary text-primary-foreground font-semibold;
+    @apply bg-primary text-primary-foreground font-semibold relative overflow-hidden;
     background: linear-gradient(135deg, hsl(38 90% 50%) 0%, hsl(42 85% 55%) 100%);
     box-shadow: 0 2px 8px -2px hsl(38 90% 50% / 0.4);
     transition: all 0.2s ease;
   }
 
+  .btn-gold::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      hsl(0 0% 100% / 0.15),
+      transparent
+    );
+    animation: btnShimmer 2s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  @keyframes btnShimmer {
+    0% { left: -100%; }
+    50%, 100% { left: 150%; }
+  }
+
   .btn-gold:hover {
     box-shadow: 0 4px 12px -2px hsl(38 90% 50% / 0.5);
     transform: translateY(-1px);
+  }
+
+  /* High value indicator pulse */
+  .high-value-indicator {
+    @apply relative;
+  }
+
+  .high-value-indicator::before {
+    content: '';
+    @apply absolute inset-0 rounded-full;
+    background: hsl(38 90% 55% / 0.3);
+    animation: highValuePulse 2s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  @keyframes highValuePulse {
+    0%, 100% { transform: scale(1); opacity: 0.5; }
+    50% { transform: scale(1.15); opacity: 0; }
   }
 }
 
@@ -421,5 +518,113 @@
   .divider-gold {
     @apply h-px w-full;
     background: linear-gradient(90deg, transparent, hsl(38 90% 55% / 0.3), transparent);
+  }
+
+  /* Gold shimmer text */
+  .shimmer-text {
+    background: linear-gradient(
+      90deg,
+      hsl(38 90% 50%) 0%,
+      hsl(42 85% 65%) 25%,
+      hsl(38 90% 50%) 50%,
+      hsl(42 85% 65%) 75%,
+      hsl(38 90% 50%) 100%
+    );
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: shimmerText 3s linear infinite;
+  }
+
+  @keyframes shimmerText {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  /* Glow border animation */
+  .glow-border {
+    @apply relative;
+  }
+
+  .glow-border::before {
+    content: '';
+    @apply absolute -inset-[1px] rounded-xl opacity-0;
+    background: linear-gradient(135deg, hsl(38 90% 55%), hsl(42 85% 60%), hsl(38 90% 55%));
+    background-size: 200% 200%;
+    animation: glowBorderMove 3s linear infinite;
+    transition: opacity 0.3s ease;
+    z-index: -1;
+  }
+
+  .glow-border:hover::before {
+    opacity: 1;
+  }
+
+  @keyframes glowBorderMove {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  /* Floating glow orbs */
+  .glow-orb {
+    @apply absolute rounded-full pointer-events-none;
+    background: radial-gradient(circle, hsl(38 90% 55% / 0.15), transparent 70%);
+    animation: floatOrb 6s ease-in-out infinite;
+  }
+
+  @keyframes floatOrb {
+    0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.5; }
+    33% { transform: translate(10px, -10px) scale(1.1); opacity: 0.7; }
+    66% { transform: translate(-5px, 5px) scale(0.95); opacity: 0.4; }
+  }
+
+  /* Subtle breathing animation for badges */
+  .badge-glow {
+    animation: badgeGlow 2s ease-in-out infinite;
+  }
+
+  @keyframes badgeGlow {
+    0%, 100% { 
+      box-shadow: 0 0 0 0 hsl(38 90% 55% / 0);
+    }
+    50% { 
+      box-shadow: 0 0 8px 2px hsl(38 90% 55% / 0.2);
+    }
+  }
+
+  /* Score highlight animation */
+  .score-highlight {
+    animation: scoreHighlight 0.5s ease-out;
+  }
+
+  @keyframes scoreHighlight {
+    0% { 
+      transform: scale(1.3);
+      color: hsl(38 90% 55%);
+      text-shadow: 0 0 12px hsl(38 90% 55% / 0.5);
+    }
+    100% { 
+      transform: scale(1);
+      color: inherit;
+      text-shadow: none;
+    }
+  }
+
+  /* Value indicator ring */
+  .value-ring {
+    @apply relative;
+  }
+
+  .value-ring::after {
+    content: '';
+    @apply absolute inset-0 rounded-full border-2 border-primary/50;
+    animation: valueRing 2s ease-in-out infinite;
+  }
+
+  @keyframes valueRing {
+    0%, 100% { transform: scale(1); opacity: 0.5; }
+    50% { transform: scale(1.1); opacity: 0; }
   }
 }

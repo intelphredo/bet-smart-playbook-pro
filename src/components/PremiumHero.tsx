@@ -20,25 +20,36 @@ const PremiumHero = ({ liveGamesCount, upcomingGamesCount, highConfidencePicks }
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_hsl(38_90%_55%_/_0.08),_transparent_50%)]" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_hsl(38_90%_55%_/_0.05),_transparent_50%)]" />
       
+      {/* Floating glow orbs */}
+      <div className="absolute top-20 left-[10%] w-32 h-32 glow-orb" style={{ animationDelay: '0s' }} />
+      <div className="absolute top-40 right-[15%] w-24 h-24 glow-orb" style={{ animationDelay: '2s' }} />
+      <div className="absolute bottom-20 left-[20%] w-20 h-20 glow-orb" style={{ animationDelay: '4s' }} />
+      
       {/* Animated gold particles */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(6)].map((_, i) => (
+        {[...Array(8)].map((_, i) => (
           <motion.div
             key={i}
-            className="absolute w-1 h-1 rounded-full bg-primary/40"
+            className="absolute w-1.5 h-1.5 rounded-full"
+            style={{
+              background: `radial-gradient(circle, hsl(38 90% 55% / 0.8), hsl(38 90% 55% / 0.2))`,
+              boxShadow: '0 0 6px hsl(38 90% 55% / 0.4)',
+            }}
             initial={{ 
-              x: Math.random() * 100 + "%", 
-              y: "100%",
-              opacity: 0 
+              x: `${10 + Math.random() * 80}%`, 
+              y: "110%",
+              opacity: 0,
+              scale: 0.5,
             }}
             animate={{ 
               y: "-10%",
-              opacity: [0, 1, 0],
+              opacity: [0, 1, 1, 0],
+              scale: [0.5, 1, 1, 0.5],
             }}
             transition={{ 
-              duration: 4 + Math.random() * 2,
+              duration: 5 + Math.random() * 3,
               repeat: Infinity,
-              delay: i * 0.8,
+              delay: i * 0.6,
               ease: "easeOut"
             }}
           />
@@ -54,8 +65,8 @@ const PremiumHero = ({ liveGamesCount, upcomingGamesCount, highConfidencePicks }
             transition={{ duration: 0.5 }}
           >
             <Badge 
-              variant="outline" 
-              className="px-4 py-1.5 text-sm border-primary/30 bg-primary/5 text-primary font-medium"
+              variant="gold" 
+              className="px-4 py-1.5 text-sm badge-glow"
             >
               <Zap className="w-3.5 h-3.5 mr-1.5 fill-primary" />
               Premium Sports Intelligence
@@ -93,7 +104,7 @@ const PremiumHero = ({ liveGamesCount, upcomingGamesCount, highConfidencePicks }
             to give you the edge in sports betting.
           </motion.p>
 
-          {/* Stats cards with glassmorphism */}
+          {/* Stats cards with glassmorphism and glow effects */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -101,15 +112,13 @@ const PremiumHero = ({ liveGamesCount, upcomingGamesCount, highConfidencePicks }
             className="flex flex-wrap justify-center gap-4 mt-8"
           >
             {/* Live Games */}
-            <div className="glass rounded-2xl px-6 py-4 min-w-[140px] group hover:border-primary/30 transition-all duration-300">
+            <div className={`glass rounded-2xl px-6 py-4 min-w-[140px] group transition-all duration-300 stat-glow ${liveGamesCount > 0 ? 'glow-border' : ''}`}>
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-xl bg-destructive/10 group-hover:bg-destructive/20 transition-colors">
-                  <div className="relative">
-                    <Target className="w-5 h-5 text-destructive" />
-                    {liveGamesCount > 0 && (
-                      <span className="absolute -top-1 -right-1 w-2 h-2 bg-destructive rounded-full animate-pulse" />
-                    )}
-                  </div>
+                <div className="p-2 rounded-xl bg-destructive/10 group-hover:bg-destructive/20 transition-colors relative">
+                  <Target className="w-5 h-5 text-destructive" />
+                  {liveGamesCount > 0 && (
+                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-destructive rounded-full value-ring" />
+                  )}
                 </div>
                 <div className="text-left">
                   <motion.p 
@@ -127,7 +136,7 @@ const PremiumHero = ({ liveGamesCount, upcomingGamesCount, highConfidencePicks }
             </div>
 
             {/* Upcoming Games */}
-            <div className="glass rounded-2xl px-6 py-4 min-w-[140px] group hover:border-primary/30 transition-all duration-300">
+            <div className="glass rounded-2xl px-6 py-4 min-w-[140px] group transition-all duration-300 stat-glow glow-border">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-xl bg-primary/10 group-hover:bg-primary/20 transition-colors">
                   <TrendingUp className="w-5 h-5 text-primary" />
@@ -148,14 +157,14 @@ const PremiumHero = ({ liveGamesCount, upcomingGamesCount, highConfidencePicks }
             </div>
 
             {/* High Confidence Picks */}
-            <div className="glass rounded-2xl px-6 py-4 min-w-[140px] group hover:border-primary/30 transition-all duration-300">
+            <div className={`glass rounded-2xl px-6 py-4 min-w-[140px] group transition-all duration-300 stat-glow ${highConfidencePicks > 0 ? 'gold-glow-card' : ''}`}>
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-xl bg-success/10 group-hover:bg-success/20 transition-colors">
-                  <Trophy className="w-5 h-5 text-success" />
+                <div className="p-2 rounded-xl bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                  <Trophy className="w-5 h-5 text-primary" />
                 </div>
                 <div className="text-left">
                   <motion.p 
-                    className="text-2xl font-bold text-foreground"
+                    className={`text-2xl font-bold ${highConfidencePicks > 0 ? 'shimmer-text' : 'text-foreground'}`}
                     key={highConfidencePicks}
                     initial={{ scale: 1.2, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
