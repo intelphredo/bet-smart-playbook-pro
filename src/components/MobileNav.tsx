@@ -16,13 +16,17 @@ import {
   BookOpen, 
   Wallet, 
   History,
-  Settings
+  Settings,
+  TrendingUp,
+  Brain,
 } from "lucide-react";
 import { useState } from "react";
 
 const navItems = [
   { path: "/", label: "Home", icon: Home },
   { path: "/standings", label: "Standings", icon: Trophy },
+  { path: "/roi", label: "ROI Tracker", icon: TrendingUp },
+  { path: "/ai-predictions", label: "AI History", icon: Brain },
   { path: "/injuries", label: "Injuries", icon: AlertTriangle },
   { path: "/algorithms", label: "Algorithms", icon: BarChart2 },
   { path: "/scenarios", label: "Scenarios", icon: BookOpen },

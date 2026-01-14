@@ -54,7 +54,8 @@ export default function NavBar({ className }: NavBarProps) {
               <NavLink href="/" label="Scores" active={isHome} />
               <NavLink href="/standings" label="Standings" />
               <NavLink href="/betting-trends" label="Trends" />
-              <NavLink href="/injuries" label="Injuries" />
+              <NavLink href="/roi" label="ROI" />
+              <NavLink href="/ai-predictions" label="AI History" />
               <NavLink href="/algorithms" label="Algorithms" />
             </nav>
 
