@@ -5,6 +5,7 @@ import { Toaster } from "sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import AlgorithmsComparison from "./pages/AlgorithmsComparison";
 import CompareAlgorithms from "./pages/CompareAlgorithms";
+import BacktestSimulator from "./pages/BacktestSimulator";
 import CreatorDashboard from "./pages/CreatorDashboard";
 import ScenarioGuide from "./pages/ScenarioGuide";
 import BankrollManager from "./pages/BankrollManager";
@@ -92,6 +93,7 @@ function App() {
                     <Route path="/ai-predictions" element={<AIPredictions />} />
                     <Route path="/algorithms" element={<AlgorithmsComparison />} />
                     <Route path="/compare-algorithms" element={<CompareAlgorithms />} />
+                    <Route path="/backtest" element={<BacktestSimulator />} />
                     <Route path="/creator" element={<CreatorDashboard />} />
                     <Route path="/scenarios" element={<ScenarioGuide />} />
                     <Route path="/bankroll" element={<BankrollManager />} />

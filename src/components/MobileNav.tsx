@@ -20,6 +20,7 @@ import {
   TrendingUp,
   Brain,
   GitCompare,
+  FlaskConical,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -29,6 +30,7 @@ const navItems = [
   { path: "/roi", label: "ROI Tracker", icon: TrendingUp },
   { path: "/ai-predictions", label: "AI History", icon: Brain },
   { path: "/compare-algorithms", label: "Compare", icon: GitCompare },
+  { path: "/backtest", label: "Backtest", icon: FlaskConical },
   { path: "/injuries", label: "Injuries", icon: AlertTriangle },
   { path: "/scenarios", label: "Scenarios", icon: BookOpen },
   { path: "/bankroll", label: "Bankroll", icon: Wallet },
