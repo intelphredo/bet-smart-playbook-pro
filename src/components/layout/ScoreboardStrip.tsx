@@ -101,20 +101,22 @@ function ScoreCard({ match, onClick }: { match: Match; onClick: () => void }) {
       <div className="space-y-1">
         <TeamRow 
           name={match.awayTeam?.shortName || match.awayTeam?.name || 'Away'} 
-          score={match.score?.away}
+          score={isLive || isFinished ? (match.score?.away ?? 0) : undefined}
           isWinning={isFinished && (match.score?.away || 0) > (match.score?.home || 0)}
+          isLive={isLive}
         />
         <TeamRow 
           name={match.homeTeam?.shortName || match.homeTeam?.name || 'Home'} 
-          score={match.score?.home}
+          score={isLive || isFinished ? (match.score?.home ?? 0) : undefined}
           isWinning={isFinished && (match.score?.home || 0) > (match.score?.away || 0)}
+          isLive={isLive}
         />
       </div>
     </button>
   );
 }
 
-function TeamRow({ name, score, isWinning }: { name: string; score?: number; isWinning?: boolean }) {
+function TeamRow({ name, score, isWinning, isLive }: { name: string; score?: number; isWinning?: boolean; isLive?: boolean }) {
   return (
     <div className="flex items-center justify-between">
       <span className={cn(
@@ -126,7 +128,8 @@ function TeamRow({ name, score, isWinning }: { name: string; score?: number; isW
       {score !== undefined && (
         <span className={cn(
           "text-xs tabular-nums",
-          isWinning ? "font-bold" : "font-medium"
+          isWinning ? "font-bold text-green-500" : "font-medium",
+          isLive && "text-red-500 font-bold"
         )}>
           {score}
         </span>

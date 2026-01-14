@@ -118,12 +118,21 @@ const MatchCard = memo(function MatchCard({ match }: MatchCardProps) {
           <div className="text-center">
             {match.status === "live" ? (
               <div className="space-y-0.5">
+                <div className="text-xl font-bold text-destructive tracking-tight animate-pulse">
+                  {match.score?.home ?? 0} - {match.score?.away ?? 0}
+                </div>
+                {match.score?.period && (
+                  <div className="text-xs text-muted-foreground bg-accent/50 px-2 py-0.5 rounded-full inline-block">
+                    {match.score.period}
+                  </div>
+                )}
+              </div>
+            ) : match.status === "finished" ? (
+              <div className="space-y-0.5">
                 <div className="text-xl font-bold text-foreground tracking-tight">
-                  {match.score?.home} - {match.score?.away}
+                  {match.score?.home ?? 0} - {match.score?.away ?? 0}
                 </div>
-                <div className="text-xs text-muted-foreground bg-accent/50 px-2 py-0.5 rounded-full inline-block">
-                  {match.score?.period}
-                </div>
+                <div className="text-xs text-muted-foreground">Final</div>
               </div>
             ) : (
               <div className="text-sm text-muted-foreground font-medium bg-accent/30 px-3 py-1 rounded-full">
