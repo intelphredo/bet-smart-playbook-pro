@@ -46,6 +46,9 @@ Deno.serve(async (req) => {
     const league = url.searchParams.get("league") || "ALL";
     const markets = url.searchParams.get("markets") || "h2h,spreads,totals";
     const regions = url.searchParams.get("regions") || "us";
+    // Include all major US sportsbooks with FanDuel first for primary display
+    // Keep all sportsbooks for arbitrage calculations
+    const bookmakers = url.searchParams.get("bookmakers") || "fanduel,draftkings,betmgm,caesars,pointsbetus,betrivers,williamhill_us,unibet_us";
 
     console.log(`Fetching odds for league: ${league}`);
 
@@ -64,7 +67,7 @@ Deno.serve(async (req) => {
     // Fetch odds for all requested sports in parallel
     const results = await Promise.allSettled(
       sportsToFetch.map(async ([leagueName, sportKey]) => {
-        const oddsUrl = `${ODDS_API_BASE_URL}/sports/${sportKey}/odds?apiKey=${apiKey}&regions=${regions}&markets=${markets}&oddsFormat=american`;
+        const oddsUrl = `${ODDS_API_BASE_URL}/sports/${sportKey}/odds?apiKey=${apiKey}&regions=${regions}&markets=${markets}&bookmakers=${bookmakers}&oddsFormat=american`;
         
         console.log(`Fetching: ${leagueName} (${sportKey})`);
         
