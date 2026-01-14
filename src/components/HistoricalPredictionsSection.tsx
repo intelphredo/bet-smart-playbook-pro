@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -165,6 +165,44 @@ const HistoricalPredictionsSection = () => {
     setPreLivePage(1);
     setLivePage(1);
   };
+
+  // Keyboard navigation for pagination
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only handle if not typing in an input
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      // Left arrow - previous page
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        setPreLivePage(p => Math.max(1, p - 1));
+        setLivePage(p => Math.max(1, p - 1));
+      }
+      // Right arrow - next page
+      else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        setPreLivePage(p => Math.min(preLiveTotalPages, p + 1));
+        setLivePage(p => Math.min(liveTotalPages, p + 1));
+      }
+      // Home - first page
+      else if (e.key === 'Home') {
+        e.preventDefault();
+        setPreLivePage(1);
+        setLivePage(1);
+      }
+      // End - last page
+      else if (e.key === 'End') {
+        e.preventDefault();
+        setPreLivePage(preLiveTotalPages);
+        setLivePage(liveTotalPages);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [preLiveTotalPages, liveTotalPages]);
 
   // CSV Export function
   const exportToCSV = () => {
