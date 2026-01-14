@@ -1,11 +1,10 @@
-// ESPN-style Home Page - Clean, organized sports dashboard
+// ESPN-style Home Page - Tab-based clean dashboard
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Match } from "@/types/sports";
 import NavBar from "@/components/NavBar";
 import PageFooter from "@/components/PageFooter";
 import { useSportsData } from "@/hooks/useSportsData";
-import { SportCategory } from "@/types/LeagueRegistry";
 import { useArbitrageCalculator } from "@/hooks/useArbitrageCalculator";
 import { useBetTracking } from "@/hooks/useBetTracking";
 import { applySmartScores } from "@/utils/smartScoreCalculator";
@@ -15,7 +14,6 @@ import { cn } from "@/lib/utils";
 // Layout Components
 import { ScoreboardStrip } from "@/components/layout/ScoreboardStrip";
 import { ScoreboardRow } from "@/components/layout/ScoreboardRow";
-import { SidebarNav } from "@/components/layout/SidebarNav";
 import TopLoader from "@/components/ui/TopLoader";
 
 // Feature Components
@@ -28,31 +26,23 @@ import { SharpMoneySection, SteamMoveMonitor, SharpMoneyLeaderboard } from "@/co
 
 import { 
   Radio, Clock, TrendingUp, RefreshCw, ChevronRight, 
-  Trophy, Zap, DollarSign, Activity, Calendar, Brain, TrendingDown
+  Trophy, Zap, DollarSign, Activity, Brain, BarChart3,
+  Target, Flame, LineChart
 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { motion, AnimatePresence } from "framer-motion";
 
-// League tabs for filtering
-const LEAGUE_TABS = [
-  { id: 'ALL', label: 'All', icon: Activity },
-  { id: 'SHARP', label: 'Sharp Money', icon: Brain },
-  { id: 'NBA', label: 'NBA', icon: Trophy },
-  { id: 'NFL', label: 'NFL', icon: Trophy },
-  { id: 'NCAAB', label: 'NCAAB', icon: Trophy },
-  { id: 'NHL', label: 'NHL', icon: Trophy },
-  { id: 'MLB', label: 'MLB', icon: Trophy },
-  { id: 'SOCCER', label: 'Soccer', icon: Trophy },
-];
+// League filter options
+const LEAGUES = ['ALL', 'NBA', 'NFL', 'NCAAB', 'NHL', 'MLB', 'SOCCER'];
 
 const Index = () => {
   const navigate = useNavigate();
   const [selectedLeague, setSelectedLeague] = useState<string>("ALL");
-  const [showSharpOnly, setShowSharpOnly] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>("scores");
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
   const { toast } = useToast();
   const { stats } = useBetTracking();
@@ -80,16 +70,13 @@ const Index = () => {
 
   // Filter by league
   const filterByLeague = (matches: Match[]) => {
-    if (selectedLeague === "ALL" || selectedLeague === "SHARP") return matches;
+    if (selectedLeague === "ALL") return matches;
     return matches.filter(m => m.league?.toUpperCase() === selectedLeague);
   };
 
   const filteredUpcoming = useMemo(() => filterByLeague(upcomingMatches), [upcomingMatches, selectedLeague]);
   const filteredLive = useMemo(() => filterByLeague(liveMatches), [liveMatches, selectedLeague]);
   const filteredFinished = useMemo(() => filterByLeague(finishedMatches), [finishedMatches, selectedLeague]);
-
-  // Determine if we're in Sharp Money mode
-  const isSharpMode = selectedLeague === "SHARP";
 
   // Arbitrage
   const allMatchesWithOdds = useMemo(() => 
@@ -128,69 +115,78 @@ const Index = () => {
       {/* Scores Ticker */}
       <ScoreboardStrip matches={allScores.slice(0, 20)} />
 
-      {/* Main Layout */}
-      <div className="flex-1 flex">
-        {/* Sidebar - Hidden on mobile */}
-        <SidebarNav liveCount={filteredLive.length} className="hidden lg:flex" />
-
-        {/* Main Content */}
-        <main className="flex-1 overflow-auto">
-          {/* League Filter Bar */}
-          <div className="border-b bg-muted/30 sticky top-0 z-30">
-            <div className="container px-4">
-              <div className="flex items-center justify-between py-2">
-                <ScrollArea className="flex-1">
-                  <div className="flex items-center gap-1">
-                  <div className="flex items-center gap-1">
-                    {LEAGUE_TABS.map((tab) => (
-                      <Button
-                        key={tab.id}
-                        variant={selectedLeague === tab.id ? "default" : "ghost"}
-                        size="sm"
-                        onClick={() => setSelectedLeague(tab.id)}
-                        className={cn(
-                          "shrink-0",
-                          tab.id === 'SHARP' && "text-purple-600 dark:text-purple-400"
-                        )}
-                      >
-                        {tab.id === 'SHARP' && <Brain className="h-3.5 w-3.5 mr-1" />}
-                        {tab.label}
-                        {tab.id === 'ALL' && (
-                          <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-[10px]">
-                            {rawUpcoming.length + rawLive.length}
-                          </Badge>
-                        )}
-                      </Button>
-                    ))}
-                  </div>
-                  </div>
-                </ScrollArea>
-                
-                <div className="flex items-center gap-2 ml-4">
-                  {/* Steam Move Monitor */}
-                  <SteamMoveMonitor 
-                    matches={allActiveMatches} 
-                    enabled={true}
-                  />
-                  
-                  <span className="text-xs text-muted-foreground hidden sm:block">
-                    {lastRefresh.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleRefresh}
-                    disabled={isLoading}
-                  >
-                    <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
-                  </Button>
+      {/* Main Content */}
+      <main className="flex-1">
+        {/* Header Bar with League Filter + Refresh */}
+        <div className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-30">
+          <div className="container px-4 py-3">
+            <div className="flex items-center justify-between gap-4">
+              {/* League Pills */}
+              <ScrollArea className="flex-1 -mx-2">
+                <div className="flex items-center gap-2 px-2">
+                  {LEAGUES.map((league) => (
+                    <Button
+                      key={league}
+                      variant={selectedLeague === league ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setSelectedLeague(league)}
+                      className="shrink-0 rounded-full"
+                    >
+                      {league}
+                      {league === 'ALL' && (
+                        <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-[10px]">
+                          {rawUpcoming.length + rawLive.length}
+                        </Badge>
+                      )}
+                    </Button>
+                  ))}
                 </div>
+                <ScrollBar orientation="horizontal" />
+              </ScrollArea>
+              
+              <div className="flex items-center gap-3 shrink-0">
+                <SteamMoveMonitor matches={allActiveMatches} enabled={true} />
+                <span className="text-xs text-muted-foreground hidden sm:block">
+                  {lastRefresh.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                </span>
+                <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isLoading}>
+                  <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
+                </Button>
               </div>
             </div>
           </div>
+        </div>
 
-          {/* High Value Alerts */}
-          <div className="container px-4 py-3">
+        {/* Main Tabs */}
+        <div className="container px-4 py-6">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+            {/* Tab Navigation */}
+            <TabsList className="grid w-full max-w-lg mx-auto grid-cols-3 h-12">
+              <TabsTrigger value="scores" className="gap-2 text-sm">
+                <Activity className="h-4 w-4" />
+                <span className="hidden sm:inline">Scores</span>
+                {filteredLive.length > 0 && (
+                  <Badge variant="destructive" className="h-5 px-1.5 text-[10px] animate-pulse">
+                    {filteredLive.length}
+                  </Badge>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="picks" className="gap-2 text-sm">
+                <Target className="h-4 w-4" />
+                <span className="hidden sm:inline">Picks</span>
+              </TabsTrigger>
+              <TabsTrigger value="analytics" className="gap-2 text-sm">
+                <BarChart3 className="h-4 w-4" />
+                <span className="hidden sm:inline">Analytics</span>
+                {opportunities.length > 0 && (
+                  <Badge className="bg-green-500 h-5 px-1.5 text-[10px]">
+                    {opportunities.length}
+                  </Badge>
+                )}
+              </TabsTrigger>
+            </TabsList>
+
+            {/* High Value Alerts - Always visible */}
             <HighValueAlertBanner
               matches={allActiveMatches}
               confidenceThreshold={75}
@@ -199,224 +195,321 @@ const Index = () => {
               maxAlerts={3}
               onMatchClick={handleMatchClick}
             />
-          </div>
 
-          {/* Content Grid */}
-          <div className="container px-4 pb-8">
-            <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
-              {/* Main Scoreboard - 3 cols */}
-              <div className="xl:col-span-3 space-y-6">
-                {/* Sharp Money Mode */}
-                {isSharpMode ? (
-                  <div className="space-y-6">
-                    {/* Sharp Money Leaderboard */}
-                    <SharpMoneyLeaderboard />
-                    
-                    {/* Sharp Money Games */}
-                    <SharpMoneySection 
-                      matches={allActiveMatches} 
-                      league="ALL"
-                      maxItems={20}
-                      showFilter={true}
-                      compact={false}
-                    />
-                  </div>
-                ) : (
-                  <>
-                    {/* Live Games */}
-                    {filteredLive.length > 0 && (
-                      <Card>
-                        <CardHeader className="py-3 px-4 flex flex-row items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <Radio className="h-4 w-4 text-red-500" />
-                            <CardTitle className="text-base">Live Games</CardTitle>
-                            <Badge variant="destructive" className="animate-pulse">
-                              {filteredLive.length}
-                            </Badge>
+            {/* Scores Tab */}
+            <TabsContent value="scores" className="space-y-6 mt-0">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="space-y-6"
+                >
+                  {/* Live Games */}
+                  {filteredLive.length > 0 && (
+                    <Card className="border-red-500/30">
+                      <CardHeader className="py-4 px-6 flex flex-row items-center justify-between bg-red-500/5">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 rounded-full bg-red-500/10">
+                            <Radio className="h-5 w-5 text-red-500 animate-pulse" />
                           </div>
-                          <Button variant="ghost" size="sm" onClick={() => navigate('/live')}>
-                            See All <ChevronRight className="h-4 w-4 ml-1" />
-                          </Button>
-                        </CardHeader>
-                        <CardContent className="p-0">
-                          <div className="divide-y">
-                            {filteredLive.slice(0, 5).map((match) => (
-                              <ScoreboardRow key={match.id} match={match} />
-                            ))}
+                          <div>
+                            <CardTitle className="text-lg">Live Now</CardTitle>
+                            <p className="text-sm text-muted-foreground">{filteredLive.length} games in progress</p>
                           </div>
-                        </CardContent>
-                      </Card>
-                    )}
-
-                    {/* Upcoming Games */}
-                    <Card>
-                      <CardHeader className="py-3 px-4 flex flex-row items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Clock className="h-4 w-4 text-primary" />
-                          <CardTitle className="text-base">Upcoming Games</CardTitle>
-                          <Badge variant="secondary">{filteredUpcoming.length}</Badge>
                         </div>
-                        <Button variant="ghost" size="sm" onClick={() => navigate('/games')}>
-                          Full Schedule <ChevronRight className="h-4 w-4 ml-1" />
+                        <Button variant="ghost" size="sm" onClick={() => navigate('/live')}>
+                          View All <ChevronRight className="h-4 w-4 ml-1" />
                         </Button>
                       </CardHeader>
                       <CardContent className="p-0">
                         <div className="divide-y">
-                          {filteredUpcoming.slice(0, 10).map((match) => (
+                          {filteredLive.map((match) => (
                             <ScoreboardRow key={match.id} match={match} />
                           ))}
-                          {filteredUpcoming.length === 0 && (
-                            <div className="py-12 text-center text-muted-foreground">
-                              <Clock className="h-8 w-8 mx-auto mb-2 opacity-30" />
-                              <p>No upcoming games</p>
-                            </div>
-                          )}
                         </div>
                       </CardContent>
                     </Card>
+                  )}
 
-                    {/* Recent Results */}
-                    {filteredFinished.length > 0 && (
-                      <Card>
-                        <CardHeader className="py-3 px-4 flex flex-row items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <Trophy className="h-4 w-4 text-muted-foreground" />
-                            <CardTitle className="text-base">Recent Results</CardTitle>
+                  {/* Upcoming Games */}
+                  <Card>
+                    <CardHeader className="py-4 px-6 flex flex-row items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-full bg-primary/10">
+                          <Clock className="h-5 w-5 text-primary" />
+                        </div>
+                        <div>
+                          <CardTitle className="text-lg">Upcoming</CardTitle>
+                          <p className="text-sm text-muted-foreground">{filteredUpcoming.length} scheduled games</p>
+                        </div>
+                      </div>
+                      <Button variant="ghost" size="sm" onClick={() => navigate('/games')}>
+                        Full Schedule <ChevronRight className="h-4 w-4 ml-1" />
+                      </Button>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                      <div className="divide-y">
+                        {filteredUpcoming.slice(0, 8).map((match) => (
+                          <ScoreboardRow key={match.id} match={match} />
+                        ))}
+                        {filteredUpcoming.length === 0 && (
+                          <div className="py-16 text-center text-muted-foreground">
+                            <Clock className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                            <p>No upcoming games</p>
                           </div>
-                        </CardHeader>
-                        <CardContent className="p-0">
-                          <div className="divide-y">
-                            {filteredFinished.slice(0, 5).map((match) => (
-                              <ScoreboardRow key={match.id} match={match} showOdds={false} />
-                            ))}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    )}
-                  </>
-                )}
-              </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
 
-              {/* Right Sidebar - 1 col */}
-              <div className="space-y-6">
-                {/* Sharp Money Mini Section (only when not in sharp mode) */}
-                {!isSharpMode && (
-                  <Card className="border-purple-500/30 bg-purple-500/5">
-                    <CardHeader className="py-3 px-4">
-                      <div className="flex items-center gap-2">
-                        <Brain className="h-4 w-4 text-purple-500" />
-                        <CardTitle className="text-base">Sharp Money</CardTitle>
+                  {/* Recent Results */}
+                  {filteredFinished.length > 0 && (
+                    <Card>
+                      <CardHeader className="py-4 px-6 flex flex-row items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 rounded-full bg-muted">
+                            <Trophy className="h-5 w-5 text-muted-foreground" />
+                          </div>
+                          <div>
+                            <CardTitle className="text-lg">Recent Results</CardTitle>
+                            <p className="text-sm text-muted-foreground">Latest completed games</p>
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="p-0">
+                        <div className="divide-y">
+                          {filteredFinished.slice(0, 5).map((match) => (
+                            <ScoreboardRow key={match.id} match={match} showOdds={false} />
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+                </motion.div>
+              </AnimatePresence>
+            </TabsContent>
+
+            {/* Picks Tab */}
+            <TabsContent value="picks" className="space-y-6 mt-0">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="grid gap-6 md:grid-cols-2"
+                >
+                  {/* Sharp Money */}
+                  <Card className="border-purple-500/30 md:col-span-2">
+                    <CardHeader className="py-4 px-6 bg-purple-500/5">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-full bg-purple-500/10">
+                          <Brain className="h-5 w-5 text-purple-500" />
+                        </div>
+                        <div>
+                          <CardTitle className="text-lg">Sharp Money</CardTitle>
+                          <p className="text-sm text-muted-foreground">Professional betting action signals</p>
+                        </div>
                       </div>
                     </CardHeader>
-                    <CardContent className="pt-0">
+                    <CardContent className="pt-4">
                       <SharpMoneySection 
                         matches={allActiveMatches} 
                         league={selectedLeague as any}
-                        maxItems={3}
-                        showFilter={false}
-                        compact={true}
+                        maxItems={6}
+                        showFilter={true}
+                        compact={false}
                       />
                     </CardContent>
                   </Card>
-                )}
 
-                {/* AI Picks */}
-                <Card>
-                  <CardHeader className="py-3 px-4">
-                    <div className="flex items-center gap-2">
-                      <Zap className="h-4 w-4 text-primary" />
-                      <CardTitle className="text-base">AI Picks</CardTitle>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <ConfidentPicks />
-                  </CardContent>
-                </Card>
-
-                {/* Smart Scores */}
-                <Card>
-                  <CardHeader className="py-3 px-4">
-                    <div className="flex items-center gap-2">
-                      <TrendingUp className="h-4 w-4 text-green-500" />
-                      <CardTitle className="text-base">Top Rated</CardTitle>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <SmartScoreSection matches={filteredUpcoming.slice(0, 5)} />
-                  </CardContent>
-                </Card>
-
-                {/* Arbitrage */}
-                {opportunities.length > 0 && (
-                  <Card className="border-green-500/30 bg-green-500/5">
-                    <CardHeader className="py-3 px-4">
-                      <div className="flex items-center gap-2">
-                        <DollarSign className="h-4 w-4 text-green-500" />
-                        <CardTitle className="text-base">Arbitrage</CardTitle>
-                        <Badge className="bg-green-500">{opportunities.length}</Badge>
+                  {/* AI Picks */}
+                  <Card>
+                    <CardHeader className="py-4 px-6">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-full bg-primary/10">
+                          <Zap className="h-5 w-5 text-primary" />
+                        </div>
+                        <div>
+                          <CardTitle className="text-lg">AI Picks</CardTitle>
+                          <p className="text-sm text-muted-foreground">Algorithm-powered selections</p>
+                        </div>
                       </div>
                     </CardHeader>
                     <CardContent className="pt-0">
-                      <ArbitrageOpportunitiesSection
-                        selectedLeague={selectedLeague as any}
-                        arbitrageOpportunitiesToShow={opportunities.slice(0, 3)}
-                      />
+                      <ConfidentPicks />
                     </CardContent>
                   </Card>
-                )}
 
-                {/* Quick Stats */}
-                <Card>
-                  <CardHeader className="py-3 px-4">
-                    <CardTitle className="text-base">Your Stats</CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <div className="grid grid-cols-2 gap-3">
-                      <StatBox 
-                        label="Win Rate" 
-                        value={`${((stats?.wins || 0) / Math.max(stats?.total_bets || 1, 1) * 100).toFixed(0)}%`}
-                        positive={(stats?.wins || 0) / Math.max(stats?.total_bets || 1, 1) >= 0.5}
-                      />
-                      <StatBox 
-                        label="P/L" 
-                        value={`${(stats?.total_profit || 0) >= 0 ? '+' : ''}$${Math.abs(stats?.total_profit || 0).toFixed(0)}`}
-                        positive={(stats?.total_profit || 0) >= 0}
-                      />
-                      <StatBox 
-                        label="Total Bets" 
-                        value={stats?.total_bets?.toString() || '0'}
-                      />
-                      <StatBox 
-                        label="Streak" 
-                        value={stats?.current_streak?.toString() || '0'}
-                        positive={(stats?.current_streak || 0) > 0}
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-          </div>
-        </main>
-      </div>
+                  {/* Smart Scores */}
+                  <Card>
+                    <CardHeader className="py-4 px-6">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-full bg-green-500/10">
+                          <TrendingUp className="h-5 w-5 text-green-500" />
+                        </div>
+                        <div>
+                          <CardTitle className="text-lg">Top Rated</CardTitle>
+                          <p className="text-sm text-muted-foreground">Highest value opportunities</p>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <SmartScoreSection matches={filteredUpcoming.slice(0, 5)} />
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              </AnimatePresence>
+            </TabsContent>
+
+            {/* Analytics Tab */}
+            <TabsContent value="analytics" className="space-y-6 mt-0">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="space-y-6"
+                >
+                  {/* Stats Overview */}
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <StatCard 
+                      icon={<Trophy className="h-5 w-5" />}
+                      label="Win Rate" 
+                      value={`${((stats?.wins || 0) / Math.max(stats?.total_bets || 1, 1) * 100).toFixed(0)}%`}
+                      positive={(stats?.wins || 0) / Math.max(stats?.total_bets || 1, 1) >= 0.5}
+                      color="primary"
+                    />
+                    <StatCard 
+                      icon={<DollarSign className="h-5 w-5" />}
+                      label="Profit/Loss" 
+                      value={`${(stats?.total_profit || 0) >= 0 ? '+' : ''}$${Math.abs(stats?.total_profit || 0).toFixed(0)}`}
+                      positive={(stats?.total_profit || 0) >= 0}
+                      color={(stats?.total_profit || 0) >= 0 ? "green" : "red"}
+                    />
+                    <StatCard 
+                      icon={<Activity className="h-5 w-5" />}
+                      label="Total Bets" 
+                      value={stats?.total_bets?.toString() || '0'}
+                      color="blue"
+                    />
+                    <StatCard 
+                      icon={<Flame className="h-5 w-5" />}
+                      label="Current Streak" 
+                      value={stats?.current_streak?.toString() || '0'}
+                      positive={(stats?.current_streak || 0) > 0}
+                      color={(stats?.current_streak || 0) > 0 ? "green" : "red"}
+                    />
+                  </div>
+
+                  {/* Arbitrage Opportunities */}
+                  <Card className={cn(
+                    opportunities.length > 0 && "border-green-500/30"
+                  )}>
+                    <CardHeader className="py-4 px-6 bg-green-500/5">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 rounded-full bg-green-500/10">
+                            <DollarSign className="h-5 w-5 text-green-500" />
+                          </div>
+                          <div>
+                            <CardTitle className="text-lg">Arbitrage Opportunities</CardTitle>
+                            <p className="text-sm text-muted-foreground">Risk-free profit opportunities</p>
+                          </div>
+                        </div>
+                        {opportunities.length > 0 && (
+                          <Badge className="bg-green-500 text-white">
+                            {opportunities.length} Found
+                          </Badge>
+                        )}
+                      </div>
+                    </CardHeader>
+                    <CardContent className="pt-4">
+                      {opportunities.length > 0 ? (
+                        <ArbitrageOpportunitiesSection
+                          selectedLeague={selectedLeague as any}
+                          arbitrageOpportunitiesToShow={opportunities.slice(0, 5)}
+                        />
+                      ) : (
+                        <div className="py-12 text-center text-muted-foreground">
+                          <DollarSign className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                          <p>No arbitrage opportunities found</p>
+                          <p className="text-xs mt-1">Check back when more odds are available</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* Sharp Money Leaderboard */}
+                  <Card>
+                    <CardHeader className="py-4 px-6">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-full bg-purple-500/10">
+                          <LineChart className="h-5 w-5 text-purple-500" />
+                        </div>
+                        <div>
+                          <CardTitle className="text-lg">Sharp Money Performance</CardTitle>
+                          <p className="text-sm text-muted-foreground">Track professional betting signals</p>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <SharpMoneyLeaderboard />
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              </AnimatePresence>
+            </TabsContent>
+          </Tabs>
+        </div>
+      </main>
 
       <PageFooter />
     </div>
   );
 };
 
-function StatBox({ label, value, positive }: { label: string; value: string; positive?: boolean }) {
+// Stat Card Component
+function StatCard({ 
+  icon, 
+  label, 
+  value, 
+  positive, 
+  color = "primary" 
+}: { 
+  icon: React.ReactNode;
+  label: string; 
+  value: string; 
+  positive?: boolean;
+  color?: "primary" | "green" | "red" | "blue";
+}) {
+  const colorClasses = {
+    primary: "bg-primary/10 text-primary",
+    green: "bg-green-500/10 text-green-500",
+    red: "bg-red-500/10 text-red-500",
+    blue: "bg-blue-500/10 text-blue-500",
+  };
+
   return (
-    <div className="bg-muted/50 rounded-lg p-3 text-center">
-      <div className={cn(
-        "text-lg font-bold",
-        positive === true && "text-green-500",
-        positive === false && "text-red-500"
-      )}>
-        {value}
-      </div>
-      <div className="text-xs text-muted-foreground">{label}</div>
-    </div>
+    <Card>
+      <CardContent className="p-4">
+        <div className="flex items-center gap-3">
+          <div className={cn("p-2 rounded-full", colorClasses[color])}>
+            {icon}
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">{label}</p>
+            <p className={cn(
+              "text-xl font-bold",
+              positive === true && "text-green-500",
+              positive === false && "text-red-500"
+            )}>
+              {value}
+            </p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
