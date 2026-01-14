@@ -75,20 +75,21 @@ export interface Parlay {
 // Calculate combined parlay odds from individual American odds
 export function calculateParlayOdds(legs: BetSlipItem[]): number {
   if (legs.length === 0) return 0;
-  if (legs.length === 1) return legs[0].odds;
+  if (legs.length === 1) return Math.round(legs[0].odds);
 
   // Convert American odds to decimal, multiply, then convert back
   const decimalOdds = legs.map(leg => {
-    if (leg.odds > 0) {
-      return (leg.odds / 100) + 1;
+    const odds = Math.round(leg.odds); // Ensure whole number
+    if (odds > 0) {
+      return (odds / 100) + 1;
     } else {
-      return (100 / Math.abs(leg.odds)) + 1;
+      return (100 / Math.abs(odds)) + 1;
     }
   });
 
   const combinedDecimal = decimalOdds.reduce((acc, odds) => acc * odds, 1);
 
-  // Convert back to American
+  // Convert back to American (always return whole number)
   if (combinedDecimal >= 2) {
     return Math.round((combinedDecimal - 1) * 100);
   } else {
@@ -98,9 +99,44 @@ export function calculateParlayOdds(legs: BetSlipItem[]): number {
 
 // Calculate potential payout for a parlay
 export function calculateParlayPayout(combinedOdds: number, stake: number): number {
-  if (combinedOdds > 0) {
-    return stake + (stake * (combinedOdds / 100));
+  const odds = Math.round(combinedOdds); // Ensure whole number
+  if (odds > 0) {
+    return stake + (stake * (odds / 100));
   } else {
-    return stake + (stake * (100 / Math.abs(combinedOdds)));
+    return stake + (stake * (100 / Math.abs(odds)));
   }
+}
+
+// Convert decimal odds to American odds (whole number)
+export function decimalToAmerican(decimal: number): number {
+  if (decimal >= 2) {
+    return Math.round((decimal - 1) * 100);
+  } else {
+    return Math.round(-100 / (decimal - 1));
+  }
+}
+
+// Convert American odds to decimal
+export function americanToDecimal(american: number): number {
+  if (american > 0) {
+    return (american / 100) + 1;
+  } else {
+    return (100 / Math.abs(american)) + 1;
+  }
+}
+
+// Calculate payout from American odds
+export function calculatePayoutFromAmerican(odds: number, stake: number): number {
+  const roundedOdds = Math.round(odds);
+  if (roundedOdds > 0) {
+    return stake + (stake * (roundedOdds / 100));
+  } else {
+    return stake + (stake * (100 / Math.abs(roundedOdds)));
+  }
+}
+
+// Format American odds as string with +/- prefix
+export function formatAmericanOdds(odds: number): string {
+  const rounded = Math.round(odds);
+  return rounded > 0 ? `+${rounded}` : `${rounded}`;
 }

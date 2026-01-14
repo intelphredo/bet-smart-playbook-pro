@@ -19,7 +19,19 @@ export default function BetSlipItem({ item, showLegNumber, legNumber }: BetSlipI
   const [isPlacing, setIsPlacing] = useState(false);
 
   const stakeNum = parseFloat(stake) || 0;
-  const potentialPayout = stakeNum * item.odds;
+  
+  // Calculate payout using American odds format
+  const calculatePayout = (odds: number, stakeAmount: number): number => {
+    if (odds > 0) {
+      // Positive odds: +150 means win $150 on $100 bet
+      return stakeAmount + (stakeAmount * (odds / 100));
+    } else {
+      // Negative odds: -150 means bet $150 to win $100
+      return stakeAmount + (stakeAmount * (100 / Math.abs(odds)));
+    }
+  };
+
+  const potentialPayout = calculatePayout(item.odds, stakeNum);
   const potentialProfit = potentialPayout - stakeNum;
 
   const handlePlaceBet = async () => {
@@ -68,7 +80,9 @@ export default function BetSlipItem({ item, showLegNumber, legNumber }: BetSlipI
 
         <div className="flex items-center justify-between">
           <span className="text-sm font-medium">{item.selection}</span>
-          <span className="text-lg font-bold text-primary">{item.odds.toFixed(2)}</span>
+          <span className="text-lg font-bold text-primary">
+            {item.odds > 0 ? '+' : ''}{Math.round(item.odds)}
+          </span>
         </div>
 
         {/* Model insights */}

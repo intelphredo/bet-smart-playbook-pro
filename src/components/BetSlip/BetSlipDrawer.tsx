@@ -117,7 +117,7 @@ export default function BetSlipDrawer() {
                   <div>
                     <span className="text-muted-foreground">Combined Odds:</span>
                     <span className="ml-2 font-semibold text-primary">
-                      {parlayOdds > 0 ? '+' : ''}{parlayOdds}
+                      {parlayOdds > 0 ? '+' : ''}{Math.round(parlayOdds)}
                     </span>
                   </div>
                   <div>
