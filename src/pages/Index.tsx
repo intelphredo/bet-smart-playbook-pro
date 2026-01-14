@@ -305,18 +305,29 @@ const Index = () => {
                             <p className="text-sm text-muted-foreground">Latest completed games</p>
                           </div>
                         </div>
-                        <Select value={String(recentResultsLimit)} onValueChange={(v) => setRecentResultsLimit(Number(v))}>
-                          <SelectTrigger className="w-[100px] h-8">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {RESULTS_PER_PAGE_OPTIONS.map(option => (
-                              <SelectItem key={option} value={String(option)}>
-                                {option} results
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <div className="flex items-center gap-2">
+                          <Select value={String(recentResultsLimit)} onValueChange={(v) => setRecentResultsLimit(Number(v))}>
+                            <SelectTrigger className="w-[100px] h-8">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {RESULTS_PER_PAGE_OPTIONS.map(option => (
+                                <SelectItem key={option} value={String(option)}>
+                                  {option} results
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => navigate('/recent-results')}
+                            className="flex items-center gap-1"
+                          >
+                            View All
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </CardHeader>
                       <CardContent className="p-0">
                         <div className="divide-y">
