@@ -196,14 +196,23 @@ function calculateSpreadAdjustment(
   const impactDiff = awayImpact.overallImpact - homeImpact.overallImpact;
   
   // Different sports have different point scales
-  const multipliers: Record<League, number> = {
+  const multipliers: Partial<Record<League, number>> = {
     NBA: 0.15,    // 1 point per 6.67 impact
     NFL: 0.1,     // 1 point per 10 impact
     NHL: 0.02,    // 0.5 goals per 25 impact
     MLB: 0.03,    // 0.3 runs per 10 impact
     SOCCER: 0.01, // 0.1 goals per 10 impact
+    EPL: 0.01,
+    LA_LIGA: 0.01,
+    SERIE_A: 0.01,
+    BUNDESLIGA: 0.01,
+    LIGUE_1: 0.01,
+    MLS: 0.01,
+    CHAMPIONS_LEAGUE: 0.01,
     NCAAF: 0.12,
     NCAAB: 0.12,
+    WNBA: 0.12,
+    CFL: 0.1,
   };
   
   return impactDiff * (multipliers[league] || 0.1);

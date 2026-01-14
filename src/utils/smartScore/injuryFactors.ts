@@ -11,14 +11,23 @@ const injuryCache: Map<string, { data: SportradarInjury[]; timestamp: number }> 
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 function mapToSportLeague(league: League): SportLeague {
-  const mapping: Record<League, SportLeague> = {
+  const mapping: Partial<Record<League, SportLeague>> = {
     'NBA': 'NBA',
     'NFL': 'NFL',
     'MLB': 'MLB',
     'NHL': 'NHL',
     'SOCCER': 'SOCCER',
+    'EPL': 'SOCCER',
+    'LA_LIGA': 'SOCCER',
+    'SERIE_A': 'SOCCER',
+    'BUNDESLIGA': 'SOCCER',
+    'LIGUE_1': 'SOCCER',
+    'MLS': 'SOCCER',
+    'CHAMPIONS_LEAGUE': 'SOCCER',
     'NCAAF': 'NFL',
     'NCAAB': 'NBA',
+    'WNBA': 'NBA',
+    'CFL': 'NFL',
   };
   return mapping[league] || 'NBA';
 }
