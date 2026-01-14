@@ -88,18 +88,32 @@ export const mapESPNEventToMatch = (event: ESPNEvent, league: League): Match => 
       recentForm: awayRecentForm
     };
     
-    // Enhanced status mapping
+    // Enhanced status mapping with better NCAAB/college sports support
     let status: Match["status"];
     const eventState = (event.status?.type?.state || "pre").toLowerCase();
+    const stateDescription = (event.status?.type?.description || "").toLowerCase();
     
-    if (eventState === "pre") {
-      status = "scheduled";
-    } else if (eventState === "in") {
-      status = "live";
-    } else if (eventState === "post") {
+    // Check for various live/in-progress indicators
+    const isLiveIndicator = eventState === "in" || 
+      stateDescription.includes("in progress") || 
+      stateDescription.includes("halftime") ||
+      stateDescription.includes("end of") ||
+      (event.status?.period > 0 && eventState !== "post" && eventState !== "pre");
+    
+    // Check for finished indicators  
+    const isFinishedIndicator = eventState === "post" || 
+      stateDescription.includes("final") ||
+      stateDescription.includes("end of game") ||
+      stateDescription.includes("full time");
+    
+    if (isFinishedIndicator) {
       status = "finished";
+    } else if (isLiveIndicator) {
+      status = "live";
+    } else if (eventState === "pre" || stateDescription.includes("scheduled")) {
+      status = "scheduled";
     } else {
-      logger.log(`Unknown event state: ${eventState}, defaulting to scheduled`);
+      logger.log(`Unknown event state: ${eventState} (${stateDescription}), defaulting to scheduled`);
       status = "scheduled";
     }
     
@@ -126,20 +140,51 @@ export const mapESPNEventToMatch = (event: ESPNEvent, league: League): Match => 
     // - If ESPN omits the score field temporarily, do NOT coerce to 0 (that looks like a real score)
     // - If ESPN provides "0", that IS a real score (e.g. 0-0)
     const parseScoreMaybe = (scoreValue: string | undefined): number | null => {
-      if (scoreValue === undefined) return null;
+      if (scoreValue === undefined || scoreValue === null || scoreValue === "") return null;
       const parsed = parseInt(scoreValue, 10);
-      return Number.isFinite(parsed) ? parsed : 0;
+      return Number.isFinite(parsed) ? parsed : null;
     };
 
     const homeParsed = parseScoreMaybe(homeCompetitor.score);
     const awayParsed = parseScoreMaybe(awayCompetitor.score);
 
+    // For live/finished games, we should have scores - use 0 as fallback only for confirmed live games
+    const hasValidScores = homeParsed !== null && awayParsed !== null;
+    const shouldHaveScores = status === "live" || status === "finished";
+    
+    // Generate period display text based on league
+    const getPeriodDisplay = (): string => {
+      const period = event.status?.period || 1;
+      const clock = event.status?.displayClock || "00:00";
+      const description = event.status?.type?.description || "";
+      
+      // Use description if available (more accurate for college sports)
+      if (description && description !== "Scheduled" && description !== "In Progress") {
+        return description;
+      }
+      
+      // Format based on league
+      if (league === "NCAAB" || league === "NBA" || league === "WNBA") {
+        if (period === 1) return `1st Half - ${clock}`;
+        if (period === 2) return `2nd Half - ${clock}`;
+        return `OT${period - 2} - ${clock}`;
+      }
+      
+      return `Period ${period} - ${clock}`;
+    };
+
     const score =
-      status !== "scheduled" && homeParsed !== null && awayParsed !== null
+      shouldHaveScores && hasValidScores
         ? {
             home: homeParsed,
             away: awayParsed,
-            period: `Period ${event.status?.period || 1} - ${event.status?.displayClock || "00:00"}`,
+            period: getPeriodDisplay(),
+          }
+        : shouldHaveScores 
+        ? {
+            home: homeParsed ?? 0,
+            away: awayParsed ?? 0,
+            period: getPeriodDisplay(),
           }
         : undefined;
     
@@ -222,14 +267,24 @@ function generateDiverseSportsbookOdds(baseHomeOdds: number, baseAwayOdds: numbe
 function getExpectedScore(league: League, strength: number): number {
   switch(league) {
     case "NFL": 
+    case "NCAAF":
       return 20 + (strength * 1.2) + ((Math.random() * 14) - 7);
     case "NBA": 
-      return 100 + (strength * 2) + ((Math.random() * 20) - 10);
+    case "NCAAB":
+    case "WNBA":
+      return 65 + (strength * 2) + ((Math.random() * 20) - 10);
     case "MLB": 
       return 3.5 + (strength * 0.4) + ((Math.random() * 3) - 1.5);
     case "NHL": 
       return 2.5 + (strength * 0.3) + ((Math.random() * 2) - 1);
     case "SOCCER": 
+    case "EPL":
+    case "LA_LIGA":
+    case "SERIE_A":
+    case "BUNDESLIGA":
+    case "LIGUE_1":
+    case "MLS":
+    case "CHAMPIONS_LEAGUE":
       return 1 + (strength * 0.2) + ((Math.random() * 2) - 1);
     default:
       return 5 + strength;
