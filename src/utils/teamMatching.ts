@@ -44,70 +44,98 @@ export function isSameTeam(name1: string, name2: string): boolean {
  * Check if two matches represent the same game
  */
 export function isSameGame(match1: Match, match2: Match): boolean {
-  // Check league match (be flexible with similar leagues)
+  // Check league match
   const sameLeague = match1.league === match2.league;
-  
+
   // Check team matches
   const sameHome = isSameTeam(match1.homeTeam.name, match2.homeTeam.name);
   const sameAway = isSameTeam(match1.awayTeam.name, match2.awayTeam.name);
-  
+
   // Also allow swapped home/away (some sources may differ)
-  const swappedTeams = isSameTeam(match1.homeTeam.name, match2.awayTeam.name) && 
-                       isSameTeam(match1.awayTeam.name, match2.homeTeam.name);
-  
+  const swappedTeams =
+    isSameTeam(match1.homeTeam.name, match2.awayTeam.name) &&
+    isSameTeam(match1.awayTeam.name, match2.homeTeam.name);
+
   // Check if game times are within 3 hours of each other
   const time1 = new Date(match1.startTime).getTime();
   const time2 = new Date(match2.startTime).getTime();
-  const sameTime = Math.abs(time1 - time2) < 3 * 60 * 60 * 1000; // 3 hours
-  
-  return sameLeague && (sameHome && sameAway || swappedTeams) && sameTime;
+  const sameTime = Math.abs(time1 - time2) < 3 * 60 * 60 * 1000;
+
+  return sameLeague && ((sameHome && sameAway) || swappedTeams) && sameTime;
 }
 
 /**
- * Deduplicate matches from multiple sources, preferring matches with more data
+ * Deduplicate matches from multiple sources, preferring matches with more data.
+ * IMPORTANT: A score of 0 is still a valid score (e.g. 0-0 at kickoff), so we
+ * must not treat it as "missing".
  */
 export function dedupeMatches(matches: Match[]): Match[] {
   const seen = new Map<string, Match>();
-  
+
+  const statusRank: Record<Match["status"], number> = {
+    live: 3,
+    finished: 2,
+    scheduled: 1,
+    pre: 1,
+  };
+
+  const hasScoreObject = (m: Match) =>
+    m.score !== undefined && (m.status === "live" || m.status === "finished");
+
+  const mergeLiveOdds = (a?: Match["liveOdds"], b?: Match["liveOdds"]) => {
+    const merged = [...(a || []), ...(b || [])];
+    // De-dupe by sportsbook id (if present) + updatedAt
+    const key = (o: any) => `${o?.sportsbook?.id ?? "unknown"}-${o?.updatedAt ?? ""}`;
+    const map = new Map<string, any>();
+    for (const o of merged) map.set(key(o), o);
+    return Array.from(map.values());
+  };
+
   for (const match of matches) {
     let isDuplicate = false;
-    
+
     for (const [key, existing] of seen) {
       if (isSameGame(match, existing)) {
         isDuplicate = true;
-        
-        // Prefer the match with more live odds data
+
         const existingOddsCount = existing.liveOdds?.length || 0;
         const newOddsCount = match.liveOdds?.length || 0;
-        
-        // Also prefer matches with real scores
-        const existingHasScore = (existing.score?.home ?? 0) > 0 || (existing.score?.away ?? 0) > 0;
-        const newHasScore = (match.score?.home ?? 0) > 0 || (match.score?.away ?? 0) > 0;
-        
-        // Replace if new match has better data
-        if (newOddsCount > existingOddsCount || (newHasScore && !existingHasScore)) {
-          seen.set(key, {
-            ...match,
-            // Merge live odds from both sources
-            liveOdds: [...(existing.liveOdds || []), ...(match.liveOdds || [])],
-          });
-        } else if (newOddsCount > 0 && existingOddsCount > 0) {
-          // Merge odds if both have data
-          seen.set(key, {
-            ...existing,
-            liveOdds: [...(existing.liveOdds || []), ...(match.liveOdds || [])],
-          });
-        }
+
+        const existingHasScore = hasScoreObject(existing);
+        const newHasScore = hasScoreObject(match);
+
+        // Decide which one is the primary record to keep
+        const preferNew =
+          newOddsCount > existingOddsCount || (newHasScore && !existingHasScore);
+
+        const primary = preferNew ? match : existing;
+        const secondary = preferNew ? existing : match;
+
+        const mergedStatus =
+          statusRank[primary.status] >= statusRank[secondary.status]
+            ? primary.status
+            : secondary.status;
+
+        // Merge while preserving the best status + keeping score if either source has it
+        const merged: Match = {
+          ...secondary,
+          ...primary,
+          status: mergedStatus,
+          score: primary.score ?? secondary.score,
+          liveOdds: mergeLiveOdds(secondary.liveOdds, primary.liveOdds),
+        };
+
+        seen.set(key, merged);
         break;
       }
     }
-    
+
     if (!isDuplicate) {
       // Create a unique key based on teams and time
       const key = `${match.homeTeam.name}-${match.awayTeam.name}-${match.startTime}`;
       seen.set(key, match);
     }
   }
-  
+
   return Array.from(seen.values());
 }
