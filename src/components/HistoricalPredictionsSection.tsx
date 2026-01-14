@@ -42,6 +42,8 @@ import {
   Filter,
   ChevronLeft,
   ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
 } from "lucide-react";
 import { toast } from "sonner";
 import { 
@@ -644,43 +646,63 @@ const HistoricalPredictionsSection = () => {
                 </Select>
               </div>
               {preLiveTotalPages > 1 && (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 w-7 p-0"
+                    onClick={() => setPreLivePage(1)}
+                    disabled={preLivePage === 1}
+                    title="First page (Home)"
+                  >
+                    <ChevronsLeft className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 w-7 p-0"
+                    onClick={() => setPreLivePage(p => Math.max(1, p - 1))}
+                    disabled={preLivePage === 1}
+                    title="Previous page (←)"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
                   <div className="flex items-center gap-1">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-7 w-7 p-0"
-                      onClick={() => setPreLivePage(p => Math.max(1, p - 1))}
-                      disabled={preLivePage === 1}
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                    <div className="flex items-center gap-1">
-                      <Input
-                        type="number"
-                        min={1}
-                        max={preLiveTotalPages}
-                        value={preLivePage}
-                        onChange={(e) => {
-                          const page = parseInt(e.target.value);
-                          if (page >= 1 && page <= preLiveTotalPages) {
-                            setPreLivePage(page);
-                          }
-                        }}
-                        className="w-12 h-7 text-xs text-center p-1"
-                      />
-                      <span className="text-xs text-muted-foreground">/ {preLiveTotalPages}</span>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-7 w-7 p-0"
-                      onClick={() => setPreLivePage(p => Math.min(preLiveTotalPages, p + 1))}
-                      disabled={preLivePage === preLiveTotalPages}
-                    >
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={preLiveTotalPages}
+                      value={preLivePage}
+                      onChange={(e) => {
+                        const page = parseInt(e.target.value);
+                        if (page >= 1 && page <= preLiveTotalPages) {
+                          setPreLivePage(page);
+                        }
+                      }}
+                      className="w-12 h-7 text-xs text-center p-1"
+                    />
+                    <span className="text-xs text-muted-foreground">/ {preLiveTotalPages}</span>
                   </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 w-7 p-0"
+                    onClick={() => setPreLivePage(p => Math.min(preLiveTotalPages, p + 1))}
+                    disabled={preLivePage === preLiveTotalPages}
+                    title="Next page (→)"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 w-7 p-0"
+                    onClick={() => setPreLivePage(preLiveTotalPages)}
+                    disabled={preLivePage === preLiveTotalPages}
+                    title="Last page (End)"
+                  >
+                    <ChevronsRight className="h-4 w-4" />
+                  </Button>
                 </div>
               )}
             </div>
@@ -733,43 +755,63 @@ const HistoricalPredictionsSection = () => {
                 </Select>
               </div>
               {liveTotalPages > 1 && (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 w-7 p-0"
+                    onClick={() => setLivePage(1)}
+                    disabled={livePage === 1}
+                    title="First page (Home)"
+                  >
+                    <ChevronsLeft className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 w-7 p-0"
+                    onClick={() => setLivePage(p => Math.max(1, p - 1))}
+                    disabled={livePage === 1}
+                    title="Previous page (←)"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
                   <div className="flex items-center gap-1">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-7 w-7 p-0"
-                      onClick={() => setLivePage(p => Math.max(1, p - 1))}
-                      disabled={livePage === 1}
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                    <div className="flex items-center gap-1">
-                      <Input
-                        type="number"
-                        min={1}
-                        max={liveTotalPages}
-                        value={livePage}
-                        onChange={(e) => {
-                          const page = parseInt(e.target.value);
-                          if (page >= 1 && page <= liveTotalPages) {
-                            setLivePage(page);
-                          }
-                        }}
-                        className="w-12 h-7 text-xs text-center p-1"
-                      />
-                      <span className="text-xs text-muted-foreground">/ {liveTotalPages}</span>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-7 w-7 p-0"
-                      onClick={() => setLivePage(p => Math.min(liveTotalPages, p + 1))}
-                      disabled={livePage === liveTotalPages}
-                    >
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={liveTotalPages}
+                      value={livePage}
+                      onChange={(e) => {
+                        const page = parseInt(e.target.value);
+                        if (page >= 1 && page <= liveTotalPages) {
+                          setLivePage(page);
+                        }
+                      }}
+                      className="w-12 h-7 text-xs text-center p-1"
+                    />
+                    <span className="text-xs text-muted-foreground">/ {liveTotalPages}</span>
                   </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 w-7 p-0"
+                    onClick={() => setLivePage(p => Math.min(liveTotalPages, p + 1))}
+                    disabled={livePage === liveTotalPages}
+                    title="Next page (→)"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 w-7 p-0"
+                    onClick={() => setLivePage(liveTotalPages)}
+                    disabled={livePage === liveTotalPages}
+                    title="Last page (End)"
+                  >
+                    <ChevronsRight className="h-4 w-4" />
+                  </Button>
                 </div>
               )}
             </div>
