@@ -14,6 +14,8 @@ import TeamNewsInjuries from "@/components/match/TeamNewsInjuries";
 import AddToBetSlipButton from "@/components/BetSlip/AddToBetSlipButton";
 import { SharpMoneyAlertBanner } from "@/components/BettingTrends";
 import { useMatchBettingTrend } from "@/hooks/useBettingTrends";
+import { useCrossSectionData } from "@/hooks/useCrossSectionData";
+import { CrossSectionPanel, CrossSectionBanner } from "@/components/CrossSection";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -68,6 +70,9 @@ const GameDetailPage: React.FC = () => {
     (match?.league as League) || 'NBA',
     !!match
   );
+
+  // Cross-Section Intelligence Data
+  const crossSectionData = useCrossSectionData(match || null);
 
   if (isLoading) {
     return (
@@ -607,6 +612,17 @@ const GameDetailPage: React.FC = () => {
                 )}
               </CardContent>
             </Card>
+          </motion.div>
+        )}
+
+        {/* Cross-Section Intelligence Panel */}
+        {!isFinished && crossSectionData.hasData && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.21 }}
+          >
+            <CrossSectionPanel match={match} crossSectionData={crossSectionData} />
           </motion.div>
         )}
 
