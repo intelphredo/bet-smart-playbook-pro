@@ -10,7 +10,7 @@ import { formatMoneylineOdds, getPrimaryOdds, PRIMARY_SPORTSBOOK } from '@/utils
 import AnimatedScore from '@/components/ui/AnimatedScore';
 import { TeamLogoImage } from '@/components/ui/TeamLogoImage';
 import FavoriteButton from '@/components/FavoriteButton';
-import { useSimulatedMovement } from '@/hooks/useOddsMovement';
+import { useOddsMovement } from '@/hooks/useOddsMovement';
 
 interface ScoreboardRowProps {
   match: Match;
@@ -37,7 +37,7 @@ export function ScoreboardRow({ match, showOdds = true }: ScoreboardRowProps) {
   // Get FanDuel odds as primary
   const primaryOdds = getPrimaryOdds(match.liveOdds || []);
   const isFanDuel = primaryOdds?.sportsbook.id.toLowerCase().includes('fanduel');
-  const movement = useSimulatedMovement(match.liveOdds);
+  const movement = useOddsMovement(match.id, match.liveOdds);
 
   const getSpread = () => {
     if (!primaryOdds?.spread) return null;

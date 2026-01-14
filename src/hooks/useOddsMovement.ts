@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { LiveOdds } from "@/types/sports";
 import { getPrimaryOdds, PRIMARY_SPORTSBOOK } from "@/utils/sportsbook";
 
@@ -14,85 +15,172 @@ export interface OddsMovement {
   totalDirection?: MovementDirection;
   totalChange?: number;
   lastUpdated: string;
-  isRecent: boolean; // True if change happened in last 5 minutes
+  isRecent: boolean;
+  hasRealData: boolean;
 }
 
-interface OddsSnapshot {
-  homeWin: number;
-  awayWin: number;
-  spread?: number;
-  total?: number;
-  timestamp: number;
+export interface OddsHistoryPoint {
+  timestamp: string;
+  homeOdds: number;
+  awayOdds: number;
+  drawOdds?: number;
+  sportsbookId: string;
+  sportsbookName: string;
 }
 
-const MOVEMENT_THRESHOLD = 0.02; // Minimum change to register as movement
-const RECENT_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
+const MOVEMENT_THRESHOLD = 0.02;
+const RECENT_THRESHOLD_MS = 15 * 60 * 1000; // 15 minutes
 
-export function useOddsMovement(liveOdds?: LiveOdds[], matchId?: string): OddsMovement | null {
-  const previousOddsRef = useRef<Map<string, OddsSnapshot>>(new Map());
+/**
+ * Hook to fetch real odds movement data from database
+ */
+export function useRealOddsMovement(matchId?: string, liveOdds?: LiveOdds[]): OddsMovement | null {
   const [movement, setMovement] = useState<OddsMovement | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const primaryOdds = useMemo(() => getPrimaryOdds(liveOdds || []), [liveOdds]);
 
   useEffect(() => {
-    if (!primaryOdds || !matchId) {
+    if (!matchId || !primaryOdds) {
       setMovement(null);
       return;
     }
 
-    const key = `${matchId}-${primaryOdds.sportsbook.id}`;
-    const now = Date.now();
-    
-    const currentSnapshot: OddsSnapshot = {
-      homeWin: primaryOdds.homeWin,
-      awayWin: primaryOdds.awayWin,
-      spread: primaryOdds.spread?.homeSpread,
-      total: primaryOdds.totals?.total,
-      timestamp: now,
+    const fetchOddsHistory = async () => {
+      setIsLoading(true);
+      try {
+        // Fetch last 2 odds records for this match and sportsbook
+        const { data, error } = await supabase
+          .from("odds_history")
+          .select("*")
+          .eq("match_id", matchId)
+          .eq("market_type", "moneyline")
+          .ilike("sportsbook_id", `%${PRIMARY_SPORTSBOOK}%`)
+          .order("recorded_at", { ascending: false })
+          .limit(10);
+
+        if (error) {
+          console.error("Error fetching odds history:", error);
+          setMovement(null);
+          return;
+        }
+
+        if (data && data.length >= 2) {
+          const latest = data[0];
+          const previous = data[1];
+          
+          const homeChange = (latest.home_odds || 0) - (previous.home_odds || 0);
+          const awayChange = (latest.away_odds || 0) - (previous.away_odds || 0);
+          
+          const getDirection = (change: number): MovementDirection => {
+            if (Math.abs(change) < MOVEMENT_THRESHOLD) return 'stable';
+            return change > 0 ? 'up' : 'down';
+          };
+
+          const recordedAt = new Date(latest.recorded_at || latest.created_at || '');
+          const isRecent = Date.now() - recordedAt.getTime() < RECENT_THRESHOLD_MS;
+
+          setMovement({
+            homeDirection: getDirection(homeChange),
+            awayDirection: getDirection(awayChange),
+            homeChange: Math.round(homeChange * 100) / 100,
+            awayChange: Math.round(awayChange * 100) / 100,
+            lastUpdated: recordedAt.toISOString(),
+            isRecent,
+            hasRealData: true,
+          });
+        } else {
+          // Not enough data for movement calculation
+          setMovement(null);
+        }
+      } catch (err) {
+        console.error("Error in useRealOddsMovement:", err);
+        setMovement(null);
+      } finally {
+        setIsLoading(false);
+      }
     };
 
-    const previousSnapshot = previousOddsRef.current.get(key);
-
-    if (previousSnapshot) {
-      const homeChange = currentSnapshot.homeWin - previousSnapshot.homeWin;
-      const awayChange = currentSnapshot.awayWin - previousSnapshot.awayWin;
-      const spreadChange = currentSnapshot.spread !== undefined && previousSnapshot.spread !== undefined
-        ? currentSnapshot.spread - previousSnapshot.spread
-        : undefined;
-      const totalChange = currentSnapshot.total !== undefined && previousSnapshot.total !== undefined
-        ? currentSnapshot.total - previousSnapshot.total
-        : undefined;
-
-      const getDirection = (change: number): MovementDirection => {
-        if (Math.abs(change) < MOVEMENT_THRESHOLD) return 'stable';
-        return change > 0 ? 'up' : 'down';
-      };
-
-      const isRecent = now - previousSnapshot.timestamp < RECENT_THRESHOLD_MS;
-
-      setMovement({
-        homeDirection: getDirection(homeChange),
-        awayDirection: getDirection(awayChange),
-        homeChange: Math.round(homeChange * 100) / 100,
-        awayChange: Math.round(awayChange * 100) / 100,
-        spreadDirection: spreadChange !== undefined ? getDirection(spreadChange) : undefined,
-        spreadChange: spreadChange !== undefined ? Math.round(spreadChange * 10) / 10 : undefined,
-        totalDirection: totalChange !== undefined ? getDirection(totalChange) : undefined,
-        totalChange: totalChange !== undefined ? Math.round(totalChange * 10) / 10 : undefined,
-        lastUpdated: new Date(now).toISOString(),
-        isRecent,
-      });
-    }
-
-    // Store current snapshot for next comparison
-    previousOddsRef.current.set(key, currentSnapshot);
-
-  }, [primaryOdds, matchId]);
+    fetchOddsHistory();
+  }, [matchId, primaryOdds]);
 
   return movement;
 }
 
-// Simulated movement for demo purposes when no real changes detected
+/**
+ * Hook to fetch full odds history for charts
+ */
+export function useOddsHistoryData(matchId?: string, sportsbookFilter?: string) {
+  const [history, setHistory] = useState<OddsHistoryPoint[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [hasRealData, setHasRealData] = useState(false);
+
+  const fetchHistory = useCallback(async () => {
+    if (!matchId) {
+      setHistory([]);
+      setHasRealData(false);
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      let query = supabase
+        .from("odds_history")
+        .select("*")
+        .eq("match_id", matchId)
+        .eq("market_type", "moneyline")
+        .order("recorded_at", { ascending: true })
+        .limit(100);
+
+      if (sportsbookFilter) {
+        query = query.ilike("sportsbook_id", `%${sportsbookFilter}%`);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error("Error fetching odds history:", error);
+        setHistory([]);
+        setHasRealData(false);
+        return;
+      }
+
+      if (data && data.length > 0) {
+        const historyPoints: OddsHistoryPoint[] = data.map((record) => ({
+          timestamp: record.recorded_at || record.created_at || '',
+          homeOdds: record.home_odds || 0,
+          awayOdds: record.away_odds || 0,
+          drawOdds: record.draw_odds || undefined,
+          sportsbookId: record.sportsbook_id,
+          sportsbookName: record.sportsbook_name,
+        }));
+
+        setHistory(historyPoints);
+        setHasRealData(true);
+      } else {
+        setHistory([]);
+        setHasRealData(false);
+      }
+    } catch (err) {
+      console.error("Error in useOddsHistoryData:", err);
+      setHistory([]);
+      setHasRealData(false);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [matchId, sportsbookFilter]);
+
+  useEffect(() => {
+    fetchHistory();
+  }, [fetchHistory]);
+
+  return { history, isLoading, hasRealData, refetch: fetchHistory };
+}
+
+/**
+ * Hook for simulated movement when no real data exists
+ * Falls back to this when real data isn't available
+ */
 export function useSimulatedMovement(liveOdds?: LiveOdds[]): OddsMovement | null {
   const primaryOdds = useMemo(() => getPrimaryOdds(liveOdds || []), [liveOdds]);
   
@@ -119,7 +207,62 @@ export function useSimulatedMovement(liveOdds?: LiveOdds[]): OddsMovement | null
       homeChange: homeMovement === 1 ? 0.05 : homeMovement === 2 ? -0.03 : 0,
       awayChange: awayMovement === 1 ? 0.04 : awayMovement === 2 ? -0.06 : 0,
       lastUpdated: new Date().toISOString(),
-      isRecent: seed < 20, // ~20% show as recent
+      isRecent: seed < 20,
+      hasRealData: false,
     };
   }, [primaryOdds]);
+}
+
+/**
+ * Combined hook that uses real data when available, falls back to simulated
+ */
+export function useOddsMovement(matchId?: string, liveOdds?: LiveOdds[]): OddsMovement | null {
+  const realMovement = useRealOddsMovement(matchId, liveOdds);
+  const simulatedMovement = useSimulatedMovement(liveOdds);
+
+  // Prefer real data when available
+  return realMovement?.hasRealData ? realMovement : simulatedMovement;
+}
+
+/**
+ * Hook for subscribing to real-time odds updates
+ */
+export function useRealtimeOddsUpdates(matchId?: string) {
+  const [latestOdds, setLatestOdds] = useState<OddsHistoryPoint | null>(null);
+
+  useEffect(() => {
+    if (!matchId) return;
+
+    const channel = supabase
+      .channel(`odds-${matchId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'odds_history',
+          filter: `match_id=eq.${matchId}`,
+        },
+        (payload) => {
+          const record = payload.new as any;
+          if (record.market_type === 'moneyline') {
+            setLatestOdds({
+              timestamp: record.recorded_at || record.created_at,
+              homeOdds: record.home_odds || 0,
+              awayOdds: record.away_odds || 0,
+              drawOdds: record.draw_odds,
+              sportsbookId: record.sportsbook_id,
+              sportsbookName: record.sportsbook_name,
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [matchId]);
+
+  return latestOdds;
 }

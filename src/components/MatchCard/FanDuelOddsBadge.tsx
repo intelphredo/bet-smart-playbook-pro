@@ -4,7 +4,7 @@ import { getPrimaryOdds, formatMoneylineOdds, PRIMARY_SPORTSBOOK } from "@/utils
 import { Star, TrendingUp, TrendingDown, Minus, Activity } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { OddsMovementIndicator, MovementDirection } from "./OddsMovementIndicator";
-import { useSimulatedMovement } from "@/hooks/useOddsMovement";
+import { useOddsMovement } from "@/hooks/useOddsMovement";
 
 interface FanDuelOddsBadgeProps {
   liveOdds?: LiveOdds[];
@@ -24,7 +24,8 @@ export function FanDuelOddsBadge({
   matchId
 }: FanDuelOddsBadgeProps) {
   const primaryOdds = getPrimaryOdds(liveOdds || []);
-  const movement = useSimulatedMovement(liveOdds);
+  // Use combined hook that prefers real data when available
+  const movement = useOddsMovement(matchId, liveOdds);
   
   if (!primaryOdds) return null;
 
@@ -108,7 +109,7 @@ export function FanDuelOddsBadge({
         {hasMovement && (
           <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
             <Activity className="h-3 w-3" />
-            <span>Line moving</span>
+            <span>{movement.hasRealData ? 'Live data' : 'Line moving'}</span>
           </div>
         )}
       </div>
