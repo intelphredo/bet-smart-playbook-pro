@@ -5,18 +5,32 @@ import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { UnifiedGame } from "@/hooks/useGames";
 import { cn } from "@/lib/utils";
-import { Radio, Star } from "lucide-react";
-import { getPrimaryOdds, formatMoneylineOdds, PRIMARY_SPORTSBOOK } from "@/utils/sportsbook";
+import { Star } from "lucide-react";
+import { getPrimaryOdds, formatMoneylineOdds } from "@/utils/sportsbook";
 import { LiveOdds } from "@/types/sports";
+import { useLiveScoresContext } from "@/providers/LiveScoresProvider";
+import { LivePulse, StaleDataWarning } from "@/components/ui/LiveScoreIndicators";
+import { isMatchLive, isMatchFinished } from "@/utils/matchStatus";
 
 interface MatchCardProps {
   game: UnifiedGame;
 }
 
 export const MatchCard: React.FC<MatchCardProps> = ({ game }) => {
-  const isLive = game.status === "live" || game.status === "in";
-  const isFinished = game.status === "finished" || game.status === "post";
-  const hasScore = game.score && (game.score.home !== undefined || game.score.away !== undefined);
+  // Use live scores context for real-time updates
+  const { getUpdatedScore, getPeriod, isStale, getLastUpdate, hasLiveData } = useLiveScoresContext();
+  
+  // Check live/finished status using centralized utilities
+  const isLive = isMatchLive(game.status);
+  const isFinished = isMatchFinished(game.status);
+  
+  // Get updated score from live scores system (falls back to game.score)
+  const score = getUpdatedScore(game.id, game.score);
+  const period = getPeriod(game.id, game.score?.period);
+  const hasScore = score.home !== undefined || score.away !== undefined;
+  const isDataStale = isStale(game.id);
+  const lastUpdate = getLastUpdate(game.id);
+  const hasLive = hasLiveData(game.id);
 
   // Parse odds if available
   const liveOdds: LiveOdds[] = game.odds && typeof game.odds === 'object' && Array.isArray(game.odds) 
@@ -47,22 +61,27 @@ export const MatchCard: React.FC<MatchCardProps> = ({ game }) => {
             {game.league || 'SPORTS'}
           </Badge>
           {isLive && (
-            <Badge variant="destructive" className="text-xs animate-pulse gap-1">
-              <Radio className="h-3 w-3" />
-              LIVE
-            </Badge>
+            <LivePulse isLive={true} size="sm" showLabel className="ml-1" />
           )}
           {isFinished && (
             <Badge variant="secondary" className="text-xs">
               Final
             </Badge>
           )}
+          {isLive && isDataStale && (
+            <StaleDataWarning lastUpdate={lastUpdate} size="sm" />
+          )}
         </div>
         <div className="flex items-center gap-2">
           <span className="text-xs text-muted-foreground">
-            {isLive ? (game.score?.period || 'In Progress') : 
+            {isLive ? (period || 'In Progress') : 
              isFinished ? 'Completed' : formatTime(game.startTime)}
           </span>
+          {hasLive && (
+            <Badge variant="outline" className="text-[10px] border-green-500/30 text-green-600">
+              LIVE DATA
+            </Badge>
+          )}
           <Badge variant="outline" className="text-[10px]">
             {game.source}
           </Badge>
@@ -76,17 +95,17 @@ export const MatchCard: React.FC<MatchCardProps> = ({ game }) => {
           <div className="text-center">
             <p className={cn(
               "text-sm font-semibold truncate",
-              hasScore && isFinished && (game.score?.home || 0) > (game.score?.away || 0) && "text-green-500"
+              hasScore && isFinished && score.home > score.away && "text-green-500"
             )}>
               {game.homeTeam}
             </p>
             {hasScore && (
               <p className={cn(
-                "text-2xl font-bold mt-1",
+                "text-2xl font-bold mt-1 tabular-nums transition-all",
                 isLive && "text-red-500",
-                isFinished && (game.score?.home || 0) > (game.score?.away || 0) && "text-green-500"
+                isFinished && score.home > score.away && "text-green-500"
               )}>
-                {game.score?.home ?? 0}
+                {score.home}
               </p>
             )}
           </div>
@@ -96,9 +115,9 @@ export const MatchCard: React.FC<MatchCardProps> = ({ game }) => {
             {hasScore ? (
               <div className="space-y-1">
                 <span className="text-xl font-bold text-muted-foreground">-</span>
-                {isLive && game.score?.period && (
+                {isLive && period && (
                   <p className="text-[10px] text-muted-foreground bg-accent px-2 py-0.5 rounded-full">
-                    {game.score.period}
+                    {period}
                   </p>
                 )}
               </div>
@@ -111,17 +130,17 @@ export const MatchCard: React.FC<MatchCardProps> = ({ game }) => {
           <div className="text-center">
             <p className={cn(
               "text-sm font-semibold truncate",
-              hasScore && isFinished && (game.score?.away || 0) > (game.score?.home || 0) && "text-green-500"
+              hasScore && isFinished && score.away > score.home && "text-green-500"
             )}>
               {game.awayTeam}
             </p>
             {hasScore && (
               <p className={cn(
-                "text-2xl font-bold mt-1",
+                "text-2xl font-bold mt-1 tabular-nums transition-all",
                 isLive && "text-red-500",
-                isFinished && (game.score?.away || 0) > (game.score?.home || 0) && "text-green-500"
+                isFinished && score.away > score.home && "text-green-500"
               )}>
-                {game.score?.away ?? 0}
+                {score.away}
               </p>
             )}
           </div>
@@ -163,7 +182,11 @@ export const MatchCard: React.FC<MatchCardProps> = ({ game }) => {
 
         {/* Additional Info */}
         <div className="mt-4 pt-3 border-t border-muted/40 flex items-center justify-between text-xs text-muted-foreground">
-          <span>Last updated: {new Date(game.lastUpdated).toLocaleTimeString()}</span>
+          <span>
+            Last updated: {lastUpdate 
+              ? new Date(lastUpdate).toLocaleTimeString() 
+              : new Date(game.lastUpdated).toLocaleTimeString()}
+          </span>
         </div>
       </CardContent>
     </Card>

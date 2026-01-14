@@ -1,13 +1,15 @@
 // ESPN-style Scoreboard Strip - Horizontal scrolling live scores with premium styling
 import { useRef } from 'react';
-import { ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Match } from '@/types/sports';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import AnimatedScore from '@/components/ui/AnimatedScore';
 import { TeamLogoImage } from '@/components/ui/TeamLogoImage';
-import { isMatchLive } from '@/utils/matchStatus';
+import { isMatchLive, isMatchFinished } from '@/utils/matchStatus';
+import { useLiveScoresContext } from '@/providers/LiveScoresProvider';
+import { LivePulse, StaleDataWarning } from '@/components/ui/LiveScoreIndicators';
 
 interface ScoreboardStripProps {
   matches: Match[];
@@ -94,11 +96,20 @@ export function ScoreboardStrip({ matches, className }: ScoreboardStripProps) {
 
 
 function ScoreCard({ match, onClick, index }: { match: Match; onClick: () => void; index: number }) {
+  // Use live scores context for real-time updates
+  const { getUpdatedScore, getPeriod, isStale, getLastUpdate } = useLiveScoresContext();
+  
   const isLive = isMatchLive(match.status);
-  const isFinished = match.status === 'finished';
+  const isFinished = isMatchFinished(match.status);
+  
+  // Get updated score from live scores system
+  const score = getUpdatedScore(match.id, match.score);
+  const period = getPeriod(match.id, match.score?.period);
+  const isDataStale = isStale(match.id);
+  const lastUpdate = getLastUpdate(match.id);
 
   const formatTime = () => {
-    if (isLive) return match.score?.period || 'LIVE';
+    if (isLive) return period || 'LIVE';
     if (isFinished) return 'Final';
     
     const date = new Date(match.startTime);
@@ -131,13 +142,13 @@ function ScoreCard({ match, onClick, index }: { match: Match; onClick: () => voi
         <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-primary/5 to-transparent" />
       </div>
       
-      {/* Live pulse indicator */}
+      {/* Live pulse indicator with stale warning */}
       {isLive && (
-        <div className="absolute top-1 right-1">
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
-          </span>
+        <div className="absolute top-1 right-1 flex items-center gap-1">
+          {isDataStale && (
+            <StaleDataWarning lastUpdate={lastUpdate} size="sm" />
+          )}
+          <LivePulse isLive={true} size="sm" />
         </div>
       )}
 
@@ -157,7 +168,7 @@ function ScoreCard({ match, onClick, index }: { match: Match; onClick: () => voi
         </span>
       </div>
 
-      {/* Teams */}
+      {/* Teams - now using live score data */}
       <div className="space-y-1.5 relative">
         <TeamRow 
           matchId={match.id}
@@ -167,8 +178,8 @@ function ScoreCard({ match, onClick, index }: { match: Match; onClick: () => voi
           teamId={match.awayTeam?.id}
           logo={match.awayTeam?.logo}
           league={match.league}
-          score={showScores ? match.score?.away : undefined}
-          isWinning={isFinished && (match.score?.away || 0) > (match.score?.home || 0)}
+          score={showScores ? score.away : undefined}
+          isWinning={isFinished && score.away > score.home}
           isLive={isLive}
         />
         <TeamRow 
@@ -179,8 +190,8 @@ function ScoreCard({ match, onClick, index }: { match: Match; onClick: () => voi
           teamId={match.homeTeam?.id}
           logo={match.homeTeam?.logo}
           league={match.league}
-          score={showScores ? match.score?.home : undefined}
-          isWinning={isFinished && (match.score?.home || 0) > (match.score?.away || 0)}
+          score={showScores ? score.home : undefined}
+          isWinning={isFinished && score.home > score.away}
           isLive={isLive}
         />
       </div>
