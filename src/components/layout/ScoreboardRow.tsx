@@ -3,10 +3,10 @@ import { Match } from '@/types/sports';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { Radio } from 'lucide-react';
+import { Radio, Star } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import SharpMoneyBadge from '@/components/MatchCard/SharpMoneyBadge';
-import { formatAmericanOdds } from '@/utils/sportsbook';
+import { formatAmericanOdds, getPrimaryOdds, PRIMARY_SPORTSBOOK } from '@/utils/sportsbook';
 import AnimatedScore from '@/components/ui/AnimatedScore';
 import { TeamLogoImage } from '@/components/ui/TeamLogoImage';
 import FavoriteButton from '@/components/FavoriteButton';
@@ -33,10 +33,13 @@ export function ScoreboardRow({ match, showOdds = true }: ScoreboardRowProps) {
     }
   };
 
+  // Get FanDuel odds as primary
+  const primaryOdds = getPrimaryOdds(match.liveOdds || []);
+  const isFanDuel = primaryOdds?.sportsbook.id.toLowerCase().includes('fanduel');
+
   const getSpread = () => {
-    const odds = match.liveOdds?.[0];
-    if (!odds?.spread) return null;
-    const homeSpread = odds.spread.homeSpread;
+    if (!primaryOdds?.spread) return null;
+    const homeSpread = primaryOdds.spread.homeSpread;
     return homeSpread > 0 ? `+${homeSpread}` : homeSpread.toString();
   };
 
@@ -53,9 +56,8 @@ export function ScoreboardRow({ match, showOdds = true }: ScoreboardRowProps) {
   };
 
   const getMoneyline = (isHome: boolean) => {
-    const odds = match.liveOdds?.[0];
-    if (!odds) return null;
-    const ml = isHome ? odds.homeWin : odds.awayWin;
+    if (!primaryOdds) return null;
+    const ml = isHome ? primaryOdds.homeWin : primaryOdds.awayWin;
     return formatMoneyline(ml);
   };
 
@@ -167,8 +169,17 @@ export function ScoreboardRow({ match, showOdds = true }: ScoreboardRowProps) {
       {/* Odds - 2 cols */}
       {showOdds && (
         <div className="col-span-2 text-center space-y-1">
-          <div className="text-xs text-muted-foreground">{getMoneyline(false) || '-'}</div>
-          <div className="text-xs text-muted-foreground">{getMoneyline(true) || '-'}</div>
+          {isFanDuel && (
+            <div className="flex items-center justify-center mb-0.5">
+              <Star className="h-2.5 w-2.5 text-primary fill-primary" />
+            </div>
+          )}
+          <div className={cn("text-xs", isFanDuel ? "text-primary font-medium" : "text-muted-foreground")}>
+            {getMoneyline(false) || '-'}
+          </div>
+          <div className={cn("text-xs", isFanDuel ? "text-primary font-medium" : "text-muted-foreground")}>
+            {getMoneyline(true) || '-'}
+          </div>
         </div>
       )}
 

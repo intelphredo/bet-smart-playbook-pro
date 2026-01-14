@@ -5,7 +5,9 @@ import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { UnifiedGame } from "@/hooks/useGames";
 import { cn } from "@/lib/utils";
-import { Radio } from "lucide-react";
+import { Radio, Star } from "lucide-react";
+import { getPrimaryOdds, formatAmericanOdds, PRIMARY_SPORTSBOOK } from "@/utils/sportsbook";
+import { LiveOdds } from "@/types/sports";
 
 interface MatchCardProps {
   game: UnifiedGame;
@@ -15,6 +17,20 @@ export const MatchCard: React.FC<MatchCardProps> = ({ game }) => {
   const isLive = game.status === "live" || game.status === "in";
   const isFinished = game.status === "finished" || game.status === "post";
   const hasScore = game.score && (game.score.home !== undefined || game.score.away !== undefined);
+
+  // Parse odds if available
+  const liveOdds: LiveOdds[] = game.odds && typeof game.odds === 'object' && Array.isArray(game.odds) 
+    ? game.odds as LiveOdds[]
+    : [];
+  const primaryOdds = getPrimaryOdds(liveOdds);
+  const isFanDuel = primaryOdds?.sportsbook.id.toLowerCase().includes('fanduel');
+  
+  const formatMoneyline = (value: number | null | undefined): string | null => {
+    if (value === null || value === undefined) return null;
+    if (value >= 100) return `+${Math.round(value)}`;
+    if (value <= -100) return `${Math.round(value)}`;
+    return formatAmericanOdds(value);
+  };
 
   const formatTime = (timeString: string) => {
     try {
@@ -118,14 +134,43 @@ export const MatchCard: React.FC<MatchCardProps> = ({ game }) => {
           </div>
         </div>
 
+        {/* FanDuel Odds Display */}
+        {primaryOdds && !isFinished && (
+          <div className={cn(
+            "mt-4 pt-3 border-t rounded-md p-2",
+            isFanDuel ? "border-primary/30 bg-primary/5" : "border-muted/40"
+          )}>
+            <div className="flex items-center gap-1 mb-2">
+              {isFanDuel && <Star className="h-3 w-3 text-primary fill-primary" />}
+              <span className={cn("text-[10px] font-medium", isFanDuel ? "text-primary" : "text-muted-foreground")}>
+                {primaryOdds.sportsbook.name}
+              </span>
+              {isFanDuel && (
+                <Badge variant="outline" className="text-[8px] h-3.5 px-1 border-primary/30 text-primary ml-1">
+                  Primary
+                </Badge>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">{game.homeTeam}</span>
+                <span className={cn("font-bold tabular-nums", isFanDuel && "text-primary")}>
+                  {formatMoneyline(primaryOdds.homeWin) || '-'}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">{game.awayTeam}</span>
+                <span className={cn("font-bold tabular-nums", isFanDuel && "text-primary")}>
+                  {formatMoneyline(primaryOdds.awayWin) || '-'}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Additional Info */}
         <div className="mt-4 pt-3 border-t border-muted/40 flex items-center justify-between text-xs text-muted-foreground">
           <span>Last updated: {new Date(game.lastUpdated).toLocaleTimeString()}</span>
-          {game.odds && (
-            <span>
-              Odds: {typeof game.odds === "string" ? game.odds : "Available"}
-            </span>
-          )}
         </div>
       </CardContent>
     </Card>
