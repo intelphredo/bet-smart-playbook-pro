@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { getTeamLogoUrl, getTeamInitials } from "@/utils/teamLogos";
+import { getNCAABTeamId } from "@/utils/ncaabTeamIds";
 import { League } from "@/types/sports";
 import { cn } from "@/lib/utils";
 
@@ -62,15 +63,24 @@ export const TeamLogoImage: React.FC<TeamLogoImageProps> = ({
   const normalizedLogoUrl = logoUrl && logoUrl.trim().length > 0 ? logoUrl : undefined;
 
   // NCAA (NCAAB/NCAAF) team logos on ESPN CDN are keyed by numeric team id.
-  const ncaaIdLogoUrl =
-    !normalizedLogoUrl &&
-    teamId &&
-    /^\d+$/.test(teamId) &&
-    (league === "NCAAB" || league === "NCAAF")
-      ? `https://a.espncdn.com/i/teamlogos/ncaa/500/${teamId}.png`
-      : undefined;
+  // Try the provided teamId first, then fall back to our comprehensive mapping
+  const isNCAA = league === "NCAAB" || league === "NCAAF";
+  
+  let ncaaIdLogoUrl: string | undefined;
+  if (!normalizedLogoUrl && isNCAA) {
+    // If teamId is provided and numeric, use it directly
+    if (teamId && /^\d+$/.test(teamId)) {
+      ncaaIdLogoUrl = `https://a.espncdn.com/i/teamlogos/ncaa/500/${teamId}.png`;
+    } else {
+      // Fall back to our team name → ID mapping
+      const mappedId = getNCAABTeamId(teamName);
+      if (mappedId) {
+        ncaaIdLogoUrl = `https://a.espncdn.com/i/teamlogos/ncaa/500/${mappedId}.png`;
+      }
+    }
+  }
 
-  // Use provided logo URL if available, otherwise generate from ESPN CDN
+  // Use provided logo URL if available, otherwise NCAA ID lookup, otherwise generate from ESPN CDN
   const effectiveLogoUrl = normalizedLogoUrl || ncaaIdLogoUrl || getTeamLogoUrl(teamName, league);
   const initials = getTeamInitials(teamName);
   const altText = alt || `${teamName} logo`;
