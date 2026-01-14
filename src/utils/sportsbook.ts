@@ -3,7 +3,17 @@ import { SPORTSBOOK_LOGOS as LOGOS } from "@/utils/teamLogos";
 
 export const SPORTSBOOK_LOGOS = LOGOS;
 
+// Primary sportsbook for display - FanDuel
+export const PRIMARY_SPORTSBOOK = "fanduel";
+
 export const AVAILABLE_SPORTSBOOKS: Sportsbook[] = [
+  {
+    id: "fanduel",
+    name: "FanDuel",
+    logo: SPORTSBOOK_LOGOS.fanduel,
+    isAvailable: true,
+    isPrimary: true
+  },
   {
     id: "draftkings",
     name: "DraftKings",
@@ -23,15 +33,27 @@ export const AVAILABLE_SPORTSBOOKS: Sportsbook[] = [
     isAvailable: true
   },
   {
-    id: "fanduel",
-    name: "FanDuel",
-    logo: SPORTSBOOK_LOGOS.fanduel,
-    isAvailable: true
-  },
-  {
     id: "pointsbet",
     name: "PointsBet",
     logo: SPORTSBOOK_LOGOS.pointsbet,
+    isAvailable: true
+  },
+  {
+    id: "betrivers",
+    name: "BetRivers",
+    logo: SPORTSBOOK_LOGOS.betrivers,
+    isAvailable: true
+  },
+  {
+    id: "williamhill_us",
+    name: "William Hill",
+    logo: SPORTSBOOK_LOGOS.williamhill,
+    isAvailable: true
+  },
+  {
+    id: "unibet_us",
+    name: "Unibet",
+    logo: SPORTSBOOK_LOGOS.unibet,
     isAvailable: true
   }
 ];
@@ -278,12 +300,50 @@ export function findBestOdds(liveOdds: LiveOdds[]): {
 }
 
 /**
- * Priority order for sorting sportsbooks
+ * Priority order for sorting sportsbooks - FanDuel is primary
  */
 export const SPORTSBOOK_PRIORITY: Record<string, number> = {
-  draftkings: 1,
-  fanduel: 2,
+  fanduel: 1,      // Primary sportsbook
+  draftkings: 2,
   betmgm: 3,
   caesars: 4,
   pointsbet: 5,
+  betrivers: 6,
+  williamhill_us: 7,
+  unibet_us: 8,
 };
+
+/**
+ * Get FanDuel odds from a list of live odds, falling back to best available
+ */
+export function getPrimaryOdds(liveOdds: LiveOdds[]): LiveOdds | null {
+  if (!liveOdds || liveOdds.length === 0) return null;
+  
+  // First try to find FanDuel odds
+  const fanduelOdds = liveOdds.find(o => 
+    o.sportsbook.id.toLowerCase().includes('fanduel')
+  );
+  if (fanduelOdds) return fanduelOdds;
+  
+  // Fallback to first available (sorted by priority)
+  const sorted = [...liveOdds].sort((a, b) => {
+    const aPriority = SPORTSBOOK_PRIORITY[a.sportsbook.id.toLowerCase()] || 99;
+    const bPriority = SPORTSBOOK_PRIORITY[b.sportsbook.id.toLowerCase()] || 99;
+    return aPriority - bPriority;
+  });
+  
+  return sorted[0] || null;
+}
+
+/**
+ * Sort odds with FanDuel first, then by priority
+ */
+export function sortOddsByPriority(liveOdds: LiveOdds[]): LiveOdds[] {
+  if (!liveOdds) return [];
+  
+  return [...liveOdds].sort((a, b) => {
+    const aPriority = SPORTSBOOK_PRIORITY[a.sportsbook.id.toLowerCase()] || 99;
+    const bPriority = SPORTSBOOK_PRIORITY[b.sportsbook.id.toLowerCase()] || 99;
+    return aPriority - bPriority;
+  });
+}

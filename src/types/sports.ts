@@ -11,6 +11,7 @@ export interface Sportsbook {
   name: string;
   logo: string;
   isAvailable: boolean;
+  isPrimary?: boolean;  // Whether this is the primary sportsbook for display
 }
 
 export interface SpreadOdds {

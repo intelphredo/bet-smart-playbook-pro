@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Trophy, TrendingUp, TrendingDown, Minus } from "lucide-react";
-import { SPORTSBOOK_LOGOS, findBestOdds, SPORTSBOOK_PRIORITY } from "@/utils/sportsbook";
+import { Trophy, TrendingUp, TrendingDown, Minus, Star } from "lucide-react";
+import { SPORTSBOOK_LOGOS, findBestOdds, sortOddsByPriority, PRIMARY_SPORTSBOOK } from "@/utils/sportsbook";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -28,20 +28,20 @@ const OddsComparisonTable = ({ match }: Props) => {
   const hasSpreadMarket = match.liveOdds.some((o: LiveOdds) => o.spread);
   const hasTotalMarket = match.liveOdds.some((o: LiveOdds) => o.totals);
 
-  // Sort sportsbooks by priority (DraftKings, FanDuel, BetMGM first) and deduplicate
-  const sortedOdds = [...match.liveOdds]
-    .reduce((acc: LiveOdds[], odd: LiveOdds) => {
+  // Sort sportsbooks by priority (FanDuel first) and deduplicate
+  const sortedOdds = sortOddsByPriority(
+    [...match.liveOdds].reduce((acc: LiveOdds[], odd: LiveOdds) => {
       // Keep only the first occurrence of each sportsbook (most recent)
       if (!acc.find((o: LiveOdds) => o.sportsbook.id === odd.sportsbook.id)) {
         acc.push(odd);
       }
       return acc;
     }, [])
-    .sort((a: any, b: any) => {
-      const priorityA = SPORTSBOOK_PRIORITY[a.sportsbook.id] || 99;
-      const priorityB = SPORTSBOOK_PRIORITY[b.sportsbook.id] || 99;
-      return priorityA - priorityB;
-    });
+  );
+
+  // Check if a sportsbook is the primary one (FanDuel)
+  const isPrimarySportsbook = (sportsbookId: string) => 
+    sportsbookId.toLowerCase().includes(PRIMARY_SPORTSBOOK);
 
   // Find best spread odds
   const findBestSpreadOdds = () => {
@@ -264,39 +264,53 @@ const OddsComparisonTable = ({ match }: Props) => {
     return `${Math.floor(diffHours / 24)}d ago`;
   };
 
-  const SportsbookRow = ({ odd }: { odd: LiveOdds }) => (
-    <td className="px-3 py-2">
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div className="flex items-center gap-2 cursor-default">
-              <span className="w-6 h-6 rounded-full bg-background border border-border overflow-hidden flex-shrink-0">
-                <img
-                  src={odd.sportsbook.logo || SPORTSBOOK_LOGOS[odd.sportsbook.id as keyof typeof SPORTSBOOK_LOGOS]}
-                  alt={odd.sportsbook.name}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = '/placeholder.svg';
-                  }}
-                />
-              </span>
-              <span className="font-medium truncate max-w-[100px]">
-                {odd.sportsbook.name}
-              </span>
-            </div>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>{odd.sportsbook.name}</p>
-            {odd.updatedAt && (
-              <p className="text-xs text-muted-foreground">
-                Last updated: {formatTimeAgo(odd.updatedAt)}
-              </p>
-            )}
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-    </td>
-  );
+  const SportsbookRow = ({ odd }: { odd: LiveOdds }) => {
+    const isPrimary = isPrimarySportsbook(odd.sportsbook.id);
+    
+    return (
+      <td className={cn("px-3 py-2", isPrimary && "bg-primary/5")}>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="flex items-center gap-2 cursor-default">
+                <span className={cn(
+                  "w-6 h-6 rounded-full bg-background border overflow-hidden flex-shrink-0",
+                  isPrimary ? "border-primary ring-1 ring-primary/30" : "border-border"
+                )}>
+                  <img
+                    src={odd.sportsbook.logo || SPORTSBOOK_LOGOS[odd.sportsbook.id as keyof typeof SPORTSBOOK_LOGOS]}
+                    alt={odd.sportsbook.name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = '/placeholder.svg';
+                    }}
+                  />
+                </span>
+                <span className={cn(
+                  "font-medium truncate max-w-[100px]",
+                  isPrimary && "text-primary"
+                )}>
+                  {odd.sportsbook.name}
+                </span>
+                {isPrimary && (
+                  <Star className="w-3 h-3 text-primary fill-primary flex-shrink-0" />
+                )}
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{odd.sportsbook.name}</p>
+              {isPrimary && <p className="text-xs text-primary">Primary Sportsbook</p>}
+              {odd.updatedAt && (
+                <p className="text-xs text-muted-foreground">
+                  Last updated: {formatTimeAgo(odd.updatedAt)}
+                </p>
+              )}
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </td>
+    );
+  };
 
   const MoneylineTable = () => (
     <table className="w-full text-sm">
