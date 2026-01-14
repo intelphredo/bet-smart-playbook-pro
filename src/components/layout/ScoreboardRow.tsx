@@ -56,8 +56,12 @@ export function ScoreboardRow({ match, showOdds = true }: ScoreboardRowProps) {
     return formatMoneyline(ml);
   };
 
-  const homeWinning = (match.score?.home || 0) > (match.score?.away || 0);
-  const awayWinning = (match.score?.away || 0) > (match.score?.home || 0);
+  // Show scores for live and finished games, not for scheduled
+  const showScores = isLive || isFinished;
+  const homeScore = match.score?.home ?? 0;
+  const awayScore = match.score?.away ?? 0;
+  const homeWinning = homeScore > awayScore;
+  const awayWinning = awayScore > homeScore;
 
   return (
     <div 
@@ -100,10 +104,11 @@ export function ScoreboardRow({ match, showOdds = true }: ScoreboardRowProps) {
             </span>
           </div>
           <span className={cn(
-            "text-sm tabular-nums ml-2",
-            awayWinning && isFinished && "font-bold"
+            "text-sm tabular-nums ml-2 font-medium",
+            isLive && "text-destructive font-bold",
+            awayWinning && isFinished && "font-bold text-green-500"
           )}>
-            {match.score?.away ?? '-'}
+            {showScores ? awayScore : '-'}
           </span>
         </div>
         
@@ -121,10 +126,11 @@ export function ScoreboardRow({ match, showOdds = true }: ScoreboardRowProps) {
             </span>
           </div>
           <span className={cn(
-            "text-sm tabular-nums ml-2",
-            homeWinning && isFinished && "font-bold"
+            "text-sm tabular-nums ml-2 font-medium",
+            isLive && "text-destructive font-bold",
+            homeWinning && isFinished && "font-bold text-green-500"
           )}>
-            {match.score?.home ?? '-'}
+            {showScores ? homeScore : '-'}
           </span>
         </div>
       </div>
