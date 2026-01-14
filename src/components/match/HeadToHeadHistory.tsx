@@ -12,6 +12,8 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useHeadToHead } from "@/hooks/useHeadToHead";
 import { TeamSeasonRecord } from "@/services/espnHeadToHead";
+import { RankingsBadge } from "@/components/NCAAB";
+import { useNCAABRankings, getTeamRanking } from "@/hooks/useNCAABRankings";
 
 interface SeasonRecordCardProps {
   record: TeamSeasonRecord;
@@ -164,6 +166,12 @@ const HeadToHeadHistory: React.FC<HeadToHeadHistoryProps> = ({
   league,
   className,
 }) => {
+  // NCAAB Rankings
+  const isNCAAB = league === "NCAAB";
+  const { data: rankings } = useNCAABRankings();
+  const homeRank = isNCAAB ? getTeamRanking(rankings, homeTeamName) : null;
+  const awayRank = isNCAAB ? getTeamRanking(rankings, awayTeamName) : null;
+
   // Build team info objects for the hook
   const homeTeam = {
     id: homeTeamId,
@@ -279,6 +287,38 @@ const HeadToHeadHistory: React.FC<HeadToHeadHistoryProps> = ({
             <RefreshCw className={cn("h-4 w-4", isFetching && "animate-spin")} />
           </Button>
         </div>
+        
+        {/* NCAAB Ranked Matchup Banner */}
+        {isNCAAB && (homeRank || awayRank) && (
+          <motion.div
+            initial={{ opacity: 0, y: -5 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-3 p-3 bg-gradient-to-r from-yellow-500/10 via-amber-500/10 to-orange-500/10 border border-yellow-500/20 rounded-lg"
+          >
+            <div className="flex items-center justify-center gap-4">
+              {homeRank && (
+                <div className="flex items-center gap-2">
+                  <RankingsBadge rank={homeRank} size="md" showTrend />
+                  <span className="text-sm font-medium">{homeTeam.shortName}</span>
+                </div>
+              )}
+              {homeRank && awayRank && (
+                <span className="text-muted-foreground font-bold">vs</span>
+              )}
+              {awayRank && (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium">{awayTeam.shortName}</span>
+                  <RankingsBadge rank={awayRank} size="md" showTrend />
+                </div>
+              )}
+              {homeRank && awayRank && (
+                <Badge className="ml-2 bg-yellow-500/20 text-yellow-700 dark:text-yellow-400 border-yellow-500/30">
+                  🏀 Top 25 Matchup
+                </Badge>
+              )}
+            </div>
+          </motion.div>
+        )}
       </CardHeader>
       <CardContent className="pt-6 space-y-6">
         {/* Summary Stats */}
@@ -290,12 +330,14 @@ const HeadToHeadHistory: React.FC<HeadToHeadHistoryProps> = ({
             transition={{ delay: 0.1 }}
             className="text-center p-4 bg-primary/10 rounded-xl"
           >
-            <TeamLogo 
-              teamName={homeTeamName} 
-              league={league} 
-              size="md" 
-              className="mx-auto mb-2"
-            />
+            <div className="flex flex-col items-center gap-1 mb-2">
+              {homeRank && <RankingsBadge rank={homeRank} size="sm" showTrend={false} />}
+              <TeamLogo 
+                teamName={homeTeamName} 
+                league={league} 
+                size="md" 
+              />
+            </div>
             <p className={cn(
               "text-3xl font-bold",
               h2hData.team1Wins > h2hData.team2Wins ? "text-green-500" : "text-primary"
@@ -326,12 +368,14 @@ const HeadToHeadHistory: React.FC<HeadToHeadHistoryProps> = ({
             transition={{ delay: 0.2 }}
             className="text-center p-4 bg-secondary/50 rounded-xl"
           >
-            <TeamLogo 
-              teamName={awayTeamName} 
-              league={league} 
-              size="md" 
-              className="mx-auto mb-2"
-            />
+            <div className="flex flex-col items-center gap-1 mb-2">
+              {awayRank && <RankingsBadge rank={awayRank} size="sm" showTrend={false} />}
+              <TeamLogo 
+                teamName={awayTeamName} 
+                league={league} 
+                size="md" 
+              />
+            </div>
             <p className={cn(
               "text-3xl font-bold",
               h2hData.team2Wins > h2hData.team1Wins ? "text-green-500" : "text-secondary-foreground"
