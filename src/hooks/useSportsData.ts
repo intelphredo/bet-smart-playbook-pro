@@ -193,14 +193,15 @@ export function useSportsData({
 
   const refetchWithTimestamp = async () => {
     await refetchSchedule();
+    await refetchESPN();
     updateLastRefreshTime();
   };
 
+  // Initial fetch on mount only - auto-refresh is handled by useESPNData
   useEffect(() => {
-    refetchWithTimestamp();
-    const intervalId = setInterval(refetchWithTimestamp, refreshInterval);
-    return () => clearInterval(intervalId);
-  }, [refreshInterval]);
+    // Only refetch non-ESPN data on mount; ESPN has its own auto-refresh
+    refetchSchedule();
+  }, []);
 
   // Merge ESPN matches with Odds API data for real sportsbook odds
   const matchesWithOdds = useMemo(() => {
