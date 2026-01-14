@@ -627,4 +627,70 @@
     0%, 100% { transform: scale(1); opacity: 0.5; }
     50% { transform: scale(1.1); opacity: 0; }
   }
+
+  /* Premium Gold Skeleton Shimmer */
+  .skeleton-gold-shimmer {
+    background: linear-gradient(
+      90deg,
+      hsl(220 25% 12%) 0%,
+      hsl(38 60% 25% / 0.4) 20%,
+      hsl(38 90% 45% / 0.3) 40%,
+      hsl(42 85% 55% / 0.4) 50%,
+      hsl(38 90% 45% / 0.3) 60%,
+      hsl(38 60% 25% / 0.4) 80%,
+      hsl(220 25% 12%) 100%
+    );
+    background-size: 200% 100%;
+    animation: skeletonGoldShimmer 2s ease-in-out infinite;
+  }
+
+  @keyframes skeletonGoldShimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  /* Premium skeleton card container */
+  .skeleton-card-premium {
+    @apply relative overflow-hidden rounded-xl;
+    background: linear-gradient(135deg, hsl(220 25% 10%), hsl(220 25% 12%));
+    border: 1px solid hsl(38 90% 55% / 0.1);
+  }
+
+  .skeleton-card-premium::before {
+    content: '';
+    @apply absolute inset-0;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      hsl(38 90% 55% / 0.03) 50%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: skeletonGoldShimmer 2s ease-in-out infinite;
+  }
+
+  /* Skeleton line variants */
+  .skeleton-line {
+    @apply rounded-md;
+    background: linear-gradient(
+      90deg,
+      hsl(220 20% 16%) 0%,
+      hsl(38 50% 30% / 0.2) 50%,
+      hsl(220 20% 16%) 100%
+    );
+    background-size: 200% 100%;
+    animation: skeletonGoldShimmer 2s ease-in-out infinite;
+  }
+
+  .skeleton-circle {
+    @apply rounded-full;
+    background: linear-gradient(
+      90deg,
+      hsl(220 20% 16%) 0%,
+      hsl(38 50% 30% / 0.2) 50%,
+      hsl(220 20% 16%) 100%
+    );
+    background-size: 200% 100%;
+    animation: skeletonGoldShimmer 2s ease-in-out infinite;
+  }
 }
