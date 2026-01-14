@@ -9,6 +9,7 @@ import SharpMoneyBadge from '@/components/MatchCard/SharpMoneyBadge';
 import { formatAmericanOdds } from '@/utils/sportsbook';
 import AnimatedScore from '@/components/ui/AnimatedScore';
 import { TeamLogoImage } from '@/components/ui/TeamLogoImage';
+import FavoriteButton from '@/components/FavoriteButton';
 
 interface ScoreboardRowProps {
   match: Match;
@@ -171,14 +172,20 @@ export function ScoreboardRow({ match, showOdds = true }: ScoreboardRowProps) {
         </div>
       )}
 
-      {/* Sharp/Badges - 2 cols */}
-      <div className="col-span-2 flex justify-end">
+      {/* Sharp/Badges + Favorite - 2 cols */}
+      <div className="col-span-2 flex items-center justify-end gap-1">
         <SharpMoneyBadge
           matchId={match.id}
           homeTeam={match.homeTeam?.name || ''}
           awayTeam={match.awayTeam?.name || ''}
           league={match.league}
           compact
+        />
+        <FavoriteButton
+          type="match"
+          id={match.id}
+          name={`${match.awayTeam?.shortName || 'Away'} @ ${match.homeTeam?.shortName || 'Home'}`}
+          size="sm"
         />
       </div>
     </div>

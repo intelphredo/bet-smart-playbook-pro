@@ -10,6 +10,7 @@ import { useBetTracking } from "@/hooks/useBetTracking";
 import { applySmartScores } from "@/utils/smartScoreCalculator";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { usePreferences } from "@/hooks/usePreferences";
 
 // Layout Components
 import { ScoreboardStrip } from "@/components/layout/ScoreboardStrip";
@@ -24,11 +25,12 @@ import { HighValueAlertBanner } from "@/components/HighValueAlertBanner";
 import { useHighValueAlerts } from "@/hooks/useHighValueAlerts";
 import { SharpMoneySection, SteamMoveMonitor, SharpMoneyLeaderboard } from "@/components/SharpMoney";
 import LiveRefreshIndicator from "@/components/LiveRefreshIndicator";
+import FavoritesTab from "@/components/FavoritesTab";
 
 import { 
   Radio, Clock, TrendingUp, RefreshCw, ChevronRight, 
   Trophy, Zap, DollarSign, Activity, Brain, BarChart3,
-  Target, Flame, LineChart
+  Target, Flame, LineChart, Star
 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -47,6 +49,10 @@ const Index = () => {
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
   const { toast } = useToast();
   const { stats } = useBetTracking();
+  const { preferences } = usePreferences();
+
+  // Count favorites for badge
+  const favoritesCount = preferences.favorites.matches.length + preferences.favorites.teams.length;
 
   const handleMatchClick = (match: Match) => {
     navigate(`/game/${match.id}`);
@@ -171,13 +177,22 @@ const Index = () => {
         <div className="container px-4 py-6">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
             {/* Tab Navigation */}
-            <TabsList className="grid w-full max-w-lg mx-auto grid-cols-3 h-12">
+            <TabsList className="grid w-full max-w-2xl mx-auto grid-cols-4 h-12">
               <TabsTrigger value="scores" className="gap-2 text-sm">
                 <Activity className="h-4 w-4" />
                 <span className="hidden sm:inline">Scores</span>
                 {filteredLive.length > 0 && (
                   <Badge variant="destructive" className="h-5 px-1.5 text-[10px] animate-pulse">
                     {filteredLive.length}
+                  </Badge>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="favorites" className="gap-2 text-sm">
+                <Star className="h-4 w-4" />
+                <span className="hidden sm:inline">Favorites</span>
+                {favoritesCount > 0 && (
+                  <Badge className="bg-yellow-500 h-5 px-1.5 text-[10px]">
+                    {favoritesCount}
                   </Badge>
                 )}
               </TabsTrigger>
@@ -296,6 +311,19 @@ const Index = () => {
                       </CardContent>
                     </Card>
                   )}
+                </motion.div>
+              </AnimatePresence>
+            </TabsContent>
+
+            {/* Favorites Tab */}
+            <TabsContent value="favorites" className="space-y-6 mt-0">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                >
+                  <FavoritesTab allMatches={[...filteredUpcoming, ...filteredLive, ...filteredFinished]} />
                 </motion.div>
               </AnimatePresence>
             </TabsContent>
