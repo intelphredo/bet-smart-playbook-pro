@@ -20,6 +20,7 @@ import LiveGamesPage from "./pages/LiveGamesPage";
 import GamesPage from "./pages/GamesPage";
 import ROITracker from "./pages/ROITracker";
 import AIPredictions from "./pages/AIPredictions";
+import RecentResultsPage from "./pages/RecentResultsPage";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/useAuth";
 import { OddsFormatProvider } from "@/contexts/OddsFormatContext";
@@ -91,6 +92,7 @@ function App() {
                     <Route path="/betting-trends" element={<BettingTrends />} />
                     <Route path="/roi" element={<ROITracker />} />
                     <Route path="/ai-predictions" element={<AIPredictions />} />
+                    <Route path="/recent-results" element={<RecentResultsPage />} />
                     <Route path="/algorithms" element={<AlgorithmsComparison />} />
                     <Route path="/compare-algorithms" element={<CompareAlgorithms />} />
                     <Route path="/backtest" element={<BacktestSimulator />} />
