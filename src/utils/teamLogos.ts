@@ -440,3 +440,72 @@ export function getTeamInitials(teamName: string): string {
   }
   return words.slice(0, 2).map(w => w[0]).join('').toUpperCase();
 }
+
+/**
+ * Get league logo/icon URL
+ */
+export function getLeagueLogoUrl(league: string): string {
+  const leagueLogos: Record<string, string> = {
+    // Major US Sports
+    NBA: "https://a.espncdn.com/combiner/i?img=/i/espn/misc_logos/500/nba.png&w=40&h=40",
+    NFL: "https://a.espncdn.com/combiner/i?img=/i/espn/misc_logos/500/nfl.png&w=40&h=40",
+    MLB: "https://a.espncdn.com/combiner/i?img=/i/espn/misc_logos/500/mlb.png&w=40&h=40",
+    NHL: "https://a.espncdn.com/combiner/i?img=/i/espn/misc_logos/500/nhl.png&w=40&h=40",
+    WNBA: "https://a.espncdn.com/combiner/i?img=/i/espn/misc_logos/500/wnba.png&w=40&h=40",
+    // College Sports
+    NCAAF: "https://a.espncdn.com/combiner/i?img=/i/espn/misc_logos/500/ncaa_football.png&w=40&h=40",
+    NCAAB: "https://a.espncdn.com/combiner/i?img=/i/espn/misc_logos/500/ncaa_basketball.png&w=40&h=40",
+    // Soccer Leagues
+    SOCCER: "https://a.espncdn.com/combiner/i?img=/i/leaguelogos/soccer/500/23.png&w=40&h=40",
+    EPL: "https://a.espncdn.com/combiner/i?img=/i/leaguelogos/soccer/500/23.png&w=40&h=40",
+    LA_LIGA: "https://a.espncdn.com/combiner/i?img=/i/leaguelogos/soccer/500/15.png&w=40&h=40",
+    SERIE_A: "https://a.espncdn.com/combiner/i?img=/i/leaguelogos/soccer/500/12.png&w=40&h=40",
+    BUNDESLIGA: "https://a.espncdn.com/combiner/i?img=/i/leaguelogos/soccer/500/10.png&w=40&h=40",
+    LIGUE_1: "https://a.espncdn.com/combiner/i?img=/i/leaguelogos/soccer/500/9.png&w=40&h=40",
+    MLS: "https://a.espncdn.com/combiner/i?img=/i/leaguelogos/soccer/500/19.png&w=40&h=40",
+    CHAMPIONS_LEAGUE: "https://a.espncdn.com/combiner/i?img=/i/leaguelogos/soccer/500/2.png&w=40&h=40",
+    // Combat Sports
+    UFC: "https://a.espncdn.com/combiner/i?img=/i/espn/misc_logos/500/ufc.png&w=40&h=40",
+    // Tennis
+    ATP: "https://a.espncdn.com/combiner/i?img=/i/espn/misc_logos/500/atp.png&w=40&h=40",
+    WTA: "https://a.espncdn.com/combiner/i?img=/i/espn/misc_logos/500/wta.png&w=40&h=40",
+    // Golf
+    PGA: "https://a.espncdn.com/combiner/i?img=/i/espn/misc_logos/500/pga.png&w=40&h=40",
+    // Other Football
+    CFL: "https://a.espncdn.com/combiner/i?img=/i/espn/misc_logos/500/cfl.png&w=40&h=40",
+    XFL: "https://a.espncdn.com/combiner/i?img=/i/espn/misc_logos/500/xfl.png&w=40&h=40",
+  };
+  
+  return leagueLogos[league] || leagueLogos.NBA;
+}
+
+/**
+ * Get league display name
+ */
+export function getLeagueDisplayName(league: string): string {
+  const displayNames: Record<string, string> = {
+    NBA: "NBA",
+    NFL: "NFL",
+    MLB: "MLB",
+    NHL: "NHL",
+    WNBA: "WNBA",
+    NCAAF: "College Football",
+    NCAAB: "College Basketball",
+    SOCCER: "Soccer",
+    EPL: "Premier League",
+    LA_LIGA: "La Liga",
+    SERIE_A: "Serie A",
+    BUNDESLIGA: "Bundesliga",
+    LIGUE_1: "Ligue 1",
+    MLS: "MLS",
+    CHAMPIONS_LEAGUE: "Champions League",
+    UFC: "UFC",
+    ATP: "ATP Tennis",
+    WTA: "WTA Tennis",
+    PGA: "PGA Golf",
+    CFL: "CFL",
+    XFL: "XFL",
+  };
+  
+  return displayNames[league] || league;
+}

@@ -41,9 +41,28 @@ import PageFooter from "@/components/PageFooter";
 import { useHistoricalPredictions, TimeRange, PredictionType } from "@/hooks/useHistoricalPredictions";
 import PredictionCharts from "@/components/PredictionCharts";
 import { InfoExplainer } from "@/components/ui/InfoExplainer";
-import { getTeamLogoUrl, getTeamInitials } from "@/utils/teamLogos";
+import { getTeamLogoUrl, getTeamInitials, getLeagueLogoUrl, getLeagueDisplayName } from "@/utils/teamLogos";
 import { League } from "@/types/sports";
 import { ContextLedger, CalibrationChart, LossPostMortem } from "@/components/AIHistory";
+
+// League icon component with fallback
+function LeagueIcon({ league, size = 16 }: { league: string; size?: number }) {
+  const logoUrl = getLeagueLogoUrl(league);
+  
+  return (
+    <img 
+      src={logoUrl} 
+      alt={league}
+      className="rounded-sm object-contain"
+      style={{ width: size, height: size }}
+      onError={(e) => {
+        // Fallback to text initials
+        const target = e.target as HTMLImageElement;
+        target.style.display = 'none';
+      }}
+    />
+  );
+}
 
 const TIME_RANGE_OPTIONS: { value: TimeRange; label: string }[] = [
   { value: "1d", label: "24 Hours" },
@@ -228,11 +247,16 @@ export default function AIPredictions() {
                         key={league.league}
                         className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
                       >
-                        <div>
-                          <p className="font-medium text-sm">{league.league}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {league.won}W - {league.lost}L
-                          </p>
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-md bg-background flex items-center justify-center shadow-sm">
+                            <LeagueIcon league={league.league} size={20} />
+                          </div>
+                          <div>
+                            <p className="font-medium text-sm">{getLeagueDisplayName(league.league)}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {league.won}W - {league.lost}L
+                            </p>
+                          </div>
                         </div>
                         <div className="text-right">
                           <p className={cn(
@@ -287,13 +311,22 @@ export default function AIPredictions() {
               </p>
               <div className="flex gap-2">
                 <Select value={leagueFilter} onValueChange={setLeagueFilter}>
-                  <SelectTrigger className="w-[130px]">
+                  <SelectTrigger className="w-[160px]">
                     <SelectValue placeholder="All Leagues" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Leagues</SelectItem>
+                    <SelectItem value="all">
+                      <span className="flex items-center gap-2">
+                        All Leagues
+                      </span>
+                    </SelectItem>
                     {leagues.map(league => (
-                      <SelectItem key={league} value={league}>{league}</SelectItem>
+                      <SelectItem key={league} value={league}>
+                        <span className="flex items-center gap-2">
+                          <LeagueIcon league={league} size={16} />
+                          {getLeagueDisplayName(league)}
+                        </span>
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -438,7 +471,8 @@ function PredictionRow({ prediction, showType }: { prediction: any; showType?: b
             <div className="min-w-0">
               <p className="font-medium text-sm truncate">{matchTitle}</p>
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span>{prediction.league || 'Unknown'}</span>
+                <LeagueIcon league={prediction.league || 'NBA'} size={14} />
+                <span>{getLeagueDisplayName(prediction.league) || 'Unknown'}</span>
                 <span>•</span>
                 <span>{format(new Date(prediction.predicted_at), 'MMM d, h:mm a')}</span>
                 {showType && (
