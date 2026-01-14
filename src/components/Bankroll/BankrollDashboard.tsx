@@ -22,7 +22,7 @@ import {
 } from "recharts";
 import { 
   Wallet, TrendingUp, AlertTriangle, Shield, Settings, ChartLine, 
-  Target, Gauge, DollarSign, Percent, Calculator, ChevronRight, PieChart, Lock, Save
+  Target, Gauge, DollarSign, Percent, Calculator, ChevronRight, PieChart, Lock, Save, History
 } from "lucide-react";
 import { useBetTracking } from "@/hooks/useBetTracking";
 import { useBankrollSettings } from "@/hooks/useBankrollSettings";
@@ -30,6 +30,7 @@ import { RiskExposureDashboard } from "./RiskExposureDashboard";
 import { WithdrawalScheduler } from "./WithdrawalScheduler";
 import { GuardrailsPanel } from "./GuardrailsPanel";
 import { GoalTracker } from "./GoalTracker";
+import { BankrollHistoryChart } from "./BankrollHistoryChart";
 import { toast } from "sonner";
 
 const SIMULATION_STORAGE_KEY = "bankroll_simulation_settings";
@@ -171,8 +172,12 @@ export function BankrollDashboard() {
       </div>
       
       <Tabs defaultValue="projections" className="space-y-4">
-        <TabsList className="grid grid-cols-4 md:grid-cols-8 w-full">
+        <TabsList className="grid grid-cols-5 md:grid-cols-9 w-full">
           <TabsTrigger value="projections">Projections</TabsTrigger>
+          <TabsTrigger value="history" className="flex items-center gap-1">
+            <History className="h-3 w-3" />
+            History
+          </TabsTrigger>
           <TabsTrigger value="scenarios">Strategies</TabsTrigger>
           <TabsTrigger value="simulation">Simulation</TabsTrigger>
           <TabsTrigger value="exposure" className="flex items-center gap-1">
@@ -269,6 +274,11 @@ export function BankrollDashboard() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+        
+        {/* History Tab */}
+        <TabsContent value="history">
+          <BankrollHistoryChart startingBankroll={settings.startingBankroll} />
         </TabsContent>
         
         {/* Strategies Tab */}
