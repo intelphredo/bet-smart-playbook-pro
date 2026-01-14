@@ -13,18 +13,12 @@ import FavoriteButton from '@/components/FavoriteButton';
 import { useOddsMovement } from '@/hooks/useOddsMovement';
 import { RankingsBadge } from '@/components/NCAAB';
 import { useNCAABRankings, getTeamRanking } from '@/hooks/useNCAABRankings';
+import { isMatchLive } from '@/utils/matchStatus';
+
 interface ScoreboardRowProps {
   match: Match;
   showOdds?: boolean;
 }
-
-// Helper to check if a match is live
-const isMatchLive = (status: string): boolean => {
-  const s = status?.toLowerCase() || "";
-  return s === "live" || s === "in" || s === "in_progress" || 
-         s.includes("half") || s.includes("ot") || s.includes("overtime") ||
-         ["1st", "2nd", "3rd", "4th"].some(p => s.includes(p));
-};
 
 export function ScoreboardRow({ match, showOdds = true }: ScoreboardRowProps) {
   const navigate = useNavigate();

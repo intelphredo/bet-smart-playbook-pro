@@ -8,19 +8,12 @@ import FavoriteButton from '@/components/FavoriteButton';
 import { format } from 'date-fns';
 import { Clock, Radio } from 'lucide-react';
 import { formatMoneylineOdds, getPrimaryOdds } from '@/utils/sportsbook';
+import { isMatchLive } from '@/utils/matchStatus';
 
 interface MemoizedScoreboardRowProps {
   match: Match;
   showOdds?: boolean;
 }
-
-// Helper to check if a match is live
-const isMatchLive = (status: string): boolean => {
-  const s = status?.toLowerCase() || "";
-  return s === "live" || s === "in" || s === "in_progress" || 
-         s.includes("half") || s.includes("ot") || s.includes("overtime") ||
-         ["1st", "2nd", "3rd", "4th"].some(p => s.includes(p));
-};
 
 // Lightweight version without heavy hooks - optimized for list rendering
 const MemoizedScoreboardRow = memo(function MemoizedScoreboardRow({ 
