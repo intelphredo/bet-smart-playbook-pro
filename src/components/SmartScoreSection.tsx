@@ -8,6 +8,7 @@ import { hasArbitrageOpportunity } from "@/utils/smartScore/arbitrageFactors";
 import { useToast } from "@/hooks/use-toast";
 import { AlertTriangle, TrendingUp } from "lucide-react";
 import { InfoExplainer } from "@/components/ui/InfoExplainer";
+import { CalibrationStatusIndicator } from "@/components/ModelCalibration";
 
 interface Props {
   matches: Match[];
@@ -69,6 +70,7 @@ const SmartScoreSection = ({ matches }: Props) => {
             )}
           </h2>
           <div className="flex items-center gap-2">
+            <CalibrationStatusIndicator />
             <Badge variant="outline" className="bg-muted">
               AI-Powered Insights
             </Badge>

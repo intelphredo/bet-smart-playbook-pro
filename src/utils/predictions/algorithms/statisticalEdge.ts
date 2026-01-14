@@ -3,6 +3,7 @@ import { generateAdvancedPrediction } from "../core/predictionEngine";
 import { calculateWeatherImpact } from "../../smartScore/weatherFactors";
 import { calculateInjuryImpact } from "../../smartScore/injuryFactors";
 import { ALGORITHM_IDS } from "./index";
+import { applyConfidenceCalibration } from "@/utils/modelCalibration/calibrationIntegration";
 
 /**
  * Statistical Edge Algorithm
@@ -14,6 +15,9 @@ import { ALGORITHM_IDS } from "./index";
  * - Head-to-head matchup statistics
  * - Pace and style matchup advantages
  * - Home/away splits and venue factors
+ * 
+ * Now integrates with the automatic recalibration system to adjust
+ * confidence based on recent algorithm performance.
  */
 
 interface SituationalFactors {
@@ -49,7 +53,7 @@ export function generateStatisticalEdgePrediction(match: Match): Match {
   const matchupAnalysis = analyzeMatchupAdvantages(basePrediction);
   
   // Combine all factors with weighted importance
-  const combinedConfidence = calculateCombinedConfidence(
+  const rawConfidence = calculateCombinedConfidence(
     prediction.confidence,
     weatherAnalysis,
     injuryAnalysis,
@@ -57,20 +61,29 @@ export function generateStatisticalEdgePrediction(match: Match): Match {
     matchupAnalysis
   );
   
-  // Calculate expected value based on statistical edge
+  // Apply calibration from the recalibration system
+  const algorithmId = ALGORITHM_IDS.STATISTICAL_EDGE;
+  const calibrated = applyConfidenceCalibration(rawConfidence, algorithmId);
+  
+  // Calculate expected value based on calibrated confidence
   const evAdjustment = calculateExpectedValueEdge(
-    combinedConfidence,
+    calibrated.adjustedConfidence,
     match.odds,
     prediction.recommended
   );
   
   enhancedMatch.prediction = {
     ...prediction,
-    confidence: Math.round(combinedConfidence),
+    confidence: calibrated.adjustedConfidence,
+    rawConfidence: calibrated.rawConfidence,
+    isCalibrated: calibrated.multiplier !== 1.0,
+    calibrationMultiplier: calibrated.multiplier,
+    meetsCalibrationThreshold: calibrated.meetsThreshold,
+    isPaused: calibrated.isPaused,
     expectedValue: evAdjustment.ev,
     evPercentage: evAdjustment.evPercentage,
     trueProbability: evAdjustment.trueProbability,
-    algorithmId: ALGORITHM_IDS.STATISTICAL_EDGE
+    algorithmId
   };
   
   return enhancedMatch;

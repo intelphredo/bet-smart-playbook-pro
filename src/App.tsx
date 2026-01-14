@@ -10,6 +10,7 @@ import { PreferencesProvider } from "@/hooks/usePreferences";
 import SharpMoneyMonitor from "@/components/SharpMoneyMonitor";
 import AnimatedRoutes from "@/components/layout/AnimatedRoutes";
 import OnboardingModal from "@/components/onboarding/OnboardingModal";
+import { CalibrationProvider } from "@/components/ModelCalibration";
 // Create a client
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -62,12 +63,14 @@ function App() {
           <OddsFormatProvider>
             <BetSlipProvider>
               <TooltipProvider>
-                <Router>
-                  <AnimatedRoutes />
-                  <FloatingBetSlip />
-                  <SharpMoneyMonitor />
-                  <OnboardingModal />
-                </Router>
+                <CalibrationProvider>
+                  <Router>
+                    <AnimatedRoutes />
+                    <FloatingBetSlip />
+                    <SharpMoneyMonitor />
+                    <OnboardingModal />
+                  </Router>
+                </CalibrationProvider>
                 <Toaster richColors position="top-center" />
               </TooltipProvider>
             </BetSlipProvider>

@@ -75,6 +75,12 @@ export interface Match {
     kellyStakeUnits?: number;      // Recommended stake in units
     clvPercentage?: number;        // Closing Line Value percentage
     beatClosingLine?: boolean;     // Did prediction beat closing line
+    // Calibration metrics (from auto-recalibration system)
+    rawConfidence?: number;           // Original confidence before calibration
+    isCalibrated?: boolean;           // Whether calibration was applied
+    calibrationMultiplier?: number;   // Multiplier applied to confidence
+    meetsCalibrationThreshold?: boolean; // Whether it meets min threshold
+    isPaused?: boolean;               // Whether algorithm is paused
   };
   status: 'scheduled' | 'pre' | 'live' | 'finished';
   score?: {

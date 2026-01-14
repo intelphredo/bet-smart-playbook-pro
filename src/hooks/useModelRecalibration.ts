@@ -3,6 +3,7 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
+import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { subDays, startOfDay } from 'date-fns';
 import { getAlgorithmNameFromId, ALGORITHM_IDS } from '@/utils/predictions/algorithms';
@@ -11,6 +12,7 @@ import {
   calculateAlgorithmHealthScore,
 } from '@/utils/modelCalibration/performanceAnalyzer';
 import { calculateModelWeights } from '@/utils/modelCalibration/weightAdjuster';
+import { updateCachedWeights } from '@/utils/modelCalibration/calibrationIntegration';
 import { 
   RecalibrationResult, 
   CalibrationConfig,
@@ -28,7 +30,7 @@ export function useModelRecalibration(options: UseModelRecalibrationOptions = {}
   const { config: userConfig, enabled = true } = options;
   const config: CalibrationConfig = { ...DEFAULT_CALIBRATION_CONFIG, ...userConfig };
 
-  return useQuery({
+  const query = useQuery({
     queryKey: ['modelRecalibration', config.shortTermDays, config.mediumTermDays],
     queryFn: async (): Promise<RecalibrationResult> => {
       // Fetch predictions for the analysis window
@@ -101,6 +103,15 @@ export function useModelRecalibration(options: UseModelRecalibrationOptions = {}
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchInterval: 15 * 60 * 1000, // 15 minutes
   });
+
+  // Update the cached weights whenever we get new data
+  useEffect(() => {
+    if (query.data?.modelWeights) {
+      updateCachedWeights(query.data.modelWeights);
+    }
+  }, [query.data?.modelWeights]);
+
+  return query;
 }
 
 /**
