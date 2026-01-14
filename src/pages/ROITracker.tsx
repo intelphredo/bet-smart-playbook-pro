@@ -25,12 +25,17 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Minus,
+  Scale,
+  GitBranch,
+  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import NavBar from "@/components/NavBar";
 import PageFooter from "@/components/PageFooter";
 import { useSharpMoneyROI, useSharpMoneyLeaderboard } from "@/hooks/useSharpMoneyLeaderboard";
+import { useBetTracking } from "@/hooks/useBetTracking";
 import { InfoExplainer } from "@/components/ui/InfoExplainer";
+import { SegmentedROI, ValueRealization, StakingAudit, WhatIfAnalysis } from "@/components/ROIAnalysis";
 import {
   AreaChart,
   Area,
@@ -66,8 +71,9 @@ export default function ROITracker() {
   const [timeFilter, setTimeFilter] = useState<string>("all");
   const { data: roiData, isLoading: roiLoading } = useSharpMoneyROI();
   const { data: leaderboard, isLoading: leaderboardLoading } = useSharpMoneyLeaderboard();
+  const { bets, isLoading: betsLoading } = useBetTracking();
 
-  const isLoading = roiLoading || leaderboardLoading;
+  const isLoading = roiLoading || leaderboardLoading || betsLoading;
 
   // Calculate totals
   const totals = roiData?.reduce(
@@ -167,21 +173,49 @@ export default function ROITracker() {
         </div>
 
         {/* Main Content */}
-        <Tabs defaultValue="breakdown" className="space-y-4">
-          <TabsList>
+        <Tabs defaultValue="diagnostic" className="space-y-4">
+          <TabsList className="flex-wrap h-auto gap-1 p-1">
+            <TabsTrigger value="diagnostic" className="gap-2">
+              <Target className="h-4 w-4" />
+              Performance Diagnostic
+            </TabsTrigger>
             <TabsTrigger value="breakdown" className="gap-2">
               <PieChart className="h-4 w-4" />
               Signal Breakdown
             </TabsTrigger>
-            <TabsTrigger value="performance" className="gap-2">
-              <BarChart3 className="h-4 w-4" />
-              Performance
+            <TabsTrigger value="value" className="gap-2">
+              <Sparkles className="h-4 w-4" />
+              Value Realization
             </TabsTrigger>
-            <TabsTrigger value="streaks" className="gap-2">
-              <Zap className="h-4 w-4" />
-              Streaks
+            <TabsTrigger value="staking" className="gap-2">
+              <Scale className="h-4 w-4" />
+              Staking Audit
+            </TabsTrigger>
+            <TabsTrigger value="whatif" className="gap-2">
+              <GitBranch className="h-4 w-4" />
+              What-If Analysis
             </TabsTrigger>
           </TabsList>
+
+          {/* Performance Diagnostic Tab - Segmented ROI */}
+          <TabsContent value="diagnostic" className="space-y-4">
+            <SegmentedROI bets={bets} />
+          </TabsContent>
+
+          {/* Value Realization Tab */}
+          <TabsContent value="value" className="space-y-4">
+            <ValueRealization bets={bets} />
+          </TabsContent>
+
+          {/* Staking Audit Tab */}
+          <TabsContent value="staking" className="space-y-4">
+            <StakingAudit bets={bets} />
+          </TabsContent>
+
+          {/* What-If Analysis Tab */}
+          <TabsContent value="whatif" className="space-y-4">
+            <WhatIfAnalysis bets={bets} startingBankroll={1000} />
+          </TabsContent>
 
           <TabsContent value="breakdown" className="space-y-4">
             <div className="grid md:grid-cols-2 gap-4">
