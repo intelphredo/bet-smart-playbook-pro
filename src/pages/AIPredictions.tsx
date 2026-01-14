@@ -31,6 +31,9 @@ import {
   Calendar,
   Trophy,
   Zap,
+  Lightbulb,
+  AlertTriangle,
+  BookOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import NavBar from "@/components/NavBar";
@@ -40,6 +43,7 @@ import PredictionCharts from "@/components/PredictionCharts";
 import { InfoExplainer } from "@/components/ui/InfoExplainer";
 import { getTeamLogoUrl, getTeamInitials } from "@/utils/teamLogos";
 import { League } from "@/types/sports";
+import { ContextLedger, CalibrationChart, LossPostMortem } from "@/components/AIHistory";
 
 const TIME_RANGE_OPTIONS: { value: TimeRange; label: string }[] = [
   { value: "1d", label: "24 Hours" },
@@ -162,28 +166,34 @@ export default function AIPredictions() {
 
         {/* Main Tabs */}
         <Tabs defaultValue="overview" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="overview" className="gap-2">
+          <TabsList className="flex-wrap h-auto gap-1 p-1">
+            <TabsTrigger value="overview" className="gap-1.5">
               <BarChart3 className="h-4 w-4" />
-              Overview
+              <span className="hidden sm:inline">Overview</span>
             </TabsTrigger>
-            <TabsTrigger value="prelive" className="gap-2">
-              <Calendar className="h-4 w-4" />
-              Pre-Live
-              <Badge variant="secondary" className="ml-1 text-xs">
-                {preLivePredictions.length}
-              </Badge>
+            <TabsTrigger value="ledger" className="gap-1.5">
+              <BookOpen className="h-4 w-4" />
+              <span className="hidden sm:inline">Context Ledger</span>
+              <span className="sm:hidden">Ledger</span>
             </TabsTrigger>
-            <TabsTrigger value="live" className="gap-2">
-              <Zap className="h-4 w-4" />
-              Live
-              <Badge variant="secondary" className="ml-1 text-xs">
-                {livePredictions.length}
-              </Badge>
+            <TabsTrigger value="calibration" className="gap-1.5">
+              <Target className="h-4 w-4" />
+              <span className="hidden sm:inline">Calibration</span>
+              <span className="sm:hidden">Calib</span>
             </TabsTrigger>
-            <TabsTrigger value="history" className="gap-2">
+            <TabsTrigger value="losses" className="gap-1.5">
+              <AlertTriangle className="h-4 w-4" />
+              <span className="hidden sm:inline">Learn from Losses</span>
+              <span className="sm:hidden">Losses</span>
+              {predictions.filter(p => p.status === 'lost').length > 0 && (
+                <Badge variant="destructive" className="ml-1 text-xs h-5 px-1.5">
+                  {predictions.filter(p => p.status === 'lost').length}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="history" className="gap-1.5">
               <History className="h-4 w-4" />
-              Full History
+              <span className="hidden sm:inline">History</span>
             </TabsTrigger>
           </TabsList>
 
@@ -245,48 +255,27 @@ export default function AIPredictions() {
             )}
           </TabsContent>
 
-          <TabsContent value="prelive" className="space-y-4">
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                Predictions made before games started
-              </p>
-              <Select value={leagueFilter} onValueChange={setLeagueFilter}>
-                <SelectTrigger className="w-[130px]">
-                  <SelectValue placeholder="All Leagues" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Leagues</SelectItem>
-                  {leagues.map(league => (
-                    <SelectItem key={league} value={league}>{league}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <PredictionList 
-              predictions={preLivePredictions.slice(0, 50)} 
+          {/* Full Context Ledger Tab */}
+          <TabsContent value="ledger" className="space-y-4">
+            <ContextLedger 
+              predictions={filteredPredictions} 
               isLoading={isLoading} 
             />
           </TabsContent>
 
-          <TabsContent value="live" className="space-y-4">
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                Predictions made during live games
-              </p>
-              <Select value={leagueFilter} onValueChange={setLeagueFilter}>
-                <SelectTrigger className="w-[130px]">
-                  <SelectValue placeholder="All Leagues" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Leagues</SelectItem>
-                  {leagues.map(league => (
-                    <SelectItem key={league} value={league}>{league}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <PredictionList 
-              predictions={livePredictions.slice(0, 50)} 
+          {/* Model Calibration Tab */}
+          <TabsContent value="calibration" className="space-y-4">
+            <CalibrationChart 
+              predictions={predictions}
+              confidenceVsAccuracy={stats?.confidenceVsAccuracy || []}
+              isLoading={isLoading}
+            />
+          </TabsContent>
+
+          {/* Learn from Losses Tab */}
+          <TabsContent value="losses" className="space-y-4">
+            <LossPostMortem 
+              predictions={predictions} 
               isLoading={isLoading} 
             />
           </TabsContent>
