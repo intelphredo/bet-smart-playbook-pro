@@ -5,7 +5,7 @@ import PageFooter from "@/components/PageFooter";
 import { useSportsData } from "@/hooks/useSportsData";
 import { applySmartScores } from "@/utils/smartScoreCalculator";
 import { ScoreboardRow } from "@/components/layout/ScoreboardRow";
-import { ArrowLeft, Trophy, ChevronLeft, ChevronRight, Calendar, X } from "lucide-react";
+import { ArrowLeft, Trophy, ChevronLeft, ChevronRight, Calendar, X, ArrowUpDown } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -29,6 +29,17 @@ const DATE_PRESETS = [
   { label: 'Last Week', getValue: () => ({ from: startOfWeek(subWeeks(new Date(), 1), { weekStartsOn: 1 }), to: endOfWeek(subWeeks(new Date(), 1), { weekStartsOn: 1 }) }) },
 ];
 
+type SortOption = 'time-desc' | 'time-asc' | 'league-asc' | 'league-desc' | 'margin-desc' | 'margin-asc';
+
+const SORT_OPTIONS: { value: SortOption; label: string }[] = [
+  { value: 'time-desc', label: 'Newest First' },
+  { value: 'time-asc', label: 'Oldest First' },
+  { value: 'league-asc', label: 'League (A-Z)' },
+  { value: 'league-desc', label: 'League (Z-A)' },
+  { value: 'margin-desc', label: 'Highest Margin' },
+  { value: 'margin-asc', label: 'Lowest Margin' },
+];
+
 const RecentResultsPage = () => {
   const navigate = useNavigate();
   const [selectedLeague, setSelectedLeague] = useState<string>("ALL");
@@ -36,6 +47,7 @@ const RecentResultsPage = () => {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [sortBy, setSortBy] = useState<SortOption>('time-desc');
 
   const {
     finishedMatches: rawFinished,
@@ -48,9 +60,15 @@ const RecentResultsPage = () => {
 
   const finishedMatches = useMemo(() => applySmartScores(rawFinished), [rawFinished]);
 
-  // Filter by league and date range
-  const filteredMatches = useMemo(() => {
-    let matches = finishedMatches;
+  // Helper to calculate score margin
+  const getScoreMargin = (match: typeof finishedMatches[0]) => {
+    if (!match.score) return 0;
+    return Math.abs(match.score.home - match.score.away);
+  };
+
+  // Filter and sort matches
+  const filteredAndSortedMatches = useMemo(() => {
+    let matches = [...finishedMatches];
     
     // Filter by league
     if (selectedLeague !== 'ALL') {
@@ -75,15 +93,35 @@ const RecentResultsPage = () => {
       });
     }
     
+    // Sort matches
+    matches.sort((a, b) => {
+      switch (sortBy) {
+        case 'time-desc':
+          return new Date(b.startTime).getTime() - new Date(a.startTime).getTime();
+        case 'time-asc':
+          return new Date(a.startTime).getTime() - new Date(b.startTime).getTime();
+        case 'league-asc':
+          return a.league.localeCompare(b.league);
+        case 'league-desc':
+          return b.league.localeCompare(a.league);
+        case 'margin-desc':
+          return getScoreMargin(b) - getScoreMargin(a);
+        case 'margin-asc':
+          return getScoreMargin(a) - getScoreMargin(b);
+        default:
+          return 0;
+      }
+    });
+    
     return matches;
-  }, [finishedMatches, selectedLeague, dateRange]);
+  }, [finishedMatches, selectedLeague, dateRange, sortBy]);
 
   // Pagination logic
-  const totalItems = filteredMatches.length;
+  const totalItems = filteredAndSortedMatches.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const paginatedMatches = filteredMatches.slice(startIndex, endIndex);
+  const paginatedMatches = filteredAndSortedMatches.slice(startIndex, endIndex);
 
   // Reset to page 1 when filters change
   const handleLeagueChange = (league: string) => {
@@ -109,6 +147,11 @@ const RecentResultsPage = () => {
 
   const clearDateFilter = () => {
     setDateRange(undefined);
+    setCurrentPage(1);
+  };
+
+  const handleSortChange = (value: string) => {
+    setSortBy(value as SortOption);
     setCurrentPage(1);
   };
 
@@ -254,21 +297,41 @@ const RecentResultsPage = () => {
                 <span className="text-sm text-muted-foreground">Showing all dates</span>
               )}
 
-              {/* Items per page */}
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">Show:</span>
-                <Select value={String(itemsPerPage)} onValueChange={handleItemsPerPageChange}>
-                  <SelectTrigger className="w-[100px] h-8">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {ITEMS_PER_PAGE_OPTIONS.map(option => (
-                      <SelectItem key={option} value={String(option)}>
-                        {option} results
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              {/* Sort and Items per page */}
+              <div className="flex items-center gap-4">
+                {/* Sort dropdown */}
+                <div className="flex items-center gap-2">
+                  <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
+                  <Select value={sortBy} onValueChange={handleSortChange}>
+                    <SelectTrigger className="w-[150px] h-8">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SORT_OPTIONS.map(option => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Items per page */}
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">Show:</span>
+                  <Select value={String(itemsPerPage)} onValueChange={handleItemsPerPageChange}>
+                    <SelectTrigger className="w-[100px] h-8">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ITEMS_PER_PAGE_OPTIONS.map(option => (
+                        <SelectItem key={option} value={String(option)}>
+                          {option} results
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
           </CardContent>
