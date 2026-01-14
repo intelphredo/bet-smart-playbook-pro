@@ -30,6 +30,7 @@ import FavoritesTab from "@/components/FavoritesTab";
 import { AnimatedBadge } from "@/components/ui/AnimatedBadge";
 import { SpotlightHeader, UpcomingAlertsBadge } from "@/components/SpotlightValuePicks";
 import { useSmartNotifications } from "@/hooks/useSmartNotifications";
+import { RankingsTable } from "@/components/NCAAB";
 
 import { 
   Radio, Clock, TrendingUp, RefreshCw, ChevronRight, 
@@ -579,6 +580,14 @@ const Index = () => {
                     )}
                   </CardContent>
                 </Card>
+
+                {/* NCAAB Rankings - Show when NCAAB is selected */}
+                {(selectedLeague === "NCAAB" || selectedLeague === "ALL") && (
+                  <RankingsTable 
+                    maxTeams={25} 
+                    compact={selectedLeague === "ALL"}
+                  />
+                )}
 
                 {/* Sharp Money Leaderboard */}
                 <Card>

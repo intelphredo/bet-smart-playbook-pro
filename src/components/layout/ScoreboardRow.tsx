@@ -11,7 +11,8 @@ import AnimatedScore from '@/components/ui/AnimatedScore';
 import { TeamLogoImage } from '@/components/ui/TeamLogoImage';
 import FavoriteButton from '@/components/FavoriteButton';
 import { useOddsMovement } from '@/hooks/useOddsMovement';
-
+import { RankingsBadge } from '@/components/NCAAB';
+import { useNCAABRankings, getTeamRanking } from '@/hooks/useNCAABRankings';
 interface ScoreboardRowProps {
   match: Match;
   showOdds?: boolean;
@@ -21,7 +22,12 @@ export function ScoreboardRow({ match, showOdds = true }: ScoreboardRowProps) {
   const navigate = useNavigate();
   const isLive = match.status === 'live';
   const isFinished = match.status === 'finished';
-
+  const isNCAAB = match.league === 'NCAAB';
+  
+  // Get NCAAB rankings for team badges
+  const { data: rankings } = useNCAABRankings();
+  const homeRank = isNCAAB ? getTeamRanking(rankings, match.homeTeam?.name || '') : null;
+  const awayRank = isNCAAB ? getTeamRanking(rankings, match.awayTeam?.name || '') : null;
   const formatGameTime = () => {
     if (isLive) return match.score?.period || 'LIVE';
     if (isFinished) return 'Final';
@@ -101,7 +107,8 @@ export function ScoreboardRow({ match, showOdds = true }: ScoreboardRowProps) {
       <div className="col-span-6 space-y-1.5">
         {/* Away Team */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5 min-w-0">
+          <div className="flex items-center gap-2 min-w-0">
+            {awayRank && <RankingsBadge rank={awayRank} size="sm" showTrend={false} />}
             <TeamLogoImage
               teamName={match.awayTeam?.name || 'Away'}
               teamId={match.awayTeam?.id}
@@ -136,7 +143,8 @@ export function ScoreboardRow({ match, showOdds = true }: ScoreboardRowProps) {
         
         {/* Home Team */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5 min-w-0">
+          <div className="flex items-center gap-2 min-w-0">
+            {homeRank && <RankingsBadge rank={homeRank} size="sm" showTrend={false} />}
             <TeamLogoImage
               teamName={match.homeTeam?.name || 'Home'}
               teamId={match.homeTeam?.id}
