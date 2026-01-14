@@ -7,6 +7,7 @@ import { Radio } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import SharpMoneyBadge from '@/components/MatchCard/SharpMoneyBadge';
 import { formatAmericanOdds } from '@/utils/sportsbook';
+import AnimatedScore from '@/components/ui/AnimatedScore';
 
 interface ScoreboardRowProps {
   match: Match;
@@ -103,13 +104,21 @@ export function ScoreboardRow({ match, showOdds = true }: ScoreboardRowProps) {
               {match.awayTeam?.shortName || match.awayTeam?.name || 'Away'}
             </span>
           </div>
-          <span className={cn(
-            "text-sm tabular-nums ml-2 font-medium",
-            isLive && "text-destructive font-bold",
-            awayWinning && isFinished && "font-bold text-green-500"
-          )}>
-            {showScores ? awayScore : '-'}
-          </span>
+          {showScores ? (
+            <AnimatedScore
+              score={awayScore}
+              matchId={match.id}
+              teamKey="away"
+              isLive={isLive}
+              className={cn(
+                "text-sm ml-2",
+                isLive && "text-destructive",
+                awayWinning && isFinished && "text-green-500"
+              )}
+            />
+          ) : (
+            <span className="text-sm tabular-nums ml-2 font-medium">-</span>
+          )}
         </div>
         
         {/* Home Team */}
@@ -125,13 +134,21 @@ export function ScoreboardRow({ match, showOdds = true }: ScoreboardRowProps) {
               {match.homeTeam?.shortName || match.homeTeam?.name || 'Home'}
             </span>
           </div>
-          <span className={cn(
-            "text-sm tabular-nums ml-2 font-medium",
-            isLive && "text-destructive font-bold",
-            homeWinning && isFinished && "font-bold text-green-500"
-          )}>
-            {showScores ? homeScore : '-'}
-          </span>
+          {showScores ? (
+            <AnimatedScore
+              score={homeScore}
+              matchId={match.id}
+              teamKey="home"
+              isLive={isLive}
+              className={cn(
+                "text-sm ml-2",
+                isLive && "text-destructive",
+                homeWinning && isFinished && "text-green-500"
+              )}
+            />
+          ) : (
+            <span className="text-sm tabular-nums ml-2 font-medium">-</span>
+          )}
         </div>
       </div>
 

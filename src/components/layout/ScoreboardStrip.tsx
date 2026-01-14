@@ -2,10 +2,10 @@
 import { useRef } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Match } from '@/types/sports';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import AnimatedScore from '@/components/ui/AnimatedScore';
 
 interface ScoreboardStripProps {
   matches: Match[];
@@ -76,6 +76,8 @@ function ScoreCard({ match, onClick }: { match: Match; onClick: () => void }) {
     return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
   };
 
+  const showScores = isLive || isFinished;
+
   return (
     <button
       onClick={onClick}
@@ -100,14 +102,18 @@ function ScoreCard({ match, onClick }: { match: Match; onClick: () => void }) {
       {/* Teams */}
       <div className="space-y-1">
         <TeamRow 
+          matchId={match.id}
+          teamKey="away"
           name={match.awayTeam?.shortName || match.awayTeam?.name || 'Away'} 
-          score={isLive || isFinished ? (match.score?.away ?? 0) : undefined}
+          score={showScores ? (match.score?.away ?? 0) : undefined}
           isWinning={isFinished && (match.score?.away || 0) > (match.score?.home || 0)}
           isLive={isLive}
         />
         <TeamRow 
+          matchId={match.id}
+          teamKey="home"
           name={match.homeTeam?.shortName || match.homeTeam?.name || 'Home'} 
-          score={isLive || isFinished ? (match.score?.home ?? 0) : undefined}
+          score={showScores ? (match.score?.home ?? 0) : undefined}
           isWinning={isFinished && (match.score?.home || 0) > (match.score?.away || 0)}
           isLive={isLive}
         />
@@ -116,7 +122,16 @@ function ScoreCard({ match, onClick }: { match: Match; onClick: () => void }) {
   );
 }
 
-function TeamRow({ name, score, isWinning, isLive }: { name: string; score?: number; isWinning?: boolean; isLive?: boolean }) {
+interface TeamRowProps {
+  matchId: string;
+  teamKey: 'home' | 'away';
+  name: string;
+  score?: number;
+  isWinning?: boolean;
+  isLive?: boolean;
+}
+
+function TeamRow({ matchId, teamKey, name, score, isWinning, isLive }: TeamRowProps) {
   return (
     <div className="flex items-center justify-between">
       <span className={cn(
@@ -126,13 +141,17 @@ function TeamRow({ name, score, isWinning, isLive }: { name: string; score?: num
         {name}
       </span>
       {score !== undefined && (
-        <span className={cn(
-          "text-xs tabular-nums",
-          isWinning ? "font-bold text-green-500" : "font-medium",
-          isLive && "text-red-500 font-bold"
-        )}>
-          {score}
-        </span>
+        <AnimatedScore
+          score={score}
+          matchId={matchId}
+          teamKey={teamKey}
+          isLive={isLive}
+          className={cn(
+            "text-xs",
+            isWinning && "text-green-500",
+            isLive && "text-red-500"
+          )}
+        />
       )}
     </div>
   );
