@@ -62,7 +62,7 @@ const TIME_RANGE_OPTIONS: { value: TimeRange; label: string }[] = [
   { value: "all", label: "All Time" },
 ];
 
-const ITEMS_PER_PAGE = 25;
+const ITEMS_PER_PAGE_OPTIONS = [10, 25, 50, 100];
 
 const HistoricalPredictionsSection = () => {
   const [leagueFilter, setLeagueFilter] = useState<string>("all");
@@ -74,6 +74,7 @@ const HistoricalPredictionsSection = () => {
   const [settledOnly, setSettledOnly] = useState(false);
   const [preLivePage, setPreLivePage] = useState(1);
   const [livePage, setLivePage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(25);
   
   const { data, isLoading, error, refetch } = useHistoricalPredictions(timeRange, predictionType);
 
@@ -138,21 +139,28 @@ const HistoricalPredictionsSection = () => {
   const livePredictions = filteredPredictions.filter(p => p.is_live_prediction);
 
   // Pagination calculations
-  const preLiveTotalPages = Math.ceil(preLivePredictions.length / ITEMS_PER_PAGE);
-  const liveTotalPages = Math.ceil(livePredictions.length / ITEMS_PER_PAGE);
+  const preLiveTotalPages = Math.ceil(preLivePredictions.length / itemsPerPage);
+  const liveTotalPages = Math.ceil(livePredictions.length / itemsPerPage);
   
   const paginatedPreLive = preLivePredictions.slice(
-    (preLivePage - 1) * ITEMS_PER_PAGE,
-    preLivePage * ITEMS_PER_PAGE
+    (preLivePage - 1) * itemsPerPage,
+    preLivePage * itemsPerPage
   );
   const paginatedLive = livePredictions.slice(
-    (livePage - 1) * ITEMS_PER_PAGE,
-    livePage * ITEMS_PER_PAGE
+    (livePage - 1) * itemsPerPage,
+    livePage * itemsPerPage
   );
 
   // Reset pages when filters change
   const handleFilterChange = (setter: (val: string) => void, value: string) => {
     setter(value);
+    setPreLivePage(1);
+    setLivePage(1);
+  };
+
+  // Handle items per page change
+  const handleItemsPerPageChange = (value: string) => {
+    setItemsPerPage(Number(value));
     setPreLivePage(1);
     setLivePage(1);
   };
@@ -580,33 +588,50 @@ const HistoricalPredictionsSection = () => {
               </div>
             </ScrollArea>
             {/* Pre-Live Pagination */}
-            {preLiveTotalPages > 1 && (
-              <div className="flex items-center justify-between px-4 py-3 border-t">
-                <span className="text-xs text-muted-foreground">
-                  Page {preLivePage} of {preLiveTotalPages}
-                </span>
-                <div className="flex items-center gap-1">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-7 w-7 p-0"
-                    onClick={() => setPreLivePage(p => Math.max(1, p - 1))}
-                    disabled={preLivePage === 1}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-7 w-7 p-0"
-                    onClick={() => setPreLivePage(p => Math.min(preLiveTotalPages, p + 1))}
-                    disabled={preLivePage === preLiveTotalPages}
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
+            <div className="flex items-center justify-between px-4 py-3 border-t">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">Show</span>
+                <Select value={String(itemsPerPage)} onValueChange={handleItemsPerPageChange}>
+                  <SelectTrigger className="w-[70px] h-7 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ITEMS_PER_PAGE_OPTIONS.map(option => (
+                      <SelectItem key={option} value={String(option)} className="text-xs">
+                        {option}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-            )}
+              {preLiveTotalPages > 1 && (
+                <>
+                  <span className="text-xs text-muted-foreground">
+                    Page {preLivePage} of {preLiveTotalPages}
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 w-7 p-0"
+                      onClick={() => setPreLivePage(p => Math.max(1, p - 1))}
+                      disabled={preLivePage === 1}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 w-7 p-0"
+                      onClick={() => setPreLivePage(p => Math.min(preLiveTotalPages, p + 1))}
+                      disabled={preLivePage === preLiveTotalPages}
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </>
+              )}
+            </div>
           </CardContent>
         </Card>
 
@@ -639,33 +664,50 @@ const HistoricalPredictionsSection = () => {
               </div>
             </ScrollArea>
             {/* Live Pagination */}
-            {liveTotalPages > 1 && (
-              <div className="flex items-center justify-between px-4 py-3 border-t">
-                <span className="text-xs text-muted-foreground">
-                  Page {livePage} of {liveTotalPages}
-                </span>
-                <div className="flex items-center gap-1">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-7 w-7 p-0"
-                    onClick={() => setLivePage(p => Math.max(1, p - 1))}
-                    disabled={livePage === 1}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-7 w-7 p-0"
-                    onClick={() => setLivePage(p => Math.min(liveTotalPages, p + 1))}
-                    disabled={livePage === liveTotalPages}
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
+            <div className="flex items-center justify-between px-4 py-3 border-t">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">Show</span>
+                <Select value={String(itemsPerPage)} onValueChange={handleItemsPerPageChange}>
+                  <SelectTrigger className="w-[70px] h-7 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ITEMS_PER_PAGE_OPTIONS.map(option => (
+                      <SelectItem key={option} value={String(option)} className="text-xs">
+                        {option}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-            )}
+              {liveTotalPages > 1 && (
+                <>
+                  <span className="text-xs text-muted-foreground">
+                    Page {livePage} of {liveTotalPages}
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 w-7 p-0"
+                      onClick={() => setLivePage(p => Math.max(1, p - 1))}
+                      disabled={livePage === 1}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 w-7 p-0"
+                      onClick={() => setLivePage(p => Math.min(liveTotalPages, p + 1))}
+                      disabled={livePage === liveTotalPages}
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </>
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>
