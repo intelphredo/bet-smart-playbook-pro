@@ -3,6 +3,7 @@ import { Match, League } from "@/types/sports";
 import { ESPN_API_BASE } from "./espnConstants";
 import { mapESPNEventToMatch, ESPNResponse } from "./espnMappers";
 import { format, addDays } from "date-fns";
+import { fetchWithTimeout } from "@/utils/network/fetchWithTimeout";
 
 const statusRank: Record<Match["status"], number> = {
   live: 3,
@@ -64,20 +65,7 @@ let dataStatus: ESPNDataStatus = {
 
 export const getESPNDataStatus = (): ESPNDataStatus => dataStatus;
 
-// Enhanced fetch with timeout functionality
-const fetchWithTimeout = async (url: string, timeout = 8000): Promise<Response> => {
-  const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), timeout);
-  
-  try {
-    const response = await fetch(url, { signal: controller.signal });
-    clearTimeout(id);
-    return response;
-  } catch (error) {
-    clearTimeout(id);
-    throw error;
-  }
-};
+// Using shared fetchWithTimeout utility from @/utils/network/fetchWithTimeout
 
 // Format date for ESPN API (YYYYMMDD)
 const formatDateForESPN = (date: Date): string => {
