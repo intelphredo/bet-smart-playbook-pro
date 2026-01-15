@@ -11,8 +11,8 @@ import { League } from "@/types/sports";
 import { getTeamLogoUrl } from "@/utils/teamLogos";
 import { getNCAABTeamId } from "@/utils/ncaabTeamIds";
 
-// Cache configuration
-const CACHE_VERSION = 'v1';
+// Cache configuration - v2 invalidates old NHL logos with incorrect abbreviations
+const CACHE_VERSION = 'v2';
 const CACHE_EXPIRATION_DAYS = 7;
 const CACHE_PREFIX = `betsmart-logo-${CACHE_VERSION}`;
 const MAX_RETRIES = 2;
