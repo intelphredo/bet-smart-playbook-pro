@@ -57,6 +57,9 @@ import {
   ArrowDownRight,
   Minus,
   Medal,
+  CheckCheck,
+  Clock,
+  Star,
 } from "lucide-react";
 import { useAlgorithmComparison } from "@/hooks/useAlgorithmComparison";
 import { cn } from "@/lib/utils";
@@ -395,6 +398,263 @@ const AgreementStats = ({ stats }: { stats: any }) => {
           />
         </div>
       ))}
+    </div>
+  );
+};
+
+// Consensus Picks component - shows when all algorithms agree
+const ConsensusPicks = ({ 
+  consensusPicks, 
+  agreementStats 
+}: { 
+  consensusPicks: any[];
+  agreementStats: any;
+}) => {
+  const fullAgreementPicks = consensusPicks.filter(p => p.agreementLevel === 'full');
+  const settledFullAgreement = fullAgreementPicks.filter(p => p.result !== 'pending');
+  const fullAgreementWins = settledFullAgreement.filter(p => p.result === 'won').length;
+  const fullAgreementWinRate = settledFullAgreement.length > 0 
+    ? (fullAgreementWins / settledFullAgreement.length) * 100 
+    : 0;
+
+  return (
+    <div className="space-y-6">
+      {/* Consensus Stats Banner */}
+      <Card className="bg-gradient-to-r from-green-500/10 via-emerald-500/10 to-teal-500/10 border-green-500/30">
+        <CardContent className="py-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="text-center">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <CheckCheck className="h-6 w-6 text-green-500" />
+                <span className="text-3xl font-bold text-green-500">
+                  {fullAgreementWinRate.toFixed(1)}%
+                </span>
+              </div>
+              <p className="text-sm text-muted-foreground">Full Agreement Win Rate</p>
+            </div>
+            <div className="text-center">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <Star className="h-6 w-6 text-yellow-500" />
+                <span className="text-3xl font-bold">
+                  {agreementStats.fullAgreement}
+                </span>
+              </div>
+              <p className="text-sm text-muted-foreground">Full Agreement Picks</p>
+            </div>
+            <div className="text-center">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <Users className="h-6 w-6 text-blue-500" />
+                <span className="text-3xl font-bold">
+                  {agreementStats.partialAgreement}
+                </span>
+              </div>
+              <p className="text-sm text-muted-foreground">Partial Agreement</p>
+            </div>
+            <div className="text-center">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <XCircle className="h-6 w-6 text-red-500" />
+                <span className="text-3xl font-bold">
+                  {agreementStats.noAgreement}
+                </span>
+              </div>
+              <p className="text-sm text-muted-foreground">Split Decisions</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Win Rate Comparison by Agreement */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <TrendingUp className="h-5 w-5 text-primary" />
+            Win Rate by Agreement Level
+          </CardTitle>
+          <CardDescription>
+            Higher agreement typically correlates with better prediction accuracy
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex items-center gap-4">
+              <div className="w-32 text-sm font-medium flex items-center gap-2">
+                <CheckCheck className="h-4 w-4 text-green-500" />
+                Full (3/3)
+              </div>
+              <div className="flex-1">
+                <Progress 
+                  value={agreementStats.fullAgreementWinRate} 
+                  className="h-6"
+                />
+              </div>
+              <div className="w-24 text-right">
+                <span className={cn(
+                  "font-bold",
+                  agreementStats.fullAgreementWinRate >= 55 ? "text-green-500" : 
+                  agreementStats.fullAgreementWinRate >= 50 ? "text-yellow-500" : "text-red-500"
+                )}>
+                  {agreementStats.fullAgreementWinRate.toFixed(1)}%
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="w-32 text-sm font-medium flex items-center gap-2">
+                <Users className="h-4 w-4 text-blue-500" />
+                Partial (2/3)
+              </div>
+              <div className="flex-1">
+                <Progress 
+                  value={agreementStats.partialAgreementWinRate} 
+                  className="h-6"
+                />
+              </div>
+              <div className="w-24 text-right">
+                <span className={cn(
+                  "font-bold",
+                  agreementStats.partialAgreementWinRate >= 55 ? "text-green-500" : 
+                  agreementStats.partialAgreementWinRate >= 50 ? "text-yellow-500" : "text-red-500"
+                )}>
+                  {agreementStats.partialAgreementWinRate.toFixed(1)}%
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="w-32 text-sm font-medium flex items-center gap-2">
+                <XCircle className="h-4 w-4 text-red-500" />
+                Split (1/1/1)
+              </div>
+              <div className="flex-1">
+                <Progress 
+                  value={agreementStats.noAgreementWinRate} 
+                  className="h-6"
+                />
+              </div>
+              <div className="w-24 text-right">
+                <span className={cn(
+                  "font-bold",
+                  agreementStats.noAgreementWinRate >= 55 ? "text-green-500" : 
+                  agreementStats.noAgreementWinRate >= 50 ? "text-yellow-500" : "text-red-500"
+                )}>
+                  {agreementStats.noAgreementWinRate.toFixed(1)}%
+                </span>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Full Agreement Picks List */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Star className="h-5 w-5 text-yellow-500" />
+            Full Consensus Picks
+            <Badge variant="secondary" className="ml-2">
+              {fullAgreementPicks.length} total
+            </Badge>
+          </CardTitle>
+          <CardDescription>
+            When all 3 algorithms agree on the same prediction
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {fullAgreementPicks.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <CheckCheck className="h-12 w-12 mx-auto mb-2 opacity-50" />
+              <p>No full consensus picks yet</p>
+            </div>
+          ) : (
+            <div className="space-y-3 max-h-[400px] overflow-y-auto">
+              {fullAgreementPicks.slice(0, 20).map((pick, index) => (
+                <div 
+                  key={pick.matchId + index}
+                  className={cn(
+                    "p-4 rounded-lg border transition-all",
+                    pick.result === 'won' ? "bg-green-500/5 border-green-500/30" :
+                    pick.result === 'lost' ? "bg-red-500/5 border-red-500/30" :
+                    "bg-muted/30 border-muted"
+                  )}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">{LEAGUE_ICONS[pick.league] || "🎯"}</span>
+                      <span className="font-medium">{pick.matchTitle}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {pick.result === 'won' && (
+                        <Badge className="bg-green-500/20 text-green-600 border-green-500/30">
+                          <CheckCircle2 className="h-3 w-3 mr-1" />
+                          Won
+                        </Badge>
+                      )}
+                      {pick.result === 'lost' && (
+                        <Badge className="bg-red-500/20 text-red-600 border-red-500/30">
+                          <XCircle className="h-3 w-3 mr-1" />
+                          Lost
+                        </Badge>
+                      )}
+                      {pick.result === 'pending' && (
+                        <Badge variant="outline" className="text-muted-foreground">
+                          <Clock className="h-3 w-3 mr-1" />
+                          Pending
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs text-muted-foreground">Consensus:</span>
+                        <Badge variant="secondary" className="font-semibold">
+                          {pick.consensusPrediction}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs text-muted-foreground">Confidence:</span>
+                        <span className={cn(
+                          "font-semibold text-sm",
+                          pick.consensusConfidence >= 70 ? "text-green-500" :
+                          pick.consensusConfidence >= 60 ? "text-yellow-500" : "text-muted-foreground"
+                        )}>
+                          {pick.consensusConfidence.toFixed(0)}%
+                        </span>
+                      </div>
+                    </div>
+                    <span className="text-xs text-muted-foreground">{pick.date}</span>
+                  </div>
+                  {/* Algorithm breakdown */}
+                  <div className="flex items-center gap-2 mt-2 pt-2 border-t border-muted/50">
+                    {pick.algorithms.map((alg: any) => {
+                      const config = getAlgorithmConfig(alg.algorithmId);
+                      return (
+                        <Tooltip key={alg.algorithmId}>
+                          <TooltipTrigger asChild>
+                            <div className={cn(
+                              "flex items-center gap-1 px-2 py-1 rounded text-xs",
+                              config.bgColor
+                            )}>
+                              <span>{config.icon}</span>
+                              <span>{alg.confidence.toFixed(0)}%</span>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{config.name}: {alg.prediction} @ {alg.confidence.toFixed(1)}%</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+              {fullAgreementPicks.length > 20 && (
+                <p className="text-center text-sm text-muted-foreground pt-2">
+                  Showing 20 of {fullAgreementPicks.length} consensus picks
+                </p>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };
@@ -854,17 +1114,10 @@ export default function AlgorithmComparisonDashboard() {
             </TabsContent>
             
             <TabsContent value="agreement">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Consensus Analysis</CardTitle>
-                  <CardDescription>
-                    Performance when algorithms agree vs. disagree
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <AgreementStats stats={data.agreementStats} />
-                </CardContent>
-              </Card>
+              <ConsensusPicks 
+                consensusPicks={data.consensusPicks} 
+                agreementStats={data.agreementStats}
+              />
             </TabsContent>
           </Tabs>
         </>
