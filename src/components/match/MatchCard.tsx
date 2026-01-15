@@ -190,14 +190,16 @@ export const MatchCard: React.FC<MatchCardProps> = ({ game, expanded = false }) 
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium">{prediction.recommended}</span>
               {prediction.reasoning && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Activity className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
-                  </TooltipTrigger>
-                  <TooltipContent side="top" className="max-w-xs text-xs">
-                    {prediction.reasoning}
-                  </TooltipContent>
-                </Tooltip>
+                <div onClick={(e) => e.stopPropagation()}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Activity className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-xs text-xs">
+                      {prediction.reasoning}
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
               )}
             </div>
             
