@@ -47,6 +47,7 @@ import {
   ChevronsRight,
   Keyboard,
   FileText,
+  ExternalLink,
 } from "lucide-react";
 import {
   Tooltip,
@@ -68,6 +69,7 @@ import {
   PredictionType 
 } from "@/hooks/useHistoricalPredictions";
 import PredictionCharts from "./PredictionCharts";
+import PredictionDetailsDialog from "./PredictionDetailsDialog";
 import { getTeamLogoUrl, getTeamInitials } from "@/utils/teamLogos";
 import { League } from "@/types/sports";
 import jsPDF from "jspdf";
@@ -97,11 +99,18 @@ const HistoricalPredictionsSection = () => {
   const [preLivePage, setPreLivePage] = useState(1);
   const [livePage, setLivePage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(25);
+  const [selectedPrediction, setSelectedPrediction] = useState<HistoricalPrediction | null>(null);
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   
   const chartsRef = useRef<HTMLDivElement>(null);
   const statsRef = useRef<HTMLDivElement>(null);
   
   const { data, isLoading, error, refetch } = useHistoricalPredictions(timeRange, predictionType);
+
+  const handlePredictionClick = useCallback((prediction: HistoricalPrediction) => {
+    setSelectedPrediction(prediction);
+    setDetailsDialogOpen(true);
+  }, []);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -921,7 +930,12 @@ const HistoricalPredictionsSection = () => {
               <div className="divide-y divide-border">
                 {paginatedPreLive.length > 0 ? (
                   paginatedPreLive.map(prediction => (
-                    <PredictionRow key={prediction.id} prediction={prediction} showTypeTag={false} />
+                    <PredictionRow 
+                      key={prediction.id} 
+                      prediction={prediction} 
+                      showTypeTag={false}
+                      onClick={() => handlePredictionClick(prediction)}
+                    />
                   ))
                 ) : (
                   <div className="text-center py-12 text-muted-foreground">
@@ -1047,7 +1061,12 @@ const HistoricalPredictionsSection = () => {
               <div className="divide-y divide-border">
                 {paginatedLive.length > 0 ? (
                   paginatedLive.map(prediction => (
-                    <PredictionRow key={prediction.id} prediction={prediction} showTypeTag={false} />
+                    <PredictionRow 
+                      key={prediction.id} 
+                      prediction={prediction} 
+                      showTypeTag={false}
+                      onClick={() => handlePredictionClick(prediction)}
+                    />
                   ))
                 ) : (
                   <div className="text-center py-12 text-muted-foreground">
@@ -1155,6 +1174,13 @@ const HistoricalPredictionsSection = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Prediction Details Dialog */}
+      <PredictionDetailsDialog
+        prediction={selectedPrediction}
+        open={detailsDialogOpen}
+        onOpenChange={setDetailsDialogOpen}
+      />
     </div>
   );
 };
@@ -1328,7 +1354,7 @@ const DataQualitySummary = ({ metrics }: {
   );
 };
 
-const PredictionRow = ({ prediction, showTypeTag = true }: { prediction: HistoricalPrediction; showTypeTag?: boolean }) => {
+const PredictionRow = ({ prediction, showTypeTag = true, onClick }: { prediction: HistoricalPrediction; showTypeTag?: boolean; onClick?: () => void }) => {
   const statusConfig = {
     won: {
       icon: CheckCircle2,
@@ -1412,7 +1438,13 @@ const PredictionRow = ({ prediction, showTypeTag = true }: { prediction: Histori
   };
 
   return (
-    <div className="flex items-center gap-3 p-3 hover:bg-muted/30 transition-colors">
+    <div 
+      className="flex items-center gap-3 p-3 hover:bg-muted/30 transition-colors cursor-pointer group"
+      onClick={onClick}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => e.key === 'Enter' && onClick?.()}
+    >
       {/* Status Icon */}
       <div className={cn("p-1.5 rounded-full shrink-0", status.bg)}>
         <StatusIcon className={cn("h-3.5 w-3.5", status.color)} />
@@ -1480,6 +1512,7 @@ const PredictionRow = ({ prediction, showTypeTag = true }: { prediction: Histori
         <Badge variant="secondary" className={cn("text-[10px]", status.color, status.bg)}>
           {status.label}
         </Badge>
+        <ExternalLink className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
       </div>
     </div>
   );
@@ -1515,3 +1548,5 @@ const HistoricalPredictionsSkeleton = () => (
 );
 
 export default HistoricalPredictionsSection;
+
+export { PredictionDetailsDialog };
