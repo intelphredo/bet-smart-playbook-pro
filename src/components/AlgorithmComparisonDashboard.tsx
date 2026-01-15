@@ -1020,6 +1020,265 @@ const ConfidenceBreakdown = ({ performanceByConfidence }: { performanceByConfide
     </div>
   );
 };
+
+// Performance Trends component - shows win rate over time
+const PerformanceTrends = ({ dailyTrends }: { dailyTrends: any[] }) => {
+  const [viewType, setViewType] = useState<'cumulative' | 'daily'>('cumulative');
+  
+  if (!dailyTrends || dailyTrends.length === 0) {
+    return (
+      <Card className="p-8 text-center">
+        <TrendingUp className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+        <p className="text-muted-foreground">No trend data available yet</p>
+      </Card>
+    );
+  }
+
+  // Get all algorithm IDs
+  const allAlgorithmIds = new Set<string>();
+  dailyTrends.forEach(day => {
+    day.algorithms.forEach((alg: any) => {
+      allAlgorithmIds.add(alg.algorithmId);
+    });
+  });
+  const algorithmIds = Array.from(allAlgorithmIds);
+
+  // Prepare chart data
+  const chartData = dailyTrends.map(day => {
+    const entry: any = {
+      date: day.displayDate,
+      fullDate: day.date,
+    };
+    day.algorithms.forEach((alg: any) => {
+      const config = getAlgorithmConfig(alg.algorithmId);
+      entry[`${config.shortName}_cumulative`] = alg.cumulativeWinRate;
+      entry[`${config.shortName}_daily`] = alg.winRate;
+      entry[`${config.shortName}_wins`] = alg.wins;
+      entry[`${config.shortName}_losses`] = alg.losses;
+      entry[`${config.shortName}_total`] = alg.total;
+    });
+    return entry;
+  });
+
+  // Calculate summary stats
+  const latestDay = dailyTrends[dailyTrends.length - 1];
+  const summaryStats = algorithmIds.map(algId => {
+    const config = getAlgorithmConfig(algId);
+    const latestAlg = latestDay?.algorithms.find((a: any) => a.algorithmId === algId);
+    const firstDay = dailyTrends[0];
+    const firstAlg = firstDay?.algorithms.find((a: any) => a.algorithmId === algId);
+    
+    const change = latestAlg && firstAlg 
+      ? latestAlg.cumulativeWinRate - (firstAlg.cumulativeWinRate || 50)
+      : 0;
+    
+    return {
+      algorithmId: algId,
+      config,
+      currentWinRate: latestAlg?.cumulativeWinRate || 0,
+      change,
+      trending: change > 0 ? 'up' : change < 0 ? 'down' : 'flat',
+    };
+  });
+
+  return (
+    <div className="space-y-6">
+      {/* Trend Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {summaryStats.map(({ algorithmId, config, currentWinRate, change, trending }) => (
+          <Card key={algorithmId} className={cn("relative overflow-hidden", config.bgColor)}>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="text-3xl">{config.icon}</span>
+                  <div>
+                    <p className="font-semibold">{config.name}</p>
+                    <p className="text-sm text-muted-foreground">Current Win Rate</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className={cn(
+                    "text-2xl font-bold",
+                    currentWinRate >= 55 ? "text-green-500" :
+                    currentWinRate >= 50 ? "text-yellow-500" : "text-red-500"
+                  )}>
+                    {currentWinRate.toFixed(1)}%
+                  </p>
+                  <div className={cn(
+                    "flex items-center justify-end gap-1 text-sm",
+                    trending === 'up' ? "text-green-500" :
+                    trending === 'down' ? "text-red-500" : "text-muted-foreground"
+                  )}>
+                    {trending === 'up' && <ArrowUpRight className="h-4 w-4" />}
+                    {trending === 'down' && <ArrowDownRight className="h-4 w-4" />}
+                    {trending === 'flat' && <Minus className="h-4 w-4" />}
+                    <span>{change >= 0 ? '+' : ''}{change.toFixed(1)}%</span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Main Trend Chart */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-primary" />
+                Win Rate Trends Over Time
+              </CardTitle>
+              <CardDescription>
+                Track how each algorithm's performance has evolved
+              </CardDescription>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant={viewType === 'cumulative' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setViewType('cumulative')}
+              >
+                Cumulative
+              </Button>
+              <Button
+                variant={viewType === 'daily' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setViewType('daily')}
+              >
+                Daily
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={400}>
+            <LineChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+              <XAxis 
+                dataKey="date" 
+                tick={{ fontSize: 12 }}
+                interval="preserveStartEnd"
+              />
+              <YAxis 
+                domain={viewType === 'cumulative' ? [40, 70] : [0, 100]} 
+                tickFormatter={(v) => `${v}%`}
+              />
+              <RechartsTooltip 
+                contentStyle={{ 
+                  backgroundColor: 'hsl(var(--card))',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '8px',
+                }}
+                formatter={(value: number, name: string) => {
+                  const cleanName = name.replace('_cumulative', '').replace('_daily', '');
+                  return [`${value.toFixed(1)}%`, cleanName];
+                }}
+                labelFormatter={(label) => `Date: ${label}`}
+              />
+              <Legend 
+                formatter={(value) => value.replace('_cumulative', '').replace('_daily', '')}
+              />
+              {algorithmIds.map((algId) => {
+                const config = getAlgorithmConfig(algId);
+                const dataKey = viewType === 'cumulative' 
+                  ? `${config.shortName}_cumulative` 
+                  : `${config.shortName}_daily`;
+                return (
+                  <Line 
+                    key={algId}
+                    type="monotone"
+                    dataKey={dataKey}
+                    name={`${config.shortName}_${viewType}`}
+                    stroke={config.color}
+                    strokeWidth={2}
+                    dot={{ fill: config.color, strokeWidth: 2, r: 3 }}
+                    activeDot={{ r: 6 }}
+                    connectNulls
+                  />
+                );
+              })}
+              {/* Reference line at 50% */}
+              <Line 
+                type="monotone"
+                dataKey={() => 50}
+                stroke="hsl(var(--muted-foreground))"
+                strokeDasharray="5 5"
+                strokeWidth={1}
+                dot={false}
+                name="Break Even"
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+
+      {/* Daily Activity Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Daily Performance Log</CardTitle>
+          <CardDescription>
+            Detailed win/loss record for each day
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="max-h-[300px] overflow-y-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Date</TableHead>
+                  {algorithmIds.map((algId) => {
+                    const config = getAlgorithmConfig(algId);
+                    return (
+                      <TableHead key={algId} className="text-center">
+                        {config.icon} {config.shortName}
+                      </TableHead>
+                    );
+                  })}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {[...dailyTrends].reverse().slice(0, 14).map((day) => (
+                  <TableRow key={day.date}>
+                    <TableCell className="font-medium">{day.displayDate}</TableCell>
+                    {algorithmIds.map((algId) => {
+                      const alg = day.algorithms.find((a: any) => a.algorithmId === algId);
+                      if (!alg || alg.total === 0) {
+                        return (
+                          <TableCell key={algId} className="text-center text-muted-foreground">
+                            -
+                          </TableCell>
+                        );
+                      }
+                      return (
+                        <TableCell key={algId} className="text-center">
+                          <div className="flex items-center justify-center gap-1">
+                            <span className="text-green-500 font-medium">{alg.wins}W</span>
+                            <span className="text-muted-foreground">-</span>
+                            <span className="text-red-500 font-medium">{alg.losses}L</span>
+                          </div>
+                          <div className={cn(
+                            "text-xs",
+                            alg.winRate >= 55 ? "text-green-500" :
+                            alg.winRate >= 50 ? "text-yellow-500" : "text-red-500"
+                          )}>
+                            {alg.winRate.toFixed(0)}%
+                          </div>
+                        </TableCell>
+                      );
+                    })}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
 const WinRateChart = ({ algorithms }: { algorithms: any[] }) => {
   const data = algorithms.map(alg => {
     const config = getAlgorithmConfig(alg.algorithmId);
@@ -1421,8 +1680,12 @@ export default function AlgorithmComparisonDashboard() {
           </div>
           
           {/* Detailed Analysis Tabs */}
-          <Tabs defaultValue="league" className="space-y-4">
+          <Tabs defaultValue="trends" className="space-y-4">
             <TabsList className="flex-wrap h-auto">
+              <TabsTrigger value="trends" className="gap-2">
+                <TrendingUp className="h-4 w-4" />
+                Trends
+              </TabsTrigger>
               <TabsTrigger value="league" className="gap-2">
                 <Medal className="h-4 w-4" />
                 By League
@@ -1444,6 +1707,10 @@ export default function AlgorithmComparisonDashboard() {
                 Consensus
               </TabsTrigger>
             </TabsList>
+            
+            <TabsContent value="trends">
+              <PerformanceTrends dailyTrends={data.dailyTrends} />
+            </TabsContent>
             
             <TabsContent value="league">
               <LeagueBreakdown performanceByLeague={data.performanceByContext.byLeague} />
