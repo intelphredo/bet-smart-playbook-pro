@@ -56,6 +56,7 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Minus,
+  Medal,
 } from "lucide-react";
 import { useAlgorithmComparison } from "@/hooks/useAlgorithmComparison";
 import { cn } from "@/lib/utils";
@@ -439,6 +440,249 @@ const WinRateChart = ({ algorithms }: { algorithms: any[] }) => {
   );
 };
 
+// League icons mapping
+const LEAGUE_ICONS: Record<string, string> = {
+  NBA: "🏀",
+  NFL: "🏈",
+  MLB: "⚾",
+  NHL: "🏒",
+  NCAAB: "🏀",
+  NCAAF: "🏈",
+  SOCCER: "⚽",
+  MLS: "⚽",
+  EPL: "⚽",
+  Unknown: "🎯",
+};
+
+// League breakdown component
+const LeagueBreakdown = ({ performanceByLeague }: { performanceByLeague: any[] }) => {
+  if (!performanceByLeague || performanceByLeague.length === 0) {
+    return (
+      <Card className="p-8 text-center">
+        <Medal className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+        <p className="text-muted-foreground">No league performance data available yet</p>
+      </Card>
+    );
+  }
+
+  // Get all algorithm IDs across leagues
+  const allAlgorithmIds = new Set<string>();
+  performanceByLeague.forEach(league => {
+    league.algorithms.forEach((alg: any) => {
+      allAlgorithmIds.add(alg.algorithmId);
+    });
+  });
+  const algorithmIds = Array.from(allAlgorithmIds);
+
+  // Prepare chart data
+  const chartData = performanceByLeague.map(league => {
+    const entry: any = {
+      league: league.league,
+      icon: LEAGUE_ICONS[league.league] || "🎯",
+    };
+    league.algorithms.forEach((alg: any) => {
+      const config = getAlgorithmConfig(alg.algorithmId);
+      entry[config.shortName] = alg.winRate;
+      entry[`${config.shortName}_total`] = alg.total;
+    });
+    return entry;
+  });
+
+  // Find best algorithm per league
+  const bestByLeague = performanceByLeague.map(league => {
+    const best = league.algorithms.reduce((prev: any, current: any) => 
+      (prev.winRate > current.winRate) ? prev : current
+    , league.algorithms[0]);
+    return {
+      league: league.league,
+      best: best ? getAlgorithmConfig(best.algorithmId) : null,
+      winRate: best?.winRate || 0,
+    };
+  });
+
+  return (
+    <div className="space-y-6">
+      {/* Best Algorithm by League Summary */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Award className="h-5 w-5 text-primary" />
+            Best Algorithm by Sport
+          </CardTitle>
+          <CardDescription>
+            Which model performs best in each league
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {bestByLeague.map(({ league, best, winRate }) => (
+              <div 
+                key={league}
+                className={cn(
+                  "p-4 rounded-lg border",
+                  best?.bgColor || "bg-muted/10"
+                )}
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-2xl">{LEAGUE_ICONS[league] || "🎯"}</span>
+                  <span className="font-semibold">{league}</span>
+                </div>
+                {best && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">
+                      {best.icon} {best.shortName}
+                    </span>
+                    <Badge variant="secondary" className={cn(
+                      winRate >= 55 ? "bg-green-500/20 text-green-600" :
+                      winRate >= 50 ? "bg-yellow-500/20 text-yellow-600" :
+                      "bg-red-500/20 text-red-600"
+                    )}>
+                      {winRate.toFixed(1)}%
+                    </Badge>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Chart Comparison */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Win Rate by League</CardTitle>
+          <CardDescription>
+            Compare algorithm performance across different sports
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={350}>
+            <BarChart data={chartData} layout="vertical">
+              <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+              <XAxis type="number" domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
+              <YAxis 
+                dataKey="league" 
+                type="category" 
+                width={80}
+                tickFormatter={(value) => `${LEAGUE_ICONS[value] || ""} ${value}`}
+              />
+              <RechartsTooltip 
+                contentStyle={{ 
+                  backgroundColor: 'hsl(var(--card))',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '8px',
+                }}
+                formatter={(value: number, name: string, props: any) => {
+                  const totalKey = `${name}_total`;
+                  const total = props.payload[totalKey];
+                  return [`${value.toFixed(1)}% (${total || 0} picks)`, name];
+                }}
+              />
+              <Legend />
+              {algorithmIds.map((algId) => {
+                const config = getAlgorithmConfig(algId);
+                return (
+                  <Bar 
+                    key={algId}
+                    dataKey={config.shortName} 
+                    name={config.shortName}
+                    fill={config.color}
+                    radius={[0, 4, 4, 0]}
+                  />
+                );
+              })}
+            </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+
+      {/* Detailed Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Detailed League Statistics</CardTitle>
+          <CardDescription>
+            Complete breakdown of each algorithm's performance per league
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>League</TableHead>
+                {algorithmIds.map((algId) => {
+                  const config = getAlgorithmConfig(algId);
+                  return (
+                    <TableHead key={algId} className="text-center">
+                      <span className="flex items-center justify-center gap-1">
+                        {config.icon} {config.shortName}
+                      </span>
+                    </TableHead>
+                  );
+                })}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {performanceByLeague.map((league) => {
+                // Find best algorithm for this league
+                const bestAlgId = league.algorithms.reduce((prev: any, curr: any) => 
+                  (prev.winRate > curr.winRate) ? prev : curr
+                , league.algorithms[0])?.algorithmId;
+
+                return (
+                  <TableRow key={league.league}>
+                    <TableCell className="font-medium">
+                      <span className="flex items-center gap-2">
+                        <span className="text-lg">{LEAGUE_ICONS[league.league] || "🎯"}</span>
+                        {league.league}
+                      </span>
+                    </TableCell>
+                    {algorithmIds.map((algId) => {
+                      const algData = league.algorithms.find((a: any) => a.algorithmId === algId);
+                      const isBest = algId === bestAlgId;
+                      
+                      if (!algData) {
+                        return (
+                          <TableCell key={algId} className="text-center text-muted-foreground">
+                            -
+                          </TableCell>
+                        );
+                      }
+
+                      return (
+                        <TableCell key={algId} className="text-center">
+                          <div className={cn(
+                            "inline-flex flex-col items-center p-2 rounded-lg",
+                            isBest && "bg-green-500/10 ring-1 ring-green-500/30"
+                          )}>
+                            <span className={cn(
+                              "font-bold",
+                              algData.winRate >= 55 ? "text-green-500" :
+                              algData.winRate >= 50 ? "text-yellow-500" :
+                              "text-red-500"
+                            )}>
+                              {algData.winRate.toFixed(1)}%
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {algData.total} picks
+                            </span>
+                            {isBest && (
+                              <Crown className="h-3 w-3 text-yellow-500 mt-1" />
+                            )}
+                          </div>
+                        </TableCell>
+                      );
+                    })}
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
 // Main dashboard component
 export default function AlgorithmComparisonDashboard() {
   const [days, setDays] = useState(30);
@@ -557,8 +801,12 @@ export default function AlgorithmComparisonDashboard() {
           </div>
           
           {/* Detailed Analysis Tabs */}
-          <Tabs defaultValue="chart" className="space-y-4">
-            <TabsList>
+          <Tabs defaultValue="league" className="space-y-4">
+            <TabsList className="flex-wrap h-auto">
+              <TabsTrigger value="league" className="gap-2">
+                <Medal className="h-4 w-4" />
+                By League
+              </TabsTrigger>
               <TabsTrigger value="chart" className="gap-2">
                 <BarChart3 className="h-4 w-4" />
                 Chart
@@ -572,6 +820,10 @@ export default function AlgorithmComparisonDashboard() {
                 Consensus
               </TabsTrigger>
             </TabsList>
+            
+            <TabsContent value="league">
+              <LeagueBreakdown performanceByLeague={data.performanceByContext.byLeague} />
+            </TabsContent>
             
             <TabsContent value="chart">
               <Card>
