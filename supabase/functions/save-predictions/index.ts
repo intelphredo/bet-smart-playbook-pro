@@ -9,6 +9,12 @@ const ALGORITHM_IDS = {
   STATISTICAL_EDGE: "85c48bbe-5b1a-4c1e-a0d5-e284e9e952f1",
 };
 
+const ALGORITHM_NAMES = {
+  [ALGORITHM_IDS.ML_POWER_INDEX]: "ML Power Index",
+  [ALGORITHM_IDS.VALUE_PICK_FINDER]: "Value Pick Finder",
+  [ALGORITHM_IDS.STATISTICAL_EDGE]: "Statistical Edge",
+};
+
 const ESPN_SPORT_MAP: Record<string, { sport: string; league: string }> = {
   NFL: { sport: "football", league: "nfl" },
   NBA: { sport: "basketball", league: "nba" },
@@ -51,15 +57,23 @@ interface ESPNEvent {
   }>;
 }
 
-// Simple prediction algorithm (server-side)
-function generatePrediction(
+interface AlgorithmPrediction {
+  recommended: "home" | "away";
+  confidence: number;
+  projectedHome: number;
+  projectedAway: number;
+}
+
+// ML Power Index - Emphasizes historical data and form
+function generateMLPowerIndexPrediction(
   homeTeam: string,
   awayTeam: string,
   homeOdds: number,
   awayOdds: number,
-  league: string
-): { recommended: "home" | "away"; confidence: number; projectedHome: number; projectedAway: number } {
-  // Convert American odds to implied probability
+  league: string,
+  homeRecord?: string,
+  awayRecord?: string
+): AlgorithmPrediction {
   const homeProb = homeOdds > 0 
     ? 100 / (homeOdds + 100) 
     : Math.abs(homeOdds) / (Math.abs(homeOdds) + 100);
@@ -67,14 +81,152 @@ function generatePrediction(
     ? 100 / (awayOdds + 100) 
     : Math.abs(awayOdds) / (Math.abs(awayOdds) + 100);
 
-  // Add small home advantage and randomness for variety
-  const homeAdvantage = 0.03;
-  const adjustedHomeProb = homeProb + homeAdvantage;
+  // ML Power Index puts more weight on records/form
+  let adjustedHomeProb = homeProb + 0.03; // Base home advantage
+  
+  // Parse records if available (e.g., "10-5")
+  if (homeRecord && awayRecord) {
+    const parseRecord = (r: string) => {
+      const parts = r.split("-").map(Number);
+      return parts.length >= 2 ? parts[0] / (parts[0] + parts[1]) : 0.5;
+    };
+    const homeWinPct = parseRecord(homeRecord);
+    const awayWinPct = parseRecord(awayRecord);
+    const recordDiff = homeWinPct - awayWinPct;
+    adjustedHomeProb += recordDiff * 0.15; // Higher weight on records
+  }
+
+  // League-specific adjustments for ML model
+  if (league === "NBA") adjustedHomeProb += 0.02;
+  else if (league === "NFL") adjustedHomeProb += 0.015;
+  else if (league === "MLB") adjustedHomeProb -= 0.01;
 
   const recommended = adjustedHomeProb >= 0.5 ? "home" : "away";
-  const confidence = Math.min(80, Math.max(50, Math.round((recommended === "home" ? adjustedHomeProb : awayProb) * 100)));
+  const rawConfidence = recommended === "home" ? adjustedHomeProb : (1 - adjustedHomeProb);
+  const confidence = Math.min(82, Math.max(48, Math.round(rawConfidence * 100)));
 
-  // Project scores based on league averages
+  const leagueScores: Record<string, { avg: number; variance: number }> = {
+    NBA: { avg: 112, variance: 8 },
+    NFL: { avg: 23, variance: 7 },
+    MLB: { avg: 4.5, variance: 2 },
+    NHL: { avg: 3, variance: 1.5 },
+    NCAAF: { avg: 28, variance: 10 },
+    NCAAB: { avg: 72, variance: 8 },
+    SOCCER: { avg: 1.3, variance: 0.8 },
+  };
+
+  const scores = leagueScores[league] || { avg: 100, variance: 10 };
+  const projectedHome = Math.round(scores.avg + (recommended === "home" ? scores.variance * 0.35 : -scores.variance * 0.25));
+  const projectedAway = Math.round(scores.avg + (recommended === "away" ? scores.variance * 0.35 : -scores.variance * 0.25));
+
+  return { recommended, confidence, projectedHome, projectedAway };
+}
+
+// Value Pick Finder - Focuses on finding betting value through odds analysis
+function generateValuePickPrediction(
+  homeTeam: string,
+  awayTeam: string,
+  homeOdds: number,
+  awayOdds: number,
+  league: string
+): AlgorithmPrediction {
+  const homeProb = homeOdds > 0 
+    ? 100 / (homeOdds + 100) 
+    : Math.abs(homeOdds) / (Math.abs(homeOdds) + 100);
+  const awayProb = awayOdds > 0 
+    ? 100 / (awayOdds + 100) 
+    : Math.abs(awayOdds) / (Math.abs(awayOdds) + 100);
+
+  // Value Pick Finder looks for market inefficiencies
+  // Higher confidence on underdogs when odds are close
+  const impliedTotal = homeProb + awayProb;
+  const vig = impliedTotal - 1;
+  
+  // Adjust for perceived value
+  const adjustedHomeProb = homeProb - (vig / 2);
+  const adjustedAwayProb = awayProb - (vig / 2);
+  
+  // Value algorithm slightly favors underdogs in close matchups
+  let valueAdjustment = 0;
+  if (Math.abs(homeOdds - awayOdds) < 50) {
+    // Close game - look for value on underdog
+    valueAdjustment = homeOdds > awayOdds ? 0.03 : -0.03;
+  }
+
+  const finalHomeProb = adjustedHomeProb + 0.02 + valueAdjustment; // Small home edge
+  
+  const recommended = finalHomeProb >= 0.5 ? "home" : "away";
+  const rawConfidence = recommended === "home" ? finalHomeProb : (1 - finalHomeProb);
+  const confidence = Math.min(78, Math.max(52, Math.round(rawConfidence * 100)));
+
+  const leagueScores: Record<string, { avg: number; variance: number }> = {
+    NBA: { avg: 112, variance: 9 },
+    NFL: { avg: 23, variance: 8 },
+    MLB: { avg: 4.5, variance: 2.5 },
+    NHL: { avg: 3, variance: 1.8 },
+    NCAAF: { avg: 28, variance: 11 },
+    NCAAB: { avg: 72, variance: 9 },
+    SOCCER: { avg: 1.3, variance: 1 },
+  };
+
+  const scores = leagueScores[league] || { avg: 100, variance: 10 };
+  const projectedHome = Math.round(scores.avg + (recommended === "home" ? scores.variance * 0.3 : -scores.variance * 0.2));
+  const projectedAway = Math.round(scores.avg + (recommended === "away" ? scores.variance * 0.3 : -scores.variance * 0.2));
+
+  return { recommended, confidence, projectedHome, projectedAway };
+}
+
+// Statistical Edge - Primary algorithm, considers situational factors
+function generateStatisticalEdgePrediction(
+  homeTeam: string,
+  awayTeam: string,
+  homeOdds: number,
+  awayOdds: number,
+  league: string,
+  homeRecord?: string,
+  awayRecord?: string
+): AlgorithmPrediction {
+  const homeProb = homeOdds > 0 
+    ? 100 / (homeOdds + 100) 
+    : Math.abs(homeOdds) / (Math.abs(homeOdds) + 100);
+  const awayProb = awayOdds > 0 
+    ? 100 / (awayOdds + 100) 
+    : Math.abs(awayOdds) / (Math.abs(awayOdds) + 100);
+
+  // Statistical Edge considers multiple factors
+  let adjustedHomeProb = homeProb;
+  
+  // 1. Home court/field advantage varies by sport
+  const homeAdvantages: Record<string, number> = {
+    NBA: 0.035,
+    NFL: 0.025,
+    MLB: 0.02,
+    NHL: 0.03,
+    NCAAF: 0.04,
+    NCAAB: 0.045,
+    SOCCER: 0.03,
+  };
+  adjustedHomeProb += homeAdvantages[league] || 0.03;
+  
+  // 2. Record analysis with moderate weight
+  if (homeRecord && awayRecord) {
+    const parseRecord = (r: string) => {
+      const parts = r.split("-").map(Number);
+      return parts.length >= 2 ? parts[0] / (parts[0] + parts[1]) : 0.5;
+    };
+    const homeWinPct = parseRecord(homeRecord);
+    const awayWinPct = parseRecord(awayRecord);
+    adjustedHomeProb += (homeWinPct - awayWinPct) * 0.1;
+  }
+  
+  // 3. Situational adjustment (simulated - in production would check rest days, travel, etc.)
+  const situationalBonus = Math.random() * 0.02 - 0.01; // -1% to +1%
+  adjustedHomeProb += situationalBonus;
+
+  const recommended = adjustedHomeProb >= 0.5 ? "home" : "away";
+  const rawConfidence = recommended === "home" ? adjustedHomeProb : (1 - adjustedHomeProb);
+  const confidence = Math.min(85, Math.max(50, Math.round(rawConfidence * 100)));
+
   const leagueScores: Record<string, { avg: number; variance: number }> = {
     NBA: { avg: 112, variance: 8 },
     NFL: { avg: 23, variance: 7 },
@@ -153,21 +305,26 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    console.log("Starting prediction save process");
+    console.log("Starting prediction save process for all 3 algorithms");
 
     // Get request body for optional parameters
     let targetLeagues = ["NBA", "NFL", "MLB", "NHL", "NCAAB", "NCAAF", "SOCCER"];
-    let algorithmId = ALGORITHM_IDS.STATISTICAL_EDGE;
+    let generateAllAlgorithms = true;
 
     if (req.method === "POST") {
       try {
         const body = await req.json();
         if (body.leagues) targetLeagues = body.leagues;
-        if (body.algorithmId) algorithmId = body.algorithmId;
+        if (body.generateAllAlgorithms !== undefined) generateAllAlgorithms = body.generateAllAlgorithms;
       } catch {
         // Use defaults
       }
     }
+
+    // Determine which algorithms to generate
+    const algorithmsToGenerate = generateAllAlgorithms 
+      ? [ALGORITHM_IDS.STATISTICAL_EDGE, ALGORITHM_IDS.ML_POWER_INDEX, ALGORITHM_IDS.VALUE_PICK_FINDER]
+      : [ALGORITHM_IDS.STATISTICAL_EDGE]; // Default to primary only
 
     // Fetch upcoming games from all leagues in parallel
     const gamePromises = targetLeagues.map(async (league) => {
@@ -178,7 +335,7 @@ Deno.serve(async (req) => {
     const gamesResults = await Promise.all(gamePromises);
     const allGames = gamesResults.flat();
 
-    console.log(`Found ${allGames.length} upcoming games`);
+    console.log(`Found ${allGames.length} upcoming games across ${targetLeagues.length} leagues`);
 
     if (allGames.length === 0) {
       return new Response(
@@ -193,21 +350,16 @@ Deno.serve(async (req) => {
       .from("algorithm_predictions")
       .select("match_id, algorithm_id")
       .in("match_id", matchIds)
-      .eq("algorithm_id", algorithmId);
+      .in("algorithm_id", algorithmsToGenerate);
 
     const existingSet = new Set(
       (existingPredictions || []).map((p) => `${p.match_id}-${p.algorithm_id}`)
     );
 
-    // Generate and save predictions for new games
+    // Generate and save predictions for new games - all 3 algorithms
     const predictionsToInsert: any[] = [];
 
     for (const { game, league } of allGames) {
-      const key = `${game.id}-${algorithmId}`;
-      if (existingSet.has(key)) {
-        continue; // Skip existing prediction
-      }
-
       const competition = game.competitions?.[0];
       if (!competition?.competitors) continue;
 
@@ -220,42 +372,66 @@ Deno.serve(async (req) => {
       const odds = competition.odds?.[0];
       const homeOdds = odds?.homeTeamOdds?.moneyLine || -110;
       const awayOdds = odds?.awayTeamOdds?.moneyLine || -110;
-
-      // Generate prediction
-      const prediction = generatePrediction(
-        homeTeam.team.displayName,
-        awayTeam.team.displayName,
-        homeOdds,
-        awayOdds,
-        league
-      );
-
-      const predictionText = prediction.recommended === "home" 
-        ? `${homeTeam.team.displayName} Win`
-        : `${awayTeam.team.displayName} Win`;
+      
+      // Get records if available
+      const homeRecord = homeTeam.records?.[0]?.summary;
+      const awayRecord = awayTeam.records?.[0]?.summary;
 
       const homeTeamName = homeTeam.team.displayName;
       const awayTeamName = awayTeam.team.displayName;
       const matchTitle = `${awayTeamName} @ ${homeTeamName}`;
 
-      predictionsToInsert.push({
-        match_id: game.id,
-        league,
-        algorithm_id: algorithmId,
-        prediction: predictionText,
-        confidence: prediction.confidence,
-        projected_score_home: prediction.projectedHome,
-        projected_score_away: prediction.projectedAway,
-        status: "pending",
-        is_live_prediction: false,
-        predicted_at: new Date().toISOString(),
-        home_team: homeTeamName,
-        away_team: awayTeamName,
-        match_title: matchTitle,
-      });
+      // Generate predictions for each algorithm
+      for (const algorithmId of algorithmsToGenerate) {
+        const key = `${game.id}-${algorithmId}`;
+        if (existingSet.has(key)) {
+          continue; // Skip existing prediction
+        }
+
+        let prediction: AlgorithmPrediction;
+        
+        switch (algorithmId) {
+          case ALGORITHM_IDS.ML_POWER_INDEX:
+            prediction = generateMLPowerIndexPrediction(
+              homeTeamName, awayTeamName, homeOdds, awayOdds, league, homeRecord, awayRecord
+            );
+            break;
+          case ALGORITHM_IDS.VALUE_PICK_FINDER:
+            prediction = generateValuePickPrediction(
+              homeTeamName, awayTeamName, homeOdds, awayOdds, league
+            );
+            break;
+          case ALGORITHM_IDS.STATISTICAL_EDGE:
+          default:
+            prediction = generateStatisticalEdgePrediction(
+              homeTeamName, awayTeamName, homeOdds, awayOdds, league, homeRecord, awayRecord
+            );
+            break;
+        }
+
+        const predictionText = prediction.recommended === "home" 
+          ? `${homeTeamName} Win`
+          : `${awayTeamName} Win`;
+
+        predictionsToInsert.push({
+          match_id: game.id,
+          league,
+          algorithm_id: algorithmId,
+          prediction: predictionText,
+          confidence: prediction.confidence,
+          projected_score_home: prediction.projectedHome,
+          projected_score_away: prediction.projectedAway,
+          status: "pending",
+          is_live_prediction: false,
+          predicted_at: new Date().toISOString(),
+          home_team: homeTeamName,
+          away_team: awayTeamName,
+          match_title: matchTitle,
+        });
+      }
     }
 
-    console.log(`Saving ${predictionsToInsert.length} new predictions`);
+    console.log(`Saving ${predictionsToInsert.length} new predictions across ${algorithmsToGenerate.length} algorithms`);
 
     if (predictionsToInsert.length > 0) {
       const { error: insertError } = await supabase
@@ -276,8 +452,9 @@ Deno.serve(async (req) => {
         success: true,
         data: {
           saved: predictionsToInsert.length,
-          skipped: allGames.length - predictionsToInsert.length,
+          skipped: (allGames.length * algorithmsToGenerate.length) - predictionsToInsert.length,
           leagues: targetLeagues,
+          algorithms: algorithmsToGenerate.map(id => ALGORITHM_NAMES[id]),
           duration_ms: duration,
         },
       }),

@@ -86,9 +86,22 @@ const TIME_RANGE_OPTIONS: { value: TimeRange; label: string }[] = [
 
 const ITEMS_PER_PAGE_OPTIONS = [10, 25, 50, 100];
 
+const ALGORITHM_IDS = {
+  ML_POWER_INDEX: "f4ce9fdc-c41a-4a5c-9f18-5d732674c5b8",
+  VALUE_PICK_FINDER: "3a7e2d9b-8c5f-4b1f-9e17-7b31a4dce6c2",
+  STATISTICAL_EDGE: "85c48bbe-5b1a-4c1e-a0d5-e284e9e952f1",
+};
+
+const ALGORITHM_DISPLAY = {
+  [ALGORITHM_IDS.ML_POWER_INDEX]: { name: "ML Power Index", icon: "🤖", color: "text-blue-500 bg-blue-500/10 border-blue-500/30" },
+  [ALGORITHM_IDS.VALUE_PICK_FINDER]: { name: "Value Pick Finder", icon: "💎", color: "text-green-500 bg-green-500/10 border-green-500/30" },
+  [ALGORITHM_IDS.STATISTICAL_EDGE]: { name: "Statistical Edge", icon: "📊", color: "text-purple-500 bg-purple-500/10 border-purple-500/30", primary: true },
+};
+
 const HistoricalPredictionsSection = () => {
   const [leagueFilter, setLeagueFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [algorithmFilter, setAlgorithmFilter] = useState<string>("all");
   const [teamFilter, setTeamFilter] = useState<string>("all");
   const [timeRange, setTimeRange] = useState<TimeRange>("14d");
   const [predictionType, setPredictionType] = useState<PredictionType>("all");
@@ -190,10 +203,14 @@ const HistoricalPredictionsSection = () => {
     predictions.flatMap(p => [p.home_team, p.away_team].filter(Boolean))
   )).sort() as string[];
 
+  // Get unique algorithms for filter
+  const algorithms = Array.from(new Set(predictions.map(p => p.algorithm_id).filter(Boolean))) as string[];
+
   // Filter predictions and reset pages when filters change
   const filteredPredictions = predictions.filter(p => {
     if (leagueFilter !== "all" && p.league !== leagueFilter) return false;
     if (statusFilter !== "all" && p.status !== statusFilter) return false;
+    if (algorithmFilter !== "all" && p.algorithm_id !== algorithmFilter) return false;
     if (settledOnly && p.status !== "won" && p.status !== "lost") return false;
     if (teamFilter !== "all") {
       const matchesTeam = p.home_team === teamFilter || p.away_team === teamFilter;
@@ -904,7 +921,23 @@ const HistoricalPredictionsSection = () => {
                   {preLivePredictions.length}
                 </Badge>
               </CardTitle>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <Select value={algorithmFilter} onValueChange={(v) => handleFilterChange(setAlgorithmFilter, v)}>
+                  <SelectTrigger className="w-[130px] h-7 text-xs">
+                    <SelectValue placeholder="Algorithm" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Algorithms</SelectItem>
+                    {Object.entries(ALGORITHM_DISPLAY).map(([id, { name, icon }]) => (
+                      <SelectItem key={id} value={id}>
+                        <span className="flex items-center gap-1">
+                          <span>{icon}</span>
+                          <span>{name}</span>
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <Select value={leagueFilter} onValueChange={(v) => handleFilterChange(setLeagueFilter, v)}>
                   <SelectTrigger className="w-[100px] h-7 text-xs">
                     <SelectValue placeholder="League" />
@@ -1479,8 +1512,24 @@ const PredictionRow = ({ prediction, showTypeTag = true, onClick }: { prediction
 
       {/* Main Content */}
       <div className="flex-1 min-w-0 space-y-1.5">
-        {/* League & Time Row */}
+        {/* Algorithm, League & Time Row */}
         <div className="flex items-center gap-2 flex-wrap">
+          {/* Algorithm Badge */}
+          {prediction.algorithm_id && ALGORITHM_DISPLAY[prediction.algorithm_id] && (
+            <Badge 
+              variant="outline" 
+              className={cn(
+                "text-[9px] shrink-0 px-1.5 py-0.5",
+                ALGORITHM_DISPLAY[prediction.algorithm_id].color
+              )}
+            >
+              <span className="mr-0.5">{ALGORITHM_DISPLAY[prediction.algorithm_id].icon}</span>
+              {ALGORITHM_DISPLAY[prediction.algorithm_id].name}
+              {ALGORITHM_DISPLAY[prediction.algorithm_id].primary && (
+                <span className="ml-1 text-[8px] opacity-70">★</span>
+              )}
+            </Badge>
+          )}
           <Badge variant="outline" className="text-[10px] shrink-0 px-1.5 py-0.5">
             {prediction.league || "Unknown"}
           </Badge>
@@ -1493,6 +1542,17 @@ const PredictionRow = ({ prediction, showTypeTag = true, onClick }: { prediction
               LIVE
             </Badge>
           )}
+          {/* Read-only indicator */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Badge variant="outline" className="text-[8px] px-1 py-0 opacity-60">
+                🔒
+              </Badge>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="text-xs">
+              AI predictions are read-only and cannot be edited
+            </TooltipContent>
+          </Tooltip>
         </div>
 
         {/* Team Matchup with Logos and Scores */}
