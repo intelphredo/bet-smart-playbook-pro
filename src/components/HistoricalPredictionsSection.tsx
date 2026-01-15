@@ -120,11 +120,15 @@ const HistoricalPredictionsSection = () => {
   
   const { data, isLoading, error, refetch } = useHistoricalPredictions(timeRange, predictionType);
 
+  const { predictions, stats } = data || { predictions: [], stats: null };
 
   const handlePredictionClick = useCallback((prediction: HistoricalPrediction) => {
+    console.log(`[HistoricalPredictions] Clicked prediction:`, prediction.match_id, prediction.algorithm_id);
+    const allAlgos = predictions.filter(p => p.match_id === prediction.match_id);
+    console.log(`[HistoricalPredictions] All algorithms for match:`, allAlgos.length, allAlgos.map(p => p.algorithm_id));
     setSelectedPrediction(prediction);
     setDetailsDialogOpen(true);
-  }, []);
+  }, [predictions]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -166,7 +170,7 @@ const HistoricalPredictionsSection = () => {
     }
   };
 
-  const { predictions, stats } = data || { predictions: [], stats: null };
+  // predictions and stats already destructured above after useHistoricalPredictions
 
   // Get all algorithm predictions for the same match
   const getAllAlgorithmPredictionsForMatch = useCallback((matchId: string): HistoricalPrediction[] => {
