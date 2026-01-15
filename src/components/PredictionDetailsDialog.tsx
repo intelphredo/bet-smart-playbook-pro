@@ -4,6 +4,7 @@ import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   CheckCircle2, 
   XCircle, 
@@ -18,7 +19,10 @@ import {
   MapPin,
   Calendar,
   BarChart3,
-  Info
+  Info,
+  Brain,
+  Gem,
+  ChartBar
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -28,9 +32,37 @@ import { League } from "@/types/sports";
 
 interface PredictionDetailsDialogProps {
   prediction: HistoricalPrediction | null;
+  allAlgorithmPredictions?: HistoricalPrediction[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
+
+const ALGORITHM_IDS = {
+  ML_POWER_INDEX: "f4ce9fdc-c41a-4a5c-9f18-5d732674c5b8",
+  VALUE_PICK_FINDER: "3a7e2d9b-8c5f-4b1f-9e17-7b31a4dce6c2",
+  STATISTICAL_EDGE: "85c48bbe-5b1a-4c1e-a0d5-e284e9e952f1",
+};
+
+const ALGORITHM_DISPLAY: Record<string, { name: string; icon: React.ReactNode; color: string; description: string }> = {
+  [ALGORITHM_IDS.ML_POWER_INDEX]: { 
+    name: "ML Power Index", 
+    icon: <Brain className="h-4 w-4" />, 
+    color: "text-blue-500 bg-blue-500/10 border-blue-500/30",
+    description: "Machine learning model analyzing team performance patterns and historical data"
+  },
+  [ALGORITHM_IDS.VALUE_PICK_FINDER]: { 
+    name: "Value Pick Finder", 
+    icon: <Gem className="h-4 w-4" />, 
+    color: "text-green-500 bg-green-500/10 border-green-500/30",
+    description: "Identifies high-value betting opportunities based on odds analysis"
+  },
+  [ALGORITHM_IDS.STATISTICAL_EDGE]: { 
+    name: "Statistical Edge", 
+    icon: <ChartBar className="h-4 w-4" />, 
+    color: "text-purple-500 bg-purple-500/10 border-purple-500/30",
+    description: "Primary algorithm using advanced statistical modeling for predictions"
+  },
+};
 
 const statusConfig = {
   won: { 
@@ -203,8 +235,66 @@ const generateAnalysis = (prediction: HistoricalPrediction) => {
   };
 };
 
+// Algorithm Prediction Card component
+const AlgorithmPredictionCard = ({ prediction }: { prediction: HistoricalPrediction }) => {
+  const algorithmInfo = prediction.algorithm_id ? ALGORITHM_DISPLAY[prediction.algorithm_id] : null;
+  const status = statusConfig[prediction.status as keyof typeof statusConfig] || statusConfig.pending;
+  const StatusIcon = status.icon;
+
+  if (!algorithmInfo) return null;
+
+  return (
+    <div className={cn(
+      "p-4 rounded-lg border",
+      algorithmInfo.color.replace("text-", "border-").split(" ")[2]
+    )}>
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <div className={cn("p-1.5 rounded-full", algorithmInfo.color.split(" ").slice(1).join(" "))}>
+            {algorithmInfo.icon}
+          </div>
+          <div>
+            <span className="font-medium text-sm">{algorithmInfo.name}</span>
+            {prediction.algorithm_id === ALGORITHM_IDS.STATISTICAL_EDGE && (
+              <Badge variant="outline" className="ml-2 text-[9px] px-1.5 py-0">Primary</Badge>
+            )}
+          </div>
+        </div>
+        <Badge className={cn("text-xs", status.color, status.bg)}>
+          <StatusIcon className="h-3 w-3 mr-1" />
+          {status.label}
+        </Badge>
+      </div>
+      
+      <p className="text-xs text-muted-foreground mb-3">{algorithmInfo.description}</p>
+      
+      <div className="space-y-2">
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-muted-foreground">Prediction:</span>
+          <span className="font-medium">{prediction.prediction || "N/A"}</span>
+        </div>
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-muted-foreground">Confidence:</span>
+          <span className="font-medium">{prediction.confidence || 50}%</span>
+        </div>
+        <Progress value={prediction.confidence || 50} className="h-1.5" />
+        
+        {prediction.projected_score_home !== null && prediction.projected_score_away !== null && (
+          <div className="flex items-center justify-between text-sm pt-1">
+            <span className="text-muted-foreground">Projected Score:</span>
+            <span className="font-medium">
+              {prediction.projected_score_away} - {prediction.projected_score_home}
+            </span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 export default function PredictionDetailsDialog({ 
   prediction, 
+  allAlgorithmPredictions = [],
   open, 
   onOpenChange 
 }: PredictionDetailsDialogProps) {
@@ -218,6 +308,15 @@ export default function PredictionDetailsDialog({
   const awayTeam = prediction.away_team || "Away Team";
   
   const analysis = generateAnalysis(prediction);
+
+  // Sort algorithm predictions with Statistical Edge first
+  const sortedAlgorithmPredictions = [...allAlgorithmPredictions].sort((a, b) => {
+    if (a.algorithm_id === ALGORITHM_IDS.STATISTICAL_EDGE) return -1;
+    if (b.algorithm_id === ALGORITHM_IDS.STATISTICAL_EDGE) return 1;
+    return 0;
+  });
+
+  const hasMultipleAlgorithms = sortedAlgorithmPredictions.length > 1;
 
   const getImpactColor = (impact: "positive" | "negative" | "neutral") => {
     switch (impact) {
@@ -325,22 +424,61 @@ export default function PredictionDetailsDialog({
               </div>
             </div>
 
-            {/* Prediction & Confidence */}
-            <div className="space-y-3">
-              <h3 className="font-semibold flex items-center gap-2">
-                <Target className="h-4 w-4 text-primary" />
-                Prediction
-              </h3>
-              <div className="p-4 border rounded-lg bg-card">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-lg font-bold">{prediction.prediction || "N/A"}</span>
-                  <Badge variant="secondary" className="text-sm">
-                    {prediction.confidence || 50}% Confidence
-                  </Badge>
-                </div>
-                <Progress value={prediction.confidence || 50} className="h-2" />
+            {/* Algorithm Predictions Section */}
+            {hasMultipleAlgorithms ? (
+              <div className="space-y-3">
+                <h3 className="font-semibold flex items-center gap-2">
+                  <BarChart3 className="h-4 w-4 text-primary" />
+                  Algorithm Predictions ({sortedAlgorithmPredictions.length})
+                </h3>
+                <Tabs defaultValue={ALGORITHM_IDS.STATISTICAL_EDGE} className="w-full">
+                  <TabsList className="grid w-full grid-cols-3 h-auto">
+                    {sortedAlgorithmPredictions.map((pred) => {
+                      const algoInfo = pred.algorithm_id ? ALGORITHM_DISPLAY[pred.algorithm_id] : null;
+                      const predStatus = statusConfig[pred.status as keyof typeof statusConfig] || statusConfig.pending;
+                      if (!algoInfo) return null;
+                      return (
+                        <TabsTrigger 
+                          key={pred.id} 
+                          value={pred.algorithm_id || ""}
+                          className="flex flex-col items-center gap-1 py-2 px-1 text-[10px] sm:text-xs"
+                        >
+                          <div className="flex items-center gap-1">
+                            {algoInfo.icon}
+                            <span className="hidden sm:inline">{algoInfo.name.split(" ")[0]}</span>
+                          </div>
+                          <Badge variant="outline" className={cn("text-[8px] px-1", predStatus.color)}>
+                            {predStatus.label}
+                          </Badge>
+                        </TabsTrigger>
+                      );
+                    })}
+                  </TabsList>
+                  {sortedAlgorithmPredictions.map((pred) => (
+                    <TabsContent key={pred.id} value={pred.algorithm_id || ""} className="mt-4">
+                      <AlgorithmPredictionCard prediction={pred} />
+                    </TabsContent>
+                  ))}
+                </Tabs>
               </div>
-            </div>
+            ) : (
+              /* Single Prediction - Original View */
+              <div className="space-y-3">
+                <h3 className="font-semibold flex items-center gap-2">
+                  <Target className="h-4 w-4 text-primary" />
+                  Prediction
+                </h3>
+                <div className="p-4 border rounded-lg bg-card">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-lg font-bold">{prediction.prediction || "N/A"}</span>
+                    <Badge variant="secondary" className="text-sm">
+                      {prediction.confidence || 50}% Confidence
+                    </Badge>
+                  </div>
+                  <Progress value={prediction.confidence || 50} className="h-2" />
+                </div>
+              </div>
+            )}
 
             {/* Summary */}
             <div className="space-y-3">
