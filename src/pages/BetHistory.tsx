@@ -23,7 +23,8 @@ import {
   Calendar,
   Zap,
   Award,
-  ExternalLink
+  ExternalLink,
+  Trophy
 } from 'lucide-react';
 import { useBetSlip } from '@/components/BetSlip/BetSlipContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -33,6 +34,7 @@ import { isDevMode } from '@/utils/devMode';
 import WeeklyPerformanceSummary from '@/components/WeeklyPerformanceSummary';
 import HistoricalPredictionsSection from '@/components/HistoricalPredictionsSection';
 import AlgorithmAccuracyDashboard from '@/components/AlgorithmAccuracyDashboard';
+import AlgorithmComparisonDashboard from '@/components/AlgorithmComparisonDashboard';
 import VirtualizedList from '@/components/VirtualizedList';
 import BetDetailsDialog from '@/components/BetDetailsDialog';
 
@@ -242,6 +244,10 @@ export default function BetHistory() {
               <Award className="h-4 w-4" />
               Accuracy
             </TabsTrigger>
+            <TabsTrigger value="compare" className="flex items-center gap-2">
+              <Trophy className="h-4 w-4" />
+              Compare
+            </TabsTrigger>
             {isAuthenticated && (
               <TabsTrigger value="summary" className="flex items-center gap-2">
                 <Calendar className="h-4 w-4" />
@@ -329,6 +335,10 @@ export default function BetHistory() {
 
           <TabsContent value="accuracy" className="mt-6">
             <AlgorithmAccuracyDashboard />
+          </TabsContent>
+
+          <TabsContent value="compare" className="mt-6">
+            <AlgorithmComparisonDashboard />
           </TabsContent>
 
           {isAuthenticated && (
