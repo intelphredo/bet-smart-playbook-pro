@@ -1,4 +1,3 @@
-
 import { Match } from "@/types/sports";
 import MatchOutcomeBadges from "./MatchOutcomeBadges";
 import MatchOutcomeReasoning from "./MatchOutcomeReasoning";
@@ -6,18 +5,7 @@ import { useUpdateAlgorithmResults } from "@/hooks/useUpdateAlgorithmResults";
 import { useSavePrediction } from "@/hooks/useSavePrediction";
 import { Button } from "./ui/button";
 import { useEffect, useState } from "react";
-
-/**
- * Utility function to determine prediction correctness
- */
-function isPredictionCorrect(match: any) {
-  if (!match.prediction || !match.score) return null;
-  const { recommended } = match.prediction;
-  if (recommended === "home" && match.score.home > match.score.away) return true;
-  if (recommended === "away" && match.score.away > match.score.home) return true;
-  if (recommended === "draw" && match.score.home === match.score.away) return true;
-  return false;
-}
+import { isPredictionCorrect } from "@/utils/predictions/isPredictionCorrect";
 
 interface Props {
   match: Match;

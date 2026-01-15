@@ -1,30 +1,13 @@
 import { SportLeague, SportradarStanding } from '@/types/sportradar';
 import { ESPN_STANDINGS_ENDPOINTS } from './espnConstants';
 import { mapESPNStandingsToSportradar } from './espnStandingsMappers';
+import { fetchWithTimeout } from '@/utils/network/fetchWithTimeout';
 
 // Cache for standings data
 const standingsCache: Map<SportLeague, { data: SportradarStanding[]; timestamp: number }> = new Map();
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
-// Fetch with timeout
-const fetchWithTimeout = async (url: string, timeout = 15000): Promise<Response> => {
-  const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), timeout);
-  
-  try {
-    const response = await fetch(url, { 
-      signal: controller.signal,
-      headers: {
-        'Accept': 'application/json',
-      }
-    });
-    clearTimeout(id);
-    return response;
-  } catch (error) {
-    clearTimeout(id);
-    throw error;
-  }
-};
+// Using shared fetchWithTimeout utility from @/utils/network/fetchWithTimeout
 
 // Fetch standings for a specific league from ESPN
 export const fetchESPNStandings = async (league: SportLeague): Promise<SportradarStanding[]> => {
