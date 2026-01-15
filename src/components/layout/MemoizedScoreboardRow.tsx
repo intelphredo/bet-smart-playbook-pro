@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { TeamLogoImage } from '@/components/ui/TeamLogoImage';
 import FavoriteButton from '@/components/FavoriteButton';
+import PredictionReasoningBadge from '@/components/PredictionReasoningBadge';
 import { format } from 'date-fns';
 import { Clock, Radio } from 'lucide-react';
 import { formatMoneylineOdds, getPrimaryOdds } from '@/utils/sportsbook';
@@ -61,7 +62,7 @@ const MemoizedScoreboardRow = memo(function MemoizedScoreboardRow({
     <div 
       onClick={handleClick}
       className={cn(
-        "grid grid-cols-[60px_1fr_auto_auto] gap-3 items-center px-4 py-3 cursor-pointer transition-all",
+        "grid grid-cols-[60px_1fr_auto_auto_auto] gap-3 items-center px-4 py-3 cursor-pointer transition-all",
         "hover:bg-primary/5 border-b border-border/30 last:border-b-0",
         isLive && "bg-destructive/5"
       )}
@@ -129,6 +130,13 @@ const MemoizedScoreboardRow = memo(function MemoizedScoreboardRow({
         </div>
       </div>
 
+      {/* AI Prediction */}
+      {!isFinished && match.prediction && (
+        <div className="hidden sm:block">
+          <PredictionReasoningBadge match={match} compact />
+        </div>
+      )}
+
       {/* Odds */}
       {showOdds && !isFinished && (
         <div className="flex flex-col gap-1 text-right text-xs text-muted-foreground min-w-[50px]">
@@ -156,6 +164,7 @@ const MemoizedScoreboardRow = memo(function MemoizedScoreboardRow({
     prevProps.match.score?.home === nextProps.match.score?.home &&
     prevProps.match.score?.away === nextProps.match.score?.away &&
     prevProps.match.score?.period === nextProps.match.score?.period &&
+    prevProps.match.prediction?.confidence === nextProps.match.prediction?.confidence &&
     prevProps.showOdds === nextProps.showOdds
   );
 });
