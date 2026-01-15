@@ -1,23 +1,32 @@
+/**
+ * Enhanced Prediction Engine
+ * 
+ * Comprehensive prediction algorithm that considers ALL relevant factors:
+ * - Team strength and record analysis
+ * - Home court/field advantage (league-specific)
+ * - Head-to-head historical matchups
+ * - Recent form and momentum (with streak detection)
+ * - Back-to-back game fatigue
+ * - Injury impact assessment
+ * - Rest days differential
+ * - Coaching matchup analysis
+ * 
+ * Generates confident, varied predictions with detailed reasoning.
+ */
 
 import { League, Match } from "@/types/sports";
-import { HistoricalData, TeamStrength } from "../types";
-import { calculateTeamStrength } from "../factors/teamStrength";
-import { calculateMomentumScore } from "../factors/momentum";
-import { getDynamicHomeAdvantage } from "../factors/homeAdvantage";
+import { HistoricalData } from "../types";
 import { projectScore } from "../factors/scoreProjection";
 import { generateMLBPrediction } from "../sport-specific/mlbPredictions";
-import { cachePrediction, hasCachedPrediction, getCachedPrediction } from "../cache/predictionCache";
+import { cachePrediction, hasCachedPrediction, getCachedPrediction, clearPredictionCache } from "../cache/predictionCache";
+import { runComprehensiveAnalysis, ComprehensiveAnalysis } from "../factors/comprehensiveFactors";
+import { generatePredictionReasoning, generateOneLiner } from "../factors/reasoningGenerator";
+
+// Re-export cache functions for external use
+export { clearPredictionCache };
 
 /**
- * Advanced prediction algorithm that considers multiple factors:
- * - Historical matchup data
- * - Team strengths (offense/defense)
- * - Home field advantage
- * - Recent form
- * - Injuries
- * - Weather conditions
- * 
- * Predictions are locked/cached per match by id, preventing fluctuation on re-calculation.
+ * Generate an advanced prediction with comprehensive factor analysis
  */
 export function generateAdvancedPrediction(
   match: Match, 
@@ -37,48 +46,52 @@ export function generateAdvancedPrediction(
     return generateMLBPrediction(match, historicalData);
   }
   
-  // Calculate team strengths based on available data
-  const homeTeamStrength = calculateTeamStrength(homeTeam, match.league);
-  const awayTeamStrength = calculateTeamStrength(awayTeam, match.league);
+  // Run comprehensive analysis
+  const analysis = runComprehensiveAnalysis(match);
   
-  // Base confidence calculation - START NEUTRAL at 50 (removed home team bias)
+  // Calculate base confidence from total impact
+  // Impact range is roughly -50 to +50, we map to confidence
+  const impactMagnitude = Math.abs(analysis.totalImpact);
+  
+  // Base confidence starts at 50 and scales with impact
   let confidence = 50;
   
-  // Factor 1: Team strength difference
-  const strengthDifference = homeTeamStrength.offense + homeTeamStrength.defense - 
-                            awayTeamStrength.offense - awayTeamStrength.defense;
-  confidence += strengthDifference * 0.25; // Increased weight for team strength
-  
-  // Factor 2: Dynamic home field advantage (varies by league and team performance)
-  const homeAdvantage = getDynamicHomeAdvantage(match.league, homeTeam);
-  confidence += homeAdvantage;
-  
-  // Factor 3: Historical matchup data (if available) - increased weight
-  if (historicalData && historicalData.totalGames > 0) {
-    const homeWinPct = historicalData.homeWins / historicalData.totalGames;
-    confidence += (homeWinPct * 100 - 50) * 0.25; // Increased weight for head-to-head
+  // Strong signals push confidence further from 50
+  if (impactMagnitude > 25) {
+    confidence = 50 + Math.min(30, impactMagnitude * 0.8);
+  } else if (impactMagnitude > 15) {
+    confidence = 50 + impactMagnitude * 0.7;
+  } else if (impactMagnitude > 8) {
+    confidence = 50 + impactMagnitude * 0.6;
+  } else {
+    confidence = 50 + impactMagnitude * 0.5;
   }
   
-  // Factor 4: Momentum - incorporate recent form more heavily
-  const homeTeamMomentum = calculateMomentumScore(homeTeam);
-  const awayTeamMomentum = calculateMomentumScore(awayTeam);
-  confidence += (homeTeamMomentum - awayTeamMomentum) * 0.20;
+  // Add confidence boost from aligned high-confidence factors
+  confidence += analysis.confidenceBoost;
   
-  // Determine recommended bet based on NEUTRAL stance
-  const homeTeamFavored = confidence >= 50;
-  const recommended = homeTeamFavored ? "home" : "away";
+  // Determine recommended pick
+  const recommended: 'home' | 'away' = analysis.totalImpact >= 0 ? 'home' : 'away';
   
+  // Ensure confidence reflects the magnitude of the edge
   // Adjust confidence to be within reasonable bounds
-  confidence = Math.max(40, Math.min(85, Math.abs(confidence)));
+  confidence = Math.max(42, Math.min(88, confidence));
   
-  // Calculate true probability (confidence / 100)
+  // For close games (low impact), keep confidence closer to 50
+  if (impactMagnitude < 5) {
+    confidence = Math.max(48, Math.min(55, confidence));
+  }
+  
+  // Calculate true probability
   const trueProbability = confidence / 100;
   
   // Calculate implied fair odds
   const impliedOdds = 1 / trueProbability;
   
   // Get current bookmaker odds for the recommended outcome
-  const bookmakerOdds = recommended === 'home' ? match.odds.homeWin : match.odds.awayWin;
+  const bookmakerOdds = recommended === 'home' 
+    ? (match.odds?.homeWin || 1.9) 
+    : (match.odds?.awayWin || 1.9);
   
   // Calculate Expected Value (EV)
   const b = bookmakerOdds - 1;
@@ -93,14 +106,47 @@ export function generateAdvancedPrediction(
   if (expectedValue > 0) {
     const fullKelly = ((b * p) - q) / b;
     kellyFraction = Math.max(0, fullKelly * 0.25); // 1/4 Kelly
-    kellyStakeUnits = kellyFraction * 100; // Assuming 100 units bankroll
+    kellyStakeUnits = kellyFraction * 100;
   }
   
-  // Project scores based on team strengths - balanced for both teams
-  const projectedHomeScore = projectScore(homeTeamStrength, awayTeamStrength, true, match.league);
-  const projectedAwayScore = projectScore(awayTeamStrength, homeTeamStrength, false, match.league);
+  // Calculate team strength from analysis for score projection
+  const homeStrengthScore = 50 + (analysis.totalImpact > 0 ? analysis.totalImpact * 0.5 : 0);
+  const awayStrengthScore = 50 + (analysis.totalImpact < 0 ? Math.abs(analysis.totalImpact) * 0.5 : 0);
   
-  // Update match prediction with sharp betting metrics
+  const teamStrengthHome = {
+    offense: Math.min(85, Math.max(35, homeStrengthScore)),
+    defense: Math.min(85, Math.max(35, homeStrengthScore)),
+    momentum: 50
+  };
+  
+  const teamStrengthAway = {
+    offense: Math.min(85, Math.max(35, awayStrengthScore)),
+    defense: Math.min(85, Math.max(35, awayStrengthScore)),
+    momentum: 50
+  };
+  
+  // Project scores
+  const projectedHomeScore = projectScore(teamStrengthHome, teamStrengthAway, true, match.league);
+  const projectedAwayScore = projectScore(teamStrengthAway, teamStrengthHome, false, match.league);
+  
+  // Generate reasoning
+  const reasoning = generatePredictionReasoning(
+    homeTeam.shortName || homeTeam.name,
+    awayTeam.shortName || awayTeam.name,
+    recommended,
+    Math.round(confidence),
+    analysis
+  );
+  
+  const oneLiner = generateOneLiner(
+    homeTeam.shortName || homeTeam.name,
+    awayTeam.shortName || awayTeam.name,
+    recommended,
+    Math.round(confidence),
+    analysis
+  );
+  
+  // Update match prediction with all metrics
   enhancedMatch.prediction = {
     recommended,
     confidence: Math.round(confidence),
@@ -113,8 +159,28 @@ export function generateAdvancedPrediction(
     expectedValue: Math.round(expectedValue * 10000) / 10000,
     evPercentage: Math.round(evPercentage * 100) / 100,
     kellyFraction: Math.round(kellyFraction * 10000) / 10000,
-    kellyStakeUnits: Math.round(kellyStakeUnits * 100) / 100
+    kellyStakeUnits: Math.round(kellyStakeUnits * 100) / 100,
+    // Enhanced reasoning fields
+    reasoning: oneLiner,
+    detailedReasoning: reasoning.summary + ' ' + reasoning.keyFactors.slice(0, 2).join('. '),
+    keyFactors: reasoning.keyFactors,
+    riskLevel: analysis.riskLevel,
+    warningFlags: reasoning.warningFlags,
+    analysisFactors: analysis.factors.map(f => ({
+      name: f.name,
+      impact: f.impact,
+      description: f.description,
+      favoredTeam: f.favoredTeam
+    }))
   };
+  
+  // Also update smartScore with reasoning
+  if (enhancedMatch.smartScore) {
+    enhancedMatch.smartScore.recommendation = {
+      ...enhancedMatch.smartScore.recommendation,
+      reasoning: oneLiner
+    };
+  }
   
   // Cache the prediction (lock it)
   return cachePrediction(enhancedMatch);
@@ -125,4 +191,12 @@ export function generateAdvancedPrediction(
  */
 export function applyAdvancedPredictions(matches: Match[]): Match[] {
   return matches.map(match => generateAdvancedPrediction(match));
+}
+
+/**
+ * Force regenerate predictions (clears cache first)
+ */
+export function regeneratePredictions(matches: Match[]): Match[] {
+  clearPredictionCache();
+  return applyAdvancedPredictions(matches);
 }

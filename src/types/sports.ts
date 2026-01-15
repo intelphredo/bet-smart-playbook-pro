@@ -71,20 +71,32 @@ export interface Match {
     };
     algorithmId?: string;
     // Sharp betting metrics
-    trueProbability?: number;      // Model's true win probability (0-1)
-    impliedOdds?: number;          // Fair odds based on true probability
-    expectedValue?: number;        // EV as decimal
-    evPercentage?: number;         // EV as percentage
-    kellyFraction?: number;        // Recommended Kelly stake (0-1)
-    kellyStakeUnits?: number;      // Recommended stake in units
-    clvPercentage?: number;        // Closing Line Value percentage
-    beatClosingLine?: boolean;     // Did prediction beat closing line
-    // Calibration metrics (from auto-recalibration system)
-    rawConfidence?: number;           // Original confidence before calibration
-    isCalibrated?: boolean;           // Whether calibration was applied
-    calibrationMultiplier?: number;   // Multiplier applied to confidence
-    meetsCalibrationThreshold?: boolean; // Whether it meets min threshold
-    isPaused?: boolean;               // Whether algorithm is paused
+    trueProbability?: number;
+    impliedOdds?: number;
+    expectedValue?: number;
+    evPercentage?: number;
+    kellyFraction?: number;
+    kellyStakeUnits?: number;
+    clvPercentage?: number;
+    beatClosingLine?: boolean;
+    // Calibration metrics
+    rawConfidence?: number;
+    isCalibrated?: boolean;
+    calibrationMultiplier?: number;
+    meetsCalibrationThreshold?: boolean;
+    isPaused?: boolean;
+    // Enhanced reasoning fields
+    reasoning?: string;
+    detailedReasoning?: string;
+    keyFactors?: string[];
+    riskLevel?: 'low' | 'medium' | 'high';
+    warningFlags?: string[];
+    analysisFactors?: Array<{
+      name: string;
+      impact: number;
+      description: string;
+      favoredTeam: 'home' | 'away' | 'neutral';
+    }>;
   };
   status: 'scheduled' | 'pre' | 'live' | 'finished';
   score?: {
