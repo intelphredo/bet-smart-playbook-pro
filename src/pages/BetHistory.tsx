@@ -22,7 +22,8 @@ import {
   Loader2,
   Calendar,
   Zap,
-  Award
+  Award,
+  ExternalLink
 } from 'lucide-react';
 import { useBetSlip } from '@/components/BetSlip/BetSlipContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -33,6 +34,7 @@ import WeeklyPerformanceSummary from '@/components/WeeklyPerformanceSummary';
 import HistoricalPredictionsSection from '@/components/HistoricalPredictionsSection';
 import AlgorithmAccuracyDashboard from '@/components/AlgorithmAccuracyDashboard';
 import VirtualizedList from '@/components/VirtualizedList';
+import BetDetailsDialog from '@/components/BetDetailsDialog';
 
 const statusConfig: Record<BetStatus, { icon: React.ElementType; color: string; label: string }> = {
   pending: { icon: Clock, color: 'text-yellow-500', label: 'Pending' },
@@ -45,15 +47,23 @@ const statusConfig: Record<BetStatus, { icon: React.ElementType; color: string; 
 // Memoized bet row component
 const BetRow = memo(function BetRow({ 
   bet, 
-  onSettle 
+  onSettle,
+  onClick
 }: { 
   bet: UserBet; 
   onSettle: (bet: UserBet, status: BetStatus) => void;
+  onClick: () => void;
 }) {
   const StatusIcon = statusConfig[bet.status].icon;
   
   return (
-    <div className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
+    <div 
+      className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-pointer group"
+      onClick={onClick}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => e.key === 'Enter' && onClick()}
+    >
       <div className="flex items-start gap-4">
         <StatusIcon className={`h-5 w-5 mt-0.5 ${statusConfig[bet.status].color}`} />
         <div>
@@ -71,40 +81,43 @@ const BetRow = memo(function BetRow({
           </p>
         </div>
       </div>
-      <div className="text-right">
-        <p className="font-medium">${bet.stake.toFixed(2)}</p>
-        {bet.status === 'pending' ? (
-          <div className="flex gap-1 mt-2">
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7 text-xs text-green-600 hover:bg-green-50 hover:text-green-700"
-              onClick={() => onSettle(bet, 'won')}
-            >
-              Won
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7 text-xs text-red-600 hover:bg-red-50 hover:text-red-700"
-              onClick={() => onSettle(bet, 'lost')}
-            >
-              Lost
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7 text-xs"
-              onClick={() => onSettle(bet, 'push')}
-            >
-              Push
-            </Button>
-          </div>
-        ) : bet.result_profit !== undefined ? (
-          <p className={`text-sm font-medium ${bet.result_profit >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-            {bet.result_profit >= 0 ? '+' : ''}{bet.result_profit.toFixed(2)}
-          </p>
-        ) : null}
+      <div className="flex items-center gap-3">
+        <div className="text-right">
+          <p className="font-medium">${bet.stake.toFixed(2)}</p>
+          {bet.status === 'pending' ? (
+            <div className="flex gap-1 mt-2" onClick={(e) => e.stopPropagation()}>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 text-xs text-green-600 hover:bg-green-50 hover:text-green-700"
+                onClick={() => onSettle(bet, 'won')}
+              >
+                Won
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 text-xs text-red-600 hover:bg-red-50 hover:text-red-700"
+                onClick={() => onSettle(bet, 'lost')}
+              >
+                Lost
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 text-xs"
+                onClick={() => onSettle(bet, 'push')}
+              >
+                Push
+              </Button>
+            </div>
+          ) : bet.result_profit !== undefined ? (
+            <p className={`text-sm font-medium ${bet.result_profit >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+              {bet.result_profit >= 0 ? '+' : ''}{bet.result_profit.toFixed(2)}
+            </p>
+          ) : null}
+        </div>
+        <ExternalLink className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
       </div>
     </div>
   );
@@ -145,6 +158,13 @@ export default function BetHistory() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<string>(!user && !devMode ? 'predictions' : 'bets');
+  const [selectedBet, setSelectedBet] = useState<UserBet | null>(null);
+  const [betDialogOpen, setBetDialogOpen] = useState(false);
+
+  const handleBetClick = useCallback((bet: UserBet) => {
+    setSelectedBet(bet);
+    setBetDialogOpen(true);
+  }, []);
 
   const filteredBets = useMemo(() => {
     return statusFilter === 'all' 
