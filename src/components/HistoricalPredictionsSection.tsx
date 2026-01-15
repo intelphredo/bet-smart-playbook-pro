@@ -1272,7 +1272,10 @@ const DataQualityBadge = ({ prediction }: { prediction: HistoricalPrediction }) 
   if (issues.length === 0) return null;
   
   return (
-    <div className="group relative">
+    <div 
+      className="group/badge relative"
+      onClick={(e) => e.stopPropagation()} // Prevent badge clicks from triggering row click
+    >
       <Badge 
         variant="outline" 
         className="text-[9px] px-1 py-0 border-amber-500/50 text-amber-500 bg-amber-500/10 cursor-help"
@@ -1280,7 +1283,7 @@ const DataQualityBadge = ({ prediction }: { prediction: HistoricalPrediction }) 
         <AlertTriangle className="h-2.5 w-2.5 mr-0.5" />
         {issues.length}
       </Badge>
-      <div className="absolute bottom-full right-0 mb-1 hidden group-hover:block z-50">
+      <div className="absolute bottom-full right-0 mb-1 hidden group-hover/badge:block z-50 pointer-events-none">
         <div className="bg-popover border rounded-md shadow-lg p-2 text-xs w-40">
           <p className="font-medium text-foreground mb-1">Data Issues:</p>
           <ul className="text-muted-foreground space-y-0.5">
@@ -1542,17 +1545,10 @@ const PredictionRow = ({ prediction, showTypeTag = true, onClick }: { prediction
               LIVE
             </Badge>
           )}
-          {/* Read-only indicator */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Badge variant="outline" className="text-[8px] px-1 py-0 opacity-60">
-                🔒
-              </Badge>
-            </TooltipTrigger>
-            <TooltipContent side="top" className="text-xs">
-              AI predictions are read-only and cannot be edited
-            </TooltipContent>
-          </Tooltip>
+          {/* Read-only indicator - pointer-events-none to not block row clicks */}
+          <Badge variant="outline" className="text-[8px] px-1 py-0 opacity-60 pointer-events-none" title="AI predictions are read-only and cannot be edited">
+            🔒
+          </Badge>
         </div>
 
         {/* Team Matchup with Logos and Scores */}

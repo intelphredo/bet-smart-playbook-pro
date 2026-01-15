@@ -152,46 +152,48 @@ const MemoizedScoreboardRow = memo(function MemoizedScoreboardRow({
       {/* AI Prediction - Enhanced */}
       {hasValidPrediction && (
         <div className="hidden sm:flex flex-col gap-1 items-end">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Badge 
-                variant="outline" 
-                className={cn(
-                  "text-[10px] h-5 px-2 cursor-help gap-1",
-                  getConfidenceStyle(prediction.confidence)
-                )}
-              >
-                <Zap className="h-3 w-3" />
-                {prediction.confidence}%
-              </Badge>
-            </TooltipTrigger>
-            <TooltipContent side="left" className="max-w-xs p-3">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold text-sm">AI Pick</span>
-                  <Badge variant="secondary" className="text-xs">
-                    {prediction.confidence}% conf
-                  </Badge>
-                </div>
-                <p className="text-sm font-medium">{prediction.recommended}</p>
-                {prediction.reasoning && (
-                  <p className="text-xs text-muted-foreground border-t pt-2">
-                    {prediction.reasoning}
-                  </p>
-                )}
-                <div className="grid grid-cols-2 gap-2 text-[10px] text-muted-foreground pt-1">
-                  <div className="flex items-center gap-1">
-                    <TrendingUp className="h-3 w-3 text-green-500" />
-                    <span>Momentum</span>
+          <div onClick={(e) => e.stopPropagation()}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge 
+                  variant="outline" 
+                  className={cn(
+                    "text-[10px] h-5 px-2 cursor-help gap-1",
+                    getConfidenceStyle(prediction.confidence)
+                  )}
+                >
+                  <Zap className="h-3 w-3" />
+                  {prediction.confidence}%
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent side="left" className="max-w-xs p-3">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-sm">AI Pick</span>
+                    <Badge variant="secondary" className="text-xs">
+                      {prediction.confidence}% conf
+                    </Badge>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <Target className="h-3 w-3 text-primary" />
-                    <span>Matchup</span>
+                  <p className="text-sm font-medium">{prediction.recommended}</p>
+                  {prediction.reasoning && (
+                    <p className="text-xs text-muted-foreground border-t pt-2">
+                      {prediction.reasoning}
+                    </p>
+                  )}
+                  <div className="grid grid-cols-2 gap-2 text-[10px] text-muted-foreground pt-1">
+                    <div className="flex items-center gap-1">
+                      <TrendingUp className="h-3 w-3 text-green-500" />
+                      <span>Momentum</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Target className="h-3 w-3 text-primary" />
+                      <span>Matchup</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </TooltipContent>
-          </Tooltip>
+              </TooltipContent>
+            </Tooltip>
+          </div>
           <Progress 
             value={prediction.confidence} 
             className="h-0.5 w-12" 
