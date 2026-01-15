@@ -120,6 +120,7 @@ const HistoricalPredictionsSection = () => {
   
   const { data, isLoading, error, refetch } = useHistoricalPredictions(timeRange, predictionType);
 
+
   const handlePredictionClick = useCallback((prediction: HistoricalPrediction) => {
     setSelectedPrediction(prediction);
     setDetailsDialogOpen(true);
@@ -166,6 +167,11 @@ const HistoricalPredictionsSection = () => {
   };
 
   const { predictions, stats } = data || { predictions: [], stats: null };
+
+  // Get all algorithm predictions for the same match
+  const getAllAlgorithmPredictionsForMatch = useCallback((matchId: string): HistoricalPrediction[] => {
+    return predictions.filter(p => p.match_id === matchId);
+  }, [predictions]);
 
   // Calculate data quality metrics
   const dataQualityMetrics = (() => {
@@ -220,7 +226,15 @@ const HistoricalPredictionsSection = () => {
   });
 
   // Split predictions by type
-  const preLivePredictions = filteredPredictions.filter(p => !p.is_live_prediction);
+  // For pre-live, only show primary algorithm (Statistical Edge) in the list
+  // unless user has specifically filtered by a different algorithm
+  const preLivePredictions = filteredPredictions.filter(p => {
+    if (p.is_live_prediction) return false;
+    // If algorithm filter is set to a specific algorithm, show that one
+    if (algorithmFilter !== "all") return true;
+    // Otherwise, only show the primary algorithm (Statistical Edge)
+    return p.algorithm_id === ALGORITHM_IDS.STATISTICAL_EDGE;
+  });
   const livePredictions = filteredPredictions.filter(p => p.is_live_prediction);
 
   // Pagination calculations
@@ -1218,6 +1232,7 @@ const HistoricalPredictionsSection = () => {
       {/* Prediction Details Dialog */}
       <PredictionDetailsDialog
         prediction={selectedPrediction}
+        allAlgorithmPredictions={selectedPrediction ? getAllAlgorithmPredictionsForMatch(selectedPrediction.match_id) : []}
         open={detailsDialogOpen}
         onOpenChange={setDetailsDialogOpen}
       />
