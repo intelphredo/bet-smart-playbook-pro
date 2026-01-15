@@ -307,7 +307,11 @@ export default function BetHistory() {
                     <VirtualizedList
                       items={filteredBets}
                       renderItem={(bet) => (
-                        <BetRow bet={bet} onSettle={handleSettleBet} />
+                        <BetRow 
+                          bet={bet} 
+                          onSettle={handleSettleBet}
+                          onClick={() => handleBetClick(bet)}
+                        />
                       )}
                       estimatedItemHeight={100}
                       maxHeight={600}
@@ -333,6 +337,13 @@ export default function BetHistory() {
             </TabsContent>
           )}
         </Tabs>
+
+        {/* Bet Details Dialog */}
+        <BetDetailsDialog
+          bet={selectedBet}
+          open={betDialogOpen}
+          onOpenChange={setBetDialogOpen}
+        />
       </main>
       <PageFooter />
     </div>
