@@ -31,6 +31,7 @@ import { AnimatedBadge } from "@/components/ui/AnimatedBadge";
 import { SpotlightHeader, UpcomingAlertsBadge } from "@/components/SpotlightValuePicks";
 import { useSmartNotifications } from "@/hooks/useSmartNotifications";
 import { RankingsTable } from "@/components/NCAAB";
+import { LiveScoresProvider } from "@/providers/LiveScoresProvider";
 
 import { 
   Radio, Clock, TrendingUp, RefreshCw, ChevronRight, 
@@ -182,6 +183,15 @@ const Index = () => {
     [filteredUpcoming, filteredLive]
   );
 
+  // All matches for live scores provider
+  const allMatchesForLiveScores = useMemo(() => 
+    [...filteredLive, ...filteredUpcoming, ...filteredFinished.slice(0, 20)],
+    [filteredLive, filteredUpcoming, filteredFinished]
+  );
+
+  // Get match IDs with user bets for priority polling
+  const matchesWithBets = useMemo<string[]>(() => [], []);
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <TopLoader isLoading={isLoading} />
@@ -194,8 +204,17 @@ const Index = () => {
         highConfidencePicks={highConfidencePicks}
       />
 
-      {/* Scores Ticker */}
-      <ScoreboardStrip matches={allScores.slice(0, 20)} />
+      {/* Live Scores Provider - Enables tiered polling for all matches */}
+      <LiveScoresProvider
+        matches={allMatchesForLiveScores}
+        matchesWithBets={matchesWithBets}
+        enabled={true}
+        onScoreChange={(matchId, score) => {
+          console.log(`[LiveScores] Score update for ${matchId}:`, score);
+        }}
+      >
+        {/* Scores Ticker */}
+        <ScoreboardStrip matches={allScores.slice(0, 20)} />
 
       {/* Main Content */}
       <main className="flex-1">
@@ -611,6 +630,7 @@ const Index = () => {
           </Tabs>
         </div>
       </main>
+      </LiveScoresProvider>
 
       <PageFooter />
     </div>
