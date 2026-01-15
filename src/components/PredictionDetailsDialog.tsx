@@ -309,14 +309,29 @@ export default function PredictionDetailsDialog({
   
   const analysis = generateAnalysis(prediction);
 
-  // Sort algorithm predictions with Statistical Edge first
-  const sortedAlgorithmPredictions = [...allAlgorithmPredictions].sort((a, b) => {
-    if (a.algorithm_id === ALGORITHM_IDS.STATISTICAL_EDGE) return -1;
-    if (b.algorithm_id === ALGORITHM_IDS.STATISTICAL_EDGE) return 1;
-    return 0;
-  });
+  // Debug: Log all algorithm predictions for this match
+  console.log(`[PredictionDetailsDialog] Match: ${prediction.match_id}, All predictions received:`, allAlgorithmPredictions.length, allAlgorithmPredictions.map(p => ({ id: p.id, algo: p.algorithm_id, pred: p.prediction })));
+
+  // Sort algorithm predictions with Statistical Edge first, filter to known algorithms only
+  const sortedAlgorithmPredictions = [...allAlgorithmPredictions]
+    .filter(p => p.algorithm_id && ALGORITHM_DISPLAY[p.algorithm_id]) // Only include known algorithms
+    .sort((a, b) => {
+      if (a.algorithm_id === ALGORITHM_IDS.STATISTICAL_EDGE) return -1;
+      if (b.algorithm_id === ALGORITHM_IDS.STATISTICAL_EDGE) return 1;
+      return 0;
+    });
+
+  console.log(`[PredictionDetailsDialog] Sorted/filtered predictions:`, sortedAlgorithmPredictions.length, sortedAlgorithmPredictions.map(p => ({ algo: p.algorithm_id, pred: p.prediction })));
 
   const hasMultipleAlgorithms = sortedAlgorithmPredictions.length > 1;
+  
+  // Use first available algorithm as default (Statistical Edge if available, otherwise first in sorted list)
+  const defaultAlgorithmId = sortedAlgorithmPredictions.length > 0 
+    ? (sortedAlgorithmPredictions.find(p => p.algorithm_id === ALGORITHM_IDS.STATISTICAL_EDGE)?.algorithm_id 
+       || sortedAlgorithmPredictions[0].algorithm_id || "")
+    : "";
+  
+  console.log(`[PredictionDetailsDialog] hasMultipleAlgorithms: ${hasMultipleAlgorithms}, defaultAlgorithmId: ${defaultAlgorithmId}`);
 
   const getImpactColor = (impact: "positive" | "negative" | "neutral") => {
     switch (impact) {
@@ -336,8 +351,8 @@ export default function PredictionDetailsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
-        <DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col p-0">
+        <DialogHeader className="px-6 pt-6 pb-4 border-b shrink-0">
           <div className="flex items-center gap-3">
             <Badge variant="outline" className="text-xs">
               {prediction.league || "Unknown"}
@@ -352,6 +367,11 @@ export default function PredictionDetailsDialog({
                 Live Pick
               </Badge>
             )}
+            {hasMultipleAlgorithms && (
+              <Badge variant="outline" className="text-xs border-primary/30 text-primary">
+                {sortedAlgorithmPredictions.length} Algorithms
+              </Badge>
+            )}
           </div>
           <DialogTitle className="text-xl mt-2">
             {awayTeam} @ {homeTeam}
@@ -362,8 +382,8 @@ export default function PredictionDetailsDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 pr-4">
-          <div className="space-y-6 pb-4">
+        <ScrollArea className="flex-1 min-h-0 px-6">
+          <div className="space-y-6 py-4">
             {/* Team Matchup */}
             <div className="flex items-center justify-center gap-6 p-4 bg-muted/30 rounded-lg">
               <div className="text-center">
@@ -431,7 +451,7 @@ export default function PredictionDetailsDialog({
                   <BarChart3 className="h-4 w-4 text-primary" />
                   Algorithm Predictions ({sortedAlgorithmPredictions.length})
                 </h3>
-                <Tabs defaultValue={ALGORITHM_IDS.STATISTICAL_EDGE} className="w-full">
+                <Tabs defaultValue={defaultAlgorithmId} className="w-full">
                   <TabsList className="grid w-full grid-cols-3 h-auto">
                     {sortedAlgorithmPredictions.map((pred) => {
                       const algoInfo = pred.algorithm_id ? ALGORITHM_DISPLAY[pred.algorithm_id] : null;
@@ -561,6 +581,16 @@ export default function PredictionDetailsDialog({
             </div>
           </div>
         </ScrollArea>
+        
+        {/* Footer with close hint */}
+        <div className="px-6 py-3 border-t shrink-0 bg-muted/30">
+          <p className="text-xs text-muted-foreground text-center">
+            {hasMultipleAlgorithms 
+              ? `Viewing ${sortedAlgorithmPredictions.length} algorithm predictions for this match`
+              : "Click outside or press Escape to close"
+            }
+          </p>
+        </div>
       </DialogContent>
     </Dialog>
   );
