@@ -121,15 +121,22 @@ const HistoricalPredictionsSection = () => {
   const handleFetchNewPredictions = async () => {
     setIsFetchingPredictions(true);
     try {
+      // Include all supported leagues for comprehensive prediction refresh
+      const allLeagues = ['NBA', 'NFL', 'MLB', 'NHL', 'NCAAB', 'NCAAF', 'SOCCER'];
+      
       const { data, error } = await supabase.functions.invoke('save-predictions', {
-        body: { leagues: ['NBA', 'NFL', 'MLB', 'NHL'] }
+        body: { leagues: allLeagues, forceRefresh: true }
       });
       
       if (error) throw error;
       
       if (data?.success) {
-        toast.success(`Fetched ${data.data.saved} new predictions`, {
-          description: `Skipped ${data.data.skipped} existing predictions`
+        const savedCount = data.data.saved || 0;
+        const skippedCount = data.data.skipped || 0;
+        const leagueList = data.data.leagues?.join(', ') || allLeagues.join(', ');
+        
+        toast.success(`Fetched ${savedCount} new predictions`, {
+          description: `From ${leagueList}. Skipped ${skippedCount} existing.`
         });
         await refetch();
       } else {
@@ -926,7 +933,7 @@ const HistoricalPredictionsSection = () => {
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            <ScrollArea className="h-[450px]">
+            <ScrollArea className="h-[calc(100vh-450px)] min-h-[300px] max-h-[600px]">
               <div className="divide-y divide-border">
                 {paginatedPreLive.length > 0 ? (
                   paginatedPreLive.map(prediction => (
@@ -1057,7 +1064,7 @@ const HistoricalPredictionsSection = () => {
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            <ScrollArea className="h-[450px]">
+            <ScrollArea className="h-[calc(100vh-450px)] min-h-[300px] max-h-[600px]">
               <div className="divide-y divide-border">
                 {paginatedLive.length > 0 ? (
                   paginatedLive.map(prediction => (
@@ -1437,82 +1444,132 @@ const PredictionRow = ({ prediction, showTypeTag = true, onClick }: { prediction
     );
   };
 
+  // Calculate confidence level for styling
+  const getConfidenceLevel = (conf: number | null) => {
+    if (!conf) return 'low';
+    if (conf >= 70) return 'high';
+    if (conf >= 60) return 'medium';
+    return 'low';
+  };
+
+  const confidenceLevel = getConfidenceLevel(prediction.confidence);
+  const confidenceColors = {
+    high: 'text-green-500 bg-green-500/10 border-green-500/30',
+    medium: 'text-primary bg-primary/10 border-primary/30',
+    low: 'text-yellow-500 bg-yellow-500/10 border-yellow-500/30',
+  };
+
+  // Calculate accuracy rating display
+  const accuracyDisplay = prediction.accuracy_rating !== null 
+    ? `${Math.round(prediction.accuracy_rating)}%` 
+    : null;
+
   return (
     <div 
-      className="flex items-center gap-3 p-3 hover:bg-muted/30 transition-colors cursor-pointer group"
+      className="flex items-center gap-3 p-4 hover:bg-muted/30 transition-colors cursor-pointer group border-l-2 border-transparent hover:border-primary/50"
       onClick={onClick}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => e.key === 'Enter' && onClick?.()}
     >
       {/* Status Icon */}
-      <div className={cn("p-1.5 rounded-full shrink-0", status.bg)}>
-        <StatusIcon className={cn("h-3.5 w-3.5", status.color)} />
+      <div className={cn("p-2 rounded-full shrink-0", status.bg)}>
+        <StatusIcon className={cn("h-4 w-4", status.color)} />
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 min-w-0">
-        {/* Match Title with Teams */}
-        <div className="flex items-center gap-1.5 mb-0.5">
-          <Badge variant="outline" className="text-[9px] shrink-0 px-1.5 py-0">
+      <div className="flex-1 min-w-0 space-y-1.5">
+        {/* League & Time Row */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <Badge variant="outline" className="text-[10px] shrink-0 px-1.5 py-0.5">
             {prediction.league || "Unknown"}
           </Badge>
+          <span className="text-[10px] text-muted-foreground">
+            {format(new Date(prediction.predicted_at), "MMM d, h:mm a")}
+          </span>
+          {prediction.is_live_prediction && (
+            <Badge variant="outline" className="text-[9px] border-orange-500/30 text-orange-500 px-1.5 py-0">
+              <Radio className="h-2.5 w-2.5 mr-0.5 animate-pulse" />
+              LIVE
+            </Badge>
+          )}
         </div>
 
         {/* Team Matchup with Logos and Scores */}
-        <div className="flex items-center gap-1.5 text-xs">
-          <TeamLogo teamName={teams.away} />
-          <span className="font-medium truncate max-w-[80px]">{teams.away}</span>
-          {hasActualScores ? (
-            <span className={cn(
-              "font-bold tabular-nums text-sm",
-              prediction.actual_score_away! > prediction.actual_score_home! ? "text-green-500" : "text-muted-foreground"
-            )}>
-              {prediction.actual_score_away}
-            </span>
-          ) : hasProjectedScores && (
-            <span className="text-muted-foreground/60 tabular-nums text-xs italic">
-              ({prediction.projected_score_away})
-            </span>
-          )}
-          <span className="text-muted-foreground">@</span>
-          <TeamLogo teamName={teams.home} />
-          <span className="font-medium truncate max-w-[80px]">{teams.home}</span>
-          {hasActualScores ? (
-            <span className={cn(
-              "font-bold tabular-nums text-sm",
-              prediction.actual_score_home! > prediction.actual_score_away! ? "text-green-500" : "text-muted-foreground"
-            )}>
-              {prediction.actual_score_home}
-            </span>
-          ) : hasProjectedScores && (
-            <span className="text-muted-foreground/60 tabular-nums text-xs italic">
-              ({prediction.projected_score_home})
-            </span>
-          )}
+        <div className="flex items-center gap-2 text-sm">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <TeamLogo teamName={teams.away} size="md" />
+            <span className="font-semibold truncate max-w-[100px]">{teams.away}</span>
+            {hasActualScores ? (
+              <span className={cn(
+                "font-bold tabular-nums text-base ml-1",
+                prediction.actual_score_away! > prediction.actual_score_home! ? "text-green-500" : "text-muted-foreground"
+              )}>
+                {prediction.actual_score_away}
+              </span>
+            ) : hasProjectedScores && (
+              <span className="text-muted-foreground/60 tabular-nums text-xs italic ml-1">
+                ({prediction.projected_score_away})
+              </span>
+            )}
+          </div>
+          
+          <span className="text-muted-foreground font-medium">@</span>
+          
+          <div className="flex items-center gap-1.5 min-w-0">
+            <TeamLogo teamName={teams.home} size="md" />
+            <span className="font-semibold truncate max-w-[100px]">{teams.home}</span>
+            {hasActualScores ? (
+              <span className={cn(
+                "font-bold tabular-nums text-base ml-1",
+                prediction.actual_score_home! > prediction.actual_score_away! ? "text-green-500" : "text-muted-foreground"
+              )}>
+                {prediction.actual_score_home}
+              </span>
+            ) : hasProjectedScores && (
+              <span className="text-muted-foreground/60 tabular-nums text-xs italic ml-1">
+                ({prediction.projected_score_home})
+              </span>
+            )}
+          </div>
         </div>
 
-        {/* Prediction & Metadata */}
-        <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-0.5">
-          <span className="font-medium text-foreground/80">{prediction.prediction}</span>
-          <span>•</span>
-          <span>{format(new Date(prediction.predicted_at), "MMM d, HH:mm")}</span>
+        {/* Prediction & Confidence Row */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <Badge variant="outline" className="text-[10px] font-medium">
+            <Zap className="h-3 w-3 mr-1 text-primary" />
+            {prediction.prediction}
+          </Badge>
+          
           {prediction.confidence && (
-            <>
-              <span>•</span>
-              <span>{prediction.confidence}%</span>
-            </>
+            <Badge 
+              variant="outline" 
+              className={cn("text-[10px]", confidenceColors[confidenceLevel])}
+            >
+              <Target className="h-3 w-3 mr-1" />
+              {prediction.confidence}% conf
+            </Badge>
+          )}
+          
+          {accuracyDisplay && (
+            <Badge variant="outline" className="text-[10px] border-blue-500/30 text-blue-500">
+              <BarChart3 className="h-3 w-3 mr-1" />
+              {accuracyDisplay} accuracy
+            </Badge>
           )}
         </div>
       </div>
 
-      {/* Data Quality Badge & Status Badge */}
-      <div className="flex items-center gap-1.5 shrink-0">
+      {/* Right Side - Status & Actions */}
+      <div className="flex flex-col items-end gap-1.5 shrink-0">
         {hasDataIssues && <DataQualityBadge prediction={prediction} />}
-        <Badge variant="secondary" className={cn("text-[10px]", status.color, status.bg)}>
+        <Badge variant="secondary" className={cn("text-xs font-medium", status.color, status.bg)}>
           {status.label}
         </Badge>
-        <ExternalLink className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <span className="text-[9px] text-muted-foreground">View details</span>
+          <ExternalLink className="h-3 w-3 text-muted-foreground" />
+        </div>
       </div>
     </div>
   );
