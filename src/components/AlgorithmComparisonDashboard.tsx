@@ -60,6 +60,7 @@ import {
   CheckCheck,
   Clock,
   Star,
+  Gauge,
 } from "lucide-react";
 import { useAlgorithmComparison } from "@/hooks/useAlgorithmComparison";
 import { cn } from "@/lib/utils";
@@ -659,7 +660,366 @@ const ConsensusPicks = ({
   );
 };
 
-// Win rate comparison chart
+// Confidence range icons
+const CONFIDENCE_ICONS: Record<string, { icon: string; color: string; label: string }> = {
+  "50-59%": { icon: "🔵", color: "text-blue-500", label: "Low Confidence" },
+  "60-69%": { icon: "🟡", color: "text-yellow-500", label: "Medium Confidence" },
+  "70-79%": { icon: "🟠", color: "text-orange-500", label: "High Confidence" },
+  "80%+": { icon: "🔴", color: "text-red-500", label: "Very High Confidence" },
+};
+
+// Confidence Breakdown component
+const ConfidenceBreakdown = ({ performanceByConfidence }: { performanceByConfidence: any[] }) => {
+  if (!performanceByConfidence || performanceByConfidence.length === 0) {
+    return (
+      <Card className="p-8 text-center">
+        <Gauge className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+        <p className="text-muted-foreground">No confidence breakdown data available yet</p>
+      </Card>
+    );
+  }
+
+  // Get all algorithm IDs
+  const allAlgorithmIds = new Set<string>();
+  performanceByConfidence.forEach(conf => {
+    conf.algorithms.forEach((alg: any) => {
+      allAlgorithmIds.add(alg.algorithmId);
+    });
+  });
+  const algorithmIds = Array.from(allAlgorithmIds);
+
+  // Prepare chart data
+  const chartData = performanceByConfidence.map(conf => {
+    const entry: any = {
+      range: conf.range,
+      ...CONFIDENCE_ICONS[conf.range],
+    };
+    conf.algorithms.forEach((alg: any) => {
+      const config = getAlgorithmConfig(alg.algorithmId);
+      entry[config.shortName] = alg.winRate;
+      entry[`${config.shortName}_total`] = alg.total;
+    });
+    return entry;
+  });
+
+  // Find best algorithm per confidence range
+  const bestByConfidence = performanceByConfidence.map(conf => {
+    const best = conf.algorithms.reduce((prev: any, current: any) => 
+      (prev.winRate > current.winRate) ? prev : current
+    , conf.algorithms[0]);
+    return {
+      range: conf.range,
+      best: best ? getAlgorithmConfig(best.algorithmId) : null,
+      winRate: best?.winRate || 0,
+      total: best?.total || 0,
+    };
+  });
+
+  // Calculate overall insights
+  const highConfidencePerformance = performanceByConfidence.find(c => c.range === "80%+" || c.range === "70-79%");
+  const lowConfidencePerformance = performanceByConfidence.find(c => c.range === "50-59%");
+
+  return (
+    <div className="space-y-6">
+      {/* Key Insight Banner */}
+      <Card className="bg-gradient-to-r from-purple-500/10 via-indigo-500/10 to-blue-500/10 border-purple-500/30">
+        <CardContent className="py-6">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-full bg-purple-500/20 flex items-center justify-center">
+              <Gauge className="h-6 w-6 text-purple-500" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-lg">Confidence Calibration Insight</h3>
+              <p className="text-sm text-muted-foreground">
+                {highConfidencePerformance && lowConfidencePerformance ? (
+                  <>
+                    High confidence picks (70%+) have a{" "}
+                    <span className="font-semibold text-green-500">
+                      {((highConfidencePerformance.algorithms[0]?.winRate || 0) - 
+                        (lowConfidencePerformance.algorithms[0]?.winRate || 0)).toFixed(1)}%
+                    </span>{" "}
+                    better win rate than low confidence picks on average
+                  </>
+                ) : (
+                  "Track more predictions to see calibration insights"
+                )}
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Best Algorithm by Confidence Range */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Award className="h-5 w-5 text-primary" />
+            Best Algorithm by Confidence Level
+          </CardTitle>
+          <CardDescription>
+            Which model performs best at each confidence tier
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {bestByConfidence.map(({ range, best, winRate, total }) => {
+              const confInfo = CONFIDENCE_ICONS[range] || { icon: "🎯", color: "text-muted-foreground", label: range };
+              return (
+                <div 
+                  key={range}
+                  className={cn(
+                    "p-4 rounded-lg border",
+                    best?.bgColor || "bg-muted/10"
+                  )}
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-2xl">{confInfo.icon}</span>
+                    <div>
+                      <span className="font-semibold block">{range}</span>
+                      <span className="text-xs text-muted-foreground">{confInfo.label}</span>
+                    </div>
+                  </div>
+                  {best && (
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">
+                          {best.icon} {best.shortName}
+                        </span>
+                        <Crown className="h-4 w-4 text-yellow-500" />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <Badge variant="secondary" className={cn(
+                          winRate >= 55 ? "bg-green-500/20 text-green-600" :
+                          winRate >= 50 ? "bg-yellow-500/20 text-yellow-600" :
+                          "bg-red-500/20 text-red-600"
+                        )}>
+                          {winRate.toFixed(1)}% WR
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">{total} picks</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Chart Comparison */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Win Rate by Confidence Range</CardTitle>
+          <CardDescription>
+            Compare how each algorithm performs at different confidence levels
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+              <XAxis 
+                dataKey="range" 
+                tickFormatter={(value) => `${CONFIDENCE_ICONS[value]?.icon || ""} ${value}`}
+              />
+              <YAxis domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
+              <RechartsTooltip 
+                contentStyle={{ 
+                  backgroundColor: 'hsl(var(--card))',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '8px',
+                }}
+                formatter={(value: number, name: string, props: any) => {
+                  const totalKey = `${name}_total`;
+                  const total = props.payload[totalKey];
+                  return [`${value.toFixed(1)}% (${total || 0} picks)`, name];
+                }}
+              />
+              <Legend />
+              {algorithmIds.map((algId) => {
+                const config = getAlgorithmConfig(algId);
+                return (
+                  <Bar 
+                    key={algId}
+                    dataKey={config.shortName} 
+                    name={config.shortName}
+                    fill={config.color}
+                    radius={[4, 4, 0, 0]}
+                  />
+                );
+              })}
+            </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+
+      {/* Detailed Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Detailed Confidence Statistics</CardTitle>
+          <CardDescription>
+            Complete breakdown of each algorithm's performance per confidence tier
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Confidence Range</TableHead>
+                {algorithmIds.map((algId) => {
+                  const config = getAlgorithmConfig(algId);
+                  return (
+                    <TableHead key={algId} className="text-center">
+                      <span className="flex items-center justify-center gap-1">
+                        {config.icon} {config.shortName}
+                      </span>
+                    </TableHead>
+                  );
+                })}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {performanceByConfidence.map((conf) => {
+                const confInfo = CONFIDENCE_ICONS[conf.range] || { icon: "🎯", color: "text-muted-foreground" };
+                // Find best algorithm for this range
+                const bestAlgId = conf.algorithms.reduce((prev: any, curr: any) => 
+                  (prev.winRate > curr.winRate) ? prev : curr
+                , conf.algorithms[0])?.algorithmId;
+
+                return (
+                  <TableRow key={conf.range}>
+                    <TableCell className="font-medium">
+                      <span className="flex items-center gap-2">
+                        <span className="text-lg">{confInfo.icon}</span>
+                        <div>
+                          <span className="block">{conf.range}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {'label' in confInfo ? confInfo.label : conf.range}
+                          </span>
+                        </div>
+                      </span>
+                    </TableCell>
+                    {algorithmIds.map((algId) => {
+                      const algData = conf.algorithms.find((a: any) => a.algorithmId === algId);
+                      const isBest = algId === bestAlgId;
+                      
+                      if (!algData || algData.total === 0) {
+                        return (
+                          <TableCell key={algId} className="text-center text-muted-foreground">
+                            -
+                          </TableCell>
+                        );
+                      }
+
+                      return (
+                        <TableCell key={algId} className="text-center">
+                          <div className={cn(
+                            "inline-flex flex-col items-center p-2 rounded-lg",
+                            isBest && "bg-green-500/10 ring-1 ring-green-500/30"
+                          )}>
+                            <span className={cn(
+                              "font-bold",
+                              algData.winRate >= 55 ? "text-green-500" :
+                              algData.winRate >= 50 ? "text-yellow-500" :
+                              "text-red-500"
+                            )}>
+                              {algData.winRate.toFixed(1)}%
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {algData.total} picks
+                            </span>
+                            {isBest && (
+                              <Crown className="h-3 w-3 text-yellow-500 mt-1" />
+                            )}
+                          </div>
+                        </TableCell>
+                      );
+                    })}
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      {/* Calibration Analysis */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Target className="h-5 w-5 text-primary" />
+            Calibration Analysis
+          </CardTitle>
+          <CardDescription>
+            Is higher confidence actually translating to better results?
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {algorithmIds.map((algId) => {
+              const config = getAlgorithmConfig(algId);
+              const algPerformance = performanceByConfidence.map(conf => {
+                const data = conf.algorithms.find((a: any) => a.algorithmId === algId);
+                return {
+                  range: conf.range,
+                  winRate: data?.winRate || 0,
+                  total: data?.total || 0,
+                };
+              }).filter(p => p.total > 0);
+
+              // Check if calibrated (higher confidence = higher win rate)
+              let isCalibrated = true;
+              for (let i = 1; i < algPerformance.length; i++) {
+                if (algPerformance[i].winRate < algPerformance[i-1].winRate - 5) {
+                  isCalibrated = false;
+                  break;
+                }
+              }
+
+              return (
+                <div key={algId} className={cn(
+                  "p-4 rounded-lg border",
+                  config.bgColor
+                )}>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl">{config.icon}</span>
+                      <span className="font-semibold">{config.name}</span>
+                    </div>
+                    <Badge variant={isCalibrated ? "default" : "secondary"} className={cn(
+                      isCalibrated ? "bg-green-500/20 text-green-600" : "bg-yellow-500/20 text-yellow-600"
+                    )}>
+                      {isCalibrated ? "✓ Well Calibrated" : "⚠ Needs Calibration"}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {algPerformance.map((p, i) => (
+                      <div key={p.range} className="flex items-center">
+                        <div className="text-center">
+                          <div className={cn(
+                            "text-sm font-semibold",
+                            p.winRate >= 55 ? "text-green-500" :
+                            p.winRate >= 50 ? "text-yellow-500" : "text-red-500"
+                          )}>
+                            {p.winRate.toFixed(0)}%
+                          </div>
+                          <div className="text-xs text-muted-foreground">{p.range}</div>
+                        </div>
+                        {i < algPerformance.length - 1 && (
+                          <div className="mx-2 text-muted-foreground">→</div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
 const WinRateChart = ({ algorithms }: { algorithms: any[] }) => {
   const data = algorithms.map(alg => {
     const config = getAlgorithmConfig(alg.algorithmId);
@@ -1067,6 +1427,10 @@ export default function AlgorithmComparisonDashboard() {
                 <Medal className="h-4 w-4" />
                 By League
               </TabsTrigger>
+              <TabsTrigger value="confidence" className="gap-2">
+                <Gauge className="h-4 w-4" />
+                By Confidence
+              </TabsTrigger>
               <TabsTrigger value="chart" className="gap-2">
                 <BarChart3 className="h-4 w-4" />
                 Chart
@@ -1083,6 +1447,10 @@ export default function AlgorithmComparisonDashboard() {
             
             <TabsContent value="league">
               <LeagueBreakdown performanceByLeague={data.performanceByContext.byLeague} />
+            </TabsContent>
+            
+            <TabsContent value="confidence">
+              <ConfidenceBreakdown performanceByConfidence={data.performanceByContext.byConfidence} />
             </TabsContent>
             
             <TabsContent value="chart">
