@@ -18,6 +18,7 @@ export interface SmartAlert {
   title: string;
   message: string;
   timestamp: Date;
+  silent?: boolean; // If true, alert is tracked but no toast notification shown
   injuryData?: {
     playerName: string;
     position: string;
@@ -129,18 +130,19 @@ export function useSmartNotifications(options: UseSmartNotificationsOptions) {
       },
     };
     
-    // Show toast for critical/high injuries
+    // Show toast for critical/high injuries - DISABLED (silent mode)
     if (injuryAlert.impactLevel === 'critical' || injuryAlert.impactLevel === 'high') {
-      toast(smartAlert.title, {
-        description: smartAlert.message,
-        duration: 12000,
-        action: {
-          label: 'View Game',
-          onClick: () => window.location.href = `/game/${injuryAlert.matchId}`,
-        },
-      });
+      // Toast notification silenced - data still tracked in alerts state and database
+      // toast(smartAlert.title, {
+      //   description: smartAlert.message,
+      //   duration: 12000,
+      //   action: {
+      //     label: 'View Game',
+      //     onClick: () => window.location.href = `/game/${injuryAlert.matchId}`,
+      //   },
+      // });
       
-      // Save to database
+      // Save to database (still track silently)
       saveAlertToDatabase(smartAlert);
       
       // Record as alerted
@@ -265,11 +267,13 @@ export function useSmartNotifications(options: UseSmartNotificationsOptions) {
         recordAlert(match.id, 'value_threshold');
       }
       
-      // Check for steam moves (simulated - would normally come from real-time line data)
+      // Check for steam moves / arbitrage - DISABLED (silent mode)
+      // Arbitrage alerts are still tracked but toast notifications are silenced
       if (
         match.smartScore?.hasArbitrageOpportunity &&
         !hasAlertedRecently(match.id, 'steam_move')
       ) {
+        // Still add to alerts array for UI display, but skip toast notification
         newAlerts.push({
           id: `steam-${match.id}-${Date.now()}`,
           type: 'steam_move',
@@ -278,6 +282,7 @@ export function useSmartNotifications(options: UseSmartNotificationsOptions) {
           title: `⚡ Steam Move: ${match.homeTeam.shortName || match.homeTeam.name} vs ${match.awayTeam.shortName || match.awayTeam.name}`,
           message: `Rapid line movement detected. Arbitrage opportunity available. Act fast!`,
           timestamp: new Date(),
+          silent: true, // Mark as silent - no toast
         });
         
         recordAlert(match.id, 'steam_move');
@@ -313,19 +318,24 @@ export function useSmartNotifications(options: UseSmartNotificationsOptions) {
     
     const alertsToSend = newAlerts.slice(0, maxAlertsPerDay - todayAlertCount);
     
-    // Send alerts
+    // Send alerts - filter out silent alerts (injury/arbitrage) from toast notifications
     alertsToSend.forEach(alert => {
-      // Show toast
-      toast(alert.title, {
-        description: alert.message,
-        duration: 10000,
-        action: {
-          label: 'View',
-          onClick: () => window.location.href = `/game/${alert.match.id}`,
-        },
-      });
+      // Skip toast for silent alerts (arbitrage/steam moves are silenced)
+      const isSilentType = alert.type === 'steam_move' || (alert as any).silent;
       
-      // Save to database
+      if (!isSilentType) {
+        // Show toast only for non-silent alerts
+        toast(alert.title, {
+          description: alert.message,
+          duration: 10000,
+          action: {
+            label: 'View',
+            onClick: () => window.location.href = `/game/${alert.match.id}`,
+          },
+        });
+      }
+      
+      // Save all alerts to database (including silent ones)
       saveAlertToDatabase(alert);
     });
     
