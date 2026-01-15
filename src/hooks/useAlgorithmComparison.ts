@@ -66,11 +66,26 @@ export interface PerformanceByContext {
   }[];
 }
 
+export interface DailyTrend {
+  date: string;
+  displayDate: string;
+  algorithms: {
+    algorithmId: string;
+    algorithmName: string;
+    wins: number;
+    losses: number;
+    total: number;
+    winRate: number;
+    cumulativeWinRate: number;
+  }[];
+}
+
 export interface ComparisonData {
   algorithms: AlgorithmSummary[];
   headToHead: HeadToHeadResult[];
   consensusPicks: ConsensusPick[];
   performanceByContext: PerformanceByContext;
+  dailyTrends: DailyTrend[];
   agreementStats: {
     fullAgreement: number;
     partialAgreement: number;
@@ -371,11 +386,86 @@ export function useAlgorithmComparison(options: UseAlgorithmComparisonOptions = 
         };
       });
 
+      // Build daily trends for performance over time
+      const dailyTrendsMap = new Map<string, Map<string, { wins: number; losses: number }>>();
+      const algCumulativeStats = new Map<string, { wins: number; losses: number }>();
+      
+      // Initialize cumulative stats for each algorithm
+      for (const algId of algorithmMap.keys()) {
+        algCumulativeStats.set(algId, { wins: 0, losses: 0 });
+      }
+      
+      // Create date buckets for the selected period
+      for (let i = days - 1; i >= 0; i--) {
+        const date = format(subDays(new Date(), i), 'yyyy-MM-dd');
+        dailyTrendsMap.set(date, new Map());
+        for (const algId of algorithmMap.keys()) {
+          dailyTrendsMap.get(date)!.set(algId, { wins: 0, losses: 0 });
+        }
+      }
+      
+      // Fill in the data
+      for (const pred of preds) {
+        if (pred.status !== 'won' && pred.status !== 'lost') continue;
+        const algId = pred.algorithm_id || 'unknown';
+        const date = format(new Date(pred.predicted_at), 'yyyy-MM-dd');
+        
+        if (dailyTrendsMap.has(date)) {
+          const dayAlgs = dailyTrendsMap.get(date)!;
+          if (dayAlgs.has(algId)) {
+            const stats = dayAlgs.get(algId)!;
+            if (pred.status === 'won') stats.wins++;
+            else stats.losses++;
+          }
+        }
+      }
+      
+      // Convert to array with cumulative stats
+      const dailyTrends: DailyTrend[] = [];
+      const runningTotals = new Map<string, { wins: number; losses: number }>();
+      
+      for (const algId of algorithmMap.keys()) {
+        runningTotals.set(algId, { wins: 0, losses: 0 });
+      }
+      
+      for (const [date, algMap] of dailyTrendsMap) {
+        const algorithms: DailyTrend['algorithms'] = [];
+        
+        for (const [algId, stats] of algMap) {
+          const running = runningTotals.get(algId)!;
+          running.wins += stats.wins;
+          running.losses += stats.losses;
+          const total = running.wins + running.losses;
+          
+          algorithms.push({
+            algorithmId: algId,
+            algorithmName: getAlgorithmNameFromId(algId),
+            wins: stats.wins,
+            losses: stats.losses,
+            total: stats.wins + stats.losses,
+            winRate: stats.wins + stats.losses > 0 
+              ? (stats.wins / (stats.wins + stats.losses)) * 100 
+              : 0,
+            cumulativeWinRate: total > 0 ? (running.wins / total) * 100 : 0,
+          });
+        }
+        
+        // Only include days with some activity
+        if (algorithms.some(a => a.total > 0)) {
+          dailyTrends.push({
+            date,
+            displayDate: format(new Date(date), 'MMM d'),
+            algorithms,
+          });
+        }
+      }
+
       return {
         algorithms,
         headToHead,
         consensusPicks: consensusPicks.slice(0, 50), // Limit for performance
         performanceByContext: { byLeague, byConfidence },
+        dailyTrends,
         agreementStats: {
           fullAgreement,
           partialAgreement,
