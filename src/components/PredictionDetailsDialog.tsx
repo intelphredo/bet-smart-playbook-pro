@@ -309,9 +309,6 @@ export default function PredictionDetailsDialog({
   
   const analysis = generateAnalysis(prediction);
 
-  // Debug: Log all algorithm predictions for this match
-  console.log(`[PredictionDetailsDialog] Match: ${prediction.match_id}, All predictions received:`, allAlgorithmPredictions.length, allAlgorithmPredictions.map(p => ({ id: p.id, algo: p.algorithm_id, pred: p.prediction })));
-
   // Sort algorithm predictions with Statistical Edge first, filter to known algorithms only
   const sortedAlgorithmPredictions = [...allAlgorithmPredictions]
     .filter(p => p.algorithm_id && ALGORITHM_DISPLAY[p.algorithm_id]) // Only include known algorithms
@@ -321,8 +318,6 @@ export default function PredictionDetailsDialog({
       return 0;
     });
 
-  console.log(`[PredictionDetailsDialog] Sorted/filtered predictions:`, sortedAlgorithmPredictions.length, sortedAlgorithmPredictions.map(p => ({ algo: p.algorithm_id, pred: p.prediction })));
-
   const hasMultipleAlgorithms = sortedAlgorithmPredictions.length > 1;
   
   // Use first available algorithm as default (Statistical Edge if available, otherwise first in sorted list)
@@ -330,8 +325,6 @@ export default function PredictionDetailsDialog({
     ? (sortedAlgorithmPredictions.find(p => p.algorithm_id === ALGORITHM_IDS.STATISTICAL_EDGE)?.algorithm_id 
        || sortedAlgorithmPredictions[0].algorithm_id || "")
     : "";
-  
-  console.log(`[PredictionDetailsDialog] hasMultipleAlgorithms: ${hasMultipleAlgorithms}, defaultAlgorithmId: ${defaultAlgorithmId}`);
 
   const getImpactColor = (impact: "positive" | "negative" | "neutral") => {
     switch (impact) {

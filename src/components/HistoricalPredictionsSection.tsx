@@ -123,12 +123,9 @@ const HistoricalPredictionsSection = () => {
   const { predictions, stats } = data || { predictions: [], stats: null };
 
   const handlePredictionClick = useCallback((prediction: HistoricalPrediction) => {
-    console.log(`[HistoricalPredictions] Clicked prediction:`, prediction.match_id, prediction.algorithm_id);
-    const allAlgos = predictions.filter(p => p.match_id === prediction.match_id);
-    console.log(`[HistoricalPredictions] All algorithms for match:`, allAlgos.length, allAlgos.map(p => p.algorithm_id));
     setSelectedPrediction(prediction);
     setDetailsDialogOpen(true);
-  }, [predictions]);
+  }, []);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
