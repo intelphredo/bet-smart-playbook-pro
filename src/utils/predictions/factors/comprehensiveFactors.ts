@@ -14,6 +14,11 @@
  */
 
 import { Match, Team, League } from "@/types/sports";
+import { 
+  getMatchInjuryData, 
+  calculateInjuryImpactFromReport,
+  MatchInjuryData 
+} from "@/services/injuryDataService";
 
 export interface PredictionFactor {
   name: string;
@@ -69,11 +74,11 @@ export function analyzeBackToBack(match: Match): PredictionFactor {
 }
 
 /**
- * Analyze injury impact on the game
+ * Analyze injury impact on the game (synchronous fallback)
  */
 export function analyzeInjuries(match: Match): PredictionFactor {
-  const homeInjuryImpact = calculateInjuryImpact(match.homeTeam);
-  const awayInjuryImpact = calculateInjuryImpact(match.awayTeam);
+  const homeInjuryImpact = calculateInjuryImpactFallback(match.homeTeam);
+  const awayInjuryImpact = calculateInjuryImpactFallback(match.awayTeam);
   
   const differential = awayInjuryImpact - homeInjuryImpact; // Positive = home favored
   
@@ -101,10 +106,61 @@ export function analyzeInjuries(match: Match): PredictionFactor {
   return {
     name: 'Injuries',
     impact: Math.max(-15, Math.min(15, differential)),
-    confidence: 75,
+    confidence: 50, // Lower confidence for fallback
     description,
     favoredTeam
   };
+}
+
+/**
+ * Analyze injury impact using real ESPN data (async)
+ */
+export async function analyzeInjuriesAsync(match: Match): Promise<PredictionFactor> {
+  try {
+    const injuryData = await getMatchInjuryData(
+      match.league,
+      match.homeTeam.name,
+      match.awayTeam.name
+    );
+    
+    const homeImpact = calculateInjuryImpactFromReport(injuryData.homeTeam);
+    const awayImpact = calculateInjuryImpactFromReport(injuryData.awayTeam);
+    const differential = awayImpact - homeImpact;
+    
+    let description = injuryData.summary;
+    let favoredTeam: 'home' | 'away' | 'neutral' = 'neutral';
+    
+    // Add key player info to description
+    if (injuryData.homeTeam.keyPlayersOut.length > 0 || injuryData.awayTeam.keyPlayersOut.length > 0) {
+      const outPlayers: string[] = [];
+      if (injuryData.homeTeam.keyPlayersOut.length > 0) {
+        outPlayers.push(`${match.homeTeam.shortName}: ${injuryData.homeTeam.keyPlayersOut.slice(0, 2).join(', ')} OUT`);
+      }
+      if (injuryData.awayTeam.keyPlayersOut.length > 0) {
+        outPlayers.push(`${match.awayTeam.shortName}: ${injuryData.awayTeam.keyPlayersOut.slice(0, 2).join(', ')} OUT`);
+      }
+      if (outPlayers.length > 0) {
+        description = outPlayers.join('; ');
+      }
+    }
+    
+    if (differential > 3) favoredTeam = 'home';
+    else if (differential < -3) favoredTeam = 'away';
+    
+    // Higher confidence when we have real data
+    const hasRealData = injuryData.homeTeam.injuries.length > 0 || injuryData.awayTeam.injuries.length > 0;
+    
+    return {
+      name: 'Injuries',
+      impact: Math.max(-15, Math.min(15, differential)),
+      confidence: hasRealData ? 85 : 60,
+      description: description || 'No significant injury reports',
+      favoredTeam
+    };
+  } catch (error) {
+    console.error('Error fetching injury data, using fallback:', error);
+    return analyzeInjuries(match);
+  }
 }
 
 /**
@@ -296,7 +352,7 @@ export function analyzeRestDays(match: Match): PredictionFactor {
 }
 
 /**
- * Run comprehensive analysis
+ * Run comprehensive analysis (synchronous - uses fallback injury data)
  */
 export function runComprehensiveAnalysis(match: Match): ComprehensiveAnalysis {
   const factors: PredictionFactor[] = [
@@ -309,6 +365,33 @@ export function runComprehensiveAnalysis(match: Match): ComprehensiveAnalysis {
     analyzeCoaching(match),
   ];
   
+  return buildAnalysisFromFactors(factors);
+}
+
+/**
+ * Run comprehensive analysis with real injury data (async)
+ */
+export async function runComprehensiveAnalysisAsync(match: Match): Promise<ComprehensiveAnalysis> {
+  // Fetch real injury data
+  const injuryFactor = await analyzeInjuriesAsync(match);
+  
+  const factors: PredictionFactor[] = [
+    analyzeHomeAdvantage(match),
+    analyzeMomentum(match),
+    analyzeHeadToHead(match),
+    injuryFactor, // Use real injury data
+    analyzeBackToBack(match),
+    analyzeRestDays(match),
+    analyzeCoaching(match),
+  ];
+  
+  return buildAnalysisFromFactors(factors);
+}
+
+/**
+ * Build analysis result from factors
+ */
+function buildAnalysisFromFactors(factors: PredictionFactor[]): ComprehensiveAnalysis {
   // Calculate total impact
   let totalImpact = 0;
   let confidenceBoost = 0;
@@ -360,8 +443,8 @@ function detectBackToBack(team: Team): boolean {
   return hash % 5 === 0;
 }
 
-function calculateInjuryImpact(team: Team): number {
-  // Parse injury status from team data
+function calculateInjuryImpactFallback(team: Team): number {
+  // Parse injury status from team data (fallback when real data unavailable)
   // Higher = more injured (worse)
   const record = team.record || '';
   const losses = record.split('-')[1] ? parseInt(record.split('-')[1]) || 0 : 0;

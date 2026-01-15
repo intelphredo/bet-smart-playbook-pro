@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import {
   Tooltip,
@@ -14,10 +14,12 @@ import {
   Target,
   AlertTriangle,
   Zap,
-  Brain
+  Brain,
+  Loader2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Match } from '@/types/sports';
+import { Match, League } from '@/types/sports';
+import { getMatchInjuryData, MatchInjuryData } from '@/services/injuryDataService';
 
 interface PredictionReasoningBadgeProps {
   match: Match;
@@ -35,8 +37,11 @@ const factorIcons: Record<string, React.ElementType> = {
   'Coaching': Brain,
 };
 
-// Generate quick analysis factors based on match data
-function generateQuickFactors(match: Match): Array<{
+// Generate quick analysis factors based on match data and real injury info
+function generateQuickFactors(
+  match: Match,
+  injuryData?: MatchInjuryData | null
+): Array<{
   name: string;
   icon: React.ElementType;
   impact: 'positive' | 'negative' | 'neutral';
@@ -61,8 +66,53 @@ function generateQuickFactors(match: Match): Array<{
       name: 'Home Court',
       icon: Home,
       impact: 'positive',
-      shortDesc: `${homeTeam} at home`
+      shortDesc: `${match.homeTeam?.shortName || 'Home'} at home`
     });
+  }
+
+  // Real injury data integration
+  if (injuryData) {
+    const homeOut = injuryData.homeTeam.keyPlayersOut.length;
+    const awayOut = injuryData.awayTeam.keyPlayersOut.length;
+    
+    if (homeOut > 0 || awayOut > 0) {
+      let injuryImpact: 'positive' | 'negative' | 'neutral' = 'neutral';
+      let injuryDesc = '';
+      
+      if (homeOut > awayOut) {
+        injuryImpact = predictedWinner === 'away' ? 'positive' : 'negative';
+        injuryDesc = injuryData.homeTeam.keyPlayersOut[0] || `${homeOut} OUT`;
+      } else if (awayOut > homeOut) {
+        injuryImpact = predictedWinner === 'home' ? 'positive' : 'negative';
+        injuryDesc = injuryData.awayTeam.keyPlayersOut[0] || `${awayOut} OUT`;
+      } else {
+        injuryDesc = 'Both teams affected';
+      }
+      
+      factors.push({
+        name: 'Injuries',
+        icon: Users,
+        impact: injuryImpact,
+        shortDesc: injuryDesc
+      });
+    } else {
+      factors.push({
+        name: 'Injuries',
+        icon: Users,
+        impact: 'neutral',
+        shortDesc: 'No key injuries'
+      });
+    }
+  } else {
+    // Fallback when no real data
+    if (confidence < 60) {
+      factors.push({
+        name: 'Injuries',
+        icon: Users,
+        impact: 'negative',
+        shortDesc: 'Possible concerns'
+      });
+    }
   }
 
   // Confidence-based momentum indicator
@@ -82,16 +132,6 @@ function generateQuickFactors(match: Match): Array<{
     });
   }
 
-  // Schedule factor (simulated based on confidence)
-  if (confidence >= 60) {
-    factors.push({
-      name: 'Rest Days',
-      icon: Calendar,
-      impact: 'positive',
-      shortDesc: 'Well rested'
-    });
-  }
-
   // H2H factor
   factors.push({
     name: 'H2H History',
@@ -100,16 +140,6 @@ function generateQuickFactors(match: Match): Array<{
     shortDesc: confidence >= 65 ? 'Favorable matchup' : 'Even history'
   });
 
-  // Potential injury concern (show for lower confidence games)
-  if (confidence < 60) {
-    factors.push({
-      name: 'Injuries',
-      icon: Users,
-      impact: 'negative',
-      shortDesc: 'Possible concerns'
-    });
-  }
-
   return factors.slice(0, 4); // Max 4 factors
 }
 
@@ -117,14 +147,42 @@ const PredictionReasoningBadge = memo(function PredictionReasoningBadge({
   match, 
   compact = false 
 }: PredictionReasoningBadgeProps) {
+  const [injuryData, setInjuryData] = useState<MatchInjuryData | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
   const prediction = match.prediction;
+  
+  // Fetch real injury data
+  useEffect(() => {
+    if (!match.homeTeam?.name || !match.awayTeam?.name || !match.league) return;
+    
+    let cancelled = false;
+    setIsLoading(true);
+    
+    getMatchInjuryData(match.league, match.homeTeam.name, match.awayTeam.name)
+      .then(data => {
+        if (!cancelled) {
+          setInjuryData(data);
+        }
+      })
+      .catch(err => {
+        console.error('Error fetching injury data:', err);
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      });
+    
+    return () => { cancelled = true; };
+  }, [match.id, match.homeTeam?.name, match.awayTeam?.name, match.league]);
   
   if (!prediction || !prediction.recommended) {
     return null;
   }
 
   const confidence = prediction.confidence || 50;
-  const factors = generateQuickFactors(match);
+  const factors = generateQuickFactors(match, injuryData);
   
   // Determine confidence level styling
   const getConfidenceStyle = () => {
