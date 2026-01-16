@@ -20,6 +20,7 @@ import {
 import { Activity, Target, AlertTriangle, CheckCircle, TrendingUp, TrendingDown, Wrench, Lightbulb, AlertCircle, CheckCircle2, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { HistoricalPrediction } from "@/hooks/useHistoricalPredictions";
+import { CalibrationHistoryChart } from "@/components/ModelCalibration/CalibrationHistoryChart";
 import { getBinCalibrationSummary } from "@/utils/modelCalibration/binCalibration";
 
 interface CalibrationChartProps {
@@ -602,6 +603,9 @@ export function CalibrationChart({ predictions, confidenceVsAccuracy, isLoading 
           </div>
         </CardContent>
       </Card>
+
+      {/* Calibration History Over Time */}
+      <CalibrationHistoryChart days={30} />
     </div>
   );
 }
