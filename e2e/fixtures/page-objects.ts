@@ -177,3 +177,86 @@ export class PredictionsPage {
     await this.page.getByRole('option', { name: algorithm }).click();
   }
 }
+
+/**
+ * Page Object for Legal Compliance Components
+ * Provides helpers for testing cookie consent, disclaimers, and legal pages
+ */
+export class LegalCompliancePage {
+  readonly page: Page;
+  readonly cookieBanner: Locator;
+  readonly cookieAcceptAll: Locator;
+  readonly cookieNecessaryOnly: Locator;
+  readonly cookieCustomize: Locator;
+  readonly cookiePreferencesPanel: Locator;
+  readonly responsibleGamblingBadge: Locator;
+  readonly disclaimerBanner: Locator;
+  readonly disclaimerDismiss: Locator;
+
+  constructor(page: Page) {
+    this.page = page;
+    this.cookieBanner = page.locator('text=We Value Your Privacy');
+    this.cookieAcceptAll = page.getByRole('button', { name: /Accept All/i });
+    this.cookieNecessaryOnly = page.getByRole('button', { name: /Necessary Only/i });
+    this.cookieCustomize = page.getByRole('button', { name: /Customize/i });
+    this.cookiePreferencesPanel = page.locator('text=Cookie Preferences');
+    this.responsibleGamblingBadge = page.getByRole('link', { name: /Gamble Responsibly/i });
+    this.disclaimerBanner = page.locator('text=entertainment purposes only');
+    this.disclaimerDismiss = page.locator('[class*="border-amber"] button');
+  }
+
+  async clearCookieConsent() {
+    await this.page.evaluate(() => {
+      localStorage.removeItem('betsmart_cookie_consent');
+      localStorage.removeItem('betsmart_cookie_preferences');
+    });
+  }
+
+  async clearDisclaimerDismissed() {
+    await this.page.evaluate(() => {
+      localStorage.removeItem('betsmart_disclaimer_dismissed');
+    });
+  }
+
+  async acceptAllCookies() {
+    await this.cookieAcceptAll.click();
+  }
+
+  async acceptNecessaryOnly() {
+    await this.cookieNecessaryOnly.click();
+  }
+
+  async openCookiePreferences() {
+    await this.cookieCustomize.click();
+  }
+
+  async gotoTerms() {
+    await this.page.goto('/terms');
+  }
+
+  async gotoPrivacy() {
+    await this.page.goto('/privacy');
+  }
+
+  async gotoResponsibleGambling() {
+    await this.page.goto('/responsible-gambling');
+  }
+
+  async getCookiePreferences(): Promise<{
+    necessary: boolean;
+    analytics: boolean;
+    marketing: boolean;
+  } | null> {
+    const prefs = await this.page.evaluate(() => 
+      localStorage.getItem('betsmart_cookie_preferences')
+    );
+    return prefs ? JSON.parse(prefs) : null;
+  }
+
+  async hasCookieConsent(): Promise<boolean> {
+    const consent = await this.page.evaluate(() => 
+      localStorage.getItem('betsmart_cookie_consent')
+    );
+    return consent === 'true';
+  }
+}
