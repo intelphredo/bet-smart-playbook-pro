@@ -52,11 +52,11 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
     matches: [],
   },
   notifications: {
-    line_movements: true,
-    positive_ev: true,
-    arbitrage: true,
+    line_movements: false,
+    positive_ev: false,
+    arbitrage: false,
     game_start: false,
-    bet_results: true,
+    bet_results: false,
   },
   bankroll: {
     current_bankroll: 1000,
