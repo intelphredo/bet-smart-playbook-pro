@@ -59,7 +59,7 @@ export function generateMatchesCSV(matches: Match[]): string {
 /**
  * Generate an iCal string from matches
  */
-export function generateMatchesICal(matches: Match[], calendarName = "BetSmart Games Schedule"): string {
+export function generateMatchesICal(matches: Match[], calendarName = "EdgeIQ Games Schedule"): string {
   const formatICalDate = (date: Date): string => {
     return format(date, "yyyyMMdd'T'HHmmss");
   };
@@ -73,7 +73,7 @@ export function generateMatchesICal(matches: Match[], calendarName = "BetSmart G
   };
 
   const generateUID = (match: Match): string => {
-    return `${match.id}@betsmart.app`;
+    return `${match.id}@edgeiq.app`;
   };
 
   const events = matches.map((match) => {
@@ -111,7 +111,7 @@ export function generateMatchesICal(matches: Match[], calendarName = "BetSmart G
   const calendar = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//BetSmart//Games Schedule//EN",
+    "PRODID:-//EdgeIQ//Games Schedule//EN",
     `X-WR-CALNAME:${calendarName}`,
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
@@ -174,7 +174,7 @@ export function generateGoogleCalendarUrl(match: Match): string {
       ? `Projected Score: ${match.prediction.projectedScore.home} - ${match.prediction.projectedScore.away}`
       : "",
     "",
-    "Added via BetSmart",
+    "Added via EdgeIQ",
   ].filter(Boolean).join("\n");
 
   const params = new URLSearchParams({
@@ -205,7 +205,7 @@ export function generateOutlookCalendarUrl(match: Match): string {
       ? `Projected Score: ${match.prediction.projectedScore.home} - ${match.prediction.projectedScore.away}`
       : "",
     "",
-    "Added via BetSmart",
+    "Added via EdgeIQ",
   ].filter(Boolean).join("\n");
 
   const params = new URLSearchParams({
@@ -258,12 +258,12 @@ export function openGoogleCalendarBulk(matches: Match[]): void {
     gamesList,
     matches.length > 10 ? `\n...and ${matches.length - 10} more games` : "",
     "",
-    "View full schedule at BetSmart",
+    "View full schedule at EdgeIQ",
   ].filter(Boolean).join("\n");
 
   const params = new URLSearchParams({
     action: "TEMPLATE",
-    text: `BetSmart: ${matches.length} Games This Week`,
+    text: `EdgeIQ: ${matches.length} Games This Week`,
     dates: `${formatGoogleDate(startDate)}/${formatGoogleDate(endDate)}`,
     details: details,
   });
@@ -303,13 +303,13 @@ export function openOutlookCalendarBulk(matches: Match[]): void {
     gamesList,
     matches.length > 10 ? `\n...and ${matches.length - 10} more games` : "",
     "",
-    "View full schedule at BetSmart",
+    "View full schedule at EdgeIQ",
   ].filter(Boolean).join("\n");
 
   const params = new URLSearchParams({
     path: "/calendar/action/compose",
     rru: "addevent",
-    subject: `BetSmart: ${matches.length} Games This Week`,
+    subject: `EdgeIQ: ${matches.length} Games This Week`,
     startdt: startDate.toISOString(),
     enddt: endDate.toISOString(),
     body: details,

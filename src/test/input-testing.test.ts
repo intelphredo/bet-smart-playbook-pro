@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 
 /**
  * Comprehensive input testing utilities and patterns
- * for the BetSmart Playbook Pro application
+ * for the EdgeIQ application
  */
 
 // ==================== Input Validation Test Helpers ====================

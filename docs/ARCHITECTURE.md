@@ -1,4 +1,4 @@
-# BetSmart Pro - Architecture Documentation
+# EdgeIQ - Architecture Documentation
 
 > A comprehensive sports betting intelligence platform with prediction algorithms, bankroll management, and real-time odds tracking.
 
@@ -20,7 +20,7 @@
 
 ## Overview
 
-BetSmart Pro is a React-based sports betting analytics platform that combines multiple data sources, prediction algorithms, and bankroll management tools to help users make informed betting decisions.
+EdgeIQ is a React-based sports betting analytics platform that combines multiple data sources, prediction algorithms, and bankroll management tools to help users make informed betting decisions.
 
 ### Tech Stack
 

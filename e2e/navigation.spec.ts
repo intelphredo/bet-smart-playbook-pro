@@ -8,7 +8,7 @@ test.describe('Navigation', () => {
     await homePage.waitForLoad();
     
     // Check page title
-    await expect(page).toHaveTitle(/BetSmart|Bet Smart/i);
+    await expect(page).toHaveTitle(/EdgeIQ/i);
   });
 
   test('should navigate to main sections', async ({ page }) => {
