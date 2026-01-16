@@ -29,6 +29,7 @@ import LiveRefreshIndicator from "@/components/LiveRefreshIndicator";
 import FavoritesTab from "@/components/FavoritesTab";
 import { AnimatedBadge } from "@/components/ui/AnimatedBadge";
 import { SpotlightHeader, UpcomingAlertsBadge } from "@/components/SpotlightValuePicks";
+import { PredictionDisclaimer } from "@/components/legal";
 import { useSmartNotifications } from "@/hooks/useSmartNotifications";
 import { RankingsTable } from "@/components/NCAAB";
 import { LiveScoresProvider } from "@/providers/LiveScoresProvider";
@@ -295,6 +296,9 @@ const Index = () => {
               </TabsTrigger>
             </TabsList>
 
+            {/* Prediction Disclaimer */}
+            <PredictionDisclaimer className="mb-4" />
+
             {/* Spotlight Value Picks - "Bet with Rights" header */}
             <SpotlightHeader
               matches={allActiveMatches}
@@ -303,8 +307,6 @@ const Index = () => {
               minConfidence={65}
               minEV={3}
             />
-
-
             {/* Scores Tab */}
             <TabsContent value="scores" className="space-y-6 mt-0">
               <motion.div

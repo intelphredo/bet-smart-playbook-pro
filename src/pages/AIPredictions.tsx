@@ -44,6 +44,7 @@ import { InfoExplainer } from "@/components/ui/InfoExplainer";
 import { getTeamLogoUrl, getTeamInitials, getLeagueLogoUrl, getLeagueDisplayName } from "@/utils/teamLogos";
 import { League } from "@/types/sports";
 import { ContextLedger, CalibrationChart, LossPostMortem } from "@/components/AIHistory";
+import { PredictionDisclaimer } from "@/components/legal";
 import { 
   GroupedLeagueSelect, 
   LEAGUE_CATEGORIES, 
@@ -110,6 +111,9 @@ export default function AIPredictions() {
       <NavBar />
       
       <main id="main-content" className="flex-1 container px-4 py-6 mx-auto space-y-6">
+        {/* Prediction Disclaimer */}
+        <PredictionDisclaimer className="mb-2" />
+
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
