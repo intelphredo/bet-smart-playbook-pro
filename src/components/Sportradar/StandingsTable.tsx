@@ -12,20 +12,26 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowUp, ArrowDown, Minus, Trophy } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { StandingsView } from './StandingsFilters';
 
 interface StandingsTableProps {
   league: SportLeague;
   standings: SportradarStanding[];
   isLoading?: boolean;
   compact?: boolean;
+  view?: StandingsView; // 'overall' | 'conference' | 'division'
 }
 
 type SortField = 'rank' | 'wins' | 'losses' | 'winPct' | 'gamesBack' | 'pointsFor' | 'pointsAgainst' | 'pointDiff';
 type SortDirection = 'asc' | 'desc';
 
-export function StandingsTable({ league, standings, isLoading, compact = false }: StandingsTableProps) {
-  const [sortField, setSortField] = useState<SortField>('rank');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+export function StandingsTable({ league, standings, isLoading, compact = false, view = 'overall' }: StandingsTableProps) {
+  // Default sort depends on view: overall sorts by winPct, conference/division by rank
+  const defaultSortField: SortField = view === 'overall' ? 'winPct' : 'rank';
+  const defaultSortDir: SortDirection = view === 'overall' ? 'desc' : 'asc';
+  
+  const [sortField, setSortField] = useState<SortField>(defaultSortField);
+  const [sortDirection, setSortDirection] = useState<SortDirection>(defaultSortDir);
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -39,13 +45,27 @@ export function StandingsTable({ league, standings, isLoading, compact = false }
   const sortedStandings = useMemo(() => {
     if (!standings) return [];
     
+    const isSoccer = league === 'SOCCER';
+    
     return [...standings].sort((a, b) => {
       let aVal: number, bVal: number;
       
       switch (sortField) {
         case 'rank':
-          aVal = a.confRank || 0;
-          bVal = b.confRank || 0;
+          // For conference view, use confRank; for division view, use divRank; otherwise winPct
+          if (view === 'conference') {
+            aVal = a.confRank || 999;
+            bVal = b.confRank || 999;
+          } else if (view === 'division') {
+            aVal = a.divRank || 999;
+            bVal = b.divRank || 999;
+          } else {
+            // Overall: sort by win% (or points for soccer)
+            aVal = isSoccer ? (a.wins * 3 + (a.ties || 0)) : a.winPct;
+            bVal = isSoccer ? (b.wins * 3 + (b.ties || 0)) : b.winPct;
+            // Invert for descending (higher is better)
+            return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+          }
           break;
         case 'wins':
           aVal = a.wins;
@@ -56,8 +76,8 @@ export function StandingsTable({ league, standings, isLoading, compact = false }
           bVal = b.losses;
           break;
         case 'winPct':
-          aVal = a.winPct;
-          bVal = b.winPct;
+          aVal = isSoccer ? (a.wins * 3 + (a.ties || 0)) : a.winPct;
+          bVal = isSoccer ? (b.wins * 3 + (b.ties || 0)) : b.winPct;
           break;
         case 'gamesBack':
           aVal = a.gamesBack || 0;
@@ -81,7 +101,7 @@ export function StandingsTable({ league, standings, isLoading, compact = false }
       
       return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
     });
-  }, [standings, sortField, sortDirection]);
+  }, [standings, sortField, sortDirection, view, league]);
 
   const SortableHeader = ({ field, children }: { field: SortField; children: React.ReactNode }) => (
     <TableHead 
@@ -215,7 +235,9 @@ export function StandingsTable({ league, standings, isLoading, compact = false }
               <TableCell className="font-medium text-center w-10">
                 <div className="flex items-center justify-center gap-1">
                   {index === 0 && <Trophy className="h-3 w-3 text-amber-500" />}
-                  <span className="text-muted-foreground">{index + 1}</span>
+                  <span className="text-muted-foreground">
+                    {view === 'conference' ? team.confRank : view === 'division' ? team.divRank : index + 1}
+                  </span>
                 </div>
               </TableCell>
               <TableCell>
