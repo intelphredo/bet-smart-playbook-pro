@@ -156,7 +156,7 @@ function ScoreCard({ match, onClick, index }: { match: Match; onClick: () => voi
         // Focus visible for accessibility
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
         // Live state with animated glow
-        isLive && "border-red-500/40 bg-gradient-to-br from-red-500/10 to-transparent",
+        isLive && "border-cyan-400/40 bg-gradient-to-br from-cyan-400/10 to-transparent",
         // Finished state
         isFinished && "bg-gradient-to-br from-muted/50 to-transparent"
       )}
@@ -184,13 +184,13 @@ function ScoreCard({ match, onClick, index }: { match: Match; onClick: () => voi
       <div className="flex items-center justify-between mb-2 relative">
         <span className={cn(
           "text-[10px] font-semibold uppercase tracking-wide",
-          isLive ? "text-red-500" : "text-primary/70"
+          isLive ? "text-cyan-400" : "text-primary/70"
         )}>
           {match.league}
         </span>
         <span className={cn(
           "text-[10px] font-medium px-1.5 py-0.5 rounded",
-          isLive ? "text-red-500 bg-red-500/10" : "text-muted-foreground bg-muted/50"
+          isLive ? "text-cyan-400 bg-cyan-400/10" : "text-muted-foreground bg-muted/50"
         )}>
           {formatTime()}
         </span>
@@ -271,7 +271,7 @@ function TeamRow({ matchId, teamKey, teamName, displayName, teamId, logo, league
           className={cn(
             "text-xs font-bold tabular-nums min-w-[20px] text-right",
             isWinning && "text-emerald-500",
-            isLive && !isWinning && "text-red-500"
+            isLive && !isWinning && "text-cyan-400"
           )}
         />
       )}

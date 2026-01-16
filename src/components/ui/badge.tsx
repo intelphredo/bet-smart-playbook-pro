@@ -21,7 +21,7 @@ const badgeVariants = cva(
         premium: "border-primary/30 bg-gradient-to-r from-primary/15 via-primary/10 to-accent/15 text-primary shadow-sm hover:shadow-md hover:border-primary/50",
         gold: "border-primary/40 bg-gradient-to-r from-primary/20 to-primary/10 text-primary font-semibold shadow-sm hover:shadow-md badge-glow",
         "gold-solid": "border-transparent bg-gradient-to-r from-primary to-accent text-primary-foreground shadow-md hover:shadow-lg",
-        live: "border-transparent bg-destructive text-destructive-foreground animate-pulse shadow-sm",
+        live: "border-transparent bg-cyan-500 text-white animate-pulse shadow-sm",
         hot: "border-primary/50 bg-primary/10 text-primary shadow-sm badge-glow",
       },
     },

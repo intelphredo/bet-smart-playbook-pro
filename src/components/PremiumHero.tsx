@@ -124,10 +124,10 @@ const PremiumHero = ({ liveGamesCount, upcomingGamesCount, highConfidencePicks }
             {/* Live Games */}
             <div className={`glass rounded-2xl px-6 py-4 min-w-[140px] group transition-all duration-300 stat-glow ${liveGamesCount > 0 ? 'glow-border' : ''}`}>
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-xl bg-destructive/10 group-hover:bg-destructive/20 transition-colors relative">
-                  <Target className="w-5 h-5 text-destructive" />
+                <div className="p-2 rounded-xl bg-cyan-400/10 group-hover:bg-cyan-400/20 transition-colors relative">
+                  <Target className="w-5 h-5 text-cyan-400" />
                   {liveGamesCount > 0 && (
-                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-destructive rounded-full value-ring" />
+                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-cyan-400 rounded-full value-ring" />
                   )}
                 </div>
                 <div className="text-left">

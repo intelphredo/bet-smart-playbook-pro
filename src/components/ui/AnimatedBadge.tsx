@@ -54,9 +54,9 @@ export const AnimatedBadge = memo(function AnimatedBadge({
   if (count === 0 && !showZero) return null;
 
   const variantClasses: Record<BadgeVariant, string> = {
-    live: 'bg-destructive text-destructive-foreground shadow-[0_0_10px_rgba(239,68,68,0.5)]',
-    gold: 'bg-gradient-to-r from-primary to-amber-400 text-primary-foreground shadow-[0_0_10px_hsl(var(--primary)/0.5)]',
-    success: 'bg-green-500/20 text-green-500 border border-green-500/30',
+    live: 'bg-cyan-500 text-white shadow-[0_0_10px_rgba(0,212,255,0.5)]',
+    gold: 'bg-gradient-to-r from-primary to-cyan-400 text-primary-foreground shadow-[0_0_10px_hsl(var(--primary)/0.5)]',
+    success: 'bg-emerald-500/20 text-emerald-500 border border-emerald-500/30',
     default: 'bg-muted text-muted-foreground',
   };
 

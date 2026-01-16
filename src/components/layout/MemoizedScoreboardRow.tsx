@@ -83,15 +83,15 @@ const MemoizedScoreboardRow = memo(function MemoizedScoreboardRow({
         "grid grid-cols-[60px_1fr_auto_auto_auto] gap-3 items-center px-4 py-3 cursor-pointer transition-all",
         "hover:bg-primary/5 border-b border-border/30 last:border-b-0",
         "hover:border-l-2 hover:border-l-primary/50",
-        isLive && "bg-destructive/5"
+        isLive && "bg-cyan-400/5"
       )}
     >
       {/* Time/Status */}
       <div className="text-center">
         {isLive ? (
           <div className="flex flex-col items-center gap-1">
-            <Radio className="h-3 w-3 text-destructive animate-pulse" />
-            <span className="text-[10px] text-destructive font-medium">{match.score?.period || 'LIVE'}</span>
+            <Radio className="h-3 w-3 text-cyan-400 animate-pulse" />
+            <span className="text-[10px] text-cyan-400 font-medium">{match.score?.period || 'LIVE'}</span>
           </div>
         ) : (
           <div className="flex flex-col items-center gap-1">
