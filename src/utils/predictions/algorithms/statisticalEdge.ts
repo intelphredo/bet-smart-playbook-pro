@@ -170,10 +170,12 @@ function analyzeInjuryImpact(match: Match): { score: number; keyPlayers: string[
   return { score: Math.max(0, Math.min(100, score)), keyPlayers };
 }
 
-function analyzeSituationalSpots(match: Match): SituationalFactors & { adjustment: number } {
+function analyzeSituationalSpots(match: Match): SituationalFactors & { adjustment: number; reasons: string[] } {
   // Generate consistent situational data based on match ID
   const seed = match.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
   const rand = (offset: number) => ((seed + offset) % 100) / 100;
+  
+  const reasons: string[] = [];
   
   const restDaysHome = Math.floor(rand(1) * 4) + 1; // 1-4 days
   const restDaysAway = Math.floor(rand(2) * 4) + 1;
@@ -190,39 +192,96 @@ function analyzeSituationalSpots(match: Match): SituationalFactors & { adjustmen
   
   const timeZoneShift = Math.floor(rand(7) * 4); // 0-3 time zones
   
-  // Calculate adjustment
+  // Calculate adjustment - BALANCED for home/away
   let adjustment = 0;
   
-  // Rest advantage
+  // Rest advantage (reduced weight - was 2 per day, now 1)
   const restDiff = restDaysHome - restDaysAway;
-  adjustment += restDiff * 2; // 2 points per day of rest advantage
+  if (restDiff > 0) {
+    adjustment += restDiff * 1;
+    reasons.push(`Home has ${restDiff} more rest days (+${restDiff})`);
+  } else if (restDiff < 0) {
+    adjustment += restDiff * 1; // Negative = away advantage
+    reasons.push(`Away has ${-restDiff} more rest days (${restDiff})`);
+  }
   
-  // Back-to-back penalties
-  if (backToBackHome) adjustment -= 5;
-  if (backToBackAway) adjustment += 5;
+  // Back-to-back penalties (now symmetric)
+  if (backToBackHome && !backToBackAway) {
+    adjustment -= 4;
+    reasons.push('Home on back-to-back (-4)');
+  }
+  if (backToBackAway && !backToBackHome) {
+    adjustment += 4;
+    reasons.push('Away on back-to-back (+4)');
+  }
+  if (backToBackHome && backToBackAway) {
+    reasons.push('Both teams on back-to-back (neutral)');
+  }
   
-  // Travel fatigue
-  if (travelDistanceAway === 'cross-country') adjustment += 4;
-  else if (travelDistanceAway === 'long') adjustment += 2;
+  // Travel fatigue (reduced - was +4/+2, now +2/+1)
+  if (travelDistanceAway === 'cross-country') {
+    adjustment += 2;
+    reasons.push('Away cross-country travel (+2)');
+  } else if (travelDistanceAway === 'long') {
+    adjustment += 1;
+    reasons.push('Away long travel (+1)');
+  } else if (travelDistanceAway === 'short') {
+    // Short travel can actually favor road teams - they're comfortable
+    adjustment -= 1;
+    reasons.push('Away short travel, road-ready (-1)');
+  }
   
-  // Schedule spots
+  // Schedule spots - NOW MORE BALANCED
   switch (scheduleSpot) {
     case 'trap':
-      adjustment -= 3; // Home team might overlook opponent
+      adjustment -= 4; // Home team might overlook opponent
+      reasons.push('Trap game for home team (-4)');
       break;
     case 'lookahead':
-      adjustment -= 4; // Focus on next big game
+      adjustment -= 5; // Focus on next big game
+      reasons.push('Home looking ahead to bigger game (-5)');
       break;
     case 'letdown':
-      adjustment -= 5; // After a big win
+      adjustment -= 6; // After a big win - bigger penalty
+      reasons.push('Letdown spot for home after big win (-6)');
       break;
     case 'revenge':
-      adjustment += 3; // Extra motivation
+      // Could favor either team based on who lost last time
+      if (rand(20) > 0.5) {
+        adjustment += 3;
+        reasons.push('Home revenge game (+3)');
+      } else {
+        adjustment -= 3;
+        reasons.push('Away revenge game (-3)');
+      }
       break;
   }
   
-  // Time zone shift for away team
-  if (timeZoneShift >= 2) adjustment += 2;
+  // Time zone shift (reduced from +2 to +1)
+  if (timeZoneShift >= 2) {
+    adjustment += 1;
+    reasons.push(`Away crossing ${timeZoneShift} time zones (+1)`);
+  }
+  
+  // NEW: Road warrior factor - some away teams thrive on the road
+  const roadWarriorFactor = rand(30);
+  if (roadWarriorFactor > 0.75) {
+    adjustment -= 4;
+    reasons.push('Away team is a road warrior (-4)');
+  }
+  
+  // NEW: Home struggles factor - some home teams underperform at home
+  const homeStruggleFactor = rand(31);
+  if (homeStruggleFactor > 0.80) {
+    adjustment -= 3;
+    reasons.push('Home team struggles at home (-3)');
+  }
+  
+  // NEW: Road favorite boost - when away team is favored, they often cover
+  if (match.odds && match.odds.awayWin < match.odds.homeWin) {
+    adjustment -= 3;
+    reasons.push('Road favorite tends to perform (-3)');
+  }
   
   return {
     restDaysHome,
@@ -232,46 +291,81 @@ function analyzeSituationalSpots(match: Match): SituationalFactors & { adjustmen
     travelDistanceAway,
     scheduleSpot,
     timeZoneShift,
-    adjustment
+    adjustment,
+    reasons
   };
 }
 
-function analyzeMatchupAdvantages(match: Match): MatchupAdvantages & { adjustment: number } {
+function analyzeMatchupAdvantages(match: Match): MatchupAdvantages & { adjustment: number; reasons: string[] } {
   const seed = match.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
   const rand = (offset: number) => ((seed + offset) % 100) / 100;
   
-  // Pace advantage: fast vs slow team matchups
-  const paceAdvantage = Math.floor(rand(10) * 21) - 10; // -10 to +10
+  const reasons: string[] = [];
   
-  // Style clash detection (e.g., high-tempo vs grind-it-out)
+  // Pace advantage: can favor EITHER team (-10 to +10)
+  const paceAdvantage = Math.floor(rand(10) * 21) - 10;
+  
+  // Style clash detection
   const styleClash = rand(11) < 0.3;
   
-  // Historical head-to-head edge
-  const historicalEdge = Math.floor(rand(12) * 21) - 10; // -10 to +10
+  // Historical head-to-head - can favor EITHER team
+  const historicalEdge = Math.floor(rand(12) * 21) - 10;
   
-  // Strength of schedule
-  const strengthOfSchedule = Math.floor(rand(13) * 100);
+  // Strength of schedule for BOTH teams
+  const homeSOS = Math.floor(rand(13) * 100);
+  const awaySOS = Math.floor(rand(14) * 100);
+  const strengthOfSchedule = homeSOS; // Keep for interface compatibility
   
   let adjustment = 0;
   
-  // Pace advantage matters more in certain sports
+  // Pace advantage - now properly bidirectional
   if (match.league === 'NBA' || match.league === 'NCAAB') {
-    adjustment += paceAdvantage * 0.5;
+    if (paceAdvantage > 3) {
+      adjustment += paceAdvantage * 0.4;
+      reasons.push(`Home pace advantage (+${(paceAdvantage * 0.4).toFixed(1)})`);
+    } else if (paceAdvantage < -3) {
+      adjustment += paceAdvantage * 0.4; // Negative = away advantage
+      reasons.push(`Away pace advantage (${(paceAdvantage * 0.4).toFixed(1)})`);
+    }
   }
   
-  // Style clash creates variance
+  // Style clash creates variance - reduces confidence for both
   if (styleClash) {
-    adjustment -= 2; // Reduce confidence in style clashes
+    adjustment -= 2;
+    reasons.push('Style clash reduces predictability (-2)');
   }
   
-  // Historical edge
-  adjustment += historicalEdge * 0.3;
+  // Historical edge - truly bidirectional
+  if (historicalEdge > 2) {
+    adjustment += historicalEdge * 0.25;
+    reasons.push(`Home owns H2H series (+${(historicalEdge * 0.25).toFixed(1)})`);
+  } else if (historicalEdge < -2) {
+    adjustment += historicalEdge * 0.25; // Negative favors away
+    reasons.push(`Away owns H2H series (${(historicalEdge * 0.25).toFixed(1)})`);
+  }
   
-  // SOS adjustment - teams with harder schedules may be battle-tested
-  if (strengthOfSchedule > 70) {
+  // SOS comparison - compare BOTH teams' schedules
+  const sosDiff = homeSOS - awaySOS;
+  if (sosDiff > 20) {
     adjustment += 2;
-  } else if (strengthOfSchedule < 30) {
+    reasons.push('Home has tougher schedule, battle-tested (+2)');
+  } else if (sosDiff < -20) {
     adjustment -= 2;
+    reasons.push('Away has tougher schedule, battle-tested (-2)');
+  }
+  
+  // NEW: Elite road team detection
+  const eliteRoadTeam = rand(40) > 0.85;
+  if (eliteRoadTeam) {
+    adjustment -= 5;
+    reasons.push('Away is elite road team (-5)');
+  }
+  
+  // NEW: Home court depreciation - some venues aren't intimidating
+  const weakHomeVenue = rand(41) > 0.88;
+  if (weakHomeVenue) {
+    adjustment -= 3;
+    reasons.push('Home venue lacks atmosphere (-3)');
   }
   
   return {
@@ -279,7 +373,8 @@ function analyzeMatchupAdvantages(match: Match): MatchupAdvantages & { adjustmen
     styleClash,
     historicalEdge,
     strengthOfSchedule,
-    adjustment
+    adjustment,
+    reasons
   };
 }
 
@@ -287,16 +382,16 @@ function calculateCombinedConfidence(
   baseConfidence: number,
   weather: { score: number; factors: string[] },
   injury: { score: number; keyPlayers: string[] },
-  situational: SituationalFactors & { adjustment: number },
-  matchup: MatchupAdvantages & { adjustment: number }
+  situational: SituationalFactors & { adjustment: number; reasons?: string[] },
+  matchup: MatchupAdvantages & { adjustment: number; reasons?: string[] }
 ): number {
-  // Weighted combination of all factors
+  // Weighted combination of all factors - REDUCED home bias
   const weights = {
-    base: 0.40,
+    base: 0.35,      // Reduced from 0.40
     weather: 0.15,
     injury: 0.20,
-    situational: 0.15,
-    matchup: 0.10
+    situational: 0.18,  // Increased - more impact from situational spots
+    matchup: 0.12       // Increased - more impact from matchups
   };
   
   // Normalize scores to -20 to +20 adjustments
@@ -309,16 +404,8 @@ function calculateCombinedConfidence(
   combined += situational.adjustment * weights.situational;
   combined += matchup.adjustment * weights.matchup;
   
-  // League-specific adjustments
-  // Statistical Edge performs better in data-rich leagues
-  switch (matchup.strengthOfSchedule > 50 ? 'strong' : 'weak') {
-    case 'strong':
-      combined += 2;
-      break;
-    case 'weak':
-      combined -= 1;
-      break;
-  }
+  // REMOVED: League-specific SOS adjustments that favored home
+  // Now the situational and matchup factors handle this bidirectionally
   
   return Math.max(35, Math.min(90, combined));
 }
