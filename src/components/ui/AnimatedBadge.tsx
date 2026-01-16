@@ -74,6 +74,9 @@ export const AnimatedBadge = memo(function AnimatedBadge({
           pulse && variant === 'live' && 'animate-pulse',
           className
         )}
+        role="status"
+        aria-live="polite"
+        aria-label={`${count} ${variant === 'live' ? 'live items' : 'items'}`}
       >
         <AnimatedNumber value={count} />
       </motion.div>

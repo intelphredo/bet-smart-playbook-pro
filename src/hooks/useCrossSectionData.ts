@@ -18,7 +18,7 @@ export interface CrossSectionInsight {
   description: string;
   confidence: number;
   action?: string;
-  relatedData?: any;
+  relatedData?: { winRate: number; sampleSize: number } | Record<string, unknown>;
 }
 
 export interface HistoricalMatchup {
@@ -34,8 +34,8 @@ export interface HistoricalMatchup {
 export interface CrossSectionData {
   // Injury Data
   injuries: {
-    homeTeam: any[];
-    awayTeam: any[];
+    homeTeam: Array<{ name?: string; player_name?: string; status: string; position?: string; impact?: number }>;
+    awayTeam: Array<{ name?: string; player_name?: string; status: string; position?: string; impact?: number }>;
     totalImpact: number;
     keyInjuries: string[];
   } | null;
@@ -91,7 +91,7 @@ async function fetchSimilarMatchups(
     .limit(20);
 
   if (error) {
-    console.error("Error fetching similar matchups:", error);
+    // Don't log errors in production - handled by caller
     return [];
   }
 
@@ -101,9 +101,9 @@ async function fetchSimilarMatchups(
 // Generate cross-section insights based on all data
 function generateInsights(
   match: Match,
-  injuries: any,
+  injuries: CrossSectionData['injuries'],
   historicalMatchups: HistoricalMatchup[],
-  bettingTrend: any,
+  bettingTrend: CrossSectionData['bettingTrend'],
   scenarios: BettingScenario[]
 ): CrossSectionInsight[] {
   const insights: CrossSectionInsight[] = [];
@@ -293,8 +293,8 @@ export function useCrossSectionData(match: Match | null): CrossSectionData {
       awayTeam: awayInjuries || [],
       totalImpact,
       keyInjuries: [
-        ...homeInjuries.slice(0, 2).map((i: any) => `${i.name} (${i.status})`),
-        ...awayInjuries.slice(0, 2).map((i: any) => `${i.name} (${i.status})`),
+        ...homeInjuries.slice(0, 2).map((i) => `${i.playerName || 'Unknown'} (${i.status})`),
+        ...awayInjuries.slice(0, 2).map((i) => `${i.playerName || 'Unknown'} (${i.status})`),
       ],
     } : null;
 
@@ -368,8 +368,21 @@ export function useCrossSectionData(match: Match | null): CrossSectionData {
   return crossSectionData;
 }
 
+interface BacktestStrategyResults {
+  winRate: number;
+  roi: number;
+  sampleSize: number;
+}
+
+interface BacktestValidation {
+  isReliable: boolean;
+  isPositiveEV: boolean;
+  recommendation: string;
+  suggestedAdjustments: string[];
+}
+
 // Hook to validate backtest strategy against live data
-export function useBacktestValidation(strategyResults: any) {
+export function useBacktestValidation(strategyResults: BacktestStrategyResults | null): BacktestValidation | null {
   return useMemo(() => {
     if (!strategyResults) return null;
 

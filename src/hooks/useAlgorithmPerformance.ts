@@ -1,7 +1,8 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { BettingAlgorithm } from "@/types/sports";
+import { logger } from "@/utils/logger";
+import { queryKeys } from "@/config/queryKeys";
 
 interface UseAlgorithmPerformanceProps {
   dateRange?: {
@@ -31,10 +32,10 @@ function isAllTimeStats(stats: AllTimeStats | FilteredStats): stats is AllTimeSt
 
 export const useAlgorithmPerformance = ({ dateRange }: UseAlgorithmPerformanceProps = {}) => {
   return useQuery({
-    queryKey: ["algorithmPerformance", dateRange],
+    queryKey: queryKeys.algorithms.performance(dateRange),
     queryFn: async () => {
       try {
-        console.log("Fetching algorithm performance data", dateRange ? "with date filter" : "all-time");
+        logger.debug("Fetching algorithm performance data", dateRange ? "with date filter" : "all-time");
         
         // First, get all algorithms with their all-time stats
         const { data: algorithms, error: algorithmsError } = await supabase
@@ -52,7 +53,7 @@ export const useAlgorithmPerformance = ({ dateRange }: UseAlgorithmPerformancePr
           `);
 
         if (algorithmsError) {
-          console.error("Error fetching algorithms:", algorithmsError);
+          logger.error("Error fetching algorithms: " + algorithmsError.message);
           throw algorithmsError;
         }
 
@@ -60,10 +61,9 @@ export const useAlgorithmPerformance = ({ dateRange }: UseAlgorithmPerformancePr
         let filteredStats: Record<string, FilteredStats> = {};
         
         if (dateRange?.start || dateRange?.end) {
-          console.log("Fetching filtered predictions for date range:", 
-            dateRange.start ? dateRange.start.toISOString() : 'beginning',
-            "to",
-            dateRange.end ? dateRange.end.toISOString() : 'now');
+          logger.debug(`Fetching filtered predictions for date range: ${
+            dateRange.start ? dateRange.start.toISOString() : 'beginning'
+          } to ${dateRange.end ? dateRange.end.toISOString() : 'now'}`);
             
           const { data: predictions, error: predictionsError } = await supabase
             .from("algorithm_predictions")
@@ -77,7 +77,7 @@ export const useAlgorithmPerformance = ({ dateRange }: UseAlgorithmPerformancePr
             .lte('predicted_at', dateRange.end ? dateRange.end.toISOString() : new Date().toISOString());
 
           if (predictionsError) {
-            console.error("Error fetching predictions:", predictionsError);
+            logger.error("Error fetching predictions: " + predictionsError.message);
             throw predictionsError;
           }
 
@@ -147,10 +147,10 @@ export const useAlgorithmPerformance = ({ dateRange }: UseAlgorithmPerformancePr
           });
         }
 
-        console.log("Algorithm performance data fetched:", results);
+        logger.debug("Algorithm performance data fetched:", results.length, "algorithms");
         return results;
       } catch (error) {
-        console.error("Error in useAlgorithmPerformance:", error);
+        logger.error("Error in useAlgorithmPerformance: " + String(error));
         throw error;
       }
     },

@@ -4,6 +4,7 @@
  */
 
 import { SportLeague } from "@/types/sportradar";
+import { logger } from "@/utils/logger";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -47,7 +48,7 @@ export async function fetchSportradarData<T>(
       url.searchParams.set("player_id", options.playerId);
     }
 
-    console.log(`[Sportradar] Fetching ${league} ${dataType}`);
+    logger.debug(`[Sportradar] Fetching ${league} ${dataType}`);
 
     const response = await fetch(url.toString(), {
       headers: {
@@ -67,11 +68,11 @@ export async function fetchSportradarData<T>(
       throw new Error(result.error || "Failed to fetch data");
     }
 
-    console.log(`[Sportradar] ${league} ${dataType} fetched successfully`);
+    logger.debug(`[Sportradar] ${league} ${dataType} fetched successfully`);
     return result;
 
   } catch (error) {
-    console.error(`[Sportradar] Error fetching ${league} ${dataType}:`, error);
+    logger.error(`[Sportradar] Error fetching ${league} ${dataType}: ${error}`);
     throw error;
   }
 }
@@ -128,7 +129,7 @@ export async function fetchAllInjuries(): Promise<Record<SportLeague, any>> {
     if (result.status === "fulfilled") {
       injuries[league] = result.value.data;
     } else {
-      console.warn(`Failed to fetch ${league} injuries:`, result.reason);
+      logger.warn(`Failed to fetch ${league} injuries: ${result.reason}`);
       injuries[league] = [];
     }
   });
