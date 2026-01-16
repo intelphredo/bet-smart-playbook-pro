@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { TeamLogoImage } from '@/components/ui/TeamLogoImage';
 import FavoriteButton from '@/components/FavoriteButton';
 import PredictionReasoningBadge from '@/components/PredictionReasoningBadge';
+import { LockedBadge } from '@/components/ui/LockedBadge';
 import { format } from 'date-fns';
 import { Clock, Radio, TrendingUp, Zap, ChevronRight, Users, Target } from 'lucide-react';
 import { formatMoneylineOdds, getPrimaryOdds } from '@/utils/sportsbook';
@@ -152,7 +153,7 @@ const MemoizedScoreboardRow = memo(function MemoizedScoreboardRow({
       {/* AI Prediction - Enhanced */}
       {hasValidPrediction && (
         <div className="hidden sm:flex flex-col gap-1 items-end">
-          <div onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Badge 
@@ -168,11 +169,16 @@ const MemoizedScoreboardRow = memo(function MemoizedScoreboardRow({
               </TooltipTrigger>
               <TooltipContent side="left" className="max-w-xs p-3">
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-2">
                     <span className="font-semibold text-sm">AI Pick</span>
-                    <Badge variant="secondary" className="text-xs">
-                      {prediction.confidence}% conf
-                    </Badge>
+                    <div className="flex items-center gap-1">
+                      {prediction.isLocked && (
+                        <LockedBadge lockedAt={prediction.lockedAt} compact />
+                      )}
+                      <Badge variant="secondary" className="text-xs">
+                        {prediction.confidence}% conf
+                      </Badge>
+                    </div>
                   </div>
                   <p className="text-sm font-medium">{prediction.recommended}</p>
                   {prediction.reasoning && (
@@ -193,6 +199,9 @@ const MemoizedScoreboardRow = memo(function MemoizedScoreboardRow({
                 </div>
               </TooltipContent>
             </Tooltip>
+            {prediction.isLocked && (
+              <LockedBadge lockedAt={prediction.lockedAt} compact />
+            )}
           </div>
           <Progress 
             value={prediction.confidence} 
@@ -231,6 +240,7 @@ const MemoizedScoreboardRow = memo(function MemoizedScoreboardRow({
     prevProps.match.score?.period === nextProps.match.score?.period &&
     prevProps.match.prediction?.confidence === nextProps.match.prediction?.confidence &&
     prevProps.match.prediction?.recommended === nextProps.match.prediction?.recommended &&
+    prevProps.match.prediction?.isLocked === nextProps.match.prediction?.isLocked &&
     prevProps.showOdds === nextProps.showOdds
   );
 });
