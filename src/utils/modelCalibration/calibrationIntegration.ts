@@ -5,6 +5,11 @@
 
 import { ModelWeight, DEFAULT_CALIBRATION_CONFIG } from './types';
 import { ALGORITHM_IDS } from '@/utils/predictions/algorithms';
+import { 
+  applyBinCalibration, 
+  getBinCalibrationSummary,
+  type BinCalibrationResult 
+} from './binCalibration';
 
 // In-memory cache for model weights (updated by the recalibration hook)
 let cachedWeights: ModelWeight[] | null = null;
@@ -79,6 +84,7 @@ export function getAlgorithmCalibration(algorithmId: string): {
 /**
  * Apply calibration adjustment to a confidence score
  * Returns the adjusted confidence and whether it meets the minimum threshold
+ * Now includes bin-level calibration for more precise adjustments
  */
 export function applyConfidenceCalibration(
   rawConfidence: number,
@@ -89,21 +95,35 @@ export function applyConfidenceCalibration(
   meetsThreshold: boolean;
   multiplier: number;
   isPaused: boolean;
+  binAdjustment: {
+    factor: number;
+    binLabel: string;
+    wasAdjusted: boolean;
+  };
 } {
   const calibration = getAlgorithmCalibration(algorithmId);
   
-  // Apply the confidence multiplier
-  const adjustedConfidence = Math.round(rawConfidence * calibration.confidenceMultiplier);
+  // First apply algorithm-level calibration
+  let adjustedConfidence = rawConfidence * calibration.confidenceMultiplier;
+  
+  // Then apply bin-level calibration for fine-tuning
+  const binResult = applyBinCalibration(adjustedConfidence);
+  adjustedConfidence = binResult.calibratedConfidence;
   
   // Check against minimum threshold
   const meetsThreshold = adjustedConfidence >= calibration.minConfidenceThreshold;
   
   return {
-    adjustedConfidence: Math.max(35, Math.min(95, adjustedConfidence)),
+    adjustedConfidence: Math.max(35, Math.min(95, Math.round(adjustedConfidence))),
     rawConfidence,
     meetsThreshold,
     multiplier: calibration.confidenceMultiplier,
     isPaused: calibration.isPaused,
+    binAdjustment: {
+      factor: binResult.adjustmentFactor,
+      binLabel: binResult.binLabel,
+      wasAdjusted: binResult.wasAdjusted,
+    },
   };
 }
 
@@ -186,14 +206,28 @@ export function getCalibrationSummary(): {
   adjustedAlgorithms: number;
   pausedAlgorithms: number;
   averageMultiplier: number;
+  binCalibration: {
+    isActive: boolean;
+    adjustedBinsCount: number;
+    overallFactor: number;
+    isCalibrated: boolean;
+  };
 } {
+  const binSummary = getBinCalibrationSummary();
+  
   if (!cachedWeights) {
     return {
-      isActive: false,
-      lastUpdate: null,
+      isActive: binSummary.isActive,
+      lastUpdate: binSummary.lastUpdate,
       adjustedAlgorithms: 0,
       pausedAlgorithms: 0,
       averageMultiplier: 1.0,
+      binCalibration: {
+        isActive: binSummary.isActive,
+        adjustedBinsCount: binSummary.adjustedBinsCount,
+        overallFactor: binSummary.overallFactor,
+        isCalibrated: binSummary.isCalibrated,
+      },
     };
   }
 
@@ -207,5 +241,11 @@ export function getCalibrationSummary(): {
     adjustedAlgorithms: adjusted.length,
     pausedAlgorithms: paused.length,
     averageMultiplier: avgMultiplier,
+    binCalibration: {
+      isActive: binSummary.isActive,
+      adjustedBinsCount: binSummary.adjustedBinsCount,
+      overallFactor: binSummary.overallFactor,
+      isCalibrated: binSummary.isCalibrated,
+    },
   };
 }
