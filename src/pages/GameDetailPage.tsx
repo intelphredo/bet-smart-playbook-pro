@@ -135,10 +135,16 @@ const GameDetailPage: React.FC = () => {
       <div className="container max-w-4xl mx-auto py-6 px-4 space-y-6">
         <AppBreadcrumb />
 
-        {/* Back Button */}
-        <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
+        {/* Back Button - Larger touch target on mobile */}
+        <Button 
+          variant="ghost" 
+          size="default"
+          onClick={() => navigate(-1)}
+          className="min-h-[44px] min-w-[44px] -ml-2 sm:ml-0"
+          aria-label="Go back to previous page"
+        >
+          <ArrowLeft className="h-5 w-5 mr-2" />
+          <span className="hidden sm:inline">Back</span>
         </Button>
 
         {/* Match Header Card - Hero Style */}
@@ -175,11 +181,11 @@ const GameDetailPage: React.FC = () => {
             </div>
             
             <CardContent className="py-8">
-              {/* Teams with Logos - Large Hero Display */}
-              <div className="flex items-center justify-between gap-4">
+              {/* Teams with Logos - Responsive Hero Display */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-6">
                 {/* Home Team */}
                 <motion.div 
-                  className="flex-1 text-center space-y-4"
+                  className="flex-1 text-center space-y-3 sm:space-y-4 w-full sm:w-auto"
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.1 }}
@@ -189,21 +195,21 @@ const GameDetailPage: React.FC = () => {
                       teamName={match.homeTeam?.name || "Home"} 
                       league={league}
                       size="xl"
-                      className="mb-3 shadow-lg"
+                      className="mb-2 sm:mb-3 shadow-lg"
                     />
-                    <h2 className="text-xl md:text-2xl font-bold leading-tight">
+                    <h2 className="text-lg sm:text-xl md:text-2xl font-bold leading-tight break-words max-w-[200px] sm:max-w-none">
                       {match.homeTeam?.name || "Home Team"}
                     </h2>
-                    <p className="text-sm text-muted-foreground">Home</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground">Home</p>
                     {match.homeTeam?.record && (
-                      <Badge variant="secondary" className="mt-2">
+                      <Badge variant="secondary" className="mt-1 sm:mt-2 text-xs">
                         {match.homeTeam.record}
                       </Badge>
                     )}
                   </div>
                   {match.score && (
                     <motion.p 
-                      className="text-5xl md:text-6xl font-bold text-primary"
+                      className="text-4xl sm:text-5xl md:text-6xl font-bold text-primary"
                       initial={{ scale: 0.8 }}
                       animate={{ scale: 1 }}
                       transition={{ delay: 0.2 }}
@@ -213,11 +219,12 @@ const GameDetailPage: React.FC = () => {
                   )}
                 </motion.div>
 
-                {/* VS Divider */}
-                <div className="flex flex-col items-center gap-2 px-4">
-                  <div className="text-3xl font-bold text-muted-foreground/50">VS</div>
+                {/* VS Divider - Horizontal on mobile */}
+                <div className="flex flex-row sm:flex-col items-center gap-2 py-2 sm:py-0 sm:px-4">
+                  <div className="hidden sm:block text-3xl font-bold text-muted-foreground/50">VS</div>
+                  <div className="sm:hidden text-xl font-bold text-muted-foreground/50">vs</div>
                   {match.score?.period && (
-                    <Badge variant="outline" className="text-xs">
+                    <Badge variant="outline" className="text-[10px] sm:text-xs">
                       {match.score.period}
                     </Badge>
                   )}
@@ -225,7 +232,7 @@ const GameDetailPage: React.FC = () => {
 
                 {/* Away Team */}
                 <motion.div 
-                  className="flex-1 text-center space-y-4"
+                  className="flex-1 text-center space-y-3 sm:space-y-4 w-full sm:w-auto"
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.1 }}
@@ -235,21 +242,21 @@ const GameDetailPage: React.FC = () => {
                       teamName={match.awayTeam?.name || "Away"} 
                       league={league}
                       size="xl"
-                      className="mb-3 shadow-lg"
+                      className="mb-2 sm:mb-3 shadow-lg"
                     />
-                    <h2 className="text-xl md:text-2xl font-bold leading-tight">
+                    <h2 className="text-lg sm:text-xl md:text-2xl font-bold leading-tight break-words max-w-[200px] sm:max-w-none">
                       {match.awayTeam?.name || "Away Team"}
                     </h2>
-                    <p className="text-sm text-muted-foreground">Away</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground">Away</p>
                     {match.awayTeam?.record && (
-                      <Badge variant="secondary" className="mt-2">
+                      <Badge variant="secondary" className="mt-1 sm:mt-2 text-xs">
                         {match.awayTeam.record}
                       </Badge>
                     )}
                   </div>
                   {match.score && (
                     <motion.p 
-                      className="text-5xl md:text-6xl font-bold text-primary"
+                      className="text-4xl sm:text-5xl md:text-6xl font-bold text-primary"
                       initial={{ scale: 0.8 }}
                       animate={{ scale: 1 }}
                       transition={{ delay: 0.2 }}
@@ -260,13 +267,16 @@ const GameDetailPage: React.FC = () => {
                 </motion.div>
               </div>
 
-              <Separator className="my-6" />
+              <Separator className="my-4 sm:my-6" />
 
-              {/* Match Info */}
-              <div className="flex flex-wrap items-center justify-center gap-4 text-sm">
-                <div className="flex items-center gap-2 px-4 py-2 bg-muted/50 rounded-lg">
-                  <Clock className="h-4 w-4 text-primary" />
-                  <span>{format(parseISO(match.startTime), "EEEE, MMM d, yyyy 'at' h:mm a")}</span>
+              {/* Match Info - Responsive text and spacing */}
+              <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-4 text-xs sm:text-sm">
+                <div className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-muted/50 rounded-lg">
+                  <Clock className="h-4 w-4 text-primary flex-shrink-0" />
+                  <span className="text-center sm:text-left">
+                    <span className="hidden sm:inline">{format(parseISO(match.startTime), "EEEE, MMM d, yyyy 'at' h:mm a")}</span>
+                    <span className="sm:hidden">{format(parseISO(match.startTime), "MMM d 'at' h:mm a")}</span>
+                  </span>
                 </div>
               </div>
             </CardContent>
@@ -290,15 +300,16 @@ const GameDetailPage: React.FC = () => {
               <CardContent className="space-y-4">
                 {/* Bet Type Tabs */}
                 <Tabs value={selectedBetType} onValueChange={(v) => setSelectedBetType(v as BetType)}>
-                  <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="moneyline">Moneyline</TabsTrigger>
-                    <TabsTrigger value="spread" disabled={!spreadData}>Spread</TabsTrigger>
-                    <TabsTrigger value="total" disabled={!totalsData}>Total</TabsTrigger>
+                  {/* Bet type tabs with larger touch targets */}
+                  <TabsList className="grid w-full grid-cols-3 h-12 sm:h-10">
+                    <TabsTrigger value="moneyline" className="text-xs sm:text-sm min-h-[44px] sm:min-h-0">Moneyline</TabsTrigger>
+                    <TabsTrigger value="spread" disabled={!spreadData} className="text-xs sm:text-sm min-h-[44px] sm:min-h-0">Spread</TabsTrigger>
+                    <TabsTrigger value="total" disabled={!totalsData} className="text-xs sm:text-sm min-h-[44px] sm:min-h-0">Total</TabsTrigger>
                   </TabsList>
 
-                  {/* Moneyline */}
+                  {/* Moneyline - Stack on mobile */}
                   <TabsContent value="moneyline" className="mt-4">
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
                       {/* Home Win */}
                       <BetOption
                         matchId={match.id}
@@ -447,37 +458,38 @@ const GameDetailPage: React.FC = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {/* Prediction metrics - 2x2 grid on mobile, 4 cols on desktop */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
                   {match.prediction.confidence !== undefined && (
-                    <div className="text-center p-4 bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg border border-primary/20">
-                      <p className="text-3xl font-bold text-primary">
+                    <div className="text-center p-3 sm:p-4 bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg border border-primary/20">
+                      <p className="text-2xl sm:text-3xl font-bold text-primary">
                         {Math.round(match.prediction.confidence)}%
                       </p>
-                      <p className="text-xs text-muted-foreground mt-1">Confidence</p>
+                      <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">Confidence</p>
                     </div>
                   )}
                   {match.prediction.evPercentage !== undefined && (
-                    <div className="text-center p-4 bg-muted/50 rounded-lg">
+                    <div className="text-center p-3 sm:p-4 bg-muted/50 rounded-lg">
                       <p className={cn(
-                        "text-3xl font-bold",
+                        "text-2xl sm:text-3xl font-bold",
                         match.prediction.evPercentage > 0 ? "text-green-500" : "text-red-500"
                       )}>
                         {match.prediction.evPercentage > 0 ? "+" : ""}{match.prediction.evPercentage.toFixed(1)}%
                       </p>
-                      <p className="text-xs text-muted-foreground mt-1">Expected Value</p>
+                      <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">Expected Value</p>
                     </div>
                   )}
                   {match.prediction.kellyFraction !== undefined && (
-                    <div className="text-center p-4 bg-muted/50 rounded-lg">
-                      <p className="text-3xl font-bold">
+                    <div className="text-center p-3 sm:p-4 bg-muted/50 rounded-lg">
+                      <p className="text-2xl sm:text-3xl font-bold">
                         {(match.prediction.kellyFraction * 100).toFixed(1)}%
                       </p>
-                      <p className="text-xs text-muted-foreground mt-1">Kelly Stake</p>
+                      <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">Kelly Stake</p>
                     </div>
                   )}
                   {match.prediction.recommended && (
-                    <div className="text-center p-4 bg-gradient-to-br from-accent/20 to-accent/10 rounded-lg border border-accent/30">
-                      <div className="flex items-center justify-center gap-2">
+                    <div className="text-center p-3 sm:p-4 bg-gradient-to-br from-accent/20 to-accent/10 rounded-lg border border-accent/30">
+                      <div className="flex items-center justify-center gap-1 sm:gap-2">
                         <TeamLogo 
                           teamName={match.prediction.recommended === 'home' 
                             ? match.homeTeam?.name || '' 
@@ -485,11 +497,11 @@ const GameDetailPage: React.FC = () => {
                           league={league}
                           size="sm"
                         />
-                        <p className="text-xl font-bold capitalize">
+                        <p className="text-lg sm:text-xl font-bold capitalize">
                           {match.prediction.recommended}
                         </p>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-1">Recommended Pick</p>
+                      <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">Recommended Pick</p>
                     </div>
                   )}
                 </div>
@@ -569,9 +581,9 @@ const GameDetailPage: React.FC = () => {
 
                 <Separator />
 
-                {/* Components breakdown */}
+                {/* Components breakdown - responsive grid */}
                 {match.smartScore.components && (
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4">
                     <ScoreCard label="Momentum" value={match.smartScore.components.momentum} icon={TrendingUp} />
                     <ScoreCard label="Value" value={match.smartScore.components.value} icon={DollarSign} />
                     <ScoreCard label="Odds Movement" value={match.smartScore.components.oddsMovement} icon={BarChart3} />
@@ -858,7 +870,9 @@ const BetOption: React.FC<BetOptionProps> = ({
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
       className={cn(
-        "relative p-4 rounded-lg border transition-all",
+        "relative p-3 sm:p-4 rounded-lg border transition-all",
+        // Minimum touch target height
+        "min-h-[120px] sm:min-h-0",
         isRecommended 
           ? "bg-gradient-to-br from-primary/15 to-primary/5 border-primary/40" 
           : "bg-muted/50 border-border hover:border-primary/30"
@@ -871,22 +885,22 @@ const BetOption: React.FC<BetOptionProps> = ({
         </Badge>
       )}
       
-      <div className="flex flex-col items-center gap-3">
+      <div className="flex flex-col items-center gap-2 sm:gap-3">
         {teamName && leagueType ? (
           <TeamLogo teamName={teamName} league={leagueType} size="md" />
         ) : icon ? (
-          <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-muted flex items-center justify-center">
             {icon}
           </div>
         ) : null}
         
         <div className="text-center">
-          <p className="text-sm font-medium">{label}</p>
-          <p className="text-2xl font-bold font-mono mt-1">{formatOdds(odds)}</p>
+          <p className="text-xs sm:text-sm font-medium">{label}</p>
+          <p className="text-xl sm:text-2xl font-bold font-mono mt-1">{formatOdds(odds)}</p>
         </div>
 
         {isRecommended && confidence && (
-          <div className="text-xs text-muted-foreground">
+          <div className="text-[10px] sm:text-xs text-muted-foreground">
             {Math.round(confidence)}% confidence
           </div>
         )}
@@ -901,7 +915,7 @@ const BetOption: React.FC<BetOptionProps> = ({
           modelConfidence={confidence}
           modelEvPercentage={evPercentage}
           kellyRecommended={kellyFraction}
-          className="w-full"
+          className="w-full min-h-[44px]"
         />
       </div>
     </motion.div>
@@ -917,19 +931,19 @@ const formatOdds = (odds: number): string => {
   return odds > 0 ? `+${Math.round(odds)}` : `${Math.round(odds)}`;
 };
 
-// Score card component for SmartScore breakdown
+// Score card component for SmartScore breakdown - with responsive padding
 const ScoreCard: React.FC<{ 
   label: string; 
   value: number;
   icon?: React.ComponentType<{ className?: string }>;
 }> = ({ label, value, icon: Icon }) => (
-  <div className="p-3 bg-muted/30 rounded-lg">
-    <div className="flex items-center gap-2 mb-2">
-      {Icon && <Icon className="h-4 w-4 text-muted-foreground" />}
-      <span className="text-xs text-muted-foreground">{label}</span>
+  <div className="p-2 sm:p-3 bg-muted/30 rounded-lg">
+    <div className="flex items-center gap-1 sm:gap-2 mb-1 sm:mb-2">
+      {Icon && <Icon className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />}
+      <span className="text-[10px] sm:text-xs text-muted-foreground truncate">{label}</span>
     </div>
     <div className="flex items-center gap-2">
-      <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+      <div className="flex-1 h-1.5 sm:h-2 bg-muted rounded-full overflow-hidden">
         <div 
           className={cn(
             "h-full transition-all",
@@ -940,7 +954,7 @@ const ScoreCard: React.FC<{
         />
       </div>
       <span className={cn(
-        "font-bold text-sm min-w-[1.5rem] text-right",
+        "font-bold text-xs sm:text-sm min-w-[1.5rem] text-right",
         value >= 70 ? "text-green-500" :
         value >= 50 ? "text-yellow-500" : "text-red-500"
       )}>
