@@ -234,15 +234,6 @@ const Index = () => {
               </div>
               
               <div className="flex items-center gap-3 shrink-0">
-                <UpcomingAlertsBadge 
-                  alerts={smartAlerts}
-                  alertsToday={alertsToday}
-                  remainingAlerts={remainingAlerts}
-                  injuryAlertsCount={injuryAlertsCount}
-                  isInjuryScanning={isInjuryScanning}
-                  onViewMatch={(matchId) => navigate(`/game/${matchId}`)}
-                />
-                <SteamMoveMonitor matches={allActiveMatches} enabled={true} />
                 <LiveRefreshIndicator
                   hasLiveGames={hasLiveGames}
                   secondsUntilRefresh={secondsUntilRefresh}
@@ -313,15 +304,6 @@ const Index = () => {
               minEV={3}
             />
 
-            {/* High Value Alerts - Always visible */}
-            <HighValueAlertBanner
-              matches={allActiveMatches}
-              confidenceThreshold={75}
-              smartScoreThreshold={70}
-              evThreshold={5}
-              maxAlerts={3}
-              onMatchClick={handleMatchClick}
-            />
 
             {/* Scores Tab */}
             <TabsContent value="scores" className="space-y-6 mt-0">
