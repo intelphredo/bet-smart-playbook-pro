@@ -180,6 +180,9 @@ export const mapESPNStandingsToSportradar = (
         const confName = conference.name || conference.abbreviation || '';
         console.log(`[ESPN Standings Mapper] Processing conference: ${confName}`);
         
+        // Collect all entries for this conference to sort properly
+        const conferenceEntries: { entry: ESPNTeamEntry; division: string }[] = [];
+        
         // Check for divisions within conference
         if (conference.children && conference.children.length > 0) {
           console.log(`[ESPN Standings Mapper] Found ${conference.children.length} divisions`);
@@ -189,24 +192,44 @@ export const mapESPNStandingsToSportradar = (
             
             if (division.standings?.entries) {
               console.log(`[ESPN Standings Mapper] Division ${divName}: ${division.standings.entries.length} teams`);
-              division.standings.entries.forEach((entry, index) => {
-                standings.push(mapTeamEntry(entry, confName, divName, league, index));
+              division.standings.entries.forEach((entry) => {
+                conferenceEntries.push({ entry, division: divName });
               });
             }
           });
         } else if (conference.standings?.entries) {
           // Direct conference standings (no divisions)
           console.log(`[ESPN Standings Mapper] Conference ${confName}: ${conference.standings.entries.length} teams`);
-          conference.standings.entries.forEach((entry, index) => {
-            standings.push(mapTeamEntry(entry, confName, '', league, index));
+          conference.standings.entries.forEach((entry) => {
+            conferenceEntries.push({ entry, division: '' });
           });
         }
+        
+        // Sort entries by playoffSeed/rank BEFORE mapping
+        conferenceEntries.sort((a, b) => {
+          const aRank = getStatValue(a.entry.stats, 'playoffSeed', 'leagueRank', 'rank') || 999;
+          const bRank = getStatValue(b.entry.stats, 'playoffSeed', 'leagueRank', 'rank') || 999;
+          return aRank - bRank;
+        });
+        
+        // Now map with correct index for fallback
+        conferenceEntries.forEach(({ entry, division }, index) => {
+          standings.push(mapTeamEntry(entry, confName, division, league, index));
+        });
       });
     } 
     // Handle flat standings structure (Soccer/Premier League)
     else if (response.standings?.entries) {
       console.log(`[ESPN Standings Mapper] Flat structure: ${response.standings.entries.length} teams`);
-      response.standings.entries.forEach((entry, index) => {
+      
+      // Sort by rank before mapping
+      const sortedEntries = [...response.standings.entries].sort((a, b) => {
+        const aRank = getStatValue(a.stats, 'playoffSeed', 'leagueRank', 'rank') || 999;
+        const bRank = getStatValue(b.stats, 'playoffSeed', 'leagueRank', 'rank') || 999;
+        return aRank - bRank;
+      });
+      
+      sortedEntries.forEach((entry, index) => {
         standings.push(mapTeamEntry(entry, league === 'SOCCER' ? 'Premier League' : '', '', league, index));
       });
     } else {
@@ -214,7 +237,7 @@ export const mapESPNStandingsToSportradar = (
       console.log(`[ESPN Standings Mapper] Response keys:`, Object.keys(response || {}));
     }
     
-    // Sort by conference rank
+    // Final sort - by conference, then by confRank
     standings.sort((a, b) => {
       if (a.conference !== b.conference) {
         return a.conference.localeCompare(b.conference);
