@@ -14,6 +14,13 @@ const SPORT_KEYS: Record<string, string> = {
   MLB: "baseball_mlb",
   NHL: "icehockey_nhl",
   SOCCER: "soccer_epl",
+  EPL: "soccer_epl",
+  LA_LIGA: "soccer_spain_la_liga",
+  SERIE_A: "soccer_italy_serie_a",
+  BUNDESLIGA: "soccer_germany_bundesliga",
+  LIGUE_1: "soccer_france_ligue_one",
+  MLS: "soccer_usa_mls",
+  CHAMPIONS_LEAGUE: "soccer_uefa_champs_league",
   NCAAF: "americanfootball_ncaaf",
   NCAAB: "basketball_ncaab",
 };
