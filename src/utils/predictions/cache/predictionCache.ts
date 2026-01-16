@@ -12,7 +12,7 @@ interface CachedPrediction {
   ttl: number;
 }
 
-const CACHE_KEY = 'betsmart-prediction-cache';
+const CACHE_KEY = 'edgeiq-prediction-cache';
 const DEFAULT_TTL = 30 * 60 * 1000; // 30 minutes
 const MAX_CACHE_SIZE = 500;
 

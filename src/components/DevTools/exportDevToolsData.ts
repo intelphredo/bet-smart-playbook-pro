@@ -31,7 +31,7 @@ export interface DevToolsExportData {
 
 export const collectDevToolsData = (): DevToolsExportData => {
   // Collect logs from global state
-  const logs = (window as any).__BetSmart?.logs || [];
+  const logs = (window as any).__EdgeIQ?.logs || [];
 
   // Mock network requests (in production, these would be intercepted)
   const networkRequests = [
@@ -83,13 +83,13 @@ export const collectDevToolsData = (): DevToolsExportData => {
   };
 
   // Collect state
-  const betSmartState = (window as any).__BetSmart;
+  const edgeIQState = (window as any).__EdgeIQ;
   const globalState = {
-    upcomingMatches: betSmartState?.upcomingMatches || [],
-    liveMatches: betSmartState?.liveMatches || [],
-    finishedMatches: betSmartState?.finishedMatches || [],
-    algorithmPerformance: betSmartState?.algorithmPerformance || null,
-    logsCount: betSmartState?.logs?.length || 0,
+    upcomingMatches: edgeIQState?.upcomingMatches || [],
+    liveMatches: edgeIQState?.liveMatches || [],
+    finishedMatches: edgeIQState?.finishedMatches || [],
+    algorithmPerformance: edgeIQState?.algorithmPerformance || null,
+    logsCount: edgeIQState?.logs?.length || 0,
   };
 
   // Collect localStorage

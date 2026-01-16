@@ -27,7 +27,7 @@ export default function PrivacyPolicy() {
         <Card className="mb-8 border-primary/30 bg-gradient-to-r from-primary/5 to-transparent">
           <CardContent className="p-6">
             <p className="text-sm text-muted-foreground leading-relaxed">
-              At BetSmart Playbook Pro, we are committed to protecting your privacy. This Privacy Policy 
+              At EdgeIQ, we are committed to protecting your privacy. This Privacy Policy 
               explains how we collect, use, disclose, and safeguard your information when you use our 
               sports analytics platform.
             </p>
@@ -220,7 +220,7 @@ export default function PrivacyPolicy() {
               <p>
                 If you have questions about this Privacy Policy or our data practices, please contact us:
               </p>
-              <p className="font-medium">privacy@betsmartplaybook.com</p>
+              <p className="font-medium">privacy@edgeiq.app</p>
             </CardContent>
           </Card>
         </div>

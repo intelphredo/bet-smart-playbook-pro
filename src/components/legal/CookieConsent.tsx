@@ -8,8 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
-const COOKIE_CONSENT_KEY = "betsmart_cookie_consent";
-const COOKIE_PREFERENCES_KEY = "betsmart_cookie_preferences";
+const COOKIE_CONSENT_KEY = "edgeiq_cookie_consent";
+const COOKIE_PREFERENCES_KEY = "edgeiq_cookie_preferences";
 
 export interface CookiePreferences {
   necessary: boolean; // Always true, cannot be disabled

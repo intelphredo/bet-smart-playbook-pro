@@ -7,8 +7,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Link } from "react-router-dom";
 
-const AGE_VERIFIED_KEY = "betsmart_age_verified";
-const AGE_VERIFIED_TIMESTAMP_KEY = "betsmart_age_verified_at";
+const AGE_VERIFIED_KEY = "edgeiq_age_verified";
+const AGE_VERIFIED_TIMESTAMP_KEY = "edgeiq_age_verified_at";
 const VERIFICATION_EXPIRY_DAYS = 30;
 
 interface AgeVerificationGateProps {

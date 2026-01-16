@@ -49,11 +49,11 @@ const DevToolsPanel = () => {
                     size="sm" 
                     onClick={() => console.log('Project State Snapshot', {
                       matches: {
-                        upcoming: window.__BetSmart?.upcomingMatches?.length || 0,
-                        live: window.__BetSmart?.liveMatches?.length || 0,
-                        finished: window.__BetSmart?.finishedMatches?.length || 0
+                        upcoming: window.__EdgeIQ?.upcomingMatches?.length || 0,
+                        live: window.__EdgeIQ?.liveMatches?.length || 0,
+                        finished: window.__EdgeIQ?.finishedMatches?.length || 0
                       },
-                      algorithmPerformance: window.__BetSmart?.algorithmPerformance || null
+                      algorithmPerformance: window.__EdgeIQ?.algorithmPerformance || null
                     })}
                   >
                     <Bug className="h-4 w-4" />
@@ -132,7 +132,7 @@ const DevToolsPanel = () => {
                   <CardContent className="p-4">
                     <pre className="text-xs overflow-auto max-h-[450px] bg-muted p-3 rounded-lg font-mono">
                       {JSON.stringify(
-                        window.__BetSmart?.logs || 
+                        window.__EdgeIQ?.logs || 
                         'No logs available. Ensure logging is set up.', 
                         null, 2
                       )}

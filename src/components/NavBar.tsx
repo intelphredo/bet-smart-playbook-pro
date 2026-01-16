@@ -49,7 +49,7 @@ export default function NavBar({ className }: NavBarProps) {
               <Link 
                 to="/" 
                 className="group font-bold text-xl flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-primary/50 rounded-lg px-2 py-1 -ml-2 transition-all duration-300"
-                aria-label="BetSmart - Go to homepage"
+                aria-label="EdgeIQ - Go to homepage"
               >
                 <div className="relative">
                   <div className="absolute inset-0 bg-primary/30 blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-full" />
@@ -57,9 +57,9 @@ export default function NavBar({ className }: NavBarProps) {
                 </div>
                 <span className="relative">
                   <span className="bg-gradient-to-r from-primary via-amber-400 to-primary bg-clip-text text-transparent bg-[length:200%_auto] font-playfair tracking-tight group-hover:animate-[shimmer_2s_linear]">
-                    Bet
+                    Edge
                   </span>
-                  <span className="text-foreground font-extrabold tracking-tight">Smart</span>
+                  <span className="text-foreground font-extrabold tracking-tight">IQ</span>
                 </span>
               </Link>
             </div>

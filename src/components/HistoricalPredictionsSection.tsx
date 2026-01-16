@@ -562,7 +562,7 @@ const HistoricalPredictionsSection = () => {
       for (let i = 1; i <= totalPages; i++) {
         pdf.setPage(i);
         addText(`Page ${i} of ${totalPages}`, pageWidth - margin - 20, pageHeight - 10, { fontSize: 8, color: [150, 150, 150] });
-        addText('Bet Smart - AI Predictions', margin, pageHeight - 10, { fontSize: 8, color: [150, 150, 150] });
+        addText('EdgeIQ - AI Predictions', margin, pageHeight - 10, { fontSize: 8, color: [150, 150, 150] });
       }
 
       // Save PDF

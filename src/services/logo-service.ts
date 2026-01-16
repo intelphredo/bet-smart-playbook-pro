@@ -14,7 +14,7 @@ import { getNCAABTeamId } from "@/utils/ncaabTeamIds";
 // Cache configuration - v2 invalidates old NHL logos with incorrect abbreviations
 const CACHE_VERSION = 'v2';
 const CACHE_EXPIRATION_DAYS = 7;
-const CACHE_PREFIX = `betsmart-logo-${CACHE_VERSION}`;
+const CACHE_PREFIX = `edgeiq-logo-${CACHE_VERSION}`;
 const MAX_RETRIES = 2;
 const RETRY_DELAY_MS = 500;
 

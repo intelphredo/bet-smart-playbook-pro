@@ -20,14 +20,14 @@ const StateInspector = () => {
   const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
 
   const refreshState = () => {
-    // Get BetSmart global state
-    const betSmartState = window.__BetSmart;
+    // Get EdgeIQ global state
+    const edgeIQState = window.__EdgeIQ;
     setGlobalState({
-      upcomingMatches: betSmartState?.upcomingMatches || [],
-      liveMatches: betSmartState?.liveMatches || [],
-      finishedMatches: betSmartState?.finishedMatches || [],
-      algorithmPerformance: betSmartState?.algorithmPerformance || null,
-      logsCount: betSmartState?.logs?.length || 0,
+      upcomingMatches: edgeIQState?.upcomingMatches || [],
+      liveMatches: edgeIQState?.liveMatches || [],
+      finishedMatches: edgeIQState?.finishedMatches || [],
+      algorithmPerformance: edgeIQState?.algorithmPerformance || null,
+      logsCount: edgeIQState?.logs?.length || 0,
     });
 
     // Get localStorage data
@@ -175,7 +175,7 @@ const StateInspector = () => {
         </TabsList>
 
         <TabsContent value="global" className="mt-4">
-          <StateSection title="BetSmart Global State" data={globalState} />
+          <StateSection title="EdgeIQ Global State" data={globalState} />
         </TabsContent>
 
         <TabsContent value="localStorage" className="mt-4">

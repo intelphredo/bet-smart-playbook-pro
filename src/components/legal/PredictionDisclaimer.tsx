@@ -11,7 +11,7 @@ interface PredictionDisclaimerProps {
   className?: string;
 }
 
-const DISMISSED_KEY = "betsmart_disclaimer_dismissed";
+const DISMISSED_KEY = "edgeiq_disclaimer_dismissed";
 const DISMISS_DURATION_HOURS = 24;
 
 export function PredictionDisclaimer({ 

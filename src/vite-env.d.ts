@@ -17,10 +17,10 @@ interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
 
-// Add BetSmart logger interface to Window object
+// Add EdgeIQ logger interface to Window object
 import { Match } from "./types/sports";
 
-interface BetSmartLogger {
+interface EdgeIQLogger {
   logs: string[];
   upcomingMatches: Match[];
   liveMatches: Match[];
@@ -31,6 +31,6 @@ interface BetSmartLogger {
 
 declare global {
   interface Window {
-    __BetSmart?: BetSmartLogger;
+    __EdgeIQ?: EdgeIQLogger;
   }
 }

@@ -32,7 +32,7 @@ interface OnboardingStep {
 const onboardingSteps: OnboardingStep[] = [
   {
     icon: <Trophy className="w-8 h-8" />,
-    title: "Welcome to BetSmart Pro",
+    title: "Welcome to EdgeIQ",
     description:
       "Find your edge with AI-powered value bets and bankroll management. Let's show you around!",
     highlight: "Your Betting Edge",
@@ -74,7 +74,7 @@ const onboardingSteps: OnboardingStep[] = [
   },
 ];
 
-const STORAGE_KEY = "betsmart_onboarding_complete";
+const STORAGE_KEY = "edgeiq_onboarding_complete";
 
 export function OnboardingModal() {
   const [isOpen, setIsOpen] = useState(false);

@@ -73,11 +73,11 @@ const LiveESPNSection = ({
       finished: finishedMatches,
     });
     
-    // Store processed matches in window.__BetSmart for debugging
-    if (typeof window !== 'undefined' && window.__BetSmart) {
-      window.__BetSmart.upcomingMatches = applySmartScores(upcomingMatches);
-      window.__BetSmart.liveMatches = applySmartScores(liveMatches);
-      window.__BetSmart.finishedMatches = finishedMatches;
+    // Store processed matches in window.__EdgeIQ for debugging
+    if (typeof window !== 'undefined' && window.__EdgeIQ) {
+      window.__EdgeIQ.upcomingMatches = applySmartScores(upcomingMatches);
+      window.__EdgeIQ.liveMatches = applySmartScores(liveMatches);
+      window.__EdgeIQ.finishedMatches = finishedMatches;
     }
   }, [upcomingMatches, liveMatches, finishedMatches]);
 

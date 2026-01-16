@@ -293,7 +293,7 @@ export default function ResponsibleGambling() {
             </CardHeader>
             <CardContent className="prose prose-sm dark:prose-invert max-w-none">
               <p>
-                BetSmart Playbook Pro is committed to promoting responsible gambling. While we provide 
+                EdgeIQ is committed to promoting responsible gambling. While we provide 
                 analytics and predictions for educational purposes, we strongly encourage all users to:
               </p>
               <ul>
