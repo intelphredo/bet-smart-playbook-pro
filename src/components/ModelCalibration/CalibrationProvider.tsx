@@ -6,6 +6,7 @@
 
 import { useEffect } from 'react';
 import { useModelRecalibration } from '@/hooks/useModelRecalibration';
+import { useAutoRecordCalibration } from '@/hooks/useCalibrationHistory';
 import { getCalibrationSummary } from '@/utils/modelCalibration/calibrationIntegration';
 
 interface CalibrationProviderProps {
@@ -15,6 +16,9 @@ interface CalibrationProviderProps {
 export function CalibrationProvider({ children }: CalibrationProviderProps) {
   // Initialize the recalibration system - this will fetch data and update cached weights
   const { data, isLoading, error } = useModelRecalibration({ enabled: true });
+  
+  // Auto-record calibration snapshots every hour
+  useAutoRecordCalibration(!!data, 60);
 
   useEffect(() => {
     if (data) {
@@ -24,6 +28,7 @@ export function CalibrationProvider({ children }: CalibrationProviderProps) {
           adjustedAlgorithms: summary.adjustedAlgorithms,
           pausedAlgorithms: summary.pausedAlgorithms,
           averageMultiplier: summary.averageMultiplier.toFixed(2),
+          binCalibration: summary.binCalibration,
         });
       }
     }

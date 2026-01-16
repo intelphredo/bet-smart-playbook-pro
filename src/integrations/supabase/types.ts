@@ -138,6 +138,75 @@ export type Database = {
         }
         Relationships: []
       }
+      calibration_history: {
+        Row: {
+          adjusted_algorithms: number | null
+          adjusted_bins: number | null
+          algorithm_details: Json | null
+          avg_confidence_multiplier: number | null
+          bin_details: Json | null
+          brier_score: number | null
+          created_at: string
+          id: string
+          is_well_calibrated: boolean | null
+          mean_absolute_error: number | null
+          overall_adjustment_factor: number | null
+          overall_health_score: number | null
+          overconfident_bins: number | null
+          paused_algorithms: number | null
+          recorded_at: string
+          settled_predictions: number | null
+          total_algorithms: number | null
+          total_bins: number | null
+          total_predictions: number | null
+          underconfident_bins: number | null
+        }
+        Insert: {
+          adjusted_algorithms?: number | null
+          adjusted_bins?: number | null
+          algorithm_details?: Json | null
+          avg_confidence_multiplier?: number | null
+          bin_details?: Json | null
+          brier_score?: number | null
+          created_at?: string
+          id?: string
+          is_well_calibrated?: boolean | null
+          mean_absolute_error?: number | null
+          overall_adjustment_factor?: number | null
+          overall_health_score?: number | null
+          overconfident_bins?: number | null
+          paused_algorithms?: number | null
+          recorded_at?: string
+          settled_predictions?: number | null
+          total_algorithms?: number | null
+          total_bins?: number | null
+          total_predictions?: number | null
+          underconfident_bins?: number | null
+        }
+        Update: {
+          adjusted_algorithms?: number | null
+          adjusted_bins?: number | null
+          algorithm_details?: Json | null
+          avg_confidence_multiplier?: number | null
+          bin_details?: Json | null
+          brier_score?: number | null
+          created_at?: string
+          id?: string
+          is_well_calibrated?: boolean | null
+          mean_absolute_error?: number | null
+          overall_adjustment_factor?: number | null
+          overall_health_score?: number | null
+          overconfident_bins?: number | null
+          paused_algorithms?: number | null
+          recorded_at?: string
+          settled_predictions?: number | null
+          total_algorithms?: number | null
+          total_bins?: number | null
+          total_predictions?: number | null
+          underconfident_bins?: number | null
+        }
+        Relationships: []
+      }
       line_movement_tracking: {
         Row: {
           alerts_sent: boolean
