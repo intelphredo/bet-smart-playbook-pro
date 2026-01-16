@@ -27,6 +27,7 @@ import {
 } from "@/components/CompareAlgorithms";
 import { InfoExplainer, EXPLAINERS } from "@/components/ui/InfoExplainer";
 import DateRangeFilter from "@/components/DateRangeFilter";
+import { PredictionDisclaimer } from "@/components/legal";
 import { subDays, differenceInDays } from "date-fns";
 
 const TIME_RANGES = [
@@ -74,8 +75,9 @@ export default function CompareAlgorithms() {
       
       <main id="main-content" className="container py-6 space-y-6">
         <AppBreadcrumb />
-
-        {/* Header */}
+        
+        {/* Prediction Disclaimer */}
+        <PredictionDisclaimer className="mb-2" />
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold flex items-center gap-2">
