@@ -54,17 +54,17 @@ const MatchCard = memo(function MatchCard({ match }: MatchCardProps) {
   };
 
   const getBadgeColor = (confidence: number) => {
-    if (confidence >= 70) return "bg-green-500 hover:bg-green-600";
-    if (confidence >= 50) return "bg-yellow-500 hover:bg-yellow-600";
-    return "bg-red-500 hover:bg-red-600";
+    if (confidence >= 70) return "bg-emerald-500 hover:bg-emerald-600";
+    if (confidence >= 50) return "bg-cyan-500 hover:bg-cyan-600";
+    return "bg-cyan-700 hover:bg-cyan-800";
   };
 
   const getSmartScoreBadgeColor = () => {
     if (!match.smartScore) return "bg-gray-500";
-    if (match.smartScore.overall >= 80) return "bg-green-500";
-    if (match.smartScore.overall >= 60) return "bg-yellow-500";
-    if (match.smartScore.overall >= 40) return "bg-blue-500";
-    return "bg-red-500";
+    if (match.smartScore.overall >= 80) return "bg-emerald-500";
+    if (match.smartScore.overall >= 60) return "bg-cyan-500";
+    if (match.smartScore.overall >= 40) return "bg-primary";
+    return "bg-cyan-700";
   };
 
   // Determine data source for this match
@@ -100,7 +100,7 @@ const MatchCard = memo(function MatchCard({ match }: MatchCardProps) {
             {match.league}
           </Badge>
           {match.status === "live" && (
-            <Badge className="bg-destructive text-destructive-foreground animate-pulse h-5 px-2 text-xs">
+            <Badge className="bg-cyan-500 text-white animate-pulse h-5 px-2 text-xs">
               ● LIVE
             </Badge>
           )}
