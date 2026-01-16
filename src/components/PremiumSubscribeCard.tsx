@@ -1,8 +1,7 @@
-
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Crown, Star, Trophy, CheckCircle } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 
 const plans = [
   {
@@ -44,14 +43,10 @@ const plans = [
 ];
 
 const PremiumSubscribeCard = () => {
-  const { toast } = useToast();
+  const navigate = useNavigate();
 
-  const handleSubscribe = (plan: string) => {
-    toast({
-      title: "Coming Soon",
-      description: `${plan} subscription will be available shortly. Stay tuned!`,
-      variant: "default",
-    });
+  const handleSubscribe = () => {
+    navigate("/settings/billing");
   };
 
   return (
@@ -89,7 +84,7 @@ const PremiumSubscribeCard = () => {
                 </ul>
                 
                 <Button 
-                  onClick={() => handleSubscribe(plan.name)}
+                  onClick={handleSubscribe}
                   className={`w-full ${
                     plan.name === "Pro" 
                       ? "bg-gold-500 hover:bg-gold-600 text-navy-900" 
