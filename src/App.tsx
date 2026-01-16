@@ -11,7 +11,7 @@ import SharpMoneyMonitor from "@/components/SharpMoneyMonitor";
 import AnimatedRoutes from "@/components/layout/AnimatedRoutes";
 import OnboardingModal from "@/components/onboarding/OnboardingModal";
 import { CalibrationProvider } from "@/components/ModelCalibration";
-import { CookieConsent } from "@/components/legal";
+import { CookieConsent, ResponsibleGamblingBadge } from "@/components/legal";
 // Create a client
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -71,6 +71,7 @@ function App() {
                     <SharpMoneyMonitor />
                     <OnboardingModal />
                     <CookieConsent />
+                    <ResponsibleGamblingBadge />
                   </Router>
                 </CalibrationProvider>
                 <Toaster richColors position="top-center" />
