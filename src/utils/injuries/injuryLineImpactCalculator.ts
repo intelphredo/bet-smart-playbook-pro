@@ -303,8 +303,8 @@ function detectValueOpportunity(
 // Helper to get injury severity color
 export function getInjurySeverityColor(impact: number): string {
   if (impact >= 40) return 'text-destructive';
-  if (impact >= 25) return 'text-orange-500';
-  if (impact >= 10) return 'text-yellow-500';
+  if (impact >= 25) return 'text-cyan-600';
+  if (impact >= 10) return 'text-cyan-400';
   return 'text-muted-foreground';
 }
 

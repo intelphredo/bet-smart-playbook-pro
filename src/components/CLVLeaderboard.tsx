@@ -141,8 +141,8 @@ function EmptyLeaderboard() {
   return (
     <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
       <div className="relative mb-6">
-        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-yellow-500/20 via-amber-500/10 to-orange-500/5 flex items-center justify-center animate-float">
-          <Trophy className="w-10 h-10 text-yellow-500/70" />
+        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-cyan-400/20 via-cyan-500/10 to-cyan-600/5 flex items-center justify-center animate-float">
+          <Trophy className="w-10 h-10 text-cyan-400/70" />
         </div>
         <div className="absolute -top-1 -right-1 w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center animate-scale-subtle">
           <Sparkles className="w-4 h-4 text-primary" />

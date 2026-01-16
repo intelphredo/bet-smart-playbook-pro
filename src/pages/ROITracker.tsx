@@ -373,9 +373,9 @@ export default function ROITracker() {
                           <div className="flex items-center gap-3">
                             <span className={cn(
                               "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold",
-                              i === 0 && "bg-yellow-500 text-yellow-950",
+                              i === 0 && "bg-cyan-400 text-cyan-950",
                               i === 1 && "bg-gray-300 text-gray-700",
-                              i === 2 && "bg-amber-600 text-amber-50",
+                              i === 2 && "bg-cyan-600 text-cyan-50",
                               i > 2 && "bg-muted text-muted-foreground"
                             )}>
                               {i + 1}

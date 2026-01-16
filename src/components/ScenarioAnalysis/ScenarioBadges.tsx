@@ -25,11 +25,11 @@ interface ScenarioBadgesProps {
 }
 
 const RISK_STYLES: Record<RiskLevel, string> = {
-  'very-low': 'bg-green-500/20 text-green-700 dark:text-green-400 border-green-500/30',
-  'low': 'bg-green-400/20 text-green-600 dark:text-green-400 border-green-400/30',
-  'medium': 'bg-amber-500/20 text-amber-700 dark:text-amber-400 border-amber-500/30',
-  'high': 'bg-orange-500/20 text-orange-700 dark:text-orange-400 border-orange-500/30',
-  'very-high': 'bg-red-500/20 text-red-700 dark:text-red-400 border-red-500/30'
+  'very-low': 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border-emerald-500/30',
+  'low': 'bg-emerald-400/20 text-emerald-600 dark:text-emerald-400 border-emerald-400/30',
+  'medium': 'bg-cyan-500/20 text-cyan-700 dark:text-cyan-400 border-cyan-500/30',
+  'high': 'bg-cyan-600/20 text-cyan-800 dark:text-cyan-300 border-cyan-600/30',
+  'very-high': 'bg-destructive/20 text-destructive dark:text-destructive border-destructive/30'
 };
 
 const CATEGORY_ICONS: Record<string, React.ReactNode> = {

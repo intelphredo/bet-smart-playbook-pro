@@ -116,9 +116,9 @@ export function SharpMoneyAlertBanner({
                 variant="outline" 
                 className={cn(
                   'font-mono',
-                  trend.sharpBetting.confidence >= 70 
-                    ? 'bg-green-500/10 text-green-600 border-green-500/30' 
-                    : 'bg-amber-500/10 text-amber-600 border-amber-500/30'
+                trend.sharpBetting.confidence >= 70 
+                    ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30' 
+                    : 'bg-cyan-500/10 text-cyan-600 border-cyan-500/30'
                 )}
               >
                 {trend.sharpBetting.confidence}% Confidence
@@ -175,8 +175,8 @@ export function SharpMoneyAlertBanner({
                     <span className={cn(
                       'px-2 py-0.5 rounded-full font-medium',
                       Math.abs(trend.lineMovement.spreadMovement) >= 1.5 
-                        ? 'bg-red-500/20 text-red-600' 
-                        : 'bg-amber-500/20 text-amber-600'
+                        ? 'bg-destructive/20 text-destructive' 
+                        : 'bg-cyan-500/20 text-cyan-600'
                     )}>
                       {trend.lineMovement.spreadMovement > 0 ? '+' : ''}{trend.lineMovement.spreadMovement.toFixed(1)} pts
                     </span>

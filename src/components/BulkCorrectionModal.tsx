@@ -339,9 +339,9 @@ export function BulkCorrectionModal({ open, onOpenChange }: BulkCorrectionModalP
               </div>
 
               {parseErrors.length > 0 && (
-                <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
-                  <p className="text-sm font-medium text-amber-600 mb-2">Parse Warnings:</p>
-                  <ul className="text-xs text-amber-500 space-y-1">
+                <div className="p-3 rounded-lg bg-cyan-500/10 border border-cyan-500/20">
+                  <p className="text-sm font-medium text-cyan-600 mb-2">Parse Warnings:</p>
+                  <ul className="text-xs text-cyan-500 space-y-1">
                     {parseErrors.slice(0, 5).map((err, i) => (
                       <li key={i}>{err}</li>
                     ))}

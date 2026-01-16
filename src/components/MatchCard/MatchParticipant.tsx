@@ -24,8 +24,8 @@ const getInjuryIndicator = (count: number, impact: number) => {
   
   const colorClass = {
     high: 'text-destructive bg-destructive/10',
-    medium: 'text-orange-500 bg-orange-500/10',
-    low: 'text-yellow-500 bg-yellow-500/10'
+    medium: 'text-cyan-600 bg-cyan-500/10',
+    low: 'text-cyan-400 bg-cyan-400/10'
   }[severity];
   
   return (

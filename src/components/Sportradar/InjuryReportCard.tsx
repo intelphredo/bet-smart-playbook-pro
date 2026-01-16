@@ -42,31 +42,31 @@ const STATUS_CONFIG: Record<InjuryStatus, {
   'out-for-season': { 
     label: 'OUT (Season)', 
     color: 'text-red-700 dark:text-red-300', 
-    bgColor: 'bg-red-600/20 border-red-600/30',
+    bgColor: 'bg-destructive/20 border-destructive/30',
     priority: 0 
   },
   'injured-reserve': { 
     label: 'IR', 
-    color: 'text-red-600 dark:text-red-400', 
-    bgColor: 'bg-red-500/20 border-red-500/30',
+    color: 'text-destructive dark:text-destructive', 
+    bgColor: 'bg-destructive/20 border-destructive/30',
     priority: 0 
   },
   'doubtful': { 
     label: 'DOUBTFUL', 
-    color: 'text-orange-600 dark:text-orange-400', 
-    bgColor: 'bg-orange-500/20 border-orange-500/30',
+    color: 'text-cyan-700 dark:text-cyan-400', 
+    bgColor: 'bg-cyan-700/20 border-cyan-700/30',
     priority: 2 
   },
   'questionable': { 
     label: 'QUESTIONABLE', 
-    color: 'text-amber-600 dark:text-amber-400', 
-    bgColor: 'bg-amber-500/20 border-amber-500/30',
+    color: 'text-cyan-600 dark:text-cyan-400', 
+    bgColor: 'bg-cyan-500/20 border-cyan-500/30',
     priority: 3 
   },
   'day-to-day': { 
     label: 'DAY-TO-DAY', 
-    color: 'text-yellow-600 dark:text-yellow-400', 
-    bgColor: 'bg-yellow-500/20 border-yellow-500/30',
+    color: 'text-cyan-500 dark:text-cyan-300', 
+    bgColor: 'bg-cyan-400/20 border-cyan-400/30',
     priority: 4 
   },
   'probable': { 

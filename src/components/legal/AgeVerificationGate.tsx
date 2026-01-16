@@ -93,11 +93,11 @@ export function AgeVerificationGate({ children }: AgeVerificationGateProps) {
             
             <CardContent className="space-y-6">
               {/* Warning Banner */}
-              <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/30">
+              <div className="p-4 rounded-lg bg-cyan-500/10 border border-cyan-500/30">
                 <div className="flex gap-3">
-                  <AlertTriangle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                  <AlertTriangle className="h-5 w-5 text-cyan-500 flex-shrink-0 mt-0.5" />
                   <div className="text-sm">
-                    <p className="font-semibold text-amber-500 mb-1">Important Notice</p>
+                    <p className="font-semibold text-cyan-500 mb-1">Important Notice</p>
                     <p className="text-muted-foreground">
                       This is a sports analytics platform providing predictions for 
                       <strong> educational purposes only</strong>. We are not a gambling operator 

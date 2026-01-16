@@ -23,7 +23,7 @@ const DevToolsPanel = () => {
         <Card className="w-[95vw] max-w-5xl h-[700px] overflow-hidden shadow-xl border-2">
           <div className="flex justify-between items-center p-3 border-b bg-muted/30">
             <div className="flex items-center gap-2">
-              <Bug className="h-5 w-5 text-amber-500" />
+              <Bug className="h-5 w-5 text-cyan-500" />
               <h2 className="text-lg font-bold">Developer Tools</h2>
             </div>
             <div className="flex items-center space-x-2">
@@ -146,7 +146,7 @@ const DevToolsPanel = () => {
       ) : (
         <Button 
           onClick={() => setIsOpen(true)} 
-          className="shadow-lg bg-amber-500 hover:bg-amber-600 text-white"
+          className="shadow-lg bg-cyan-500 hover:bg-cyan-600 text-white"
         >
           <Bug className="mr-2 h-4 w-4" /> Dev Tools
         </Button>
