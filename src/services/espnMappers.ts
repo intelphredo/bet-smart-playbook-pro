@@ -93,6 +93,9 @@ export const mapESPNEventToMatch = (event: ESPNEvent, league: League): Match => 
     const eventState = (event.status?.type?.state || "pre").toLowerCase();
     const stateDescription = (event.status?.type?.description || "").toLowerCase();
     const period = event.status?.period || 0;
+    const eventDate = new Date(event.date);
+    const now = new Date();
+    const isFutureGame = eventDate > now;
     
     // Check for various live/in-progress indicators - expanded for all sports
     const isLiveIndicator = 
@@ -120,15 +123,18 @@ export const mapESPNEventToMatch = (event: ESPNEvent, league: League): Match => 
       stateDescription.includes("full time") ||
       stateDescription.includes("game over");
     
-    if (isFinishedIndicator) {
+    // Future games should always be scheduled, regardless of ESPN's state
+    if (isFutureGame && !isLiveIndicator && !isFinishedIndicator) {
+      status = "scheduled";
+    } else if (isFinishedIndicator) {
       status = "finished";
     } else if (isLiveIndicator) {
       status = "live";
     } else if (eventState === "pre" || stateDescription.includes("scheduled")) {
       status = "scheduled";
     } else {
-      logger.log(`Unknown event state: ${eventState} (${stateDescription}), defaulting to scheduled`);
-      status = "scheduled";
+      // If game is in the future, default to scheduled
+      status = isFutureGame ? "scheduled" : "finished";
     }
     
     // Create balanced odds based on simulated team strength
