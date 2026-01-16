@@ -69,7 +69,7 @@ const plans = [
 const Billing = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { 
     subscription, 
     tier, 
@@ -317,7 +317,7 @@ const Billing = () => {
                   className="w-full"
                   variant={plan.popular ? "default" : "outline"}
                   disabled={isCurrentPlan || checkoutLoading !== null}
-                  onClick={() => handleSubscribe(plan.tier)}
+                  onClick={() => plan.tier !== "free" && handleSubscribe(plan.tier)}
                 >
                   {checkoutLoading === plan.tier ? (
                     <Loader2 className="h-4 w-4 animate-spin mr-2" />
