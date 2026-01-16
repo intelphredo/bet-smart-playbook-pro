@@ -361,6 +361,14 @@ async function runBacktestForStrategy(
     avgBetSize: totalBets > 0 ? totalStaked / totalBets : 0,
     profitByDay,
     betHistory,
+    filtersApplied: {
+      homeAwayFilter: 'all',
+      sharpMoneyAlignment: false,
+      excludeBackToBack: false,
+      conferenceGamesOnly: false,
+      minAlgorithmsAgreeing: 1,
+      skippedByFilters: 0,
+    },
   };
 
   // Run Monte Carlo
