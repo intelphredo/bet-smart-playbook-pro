@@ -14,7 +14,7 @@ import { Slider } from "@/components/ui/slider";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { 
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
   AreaChart, Area, ReferenceLine 
 } from "recharts";
 import { 
@@ -26,8 +26,6 @@ import {
   Target,
   Activity,
   Calendar,
-  AlertTriangle,
-  Trophy,
   Flame,
   Snowflake,
   Info,
@@ -53,9 +51,9 @@ import {
   BacktestDateRangePicker, 
   ParameterOptimizer, 
   BacktestExport,
-  SituationalFilters,
-  defaultSituationalFilters,
-  type SituationalFiltersState
+  RollingPerformanceChart,
+  SavedConfigurations,
+  type BacktestConfiguration,
 } from "@/components/Backtest";
 import { subDays, differenceInDays } from "date-fns";
 
@@ -107,7 +105,6 @@ export default function BacktestSimulator() {
   const [mainView, setMainView] = useState<'single' | 'compare' | 'optimize'>('single');
   const [selectedStrategies, setSelectedStrategies] = useState<BacktestStrategy[]>(ALL_STRATEGIES);
   const [runComparison, setRunComparison] = useState(false);
-  const [situationalFilters, setSituationalFilters] = useState<SituationalFiltersState>(defaultSituationalFilters);
 
   // Calculate days from date range for hooks
   const days = useMemo(() => {
@@ -179,6 +176,15 @@ export default function BacktestSimulator() {
     setRunComparison(false); // Reset to require new run
   };
 
+  const handleLoadConfig = (config: BacktestConfiguration) => {
+    setStrategy(config.strategy);
+    setStartingBankroll(config.startingBankroll);
+    setStakeType(config.stakeType);
+    setStakeAmount(config.stakeAmount);
+    setMinConfidence(config.minConfidence);
+    setLeague(config.league);
+  };
+
   const formatCurrency = (value: number) => {
     const prefix = value >= 0 ? '+$' : '-$';
     return value >= 0 ? `+$${value.toFixed(2)}` : `-$${Math.abs(value).toFixed(2)}`;
@@ -213,14 +219,29 @@ export default function BacktestSimulator() {
         <AppBreadcrumb />
 
         {/* Header */}
-        <div className="flex flex-col gap-2">
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <FlaskConical className="h-6 w-6 text-primary" />
-            Backtest Simulator
-          </h1>
-          <p className="text-muted-foreground text-sm">
-            See hypothetical P/L if you had followed different algorithm strategies
-          </p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex flex-col gap-1">
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              <FlaskConical className="h-6 w-6 text-primary" />
+              Backtest Simulator
+            </h1>
+            <p className="text-muted-foreground text-sm">
+              See hypothetical P/L if you had followed different algorithm strategies
+            </p>
+          </div>
+          {mainView === 'single' && (
+            <SavedConfigurations
+              currentConfig={{
+                strategy,
+                startingBankroll,
+                stakeType,
+                stakeAmount,
+                minConfidence,
+                league,
+              }}
+              onLoadConfig={handleLoadConfig}
+            />
+          )}
         </div>
 
         {/* Mode Toggle */}
@@ -454,7 +475,7 @@ export default function BacktestSimulator() {
                   <Play className="h-4 w-4 mr-2" />
                   {isRunning ? 'Running...' : 'Run Backtest'}
                 </Button>
-              ) : (
+              ) : mainView === 'compare' ? (
                 <Button 
                   className="w-full" 
                   onClick={handleRunComparison}
@@ -463,7 +484,7 @@ export default function BacktestSimulator() {
                   <GitCompare className="h-4 w-4 mr-2" />
                   {comparisonLoading || isRunning ? 'Comparing...' : `Compare ${selectedStrategies.length} Strategies`}
                 </Button>
-              )}
+              ) : null}
 
               {mainView === 'compare' && selectedStrategies.length < 2 && (
                 <p className="text-xs text-destructive text-center">
@@ -615,42 +636,8 @@ export default function BacktestSimulator() {
                     </div>
                   </div>
 
-                  {/* Chart */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg">Cumulative P/L Over Time</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      {result.profitByDay.length > 0 ? (
-                        <div className="h-[250px]">
-                          <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart data={result.profitByDay}>
-                              <defs>
-                                <linearGradient id="profitGradient" x1="0" y1="0" x2="0" y2="1">
-                                  <stop offset="5%" stopColor="hsl(var(--chart-1))" stopOpacity={0.3}/>
-                                  <stop offset="95%" stopColor="hsl(var(--chart-1))" stopOpacity={0}/>
-                                </linearGradient>
-                              </defs>
-                              <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                              <XAxis dataKey="date" tick={{ fontSize: 12 }} />
-                              <YAxis tickFormatter={(v) => `$${v}`} />
-                              <Tooltip content={<CustomTooltip />} />
-                              <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" />
-                              <Area 
-                                type="monotone" 
-                                dataKey="cumulative" 
-                                stroke="hsl(var(--chart-1))" 
-                                fill="url(#profitGradient)"
-                                strokeWidth={2}
-                              />
-                            </AreaChart>
-                          </ResponsiveContainer>
-                        </div>
-                      ) : (
-                        <p className="text-center text-muted-foreground py-8">No data to display</p>
-                      )}
-                    </CardContent>
-                  </Card>
+                  {/* Rolling Performance Chart */}
+                  <RollingPerformanceChart profitByDay={result.profitByDay} />
 
                   {/* Bet History Table */}
                   <Card>
