@@ -58,6 +58,7 @@ import {
   type BacktestConfiguration,
   type SituationalFiltersState,
 } from "@/components/Backtest";
+import { PredictionDisclaimer } from "@/components/legal";
 import { subDays, differenceInDays } from "date-fns";
 
 const STRATEGIES: { value: BacktestStrategy; label: string; icon: string }[] = [
@@ -223,8 +224,9 @@ export default function BacktestSimulator() {
       
       <main id="main-content" className="container py-6 space-y-6">
         <AppBreadcrumb />
-
-        {/* Header */}
+        
+        {/* Prediction Disclaimer */}
+        <PredictionDisclaimer className="mb-2" />
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex flex-col gap-1">
             <h1 className="text-2xl font-bold flex items-center gap-2">
