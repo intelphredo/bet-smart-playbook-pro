@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import BetSlipDrawer from "@/components/BetSlip/BetSlipDrawer";
 import NotificationCenter from "@/components/NotificationCenter";
 import { GlossaryModal } from "@/components/ui/InfoExplainer";
-import { Sparkles } from "lucide-react";
+import edgeiqLogo from "@/assets/edgeiq-logo.png";
 
 interface NavBarProps {
   className?: string;
@@ -51,16 +51,11 @@ export default function NavBar({ className }: NavBarProps) {
                 className="group font-bold text-xl flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-primary/50 rounded-lg px-2 py-1 -ml-2 transition-all duration-300"
                 aria-label="EdgeIQ - Go to homepage"
               >
-                <div className="relative">
-                  <div className="absolute inset-0 bg-primary/30 blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-full" />
-                  <Sparkles className="h-5 w-5 text-primary relative z-10 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12" />
-                </div>
-                <span className="relative">
-                  <span className="bg-gradient-to-r from-primary via-amber-400 to-primary bg-clip-text text-transparent bg-[length:200%_auto] font-playfair tracking-tight group-hover:animate-[shimmer_2s_linear]">
-                    Edge
-                  </span>
-                  <span className="text-foreground font-extrabold tracking-tight">IQ</span>
-                </span>
+                <img 
+                  src={edgeiqLogo} 
+                  alt="EdgeIQ" 
+                  className="h-9 w-auto transition-transform duration-300 group-hover:scale-105"
+                />
               </Link>
             </div>
 
