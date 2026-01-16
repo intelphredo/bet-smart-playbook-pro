@@ -88,6 +88,7 @@ const LEAGUES = [
   { value: 'MLB', label: 'MLB' },
 ];
 
+// Backtest Simulator Component
 export default function BacktestSimulator() {
   const [strategy, setStrategy] = useState<BacktestStrategy>('majority_agree');
   const [startingBankroll, setStartingBankroll] = useState(1000);
