@@ -20,6 +20,7 @@ import {
 import { cn } from '@/lib/utils';
 import { Match, League } from '@/types/sports';
 import { getMatchInjuryData, MatchInjuryData } from '@/services/injuryDataService';
+import { LockedBadge } from '@/components/ui/LockedBadge';
 
 interface PredictionReasoningBadgeProps {
   match: Match;
@@ -260,6 +261,9 @@ const PredictionReasoningBadge = memo(function PredictionReasoningBadge({
           <Zap className="h-3 w-3" />
           {getShortPick()} • {confidence}%
         </Badge>
+        {prediction.isLocked && (
+          <LockedBadge lockedAt={prediction.lockedAt} compact />
+        )}
       </div>
       <div className="flex flex-wrap gap-1">
         {factors.slice(0, 3).map((factor, i) => (
