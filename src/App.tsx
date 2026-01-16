@@ -25,7 +25,7 @@ const queryClient = new QueryClient({
 // Add global variable for debugging
 declare global {
   interface Window {
-    __BetSmart?: {
+    __EdgeIQ?: {
       logs: string[];
       upcomingMatches: any[];
       liveMatches: any[];
@@ -36,9 +36,9 @@ declare global {
   }
 }
 
-// Initialize the BetSmart global object
+// Initialize the EdgeIQ global object
 if (typeof window !== "undefined") {
-  window.__BetSmart = {
+  window.__EdgeIQ = {
     logs: [],
     upcomingMatches: [],
     liveMatches: [],

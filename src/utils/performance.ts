@@ -10,8 +10,8 @@ export const measurePerformance = (fn: (...args: any[]) => any, label?: string) 
       console.log(performanceLog);
       
       // Add to global logger if available
-      if (window.__BetSmart?.addLog) {
-        window.__BetSmart.addLog(performanceLog);
+      if (window.__EdgeIQ?.addLog) {
+        window.__EdgeIQ.addLog(performanceLog);
       }
     }
     
@@ -36,8 +36,8 @@ export function TrackPerformance(label?: string) {
       const performanceLog = `[Performance] ${target.constructor.name}.${propertyKey}: ${(end - start).toFixed(2)}ms`;
       console.log(performanceLog);
       
-      if (typeof window !== 'undefined' && window.__BetSmart?.addLog) {
-        window.__BetSmart.addLog(performanceLog);
+      if (typeof window !== 'undefined' && window.__EdgeIQ?.addLog) {
+        window.__EdgeIQ.addLog(performanceLog);
       }
       
       return result;

@@ -22,7 +22,7 @@ const RESTRICTED_REGIONS = [
 
 const RESTRICTED_COUNTRY_CODES = RESTRICTED_REGIONS.map(r => r.code);
 
-const GEO_BLOCKED_KEY = "betsmart_geo_status";
+const GEO_BLOCKED_KEY = "edgeiq_geo_status";
 const GEO_CHECK_EXPIRY_HOURS = 24;
 
 interface GeoBlockerProps {
@@ -144,7 +144,7 @@ export function GeoBlocker({ children }: GeoBlockerProps) {
                   <div>
                     <p className="font-medium text-destructive">Access Restricted</p>
                     <p className="text-sm text-muted-foreground mt-1">
-                      BetSmart Playbook Pro is not available in{" "}
+                      EdgeIQ is not available in{" "}
                       <strong>{geoStatus.country || "your region"}</strong> due to local 
                       regulations regarding gambling-related content.
                     </p>
@@ -163,7 +163,7 @@ export function GeoBlocker({ children }: GeoBlockerProps) {
                 </p>
                 <Button variant="outline" asChild>
                   <a 
-                    href="mailto:support@betsmartplaybook.com"
+                    href="mailto:support@edgeiq.app"
                     className="inline-flex items-center gap-2"
                   >
                     Contact Support

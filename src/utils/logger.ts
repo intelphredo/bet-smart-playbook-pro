@@ -6,8 +6,8 @@ const isDevelopment = typeof window !== 'undefined' &&
 
 // Initialize global logger if it doesn't exist
 if (typeof window !== 'undefined') {
-  if (!window.__BetSmart) {
-    window.__BetSmart = {
+  if (!window.__EdgeIQ) {
+    window.__EdgeIQ = {
       logs: [],
       upcomingMatches: [],
       liveMatches: [],
@@ -33,8 +33,8 @@ export const logger = {
    * Log informational messages - only outputs in development
    */
   log: (message: string, ...args: unknown[]) => {
-    if (typeof window !== 'undefined' && window.__BetSmart) {
-      window.__BetSmart.addLog(message);
+    if (typeof window !== 'undefined' && window.__EdgeIQ) {
+      window.__EdgeIQ.addLog(message);
     }
     if (isDevelopment) {
       console.log(message, ...args);
@@ -45,8 +45,8 @@ export const logger = {
    * Log debug messages - only outputs in development
    */
   debug: (message: string, ...args: unknown[]) => {
-    if (typeof window !== 'undefined' && window.__BetSmart) {
-      window.__BetSmart.addLog(`DEBUG: ${message}`);
+    if (typeof window !== 'undefined' && window.__EdgeIQ) {
+      window.__EdgeIQ.addLog(`DEBUG: ${message}`);
     }
     if (isDevelopment) {
       console.debug(message, ...args);
@@ -57,8 +57,8 @@ export const logger = {
    * Log warning messages - outputs in all environments
    */
   warn: (message: string, ...args: unknown[]) => {
-    if (typeof window !== 'undefined' && window.__BetSmart) {
-      window.__BetSmart.addLog(`WARN: ${message}`);
+    if (typeof window !== 'undefined' && window.__EdgeIQ) {
+      window.__EdgeIQ.addLog(`WARN: ${message}`);
     }
     console.warn(message, ...args);
   },
@@ -67,8 +67,8 @@ export const logger = {
    * Log error messages - outputs in all environments
    */
   error: (message: string, ...args: unknown[]) => {
-    if (typeof window !== 'undefined' && window.__BetSmart) {
-      window.__BetSmart.addLog(`ERROR: ${message}`);
+    if (typeof window !== 'undefined' && window.__EdgeIQ) {
+      window.__EdgeIQ.addLog(`ERROR: ${message}`);
     }
     console.error(message, ...args);
   },

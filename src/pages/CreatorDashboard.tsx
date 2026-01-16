@@ -120,9 +120,9 @@ export default function CreatorDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="bg-muted/50 rounded-lg p-4 font-mono text-sm max-h-[500px] overflow-auto">
-                  {typeof window !== 'undefined' && window.__BetSmart?.logs ? (
-                    window.__BetSmart.logs.length > 0 ? (
-                      window.__BetSmart.logs.map((log, i) => (
+                  {typeof window !== 'undefined' && window.__EdgeIQ?.logs ? (
+                    window.__EdgeIQ.logs.length > 0 ? (
+                      window.__EdgeIQ.logs.map((log, i) => (
                         <div key={i} className="py-1 border-b border-border/30 last:border-0">
                           {log}
                         </div>

@@ -155,9 +155,9 @@ const PageFooter = () => (
             </motion.div>
             <span className="text-xl font-bold">
               <span className="bg-gradient-to-r from-primary via-amber-400 to-primary bg-clip-text text-transparent bg-[length:200%_auto] animate-[shimmer_3s_linear_infinite]">
-                Bet
+                Edge
               </span>
-              <span className="text-foreground">Smart</span>
+              <span className="text-foreground">IQ</span>
             </span>
           </Link>
           <p className="text-sm text-muted-foreground leading-relaxed mb-5">
@@ -301,7 +301,7 @@ const PageFooter = () => (
           <p className="text-sm text-muted-foreground">
             © {new Date().getFullYear()}{" "}
             <span className="font-medium bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-              BetSmart Playbook Pro
+              EdgeIQ
             </span>
             . All rights reserved.
           </p>
