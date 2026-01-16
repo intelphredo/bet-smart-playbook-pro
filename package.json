@@ -11,6 +11,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@capacitor/android": "^8.0.1",
+    "@capacitor/cli": "^8.0.1",
+    "@capacitor/core": "^8.0.1",
+    "@capacitor/ios": "^8.0.1",
     "@hookform/resolvers": "^3.9.0",
     "@percy/cli": "^1.31.8",
     "@percy/playwright": "^1.0.10",
