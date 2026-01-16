@@ -44,12 +44,13 @@ interface ESPNStandingsResponse {
 }
 
 // Get stat value from ESPN stats array - handles multiple stat name variations
-const getStatValue = (stats: ESPNTeamEntry['stats'], ...names: string[]): number => {
+// Returns undefined if no matching stat is found (not 0, to distinguish "missing" from "value is 0")
+const getStatValue = (stats: ESPNTeamEntry['stats'], ...names: string[]): number | undefined => {
   for (const name of names) {
     const stat = stats.find(s => s.name.toLowerCase() === name.toLowerCase());
     if (stat?.value !== undefined) return stat.value;
   }
-  return 0;
+  return undefined;
 };
 
 // Get stat display value from ESPN stats array
@@ -114,10 +115,10 @@ const mapTeamEntry = (
   const { team, stats } = entry;
   
   // Handle different stat name variations across leagues
-  const wins = getStatValue(stats, 'wins', 'W');
-  const losses = getStatValue(stats, 'losses', 'L');
-  const ties = getStatValue(stats, 'ties', 'T', 'otLosses', 'OTL');
-  const gamesPlayed = wins + losses + (ties || 0);
+  const wins = getStatValue(stats, 'wins', 'W') ?? 0;
+  const losses = getStatValue(stats, 'losses', 'L') ?? 0;
+  const ties = getStatValue(stats, 'ties', 'T', 'otLosses', 'OTL') ?? 0;
+  const gamesPlayed = wins + losses + ties;
   const winPct = gamesPlayed > 0 ? wins / gamesPlayed : 0;
   
   // Get various stats based on what's available
@@ -128,11 +129,12 @@ const mapTeamEntry = (
   const streak = getStatDisplayValue(stats, 'streak', 'strk', 'STRK');
   
   // Points for/against (varies by sport)
-  const pointsFor = getStatValue(stats, 'pointsFor', 'runsScored', 'goalsFor', 'avgPointsFor', 'points', 'PF');
-  const pointsAgainst = getStatValue(stats, 'pointsAgainst', 'runsAllowed', 'goalsAgainst', 'avgPointsAgainst', 'PA');
+  const pointsFor = getStatValue(stats, 'pointsFor', 'runsScored', 'goalsFor', 'avgPointsFor', 'points', 'PF') ?? 0;
+  const pointsAgainst = getStatValue(stats, 'pointsAgainst', 'runsAllowed', 'goalsAgainst', 'avgPointsAgainst', 'PA') ?? 0;
   
-  const confRank = getStatValue(stats, 'playoffSeed', 'leagueRank', 'rank', 'clinchIndicator') || index + 1;
-  const divRank = getStatValue(stats, 'divisionRank', 'divRank') || index + 1;
+  // Use entry.note?.rank first (ESPN's actual rank), then stats, then fallback to index
+  const confRank = entry.note?.rank ?? getStatValue(stats, 'playoffSeed', 'conferenceRank', 'confRank', 'seed', 'leagueRank', 'rank') ?? (index + 1);
+  const divRank = getStatValue(stats, 'divisionRank', 'divRank', 'rank') ?? (index + 1);
   
   const playoffPosition = getPlayoffPosition(entry, confRank, league);
   
@@ -149,8 +151,8 @@ const mapTeamEntry = (
     winPct,
     gamesBack,
     streak: parseStreak(streak),
-    homeRecord: homeRecord || `${Math.floor(wins / 2)}-${Math.floor(losses / 2)}`,
-    awayRecord: awayRecord || `${Math.ceil(wins / 2)}-${Math.ceil(losses / 2)}`,
+    homeRecord: homeRecord || '-', // Use placeholder instead of invented records
+    awayRecord: awayRecord || '-',
     last10: last10 || '',
     pointsFor,
     pointsAgainst,
@@ -205,10 +207,10 @@ export const mapESPNStandingsToSportradar = (
           });
         }
         
-        // Sort entries by playoffSeed/rank BEFORE mapping
+        // Sort entries by playoffSeed/rank BEFORE mapping (prefer entry.note?.rank, then stats)
         conferenceEntries.sort((a, b) => {
-          const aRank = getStatValue(a.entry.stats, 'playoffSeed', 'leagueRank', 'rank') || 999;
-          const bRank = getStatValue(b.entry.stats, 'playoffSeed', 'leagueRank', 'rank') || 999;
+          const aRank = a.entry.note?.rank ?? getStatValue(a.entry.stats, 'playoffSeed', 'conferenceRank', 'seed', 'leagueRank', 'rank') ?? 999;
+          const bRank = b.entry.note?.rank ?? getStatValue(b.entry.stats, 'playoffSeed', 'conferenceRank', 'seed', 'leagueRank', 'rank') ?? 999;
           return aRank - bRank;
         });
         
@@ -222,10 +224,10 @@ export const mapESPNStandingsToSportradar = (
     else if (response.standings?.entries) {
       console.log(`[ESPN Standings Mapper] Flat structure: ${response.standings.entries.length} teams`);
       
-      // Sort by rank before mapping
+      // Sort by rank before mapping (use note.rank or stat-based rank)
       const sortedEntries = [...response.standings.entries].sort((a, b) => {
-        const aRank = getStatValue(a.stats, 'playoffSeed', 'leagueRank', 'rank') || 999;
-        const bRank = getStatValue(b.stats, 'playoffSeed', 'leagueRank', 'rank') || 999;
+        const aRank = a.note?.rank ?? getStatValue(a.stats, 'playoffSeed', 'leagueRank', 'rank') ?? 999;
+        const bRank = b.note?.rank ?? getStatValue(b.stats, 'playoffSeed', 'leagueRank', 'rank') ?? 999;
         return aRank - bRank;
       });
       
@@ -237,13 +239,8 @@ export const mapESPNStandingsToSportradar = (
       console.log(`[ESPN Standings Mapper] Response keys:`, Object.keys(response || {}));
     }
     
-    // Final sort - by conference, then by confRank
-    standings.sort((a, b) => {
-      if (a.conference !== b.conference) {
-        return a.conference.localeCompare(b.conference);
-      }
-      return a.confRank - b.confRank;
-    });
+    // No final sort here - let the UI handle view-specific sorting
+    // Data is already sorted by conference rank within each conference
     
     console.log(`[ESPN Standings Mapper] Mapped ${standings.length} teams for ${league}`);
     
