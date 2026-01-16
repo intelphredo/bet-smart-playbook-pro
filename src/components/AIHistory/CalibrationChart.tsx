@@ -17,7 +17,7 @@ import {
   Legend,
   Cell,
 } from "recharts";
-import { Activity, Target, AlertTriangle, CheckCircle, TrendingUp, TrendingDown } from "lucide-react";
+import { Activity, Target, AlertTriangle, CheckCircle, TrendingUp, TrendingDown, Wrench, Lightbulb, AlertCircle, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { HistoricalPrediction } from "@/hooks/useHistoricalPredictions";
 
@@ -37,6 +37,14 @@ interface CalibrationBin {
   calibrationError: number;
   isOverconfident: boolean;
   isUnderconfident: boolean;
+}
+
+interface TuningRecommendation {
+  severity: 'critical' | 'warning' | 'info' | 'success';
+  title: string;
+  description: string;
+  action: string;
+  impactedBins: string[];
 }
 
 export function CalibrationChart({ predictions, confidenceVsAccuracy, isLoading }: CalibrationChartProps) {
@@ -133,6 +141,110 @@ export function CalibrationChart({ predictions, confidenceVsAccuracy, isLoading 
       underconfidentBins,
     };
   }, [predictions, calibrationData]);
+
+  // Generate tuning recommendations based on calibration analysis
+  const tuningRecommendations = useMemo((): TuningRecommendation[] => {
+    const recommendations: TuningRecommendation[] = [];
+    
+    // Analyze overconfident bins
+    const overconfidentBins = calibrationData.filter(b => b.isOverconfident);
+    if (overconfidentBins.length > 0) {
+      const avgError = overconfidentBins.reduce((sum, b) => sum + Math.abs(b.calibrationError), 0) / overconfidentBins.length;
+      const impactedBins = overconfidentBins.map(b => b.label);
+      
+      if (avgError > 15) {
+        recommendations.push({
+          severity: 'critical',
+          title: 'Severe Overconfidence Detected',
+          description: `${overconfidentBins.length} confidence bins are significantly overconfident (avg ${avgError.toFixed(1)}% gap). The model is predicting higher win rates than it achieves.`,
+          action: 'Consider reducing confidence scores by 10-15% for high-confidence picks, or add stricter filters before assigning high confidence.',
+          impactedBins,
+        });
+      } else {
+        recommendations.push({
+          severity: 'warning',
+          title: 'Moderate Overconfidence',
+          description: `${overconfidentBins.length} bins show overconfidence (avg ${avgError.toFixed(1)}% gap). Picks are winning less often than predicted.`,
+          action: 'Apply a 5-10% confidence reduction multiplier for affected ranges, or require additional validation signals.',
+          impactedBins,
+        });
+      }
+    }
+    
+    // Analyze underconfident bins
+    const underconfidentBins = calibrationData.filter(b => b.isUnderconfident);
+    if (underconfidentBins.length > 0) {
+      const avgError = underconfidentBins.reduce((sum, b) => sum + b.calibrationError, 0) / underconfidentBins.length;
+      const impactedBins = underconfidentBins.map(b => b.label);
+      
+      recommendations.push({
+        severity: 'info',
+        title: 'Underconfidence Opportunity',
+        description: `${underconfidentBins.length} bins are underconfident (avg +${avgError.toFixed(1)}% better than predicted). The model is performing better than expected.`,
+        action: 'Consider boosting confidence by 5-8% for these ranges, or increasing bet sizes for picks in these confidence levels.',
+        impactedBins,
+      });
+    }
+    
+    // Check for low sample sizes
+    const lowSampleBins = calibrationData.filter(b => b.count < 5 && b.count > 0);
+    if (lowSampleBins.length >= 3) {
+      recommendations.push({
+        severity: 'info',
+        title: 'Insufficient Data for Some Ranges',
+        description: `${lowSampleBins.length} confidence bins have fewer than 5 picks, making calibration uncertain.`,
+        action: 'Continue tracking predictions to build statistical significance. Aim for 10+ picks per bin for reliable calibration.',
+        impactedBins: lowSampleBins.map(b => b.label),
+      });
+    }
+    
+    // Check for high-confidence accuracy
+    const highConfBins = calibrationData.filter(b => b.confidence >= 70);
+    const highConfWinRate = highConfBins.reduce((sum, b) => sum + b.won, 0) / 
+      Math.max(1, highConfBins.reduce((sum, b) => sum + b.count, 0)) * 100;
+    
+    if (highConfBins.length > 0 && highConfWinRate < 65) {
+      recommendations.push({
+        severity: 'critical',
+        title: 'High Confidence Picks Underperforming',
+        description: `Picks with 70%+ confidence are only winning ${highConfWinRate.toFixed(1)}% of the time.`,
+        action: 'Raise the minimum confidence threshold to 75%, or add additional validation requirements for high-confidence picks.',
+        impactedBins: highConfBins.map(b => b.label),
+      });
+    } else if (highConfBins.length > 0 && highConfWinRate >= 75) {
+      recommendations.push({
+        severity: 'success',
+        title: 'High Confidence Picks Performing Well',
+        description: `Picks with 70%+ confidence are winning ${highConfWinRate.toFixed(1)}% of the time - exceeding expectations.`,
+        action: 'Consider prioritizing these picks or increasing unit sizes for high-confidence selections.',
+        impactedBins: highConfBins.map(b => b.label),
+      });
+    }
+    
+    // Brier score recommendations
+    if (calibrationMetrics.brierScore > 0.3) {
+      recommendations.push({
+        severity: 'warning',
+        title: 'High Brier Score',
+        description: `Brier score of ${calibrationMetrics.brierScore} indicates poor probability calibration overall.`,
+        action: 'Review the confidence calculation methodology. Consider using logistic regression to recalibrate probability outputs.',
+        impactedBins: [],
+      });
+    }
+    
+    // If well calibrated, add success message
+    if (calibrationMetrics.isWellCalibrated && recommendations.filter(r => r.severity === 'critical' || r.severity === 'warning').length === 0) {
+      recommendations.unshift({
+        severity: 'success',
+        title: 'Model is Well Calibrated',
+        description: 'The model\'s confidence scores accurately reflect actual win probabilities.',
+        action: 'Continue monitoring performance. Consider slightly more aggressive position sizing on high-confidence picks.',
+        impactedBins: [],
+      });
+    }
+    
+    return recommendations;
+  }, [calibrationData, calibrationMetrics]);
 
   if (isLoading) {
     return (
@@ -324,6 +436,91 @@ export function CalibrationChart({ predictions, confidenceVsAccuracy, isLoading 
           </div>
         </CardContent>
       </Card>
+
+      {/* Tuning Recommendations */}
+      {tuningRecommendations.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Wrench className="h-4 w-4 text-primary" />
+              Tuning Recommendations
+              <Badge variant="secondary" className="ml-2">
+                {tuningRecommendations.filter(r => r.severity === 'critical' || r.severity === 'warning').length} actions needed
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {tuningRecommendations.map((rec, index) => {
+                const severityConfig = {
+                  critical: {
+                    icon: <AlertCircle className="h-4 w-4" />,
+                    bg: 'bg-red-500/10 border-red-500/30',
+                    iconColor: 'text-red-500',
+                    badge: 'bg-red-500/20 text-red-600 border-red-500/30',
+                  },
+                  warning: {
+                    icon: <AlertTriangle className="h-4 w-4" />,
+                    bg: 'bg-yellow-500/10 border-yellow-500/30',
+                    iconColor: 'text-yellow-500',
+                    badge: 'bg-yellow-500/20 text-yellow-600 border-yellow-500/30',
+                  },
+                  info: {
+                    icon: <Lightbulb className="h-4 w-4" />,
+                    bg: 'bg-blue-500/10 border-blue-500/30',
+                    iconColor: 'text-blue-500',
+                    badge: 'bg-blue-500/20 text-blue-600 border-blue-500/30',
+                  },
+                  success: {
+                    icon: <CheckCircle2 className="h-4 w-4" />,
+                    bg: 'bg-green-500/10 border-green-500/30',
+                    iconColor: 'text-green-500',
+                    badge: 'bg-green-500/20 text-green-600 border-green-500/30',
+                  },
+                }[rec.severity];
+
+                return (
+                  <div
+                    key={index}
+                    className={cn(
+                      "p-4 rounded-lg border",
+                      severityConfig.bg
+                    )}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className={cn("mt-0.5", severityConfig.iconColor)}>
+                        {severityConfig.icon}
+                      </div>
+                      <div className="flex-1 space-y-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-semibold text-sm">{rec.title}</span>
+                          <Badge variant="outline" className={cn("text-xs", severityConfig.badge)}>
+                            {rec.severity}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground">{rec.description}</p>
+                        <div className="bg-background/50 rounded p-2.5 border border-border/50">
+                          <div className="text-xs font-medium text-primary mb-1">Recommended Action:</div>
+                          <p className="text-xs text-foreground">{rec.action}</p>
+                        </div>
+                        {rec.impactedBins.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 mt-2">
+                            {rec.impactedBins.map((bin, i) => (
+                              <Badge key={i} variant="secondary" className="text-xs">
+                                {bin}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Confidence Breakdown Table */}
       <Card>
