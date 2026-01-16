@@ -9,10 +9,24 @@ const corsHeaders = {
 const ODDS_API_BASE_URL = "https://api.the-odds-api.com/v4";
 
 const SPORT_KEYS: Record<string, string> = {
+  // American Football
   NFL: "americanfootball_nfl",
+  NCAAF: "americanfootball_ncaaf",
+  CFL: "americanfootball_cfl",
+  XFL: "americanfootball_xfl",
+  
+  // Basketball
   NBA: "basketball_nba",
+  NCAAB: "basketball_ncaab",
+  WNBA: "basketball_wnba",
+  
+  // Baseball
   MLB: "baseball_mlb",
+  
+  // Hockey
   NHL: "icehockey_nhl",
+  
+  // Soccer
   SOCCER: "soccer_epl",
   EPL: "soccer_epl",
   LA_LIGA: "soccer_spain_la_liga",
@@ -21,8 +35,16 @@ const SPORT_KEYS: Record<string, string> = {
   LIGUE_1: "soccer_france_ligue_one",
   MLS: "soccer_usa_mls",
   CHAMPIONS_LEAGUE: "soccer_uefa_champs_league",
-  NCAAF: "americanfootball_ncaaf",
-  NCAAB: "basketball_ncaab",
+  
+  // Combat Sports
+  UFC: "mma_mixed_martial_arts",
+  
+  // Tennis (uses current/upcoming tournaments)
+  ATP: "tennis_atp_aus_open",
+  WTA: "tennis_wta_aus_open",
+  
+  // Golf (uses current/upcoming tournaments)
+  PGA: "golf_pga_championship",
 };
 
 Deno.serve(async (req) => {
