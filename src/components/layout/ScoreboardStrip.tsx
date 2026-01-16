@@ -42,7 +42,7 @@ export function ScoreboardStrip({ matches, className }: ScoreboardStripProps) {
       {/* Premium gold accent line */}
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
       
-      {/* Left Arrow */}
+      {/* Left Arrow - Hidden on mobile, visible on md+ with larger touch target */}
       <Button
         variant="ghost"
         size="icon"
@@ -50,18 +50,32 @@ export function ScoreboardStrip({ matches, className }: ScoreboardStripProps) {
           "absolute left-0 top-1/2 -translate-y-1/2 z-10 h-full rounded-none",
           "bg-gradient-to-r from-background via-background/95 to-transparent",
           "hover:from-background hover:via-background",
-          "border-r border-border/20"
+          "border-r border-border/20",
+          "hidden md:flex",
+          // Minimum 44px touch target
+          "min-w-[44px] min-h-[44px]"
         )}
         onClick={() => scroll('left')}
+        aria-label="Scroll left"
       >
-        <ChevronLeft className="h-4 w-4 text-muted-foreground" />
+        <ChevronLeft className="h-5 w-5 text-muted-foreground" />
       </Button>
 
-      {/* Scrollable Scores */}
+      {/* Scrollable Scores - Responsive padding */}
       <div
         ref={scrollRef}
-        className="flex overflow-x-auto scrollbar-hide px-10 py-2.5 gap-2"
+        className={cn(
+          "flex overflow-x-auto scrollbar-hide py-2.5 gap-2",
+          // Responsive horizontal padding
+          "px-3 md:px-10",
+          // Smooth touch scrolling
+          "scroll-smooth snap-x snap-mandatory md:snap-none",
+          // Better touch scrolling feel
+          "-webkit-overflow-scrolling-touch"
+        )}
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        role="region"
+        aria-label="Live scores"
       >
         {matches.map((match, index) => (
           <ScoreCard 
@@ -73,7 +87,7 @@ export function ScoreboardStrip({ matches, className }: ScoreboardStripProps) {
         ))}
       </div>
 
-      {/* Right Arrow */}
+      {/* Right Arrow - Hidden on mobile, visible on md+ with larger touch target */}
       <Button
         variant="ghost"
         size="icon"
@@ -81,11 +95,15 @@ export function ScoreboardStrip({ matches, className }: ScoreboardStripProps) {
           "absolute right-0 top-1/2 -translate-y-1/2 z-10 h-full rounded-none",
           "bg-gradient-to-l from-background via-background/95 to-transparent",
           "hover:from-background hover:via-background",
-          "border-l border-border/20"
+          "border-l border-border/20",
+          "hidden md:flex",
+          // Minimum 44px touch target
+          "min-w-[44px] min-h-[44px]"
         )}
         onClick={() => scroll('right')}
+        aria-label="Scroll right"
       >
-        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+        <ChevronRight className="h-5 w-5 text-muted-foreground" />
       </Button>
       
       {/* Bottom accent */}
@@ -122,12 +140,21 @@ function ScoreCard({ match, onClick, index }: { match: Match; onClick: () => voi
     <button
       onClick={onClick}
       className={cn(
-        "flex-shrink-0 w-[165px] rounded-lg p-2.5 text-left relative overflow-hidden group",
+        // Base sizing - responsive with minimum touch target
+        "flex-shrink-0 w-[150px] sm:w-[165px] rounded-lg p-2.5 sm:p-3 text-left relative overflow-hidden group",
+        // Minimum touch target (44x44px)
+        "min-h-[72px]",
         "transition-all duration-300",
         "border",
         // Base styling
         "bg-card/80 hover:bg-card border-border/40 hover:border-primary/30",
         "hover:shadow-md hover:shadow-primary/5",
+        // Active state for touch
+        "active:scale-[0.98] active:bg-card/90",
+        // Snap alignment for mobile
+        "snap-start",
+        // Focus visible for accessibility
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
         // Live state with animated glow
         isLive && "border-red-500/40 bg-gradient-to-br from-red-500/10 to-transparent",
         // Finished state
@@ -136,6 +163,7 @@ function ScoreCard({ match, onClick, index }: { match: Match; onClick: () => voi
       style={{
         animationDelay: `${index * 50}ms`
       }}
+      aria-label={`${match.homeTeam?.name || 'Home'} vs ${match.awayTeam?.name || 'Away'} - ${isLive ? 'Live' : isFinished ? 'Final' : 'Scheduled'}`}
     >
       {/* Shimmer effect on hover */}
       <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none overflow-hidden">
