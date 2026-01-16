@@ -156,7 +156,7 @@ export default function BetSlipItem({ item, showLegNumber, legNumber }: BetSlipI
 
         {/* Risk warning for high stakes */}
         {item.kellyRecommended && stakeNum > item.kellyRecommended * 2 && (
-          <div className="flex items-center gap-1 text-xs text-amber-600">
+          <div className="flex items-center gap-1 text-xs text-cyan-600">
             <AlertTriangle className="h-3 w-3" />
             <span>Stake exceeds 2x Kelly recommendation</span>
           </div>

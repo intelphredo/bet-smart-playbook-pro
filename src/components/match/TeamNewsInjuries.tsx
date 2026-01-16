@@ -35,11 +35,11 @@ interface TeamNewsInjuriesProps {
 
 const getStatusColor = (status?: InjuryStatus) => {
   switch (status) {
-    case 'out': return 'bg-red-500/10 text-red-600 border-red-500/30';
-    case 'doubtful': return 'bg-orange-500/10 text-orange-600 border-orange-500/30';
-    case 'questionable': return 'bg-yellow-500/10 text-yellow-600 border-yellow-500/30';
-    case 'probable': return 'bg-green-500/10 text-green-600 border-green-500/30';
-    case 'day-to-day': return 'bg-amber-500/10 text-amber-600 border-amber-500/30';
+    case 'out': return 'bg-destructive/10 text-destructive border-destructive/30';
+    case 'doubtful': return 'bg-cyan-700/10 text-cyan-700 dark:text-cyan-400 border-cyan-700/30';
+    case 'questionable': return 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/30';
+    case 'probable': return 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30';
+    case 'day-to-day': return 'bg-cyan-400/10 text-cyan-500 dark:text-cyan-300 border-cyan-400/30';
     default: return 'bg-muted text-muted-foreground';
   }
 };

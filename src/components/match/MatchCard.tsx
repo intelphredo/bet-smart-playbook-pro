@@ -62,9 +62,9 @@ export const MatchCard: React.FC<MatchCardProps> = ({ game, expanded = false }) 
 
   // Get confidence styling
   const getConfidenceStyle = (conf: number) => {
-    if (conf >= 70) return 'text-green-500 bg-green-500/10 border-green-500/30';
+    if (conf >= 70) return 'text-emerald-500 bg-emerald-500/10 border-emerald-500/30';
     if (conf >= 60) return 'text-primary bg-primary/10 border-primary/30';
-    if (conf >= 55) return 'text-yellow-500 bg-yellow-500/10 border-yellow-500/30';
+    if (conf >= 55) return 'text-cyan-500 bg-cyan-500/10 border-cyan-500/30';
     return 'text-muted-foreground bg-muted border-muted';
   };
 

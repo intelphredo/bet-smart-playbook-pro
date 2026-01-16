@@ -85,10 +85,10 @@ const NetworkMonitor = () => {
   );
 
   const getStatusColor = (status: number) => {
-    if (status >= 200 && status < 300) return "bg-green-500";
-    if (status >= 300 && status < 400) return "bg-yellow-500";
-    if (status >= 400 && status < 500) return "bg-orange-500";
-    if (status >= 500) return "bg-red-500";
+    if (status >= 200 && status < 300) return "bg-emerald-500";
+    if (status >= 300 && status < 400) return "bg-cyan-400";
+    if (status >= 400 && status < 500) return "bg-cyan-600";
+    if (status >= 500) return "bg-destructive";
     return "bg-muted";
   };
 

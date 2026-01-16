@@ -53,9 +53,9 @@ export const RankingsBadge: React.FC<RankingsBadgeProps> = ({
   };
 
   const getBadgeColor = () => {
-    if (rank <= 5) return "bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 border-yellow-500/30";
-    if (rank <= 10) return "bg-orange-500/20 text-orange-600 dark:text-orange-400 border-orange-500/30";
-    if (rank <= 15) return "bg-blue-500/20 text-blue-600 dark:text-blue-400 border-blue-500/30";
+    if (rank <= 5) return "bg-cyan-400/20 text-cyan-500 dark:text-cyan-400 border-cyan-400/30";
+    if (rank <= 10) return "bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 border-cyan-500/30";
+    if (rank <= 15) return "bg-cyan-600/20 text-cyan-700 dark:text-cyan-300 border-cyan-600/30";
     return "bg-muted text-muted-foreground border-border";
   };
 

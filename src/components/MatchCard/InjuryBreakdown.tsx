@@ -20,9 +20,9 @@ const getStatusColor = (status: string) => {
     case 'injured-reserve':
       return 'text-destructive bg-destructive/10';
     case 'doubtful':
-      return 'text-orange-500 bg-orange-500/10';
+      return 'text-cyan-600 bg-cyan-500/10';
     case 'questionable':
-      return 'text-yellow-600 bg-yellow-500/10';
+      return 'text-cyan-500 bg-cyan-400/10';
     default:
       return 'text-muted-foreground bg-muted';
   }

@@ -186,16 +186,16 @@ const PredictionReasoningBadge = memo(function PredictionReasoningBadge({
   
   // Determine confidence level styling
   const getConfidenceStyle = () => {
-    if (confidence >= 70) return 'bg-green-500/10 text-green-600 border-green-500/30';
+    if (confidence >= 70) return 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30';
     if (confidence >= 60) return 'bg-primary/10 text-primary border-primary/30';
-    if (confidence >= 55) return 'bg-yellow-500/10 text-yellow-600 border-yellow-500/30';
+    if (confidence >= 55) return 'bg-cyan-500/10 text-cyan-600 border-cyan-500/30';
     return 'bg-muted text-muted-foreground border-muted';
   };
 
   const getImpactColor = (impact: 'positive' | 'negative' | 'neutral') => {
     switch (impact) {
-      case 'positive': return 'text-green-500';
-      case 'negative': return 'text-red-500';
+      case 'positive': return 'text-emerald-500';
+      case 'negative': return 'text-destructive';
       default: return 'text-muted-foreground';
     }
   };
