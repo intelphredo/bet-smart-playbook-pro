@@ -13,7 +13,8 @@ interface CachedPrediction {
 }
 
 const CACHE_KEY = 'edgeiq-prediction-cache';
-const DEFAULT_TTL = 30 * 60 * 1000; // 30 minutes
+// Extended TTL to 24 hours - predictions should stay locked for the entire day
+const DEFAULT_TTL = 24 * 60 * 60 * 1000; // 24 hours
 const MAX_CACHE_SIZE = 500;
 
 // In-memory cache for fast access

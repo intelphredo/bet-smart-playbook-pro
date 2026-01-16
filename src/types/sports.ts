@@ -85,7 +85,9 @@ export interface Match {
     calibrationMultiplier?: number;
     meetsCalibrationThreshold?: boolean;
     isPaused?: boolean;
-    // Enhanced reasoning fields
+    // Prediction locking
+    isLocked?: boolean;
+    lockedAt?: string;
     reasoning?: string;
     detailedReasoning?: string;
     keyFactors?: string[];
