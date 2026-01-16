@@ -297,17 +297,8 @@ export function useSteamMoveDetector(
             alertedMovesRef.current.add(move.id);
             newSteamMoves.push(move);
 
-            // Show toast notification
+            // Save to database only (toast notifications disabled)
             if (alertsEnabled) {
-              const strengthEmoji = move.strength === 'extreme' ? '🚨' : move.strength === 'strong' ? '⚡' : '📊';
-              toast({
-                title: `${strengthEmoji} Steam Move Detected!`,
-                description: `${move.matchTitle}: ${move.side.toUpperCase()} ${move.marketType} moved ${move.movement > 0 ? '+' : ''}${move.movement.toFixed(1)} pts in ${Math.round(move.timeWindow / 60)}min`,
-                variant: move.strength === 'extreme' ? 'destructive' : 'default',
-                duration: 8000,
-              });
-
-              // Save to database
               saveSteamMove(move);
             }
           }

@@ -28,23 +28,15 @@ const SmartScoreSection = ({ matches }: Props) => {
       )
     : null;
 
-  // Check for arbitrage opportunities
+  // Track arbitrage opportunities (no toast notifications)
   React.useEffect(() => {
     matches.forEach(match => {
       if (match.smartScore?.hasArbitrageOpportunity && !alertedMatches.has(match.id)) {
-        // Show toast for arbitrage opportunity
-        toast({
-          title: "Arbitrage Opportunity Detected!",
-          description: `${match.homeTeam.shortName} vs ${match.awayTeam.shortName} has a potential arbitrage opportunity.`,
-          variant: "default",
-          duration: 6000,
-        });
-        
-        // Update the set of already alerted matches
+        // Update the set of already alerted matches (no toast)
         setAlertedMatches(prev => new Set([...prev, match.id]));
       }
     });
-  }, [matches, toast, alertedMatches]);
+  }, [matches, alertedMatches]);
 
   // If no matches have smart scores, don't render this section
   if (matchesWithScores.length === 0) return null;

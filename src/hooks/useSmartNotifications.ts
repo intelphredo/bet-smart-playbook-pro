@@ -318,24 +318,9 @@ export function useSmartNotifications(options: UseSmartNotificationsOptions) {
     
     const alertsToSend = newAlerts.slice(0, maxAlertsPerDay - todayAlertCount);
     
-    // Send alerts - filter out silent alerts (injury/arbitrage) from toast notifications
+    // Send alerts - save to database only (toast notifications disabled)
     alertsToSend.forEach(alert => {
-      // Skip toast for silent alerts (arbitrage/steam moves are silenced)
-      const isSilentType = alert.type === 'steam_move' || (alert as any).silent;
-      
-      if (!isSilentType) {
-        // Show toast only for non-silent alerts
-        toast(alert.title, {
-          description: alert.message,
-          duration: 10000,
-          action: {
-            label: 'View',
-            onClick: () => window.location.href = `/game/${alert.match.id}`,
-          },
-        });
-      }
-      
-      // Save all alerts to database (including silent ones)
+      // Save all alerts to database
       saveAlertToDatabase(alert);
     });
     
