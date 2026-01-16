@@ -21,6 +21,7 @@ import ScenarioGuide from "@/pages/ScenarioGuide";
 import BankrollManager from "@/pages/BankrollManager";
 import BetHistory from "@/pages/BetHistory";
 import Settings from "@/pages/Settings";
+import Billing from "@/pages/settings/Billing";
 import Auth from "@/pages/Auth";
 
 // Legal pages
@@ -175,6 +176,14 @@ const AnimatedRoutes = () => {
           element={
             <PageTransition>
               <Settings />
+            </PageTransition>
+          }
+        />
+        <Route
+          path="/settings/billing"
+          element={
+            <PageTransition>
+              <Billing />
             </PageTransition>
           }
         />
