@@ -11,6 +11,7 @@ import SharpMoneyMonitor from "@/components/SharpMoneyMonitor";
 import AnimatedRoutes from "@/components/layout/AnimatedRoutes";
 import OnboardingModal from "@/components/onboarding/OnboardingModal";
 import { CalibrationProvider } from "@/components/ModelCalibration";
+import { AgeVerificationGate, GeoBlocker } from "@/components/legal";
 // Create a client
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -64,12 +65,16 @@ function App() {
             <BetSlipProvider>
               <TooltipProvider>
                 <CalibrationProvider>
-                  <Router>
-                    <AnimatedRoutes />
-                    <FloatingBetSlip />
-                    <SharpMoneyMonitor />
-                    <OnboardingModal />
-                  </Router>
+                  <GeoBlocker>
+                    <AgeVerificationGate>
+                      <Router>
+                        <AnimatedRoutes />
+                        <FloatingBetSlip />
+                        <SharpMoneyMonitor />
+                        <OnboardingModal />
+                      </Router>
+                    </AgeVerificationGate>
+                  </GeoBlocker>
                 </CalibrationProvider>
                 <Toaster richColors position="top-center" />
               </TooltipProvider>

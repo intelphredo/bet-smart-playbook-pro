@@ -23,6 +23,11 @@ import BetHistory from "@/pages/BetHistory";
 import Settings from "@/pages/Settings";
 import Auth from "@/pages/Auth";
 
+// Legal pages
+import TermsOfService from "@/pages/legal/TermsOfService";
+import PrivacyPolicy from "@/pages/legal/PrivacyPolicy";
+import ResponsibleGambling from "@/pages/legal/ResponsibleGambling";
+
 const AnimatedRoutes = () => {
   const location = useLocation();
 
@@ -178,6 +183,30 @@ const AnimatedRoutes = () => {
           element={
             <PageTransition>
               <Auth />
+            </PageTransition>
+          }
+        />
+        <Route
+          path="/terms"
+          element={
+            <PageTransition>
+              <TermsOfService />
+            </PageTransition>
+          }
+        />
+        <Route
+          path="/privacy"
+          element={
+            <PageTransition>
+              <PrivacyPolicy />
+            </PageTransition>
+          }
+        />
+        <Route
+          path="/responsible-gambling"
+          element={
+            <PageTransition>
+              <ResponsibleGambling />
             </PageTransition>
           }
         />

@@ -245,20 +245,24 @@ const PageFooter = () => (
             </span>
           </h3>
           <ul className="space-y-3">
-            {["Terms of Service", "Privacy Policy", "Responsible Gaming"].map((item, index) => (
+            {[
+              { label: "Terms of Service", path: "/terms" },
+              { label: "Privacy Policy", path: "/privacy" },
+              { label: "Responsible Gaming", path: "/responsible-gambling" }
+            ].map((item, index) => (
               <motion.li 
-                key={item}
+                key={item.label}
                 initial={{ opacity: 0, x: -10 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.05 }}
               >
                 <Link 
-                  to="/" 
+                  to={item.path} 
                   className="group text-sm text-muted-foreground hover:text-foreground transition-all duration-200 flex items-center gap-2"
                 >
                   <ChevronRight className="h-3 w-3 text-primary/40 group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
-                  <span>{item}</span>
+                  <span>{item.label}</span>
                 </Link>
               </motion.li>
             ))}
