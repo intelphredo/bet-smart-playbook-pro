@@ -207,14 +207,14 @@ export class LegalCompliancePage {
 
   async clearCookieConsent() {
     await this.page.evaluate(() => {
-      localStorage.removeItem('betsmart_cookie_consent');
-      localStorage.removeItem('betsmart_cookie_preferences');
+      localStorage.removeItem('edgeiq_cookie_consent');
+      localStorage.removeItem('edgeiq_cookie_preferences');
     });
   }
 
   async clearDisclaimerDismissed() {
     await this.page.evaluate(() => {
-      localStorage.removeItem('betsmart_disclaimer_dismissed');
+      localStorage.removeItem('edgeiq_disclaimer_dismissed');
     });
   }
 
@@ -248,14 +248,14 @@ export class LegalCompliancePage {
     marketing: boolean;
   } | null> {
     const prefs = await this.page.evaluate(() => 
-      localStorage.getItem('betsmart_cookie_preferences')
+      localStorage.getItem('edgeiq_cookie_preferences')
     );
     return prefs ? JSON.parse(prefs) : null;
   }
 
   async hasCookieConsent(): Promise<boolean> {
     const consent = await this.page.evaluate(() => 
-      localStorage.getItem('betsmart_cookie_consent')
+      localStorage.getItem('edgeiq_cookie_consent')
     );
     return consent === 'true';
   }

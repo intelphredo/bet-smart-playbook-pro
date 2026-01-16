@@ -49,13 +49,13 @@ describe('PredictionDisclaimer', () => {
       await user.click(dismissButton);
       
       expect(queryByText('Disclaimer: For Entertainment Only')).not.toBeInTheDocument();
-      expect(localStorage.getItem('betsmart_disclaimer_dismissed')).toBeTruthy();
+      expect(localStorage.getItem('edgeiq_disclaimer_dismissed')).toBeTruthy();
     });
 
     it('stays dismissed if dismissed within 24 hours', () => {
       // Set dismissed time to 12 hours ago
       const twelveHoursAgo = Date.now() - (12 * 60 * 60 * 1000);
-      localStorage.setItem('betsmart_disclaimer_dismissed', twelveHoursAgo.toString());
+      localStorage.setItem('edgeiq_disclaimer_dismissed', twelveHoursAgo.toString());
       
       const { queryByText } = renderWithRouter(<PredictionDisclaimer />);
       
@@ -65,7 +65,7 @@ describe('PredictionDisclaimer', () => {
     it('reappears after 24 hours', () => {
       // Set dismissed time to 25 hours ago
       const twentyFiveHoursAgo = Date.now() - (25 * 60 * 60 * 1000);
-      localStorage.setItem('betsmart_disclaimer_dismissed', twentyFiveHoursAgo.toString());
+      localStorage.setItem('edgeiq_disclaimer_dismissed', twentyFiveHoursAgo.toString());
       
       const { getByText } = renderWithRouter(<PredictionDisclaimer />);
       

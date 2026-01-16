@@ -34,7 +34,7 @@ describe('CookieConsent', () => {
   });
 
   it('does not show banner when consent already exists', async () => {
-    localStorage.setItem('betsmart_cookie_consent', 'true');
+    localStorage.setItem('edgeiq_cookie_consent', 'true');
     
     const { queryByText } = renderWithRouter(<CookieConsent />);
     
@@ -70,9 +70,9 @@ describe('CookieConsent', () => {
     await user.click(getByRole('button', { name: /Accept All/i }));
     
     expect(queryByText('We Value Your Privacy')).not.toBeInTheDocument();
-    expect(localStorage.getItem('betsmart_cookie_consent')).toBe('true');
+    expect(localStorage.getItem('edgeiq_cookie_consent')).toBe('true');
     
-    const prefs = JSON.parse(localStorage.getItem('betsmart_cookie_preferences') || '{}');
+    const prefs = JSON.parse(localStorage.getItem('edgeiq_cookie_preferences') || '{}');
     expect(prefs.necessary).toBe(true);
     expect(prefs.analytics).toBe(true);
     expect(prefs.marketing).toBe(true);
@@ -89,7 +89,7 @@ describe('CookieConsent', () => {
     
     await user.click(getByRole('button', { name: /Necessary Only/i }));
     
-    const prefs = JSON.parse(localStorage.getItem('betsmart_cookie_preferences') || '{}');
+    const prefs = JSON.parse(localStorage.getItem('edgeiq_cookie_preferences') || '{}');
     expect(prefs.necessary).toBe(true);
     expect(prefs.analytics).toBe(false);
     expect(prefs.marketing).toBe(false);
@@ -154,7 +154,7 @@ describe('useCookiePreferences', () => {
       marketing: false,
       timestamp: Date.now()
     };
-    localStorage.setItem('betsmart_cookie_preferences', JSON.stringify(savedPrefs));
+    localStorage.setItem('edgeiq_cookie_preferences', JSON.stringify(savedPrefs));
     
     const TestComponent = () => {
       const prefs = useCookiePreferences();

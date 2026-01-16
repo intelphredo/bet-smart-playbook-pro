@@ -1,8 +1,8 @@
-# BetSmart Playbook Pro
+# EdgeIQ
 
 <div align="center">
 
-![BetSmart Logo](https://img.shields.io/badge/BetSmart-Playbook%20Pro-gold?style=for-the-badge)
+![EdgeIQ Logo](https://img.shields.io/badge/EdgeIQ-AI%20Sports%20Analytics-gold?style=for-the-badge)
 
 **AI-Powered Sports Analytics & Prediction Platform**
 
@@ -11,7 +11,7 @@
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-blue?logo=tailwindcss)](https://tailwindcss.com/)
 [![Vite](https://img.shields.io/badge/Vite-5.0-purple?logo=vite)](https://vitejs.dev/)
 
-[Live Demo](https://bet-smart-playbook-pro.lovable.app) · [Architecture Docs](./docs/ARCHITECTURE.md) · [Report Bug](mailto:support@betsmartplaybook.com)
+[Live Demo](https://bet-smart-playbook-pro.lovable.app) · [Architecture Docs](./docs/ARCHITECTURE.md) · [Report Bug](mailto:support@edgeiq.app)
 
 </div>
 
@@ -42,8 +42,8 @@
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/betsmart-playbook-pro.git
-cd betsmart-playbook-pro
+git clone https://github.com/your-username/edgeiq.git
+cd edgeiq
 
 # Install dependencies
 npm install
@@ -303,9 +303,9 @@ This project is proprietary software. All rights reserved.
 
 ## 📞 Support
 
-- **Email**: support@betsmartplaybook.com
-- **Legal Inquiries**: legal@betsmartplaybook.com
-- **Privacy Concerns**: privacy@betsmartplaybook.com
+- **Email**: support@edgeiq.app
+- **Legal Inquiries**: legal@edgeiq.app
+- **Privacy Concerns**: privacy@edgeiq.app
 
 ---
 

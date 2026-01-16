@@ -15,8 +15,8 @@ test.describe('Legal Compliance - Cookie Consent', () => {
     // Clear localStorage before each test to reset cookie consent state
     await page.goto('/');
     await page.evaluate(() => {
-      localStorage.removeItem('betsmart_cookie_consent');
-      localStorage.removeItem('betsmart_cookie_preferences');
+      localStorage.removeItem('edgeiq_cookie_consent');
+      localStorage.removeItem('edgeiq_cookie_preferences');
     });
   });
 
@@ -50,10 +50,10 @@ test.describe('Legal Compliance - Cookie Consent', () => {
     await expect(banner).not.toBeVisible();
     
     // Preferences should be saved to localStorage
-    const consent = await page.evaluate(() => localStorage.getItem('betsmart_cookie_consent'));
+    const consent = await page.evaluate(() => localStorage.getItem('edgeiq_cookie_consent'));
     expect(consent).toBe('true');
     
-    const prefs = await page.evaluate(() => localStorage.getItem('betsmart_cookie_preferences'));
+    const prefs = await page.evaluate(() => localStorage.getItem('edgeiq_cookie_preferences'));
     const parsedPrefs = JSON.parse(prefs || '{}');
     expect(parsedPrefs.analytics).toBe(true);
     expect(parsedPrefs.marketing).toBe(true);
@@ -72,7 +72,7 @@ test.describe('Legal Compliance - Cookie Consent', () => {
     await expect(banner).not.toBeVisible();
     
     // Check saved preferences
-    const prefs = await page.evaluate(() => localStorage.getItem('betsmart_cookie_preferences'));
+    const prefs = await page.evaluate(() => localStorage.getItem('edgeiq_cookie_preferences'));
     const parsedPrefs = JSON.parse(prefs || '{}');
     expect(parsedPrefs.analytics).toBe(false);
     expect(parsedPrefs.marketing).toBe(false);
@@ -118,7 +118,7 @@ test.describe('Legal Compliance - Cookie Consent', () => {
     await expect(page.locator('text=Cookie Preferences')).not.toBeVisible();
     
     // Check saved preferences
-    const prefs = await page.evaluate(() => localStorage.getItem('betsmart_cookie_preferences'));
+    const prefs = await page.evaluate(() => localStorage.getItem('edgeiq_cookie_preferences'));
     const parsedPrefs = JSON.parse(prefs || '{}');
     expect(parsedPrefs.analytics).toBe(true);
     expect(parsedPrefs.marketing).toBe(true);
@@ -127,8 +127,8 @@ test.describe('Legal Compliance - Cookie Consent', () => {
   test('should not show banner on subsequent visits after consent', async ({ page }) => {
     // Set consent in localStorage
     await page.evaluate(() => {
-      localStorage.setItem('betsmart_cookie_consent', 'true');
-      localStorage.setItem('betsmart_cookie_preferences', JSON.stringify({
+      localStorage.setItem('edgeiq_cookie_consent', 'true');
+      localStorage.setItem('edgeiq_cookie_preferences', JSON.stringify({
         necessary: true,
         analytics: true,
         marketing: false,
@@ -162,7 +162,7 @@ test.describe('Legal Compliance - Prediction Disclaimer', () => {
     // Clear dismissed state
     await page.goto('/');
     await page.evaluate(() => {
-      localStorage.removeItem('betsmart_disclaimer_dismissed');
+      localStorage.removeItem('edgeiq_disclaimer_dismissed');
     });
     
     await page.goto('/predictions');
@@ -185,7 +185,7 @@ test.describe('Legal Compliance - Prediction Disclaimer', () => {
 
   test('should display disclaimer on AI predictions page', async ({ page }) => {
     await page.evaluate(() => {
-      localStorage.removeItem('betsmart_disclaimer_dismissed');
+      localStorage.removeItem('edgeiq_disclaimer_dismissed');
     });
     
     await page.goto('/ai-predictions');
@@ -232,7 +232,7 @@ test.describe('Legal Compliance - Prediction Disclaimer', () => {
   test('should dismiss disclaimer when close button clicked', async ({ page }) => {
     await page.goto('/');
     await page.evaluate(() => {
-      localStorage.removeItem('betsmart_disclaimer_dismissed');
+      localStorage.removeItem('edgeiq_disclaimer_dismissed');
     });
     
     await page.goto('/predictions');
@@ -246,7 +246,7 @@ test.describe('Legal Compliance - Prediction Disclaimer', () => {
       await dismissButtons.first().click();
       
       // Check localStorage for dismissed state
-      const dismissed = await page.evaluate(() => localStorage.getItem('betsmart_disclaimer_dismissed'));
+      const dismissed = await page.evaluate(() => localStorage.getItem('edgeiq_disclaimer_dismissed'));
       expect(dismissed).toBeTruthy();
     }
   });
@@ -421,7 +421,7 @@ test.describe('Legal Compliance - Mobile Responsiveness', () => {
     
     await page.goto('/');
     await page.evaluate(() => {
-      localStorage.removeItem('betsmart_cookie_consent');
+      localStorage.removeItem('edgeiq_cookie_consent');
     });
     
     await page.reload();
@@ -458,7 +458,7 @@ test.describe('Legal Compliance - Accessibility', () => {
   test('cookie consent should be keyboard accessible', async ({ page }) => {
     await page.goto('/');
     await page.evaluate(() => {
-      localStorage.removeItem('betsmart_cookie_consent');
+      localStorage.removeItem('edgeiq_cookie_consent');
     });
     
     await page.reload();
