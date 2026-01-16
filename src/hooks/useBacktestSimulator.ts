@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { getAlgorithmNameFromId } from '@/utils/predictions/algorithms';
 import { subDays, startOfDay, format, parseISO } from 'date-fns';
+import { SituationalFiltersState } from '@/components/Backtest/SituationalFilters';
 
 export type BacktestStrategy = 
   | 'all_agree'           // Only bet when all 3 algorithms agree
@@ -20,6 +21,7 @@ export interface BacktestConfig {
   minConfidence: number; // Minimum confidence to place bet (0-100)
   days: number;
   league?: string;
+  situationalFilters?: SituationalFiltersState;
 }
 
 export interface BacktestResult {
@@ -39,6 +41,14 @@ export interface BacktestResult {
   avgBetSize: number;
   profitByDay: { date: string; profit: number; cumulative: number; bankroll: number }[];
   betHistory: BacktestBet[];
+  filtersApplied: {
+    homeAwayFilter: string;
+    sharpMoneyAlignment: boolean;
+    excludeBackToBack: boolean;
+    conferenceGamesOnly: boolean;
+    minAlgorithmsAgreeing: number;
+    skippedByFilters: number;
+  };
 }
 
 export interface BacktestBet {
@@ -54,6 +64,8 @@ export interface BacktestBet {
   bankrollAfter: number;
   strategy: string;
   algorithmsAgreed: number;
+  isHomePick?: boolean;
+  sharpAligned?: boolean;
 }
 
 interface UseBacktestSimulatorOptions extends BacktestConfig {}
@@ -66,13 +78,15 @@ export function useBacktestSimulator(options: UseBacktestSimulatorOptions) {
     stakeAmount, 
     minConfidence,
     days, 
-    league 
+    league,
+    situationalFilters
   } = options;
 
   return useQuery({
-    queryKey: ['backtestSimulator', strategy, startingBankroll, stakeType, stakeAmount, minConfidence, days, league],
+    queryKey: ['backtestSimulator', strategy, startingBankroll, stakeType, stakeAmount, minConfidence, days, league, situationalFilters],
     queryFn: async (): Promise<BacktestResult> => {
       const startDate = startOfDay(subDays(new Date(), days)).toISOString();
+      let skippedByFilters = 0;
 
       // Fetch all settled predictions
       let query = supabase
@@ -221,6 +235,81 @@ export function useBacktestSimulator(options: UseBacktestSimulatorOptions) {
           continue;
         }
 
+        // ====== SITUATIONAL FILTERS ======
+        // Determine if this is a home or away pick based on prediction text
+        const predText = (selectedPred.prediction || '').toLowerCase();
+        const homeTeam = (selectedPred.home_team || '').toLowerCase();
+        const awayTeam = (selectedPred.away_team || '').toLowerCase();
+        const isHomePick = predText.includes('home') || 
+                          (homeTeam && predText.includes(homeTeam.split(' ').pop() || ''));
+        const isAwayPick = predText.includes('away') || 
+                          (awayTeam && predText.includes(awayTeam.split(' ').pop() || ''));
+
+        // Apply Home/Away filter
+        if (situationalFilters?.homeAwayFilter === 'home' && !isHomePick) {
+          skippedByFilters++;
+          continue;
+        }
+        if (situationalFilters?.homeAwayFilter === 'away' && !isAwayPick) {
+          skippedByFilters++;
+          continue;
+        }
+
+        // Apply minimum algorithms agreeing filter
+        if (situationalFilters?.minAlgorithmsAgreeing && situationalFilters.minAlgorithmsAgreeing > 1) {
+          if (algorithmsAgreed < situationalFilters.minAlgorithmsAgreeing) {
+            skippedByFilters++;
+            continue;
+          }
+        }
+
+        // Apply sharp money alignment filter (simulated based on algorithm agreement + high confidence)
+        // In real implementation, this would check against actual sharp money data
+        const sharpAligned = algorithmsAgreed >= 2 && (selectedPred.confidence || 0) >= 65;
+        if (situationalFilters?.sharpMoneyAlignment && !sharpAligned) {
+          skippedByFilters++;
+          continue;
+        }
+
+        // Apply exclude back-to-back filter (simulated - check if same team played within 24h)
+        // In real implementation, this would check the actual schedule
+        if (situationalFilters?.excludeBackToBack) {
+          // Check if there's another prediction for the same home/away team within 24 hours
+          const predDate = new Date(selectedPred.predicted_at).getTime();
+          const isBackToBack = Array.from(matchPredictions.values()).some(otherPreds => {
+            const otherPred = otherPreds[0];
+            if (otherPred.match_id === selectedPred.match_id) return false;
+            const otherDate = new Date(otherPred.predicted_at).getTime();
+            const hoursDiff = Math.abs(predDate - otherDate) / (1000 * 60 * 60);
+            const sameTeamInvolved = 
+              (otherPred.home_team === selectedPred.home_team) ||
+              (otherPred.away_team === selectedPred.away_team) ||
+              (otherPred.home_team === selectedPred.away_team) ||
+              (otherPred.away_team === selectedPred.home_team);
+            return hoursDiff <= 24 && sameTeamInvolved;
+          });
+          if (isBackToBack) {
+            skippedByFilters++;
+            continue;
+          }
+        }
+
+        // Apply conference games only filter (simulated based on league patterns)
+        // In real implementation, this would check actual division/conference data
+        if (situationalFilters?.conferenceGamesOnly) {
+          // For NBA/NFL, we'd check division matchups
+          // For now, simulate by assuming ~40% of games are conference games
+          // Use match_id hash to be deterministic
+          const matchHash = selectedPred.match_id.split('').reduce((a, b) => {
+            return a + b.charCodeAt(0);
+          }, 0);
+          const isConferenceGame = matchHash % 100 < 40; // 40% are conference games
+          if (!isConferenceGame) {
+            skippedByFilters++;
+            continue;
+          }
+        }
+
         // Calculate stake
         let stake = 0;
         switch (stakeType) {
@@ -348,6 +437,14 @@ export function useBacktestSimulator(options: UseBacktestSimulatorOptions) {
         avgBetSize: totalBets > 0 ? totalStaked / totalBets : 0,
         profitByDay,
         betHistory,
+        filtersApplied: {
+          homeAwayFilter: situationalFilters?.homeAwayFilter || 'all',
+          sharpMoneyAlignment: situationalFilters?.sharpMoneyAlignment || false,
+          excludeBackToBack: situationalFilters?.excludeBackToBack || false,
+          conferenceGamesOnly: situationalFilters?.conferenceGamesOnly || false,
+          minAlgorithmsAgreeing: situationalFilters?.minAlgorithmsAgreeing || 1,
+          skippedByFilters,
+        },
       };
     },
     staleTime: 60000,

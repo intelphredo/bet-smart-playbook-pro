@@ -53,7 +53,10 @@ import {
   BacktestExport,
   RollingPerformanceChart,
   SavedConfigurations,
+  SituationalFilters,
+  defaultSituationalFilters,
   type BacktestConfiguration,
+  type SituationalFiltersState,
 } from "@/components/Backtest";
 import { subDays, differenceInDays } from "date-fns";
 
@@ -106,6 +109,7 @@ export default function BacktestSimulator() {
   const [mainView, setMainView] = useState<'single' | 'compare' | 'optimize'>('single');
   const [selectedStrategies, setSelectedStrategies] = useState<BacktestStrategy[]>(ALL_STRATEGIES);
   const [runComparison, setRunComparison] = useState(false);
+  const [situationalFilters, setSituationalFilters] = useState<SituationalFiltersState>(defaultSituationalFilters);
 
   // Calculate days from date range for hooks
   const days = useMemo(() => {
@@ -123,6 +127,7 @@ export default function BacktestSimulator() {
     minConfidence,
     days,
     league: league === 'all' ? undefined : league,
+    situationalFilters,
   });
 
   // Strategy Comparison
@@ -465,7 +470,20 @@ export default function BacktestSimulator() {
                   </p>
                 </div>
               )}
+            </CardContent>
+          </Card>
 
+          {/* Situational Filters - Only for single mode */}
+          {mainView === 'single' && (
+            <SituationalFilters
+              filters={situationalFilters}
+              onFiltersChange={setSituationalFilters}
+            />
+          )}
+
+          {/* Run Button Card */}
+          <Card>
+            <CardContent className="pt-4">
               {/* Run Button */}
               {mainView === 'single' ? (
                 <Button 
@@ -488,9 +506,16 @@ export default function BacktestSimulator() {
               ) : null}
 
               {mainView === 'compare' && selectedStrategies.length < 2 && (
-                <p className="text-xs text-destructive text-center">
+                <p className="text-xs text-destructive text-center mt-2">
                   Select at least 2 strategies to compare
                 </p>
+              )}
+
+              {/* Filters Applied Summary */}
+              {mainView === 'single' && result?.filtersApplied && result.filtersApplied.skippedByFilters > 0 && (
+                <div className="mt-3 p-2 bg-muted/50 rounded text-xs text-muted-foreground">
+                  <span className="font-medium">Filters active:</span> {result.filtersApplied.skippedByFilters} bets skipped
+                </div>
               )}
             </CardContent>
           </Card>
