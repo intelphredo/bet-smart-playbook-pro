@@ -34,6 +34,7 @@ import {
   Dices,
   GitCompare,
   Gauge,
+  Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { 
@@ -48,6 +49,15 @@ import { MonteCarloCharts } from "@/components/MonteCarloCharts";
 import { StrategyComparisonView } from "@/components/StrategyComparisonView";
 import { InfoExplainer } from "@/components/ui/InfoExplainer";
 import { RecalibrationDashboard } from "@/components/ModelCalibration";
+import { 
+  BacktestDateRangePicker, 
+  ParameterOptimizer, 
+  BacktestExport,
+  SituationalFilters,
+  defaultSituationalFilters,
+  type SituationalFiltersState
+} from "@/components/Backtest";
+import { subDays, differenceInDays } from "date-fns";
 
 const STRATEGIES: { value: BacktestStrategy; label: string; icon: string }[] = [
   { value: 'all_agree', label: 'All 3 Agree', icon: '🤝' },
@@ -86,14 +96,26 @@ export default function BacktestSimulator() {
   const [stakeType, setStakeType] = useState<'flat' | 'percentage' | 'kelly'>('flat');
   const [stakeAmount, setStakeAmount] = useState(100);
   const [minConfidence, setMinConfidence] = useState(50);
-  const [days, setDays] = useState(30);
+  const [dateRange, setDateRange] = useState<{ start?: Date; end?: Date }>({
+    start: subDays(new Date(), 30),
+    end: new Date(),
+  });
   const [league, setLeague] = useState('all');
   const [isRunning, setIsRunning] = useState(false);
   const [activeTab, setActiveTab] = useState('results');
   const [numSimulations, setNumSimulations] = useState(1000);
-  const [mainView, setMainView] = useState<'single' | 'compare'>('single');
+  const [mainView, setMainView] = useState<'single' | 'compare' | 'optimize'>('single');
   const [selectedStrategies, setSelectedStrategies] = useState<BacktestStrategy[]>(ALL_STRATEGIES);
   const [runComparison, setRunComparison] = useState(false);
+  const [situationalFilters, setSituationalFilters] = useState<SituationalFiltersState>(defaultSituationalFilters);
+
+  // Calculate days from date range for hooks
+  const days = useMemo(() => {
+    if (dateRange.start && dateRange.end) {
+      return differenceInDays(dateRange.end, dateRange.start);
+    }
+    return 30;
+  }, [dateRange]);
 
   const { data: result, isLoading, refetch } = useBacktestSimulator({
     strategy,
@@ -202,7 +224,7 @@ export default function BacktestSimulator() {
         </div>
 
         {/* Mode Toggle */}
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Button
             variant={mainView === 'single' ? 'default' : 'outline'}
             size="sm"
@@ -218,6 +240,14 @@ export default function BacktestSimulator() {
           >
             <GitCompare className="h-4 w-4 mr-1" />
             Compare All
+          </Button>
+          <Button
+            variant={mainView === 'optimize' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setMainView('optimize')}
+          >
+            <Zap className="h-4 w-4 mr-1" />
+            Optimizer
           </Button>
         </div>
 
@@ -295,22 +325,17 @@ export default function BacktestSimulator() {
                 </div>
               )}
 
-              {/* Time Range */}
+              {/* Date Range */}
               <div className="space-y-2">
                 <Label className="flex items-center gap-1">
                   <Calendar className="h-4 w-4" />
-                  Time Period
+                  Date Range
                 </Label>
-                <Select value={String(days)} onValueChange={(v) => setDays(Number(v))}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {TIME_RANGES.map(t => (
-                      <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <BacktestDateRangePicker
+                  startDate={dateRange.start}
+                  endDate={dateRange.end}
+                  onDateRangeChange={setDateRange}
+                />
               </div>
 
               {/* League Filter */}
@@ -450,7 +475,13 @@ export default function BacktestSimulator() {
 
           {/* Results Panel */}
           <div className="lg:col-span-2 space-y-6">
-            {mainView === 'compare' ? (
+            {mainView === 'optimize' ? (
+              /* Parameter Optimizer View */
+              <ParameterOptimizer
+                startingBankroll={startingBankroll}
+                league={league === 'all' ? undefined : league}
+              />
+            ) : mainView === 'compare' ? (
               /* Strategy Comparison View */
               <StrategyComparisonView 
                 data={comparisonData} 
@@ -623,9 +654,23 @@ export default function BacktestSimulator() {
 
                   {/* Bet History Table */}
                   <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg">Bet History</CardTitle>
-                      <CardDescription>All simulated bets for this strategy</CardDescription>
+                    <CardHeader className="flex flex-row items-center justify-between">
+                      <div>
+                        <CardTitle className="text-lg">Bet History</CardTitle>
+                        <CardDescription>All simulated bets for this strategy</CardDescription>
+                      </div>
+                      <BacktestExport
+                        result={result}
+                        strategyName={getStrategyDisplayName(strategy)}
+                        config={{
+                          startingBankroll,
+                          stakeType,
+                          stakeAmount,
+                          minConfidence,
+                          days,
+                          league: league === 'all' ? undefined : league,
+                        }}
+                      />
                     </CardHeader>
                     <CardContent>
                       <div className="rounded-md border overflow-auto max-h-[400px]">
