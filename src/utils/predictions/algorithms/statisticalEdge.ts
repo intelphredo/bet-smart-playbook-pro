@@ -72,6 +72,31 @@ export function generateStatisticalEdgePrediction(match: Match): Match {
     prediction.recommended
   );
   
+  // Build comprehensive analysis factors for UI display
+  const analysisFactors = buildAnalysisFactors(
+    match,
+    weatherAnalysis,
+    injuryAnalysis,
+    situationalAnalysis,
+    matchupAnalysis
+  );
+  
+  // Generate detailed reasoning text
+  const detailedReasoning = generateDetailedReasoning(
+    match,
+    prediction.recommended,
+    situationalAnalysis,
+    matchupAnalysis,
+    weatherAnalysis,
+    injuryAnalysis
+  );
+  
+  // Extract key factors (top 5 most impactful)
+  const keyFactors = analysisFactors
+    .sort((a, b) => Math.abs(b.impact) - Math.abs(a.impact))
+    .slice(0, 5)
+    .map(f => f.description);
+  
   enhancedMatch.prediction = {
     ...prediction,
     confidence: calibrated.adjustedConfidence,
@@ -83,10 +108,211 @@ export function generateStatisticalEdgePrediction(match: Match): Match {
     expectedValue: evAdjustment.ev,
     evPercentage: evAdjustment.evPercentage,
     trueProbability: evAdjustment.trueProbability,
-    algorithmId
+    algorithmId,
+    // Enhanced reasoning fields
+    detailedReasoning,
+    keyFactors,
+    analysisFactors,
+    riskLevel: calibrated.adjustedConfidence >= 70 ? 'low' : calibrated.adjustedConfidence >= 55 ? 'medium' : 'high',
+    warningFlags: buildWarningFlags(situationalAnalysis, matchupAnalysis, injuryAnalysis)
   };
   
   return enhancedMatch;
+}
+
+// Build structured analysis factors for UI display
+function buildAnalysisFactors(
+  match: Match,
+  weather: { score: number; factors: string[] },
+  injury: { score: number; keyPlayers: string[] },
+  situational: SituationalFactors & { adjustment: number; reasons: string[] },
+  matchup: MatchupAdvantages & { adjustment: number; reasons: string[] }
+): Array<{ name: string; impact: number; description: string; favoredTeam: 'home' | 'away' | 'neutral' }> {
+  const factors: Array<{ name: string; impact: number; description: string; favoredTeam: 'home' | 'away' | 'neutral' }> = [];
+  
+  // Situational factors
+  situational.reasons.forEach(reason => {
+    const impact = parseImpactFromReason(reason);
+    factors.push({
+      name: categorizeReason(reason),
+      impact,
+      description: reason,
+      favoredTeam: impact > 0 ? 'home' : impact < 0 ? 'away' : 'neutral'
+    });
+  });
+  
+  // Matchup factors
+  matchup.reasons.forEach(reason => {
+    const impact = parseImpactFromReason(reason);
+    factors.push({
+      name: categorizeReason(reason),
+      impact,
+      description: reason,
+      favoredTeam: impact > 0 ? 'home' : impact < 0 ? 'away' : 'neutral'
+    });
+  });
+  
+  // Weather factors
+  if (weather.factors.length > 0) {
+    weather.factors.forEach(factor => {
+      factors.push({
+        name: 'Weather Impact',
+        impact: weather.score > 70 ? 2 : weather.score < 50 ? -3 : 0,
+        description: factor,
+        favoredTeam: 'neutral'
+      });
+    });
+  }
+  
+  // Injury factors
+  if (injury.keyPlayers.length > 0) {
+    injury.keyPlayers.forEach(player => {
+      factors.push({
+        name: 'Injury Impact',
+        impact: -3,
+        description: player,
+        favoredTeam: 'neutral'
+      });
+    });
+  }
+  
+  return factors;
+}
+
+// Parse numeric impact from reason string like "Home on back-to-back (-4)"
+function parseImpactFromReason(reason: string): number {
+  const match = reason.match(/\(([+-]?\d+(?:\.\d+)?)\)/);
+  if (match) {
+    return parseFloat(match[1]);
+  }
+  return 0;
+}
+
+// Categorize reason into a named factor
+function categorizeReason(reason: string): string {
+  const lowerReason = reason.toLowerCase();
+  if (lowerReason.includes('rest')) return 'Rest Advantage';
+  if (lowerReason.includes('back-to-back') || lowerReason.includes('b2b')) return 'Schedule Fatigue';
+  if (lowerReason.includes('travel')) return 'Travel Factor';
+  if (lowerReason.includes('trap') || lowerReason.includes('lookahead') || lowerReason.includes('letdown')) return 'Schedule Spot';
+  if (lowerReason.includes('revenge')) return 'Revenge Game';
+  if (lowerReason.includes('time zone')) return 'Time Zone';
+  if (lowerReason.includes('road warrior') || lowerReason.includes('elite road')) return 'Road Performance';
+  if (lowerReason.includes('home') && lowerReason.includes('struggle')) return 'Home Struggles';
+  if (lowerReason.includes('road favorite')) return 'Road Favorite';
+  if (lowerReason.includes('pace')) return 'Pace Matchup';
+  if (lowerReason.includes('style')) return 'Style Clash';
+  if (lowerReason.includes('h2h') || lowerReason.includes('series')) return 'Head-to-Head';
+  if (lowerReason.includes('schedule') || lowerReason.includes('sos')) return 'Strength of Schedule';
+  if (lowerReason.includes('venue') || lowerReason.includes('atmosphere')) return 'Venue Factor';
+  return 'Statistical Factor';
+}
+
+// Generate human-readable detailed reasoning
+function generateDetailedReasoning(
+  match: Match,
+  recommended: 'home' | 'away' | 'draw',
+  situational: SituationalFactors & { adjustment: number; reasons: string[] },
+  matchup: MatchupAdvantages & { adjustment: number; reasons: string[] },
+  weather: { score: number; factors: string[] },
+  injury: { score: number; keyPlayers: string[] }
+): string {
+  const homeTeam = match.homeTeam?.name || 'Home';
+  const awayTeam = match.awayTeam?.name || 'Away';
+  const pickedTeam = recommended === 'home' ? homeTeam : awayTeam;
+  
+  let reasoning = `**Pick: ${pickedTeam}**\n\n`;
+  
+  // Situational analysis
+  if (situational.reasons.length > 0) {
+    reasoning += `**Situational Factors:**\n`;
+    situational.reasons.forEach(r => {
+      reasoning += `• ${r}\n`;
+    });
+    reasoning += '\n';
+  }
+  
+  // Matchup analysis
+  if (matchup.reasons.length > 0) {
+    reasoning += `**Matchup Analysis:**\n`;
+    matchup.reasons.forEach(r => {
+      reasoning += `• ${r}\n`;
+    });
+    reasoning += '\n';
+  }
+  
+  // Weather
+  if (weather.factors.length > 0) {
+    reasoning += `**Weather Conditions:**\n`;
+    weather.factors.forEach(f => {
+      reasoning += `• ${f}\n`;
+    });
+    reasoning += '\n';
+  }
+  
+  // Injuries
+  if (injury.keyPlayers.length > 0) {
+    reasoning += `**Injury Report:**\n`;
+    injury.keyPlayers.forEach(p => {
+      reasoning += `• ${p}\n`;
+    });
+    reasoning += '\n';
+  }
+  
+  // Net adjustment summary
+  const netAdj = situational.adjustment + matchup.adjustment;
+  if (netAdj > 0) {
+    reasoning += `\n**Net Edge:** +${netAdj.toFixed(1)} points favoring ${homeTeam}`;
+  } else if (netAdj < 0) {
+    reasoning += `\n**Net Edge:** ${netAdj.toFixed(1)} points favoring ${awayTeam}`;
+  }
+  
+  return reasoning;
+}
+
+// Build warning flags for high-risk situations
+function buildWarningFlags(
+  situational: SituationalFactors & { adjustment: number; reasons: string[] },
+  matchup: MatchupAdvantages & { adjustment: number; reasons: string[] },
+  injury: { score: number; keyPlayers: string[] }
+): string[] {
+  const warnings: string[] = [];
+  
+  // Schedule spot warnings
+  if (situational.scheduleSpot === 'trap') {
+    warnings.push('⚠️ Trap game - home team may be unfocused');
+  }
+  if (situational.scheduleSpot === 'lookahead') {
+    warnings.push('⚠️ Lookahead spot - potential distraction');
+  }
+  if (situational.scheduleSpot === 'letdown') {
+    warnings.push('⚠️ Letdown game after big win');
+  }
+  
+  // Back-to-back warnings
+  if (situational.backToBackHome) {
+    warnings.push('⚠️ Home team on back-to-back');
+  }
+  if (situational.backToBackAway) {
+    warnings.push('⚠️ Away team on back-to-back');
+  }
+  
+  // Travel warnings
+  if (situational.travelDistanceAway === 'cross-country') {
+    warnings.push('✈️ Cross-country travel for away team');
+  }
+  
+  // Injury warnings
+  if (injury.keyPlayers.length >= 2) {
+    warnings.push('🏥 Multiple key injuries affecting prediction');
+  }
+  
+  // Style clash warning
+  if (matchup.styleClash) {
+    warnings.push('⚔️ Style clash - increased variance expected');
+  }
+  
+  return warnings;
 }
 
 function analyzeWeatherConditions(match: Match): { score: number; factors: string[] } {
