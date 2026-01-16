@@ -17,9 +17,10 @@ import {
   Legend,
   Cell,
 } from "recharts";
-import { Activity, Target, AlertTriangle, CheckCircle, TrendingUp, TrendingDown, Wrench, Lightbulb, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Activity, Target, AlertTriangle, CheckCircle, TrendingUp, TrendingDown, Wrench, Lightbulb, AlertCircle, CheckCircle2, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { HistoricalPrediction } from "@/hooks/useHistoricalPredictions";
+import { getBinCalibrationSummary } from "@/utils/modelCalibration/binCalibration";
 
 interface CalibrationChartProps {
   predictions: HistoricalPrediction[];
@@ -289,6 +290,18 @@ export function CalibrationChart({ predictions, confidenceVsAccuracy, isLoading 
                   </>
                 )}
               </div>
+              {(() => {
+                const binSummary = getBinCalibrationSummary();
+                if (binSummary.isActive && binSummary.adjustedBinsCount > 0) {
+                  return (
+                    <div className="mt-1.5 flex items-center gap-1 text-xs text-cyan-500">
+                      <Zap className="h-3 w-3" />
+                      <span>Auto-tuning {binSummary.adjustedBinsCount} bins</span>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
             </div>
             
             {/* Brier Score */}

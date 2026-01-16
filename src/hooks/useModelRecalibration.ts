@@ -13,6 +13,7 @@ import {
 } from '@/utils/modelCalibration/performanceAnalyzer';
 import { calculateModelWeights } from '@/utils/modelCalibration/weightAdjuster';
 import { updateCachedWeights } from '@/utils/modelCalibration/calibrationIntegration';
+import { updateBinCalibration } from '@/utils/modelCalibration/binCalibration';
 import { 
   RecalibrationResult, 
   CalibrationConfig,
@@ -20,6 +21,7 @@ import {
   AlgorithmPerformanceWindow,
   ModelWeight,
 } from '@/utils/modelCalibration/types';
+import type { HistoricalPrediction } from '@/hooks/useHistoricalPredictions';
 
 interface UseModelRecalibrationOptions {
   config?: Partial<CalibrationConfig>;
@@ -47,6 +49,31 @@ export function useModelRecalibration(options: UseModelRecalibrationOptions = {}
         console.error('Error fetching predictions for recalibration:', error);
         throw error;
       }
+
+      // Update bin-level calibration with all predictions
+      const historicalPredictions: HistoricalPrediction[] = (predictions || []).map(p => ({
+        id: p.id,
+        match_id: p.match_id,
+        match_title: p.match_title || undefined,
+        home_team: p.home_team || undefined,
+        away_team: p.away_team || undefined,
+        league: p.league,
+        algorithm_id: p.algorithm_id,
+        prediction: p.prediction,
+        confidence: p.confidence,
+        predicted_at: p.predicted_at,
+        status: p.status as 'won' | 'lost' | 'pending' | 'push',
+        projected_score_home: p.projected_score_home,
+        projected_score_away: p.projected_score_away,
+        actual_score_home: p.actual_score_home,
+        actual_score_away: p.actual_score_away,
+        accuracy_rating: p.accuracy_rating,
+        result_updated_at: p.result_updated_at,
+        is_live_prediction: p.is_live_prediction || undefined,
+      }));
+      
+      // Update bin calibration for real-time adjustments
+      updateBinCalibration(historicalPredictions);
 
       // Analyze each algorithm's performance
       const algorithmIds = Object.values(ALGORITHM_IDS);
