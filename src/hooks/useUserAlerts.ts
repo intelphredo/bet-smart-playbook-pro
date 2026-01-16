@@ -136,11 +136,7 @@ export function useUserAlerts() {
           setAlerts(prev => [newAlert, ...prev]);
           setUnreadCount(prev => prev + 1);
           
-          // Show toast for new alerts
-          toast(newAlert.title, {
-            description: newAlert.message,
-            duration: 5000
-          });
+          // Toast notifications disabled - alerts visible in notification center only
         }
       )
       .subscribe();

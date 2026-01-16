@@ -134,25 +134,8 @@ export const useHistoricalPredictions = (
           const newRecord = payload.new as { status?: string; match_title?: string; home_team?: string; away_team?: string };
           const oldRecord = payload.old as { status?: string };
           
-          // Show toast when prediction is graded (status changed from pending to won/lost)
-          if (oldRecord?.status === 'pending' && (newRecord?.status === 'won' || newRecord?.status === 'lost')) {
-            const matchName = newRecord.match_title || 
-              (newRecord.home_team && newRecord.away_team 
-                ? `${newRecord.away_team} @ ${newRecord.home_team}` 
-                : 'Prediction');
-            
-            if (newRecord.status === 'won') {
-              toast.success(`✅ ${matchName} - Won!`, {
-                description: "Prediction graded successfully",
-                duration: 5000,
-              });
-            } else {
-              toast.error(`❌ ${matchName} - Lost`, {
-                description: "Prediction graded",
-                duration: 5000,
-              });
-            }
-          }
+          // Toast notifications disabled for prediction grading
+          // Status change will be reflected in the UI
           
           // Invalidate and refetch when predictions are updated
           queryClient.invalidateQueries({ queryKey: ["historicalPredictions"] });

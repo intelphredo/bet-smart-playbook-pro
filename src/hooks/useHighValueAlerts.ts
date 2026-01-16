@@ -183,14 +183,8 @@ export function useHighValueAlerts({
       const matchesCopy = matches.map(m => ({ ...m }));
       const opportunities = detectHighValueOpportunities(matchesCopy);
 
-      // Show toast for each new opportunity (limit to 3 at a time to prevent spam)
+      // Save to database only (toast notifications disabled)
       opportunities.slice(0, 3).forEach((opp) => {
-        toast(opp.title, {
-          description: opp.message,
-          duration: 6000,
-        });
-
-        // Save to database for persistent notifications
         saveAlertToDatabase(opp);
       });
 

@@ -104,15 +104,7 @@ export function useSharpMoneyAlerts(league: League, enabled: boolean = true) {
           
           recordAlert(trend.matchId, signalKey);
           
-          // Show toast notification
-          toast('🔥 Reverse Line Movement Detected', {
-            description: `${trend.homeTeam.split(' ').pop()} vs ${trend.awayTeam.split(' ').pop()} - Sharp money indicator`,
-            duration: 8000,
-            action: {
-              label: 'View',
-              onClick: () => window.location.href = `/game/${trend.matchId}`,
-            },
-          });
+          // Toast notifications disabled - alerts saved to database only
         }
       }
       
@@ -141,15 +133,7 @@ export function useSharpMoneyAlerts(league: League, enabled: boolean = true) {
           
           recordAlert(trend.matchId, signalKey);
           
-          // Show toast notification
-          toast(`🧠 Sharp Signal: ${signalLabel}`, {
-            description: `${trend.homeTeam.split(' ').pop()} vs ${trend.awayTeam.split(' ').pop()}`,
-            duration: 8000,
-            action: {
-              label: 'View',
-              onClick: () => window.location.href = `/game/${trend.matchId}`,
-            },
-          });
+          // Toast notifications disabled - alerts saved to database only
         }
       });
     });
