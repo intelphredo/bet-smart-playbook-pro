@@ -11,7 +11,8 @@
  * - Rest days differential
  * - Coaching matchup analysis
  * 
- * Generates confident, varied predictions with detailed reasoning.
+ * IMPORTANT: Once a prediction is made and saved, it is LOCKED and will not change.
+ * The engine checks both local cache AND database for existing predictions.
  */
 
 import { League, Match } from "@/types/sports";
@@ -21,20 +22,41 @@ import { generateMLBPrediction } from "../sport-specific/mlbPredictions";
 import { cachePrediction, hasCachedPrediction, getCachedPrediction, clearPredictionCache } from "../cache/predictionCache";
 import { runComprehensiveAnalysis, ComprehensiveAnalysis } from "../factors/comprehensiveFactors";
 import { generatePredictionReasoning, generateOneLiner } from "../factors/reasoningGenerator";
+import { 
+  isPredicitionLocked, 
+  getLockedPredictionsForMatch, 
+  applyLockedPredictionToMatch 
+} from "@/hooks/useLockedPredictions";
 
 // Re-export cache functions for external use
 export { clearPredictionCache };
 
 /**
  * Generate an advanced prediction with comprehensive factor analysis
+ * LOCKED PREDICTION PRIORITY:
+ * 1. Check local cache (fast, 24h TTL)
+ * 2. Check if prediction is locked in database
+ * 3. Only generate new prediction if neither exists
  */
 export function generateAdvancedPrediction(
   match: Match, 
   historicalData?: HistoricalData
 ): Match {
-  // Lock prediction: if we've already generated it for this match id, return the cached value
+  // LOCK CHECK 1: Local cache (fastest)
   if (hasCachedPrediction(match.id)) {
-    return getCachedPrediction(match.id)!;
+    const cached = getCachedPrediction(match.id)!;
+    console.log(`[PredictionLock] Using cached prediction for ${match.id}`);
+    return cached;
+  }
+  
+  // LOCK CHECK 2: Database (check if already saved)
+  if (isPredicitionLocked(match.id)) {
+    const lockedMatch = applyLockedPredictionToMatch(match);
+    if (lockedMatch.prediction?.isLocked) {
+      console.log(`[PredictionLock] Using DB-locked prediction for ${match.id}`);
+      // Also cache it locally for faster access
+      return cachePrediction(lockedMatch);
+    }
   }
 
   const enhancedMatch = { ...match };
@@ -195,8 +217,24 @@ export function applyAdvancedPredictions(matches: Match[]): Match[] {
 
 /**
  * Force regenerate predictions (clears cache first)
+ * WARNING: This should rarely be used as it bypasses prediction locking.
+ * Locked predictions in the database will still be respected.
+ * Only clears LOCAL cache - does not affect DB-locked predictions.
  */
 export function regeneratePredictions(matches: Match[]): Match[] {
+  console.warn('[PredictionLock] Clearing local cache - DB-locked predictions will still be respected');
   clearPredictionCache();
   return applyAdvancedPredictions(matches);
+}
+
+/**
+ * Apply predictions to matches, respecting locked predictions
+ * This is the preferred method for applying predictions as it
+ * checks for locked predictions before generating new ones.
+ */
+export function applyPredictionsWithLocking(matches: Match[]): Match[] {
+  return matches.map(match => {
+    // The generateAdvancedPrediction function already checks for locks
+    return generateAdvancedPrediction(match);
+  });
 }
