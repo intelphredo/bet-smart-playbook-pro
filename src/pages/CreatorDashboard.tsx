@@ -16,14 +16,13 @@ export default function CreatorDashboard() {
   const [isCreator, setIsCreator] = useState(false);
 
   useEffect(() => {
-    // For development, allow access or check for creator role
-    // In production, you'd check profile.role === 'creator' or similar
+    // Require authentication - no development mode bypass
     if (!loading) {
-      // Allow access if user is logged in OR for development
-      const hasAccess = user !== null || import.meta.env.DEV;
+      // Only allow access if user is authenticated
+      const hasAccess = user !== null;
       setIsCreator(hasAccess);
       
-      if (!hasAccess && !loading) {
+      if (!hasAccess) {
         navigate('/');
       }
     }
@@ -53,7 +52,7 @@ export default function CreatorDashboard() {
           <Shield className="h-8 w-8 text-primary" />
           <h1 className="text-3xl font-bold">Creator Dashboard</h1>
           <Badge variant="secondary" className="ml-2">
-            {user ? 'Authenticated' : 'Dev Mode'}
+            Authenticated
           </Badge>
         </div>
 
