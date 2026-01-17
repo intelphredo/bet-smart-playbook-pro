@@ -75,10 +75,42 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Require service role authentication for write operations (POST/PATCH)
+    // Use proper Bearer token comparison instead of .includes()
     if (req.method === "POST" || req.method === "PATCH") {
       const authHeader = req.headers.get("authorization");
       
-      if (!authHeader || !authHeader.includes(supabaseServiceKey)) {
+      // Extract Bearer token and compare securely
+      if (!authHeader) {
+        return new Response(
+          JSON.stringify({ error: "Authorization header required" }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
+      // Extract the token from "Bearer <token>" format
+      const token = authHeader.replace(/^Bearer\s+/i, '');
+      
+      // Constant-time comparison to prevent timing attacks
+      const serviceKeyBytes = new TextEncoder().encode(supabaseServiceKey);
+      const tokenBytes = new TextEncoder().encode(token);
+      
+      // Check length first, then use timing-safe comparison
+      if (tokenBytes.length !== serviceKeyBytes.length) {
+        return new Response(
+          JSON.stringify({ error: "Service role authentication required for write operations" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
+      // Timing-safe comparison
+      let isEqual = true;
+      for (let i = 0; i < serviceKeyBytes.length; i++) {
+        if (tokenBytes[i] !== serviceKeyBytes[i]) {
+          isEqual = false;
+        }
+      }
+      
+      if (!isEqual) {
         return new Response(
           JSON.stringify({ error: "Service role authentication required for write operations" }),
           { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
