@@ -14,6 +14,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { format } from "date-fns";
 import { 
   Brain, 
@@ -57,6 +62,13 @@ const getAlgorithmName = (algorithmId: string | null): string => {
   if (!algorithmId) return 'Unknown';
   const algo = ALGORITHM_REGISTRY.find(a => a.id === algorithmId);
   return algo?.name || 'Unknown';
+};
+
+// Get algorithm description for tooltips
+const getAlgorithmDescription = (algorithmId: string | null): string => {
+  if (!algorithmId) return '';
+  const algo = ALGORITHM_REGISTRY.find(a => a.id === algorithmId);
+  return algo?.description || '';
 };
 
 // Get short algorithm name for badges
@@ -508,9 +520,17 @@ function PredictionRow({ prediction, showType }: { prediction: any; showType?: b
                 {prediction.algorithm_id && (
                   <>
                     <span>•</span>
-                    <Badge variant="secondary" className="text-xs py-0 px-1.5 bg-primary/10 text-primary border-0">
-                      {getAlgorithmShortName(prediction.algorithm_id)}
-                    </Badge>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Badge variant="secondary" className="text-xs py-0 px-1.5 bg-primary/10 text-primary border-0 cursor-help">
+                          {getAlgorithmShortName(prediction.algorithm_id)}
+                        </Badge>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-xs">
+                        <p className="font-medium">{getAlgorithmName(prediction.algorithm_id)}</p>
+                        <p className="text-xs text-muted-foreground">{getAlgorithmDescription(prediction.algorithm_id)}</p>
+                      </TooltipContent>
+                    </Tooltip>
                   </>
                 )}
                 {showType && (

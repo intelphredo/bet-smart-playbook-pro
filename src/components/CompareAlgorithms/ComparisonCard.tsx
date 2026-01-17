@@ -2,6 +2,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Trophy, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import type { AlgorithmSummary } from "@/hooks/useAlgorithmComparison";
 
 interface ComparisonCardProps {
@@ -22,9 +27,16 @@ const algorithmIcons: Record<string, string> = {
   'Statistical Edge': '📊',
 };
 
+const algorithmDescriptions: Record<string, string> = {
+  'ML Power Index': 'Machine learning algorithm that analyzes historical data, player stats, and team performance trends.',
+  'Value Pick Finder': 'Specialized algorithm finding betting value through odds analysis and market inefficiencies.',
+  'Statistical Edge': 'Pure statistics-based algorithm using situational spots, weather, and matchup data.',
+};
+
 export function ComparisonCard({ algorithm, rank, isLeader }: ComparisonCardProps) {
   const colorClass = algorithmColors[algorithm.algorithmName] || 'from-muted/50 to-muted/30 border-border';
   const icon = algorithmIcons[algorithm.algorithmName] || '📈';
+  const description = algorithmDescriptions[algorithm.algorithmName] || 'Algorithm for sports predictions.';
 
   const getStreakIcon = () => {
     if (algorithm.streak > 0) return <TrendingUp className="h-4 w-4 text-green-500" />;
@@ -49,7 +61,15 @@ export function ComparisonCard({ algorithm, rank, isLeader }: ComparisonCardProp
       
       <CardHeader className="pb-2">
         <div className="flex items-center gap-2">
-          <span className="text-2xl">{icon}</span>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="text-2xl cursor-help">{icon}</span>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-xs">
+              <p className="font-medium">{algorithm.algorithmName}</p>
+              <p className="text-xs text-muted-foreground">{description}</p>
+            </TooltipContent>
+          </Tooltip>
           <div>
             <CardTitle className="text-lg">{algorithm.algorithmName}</CardTitle>
             <p className="text-xs text-muted-foreground">Rank #{rank}</p>

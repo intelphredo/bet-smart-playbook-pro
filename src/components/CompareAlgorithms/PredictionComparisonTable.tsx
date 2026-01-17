@@ -5,9 +5,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { CheckCircle, XCircle, Clock, Search, Filter, TableIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ConsensusPick } from "@/hooks/useAlgorithmComparison";
+
+const algorithmDescriptions: Record<string, string> = {
+  'ML Power Index': 'Machine learning algorithm that analyzes historical data, player stats, and team performance trends.',
+  'Value Pick Finder': 'Specialized algorithm finding betting value through odds analysis and market inefficiencies.',
+  'Statistical Edge': 'Pure statistics-based algorithm using situational spots, weather, and matchup data.',
+};
 
 interface PredictionComparisonTableProps {
   consensusPicks: ConsensusPick[];
@@ -141,18 +152,26 @@ export function PredictionComparisonTable({ consensusPicks }: PredictionComparis
                       <div className="flex flex-wrap gap-1">
                         {pick.algorithms.map((alg, i) => {
                           const isConsensus = alg.prediction === pick.consensusPrediction;
+                          const description = algorithmDescriptions[alg.algorithmName] || 'Algorithm for sports predictions.';
                           return (
-                            <Badge 
-                              key={i} 
-                              variant="secondary" 
-                              className={cn(
-                                "text-xs",
-                                isConsensus ? "bg-primary/10" : "bg-muted"
-                              )}
-                              title={`${alg.algorithmName}: ${alg.prediction} (${alg.confidence}%)`}
-                            >
-                              {alg.algorithmName.split(' ')[0].charAt(0)}: {alg.prediction.substring(0, 15)}
-                            </Badge>
+                            <Tooltip key={i}>
+                              <TooltipTrigger asChild>
+                                <Badge 
+                                  variant="secondary" 
+                                  className={cn(
+                                    "text-xs cursor-help",
+                                    isConsensus ? "bg-primary/10" : "bg-muted"
+                                  )}
+                                >
+                                  {alg.algorithmName.split(' ')[0].charAt(0)}: {alg.prediction.substring(0, 15)}
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="max-w-xs">
+                                <p className="font-medium">{alg.algorithmName}: {alg.prediction}</p>
+                                <p className="text-xs text-muted-foreground">{alg.confidence}% confidence</p>
+                                <p className="text-xs text-muted-foreground mt-1">{description}</p>
+                              </TooltipContent>
+                            </Tooltip>
                           );
                         })}
                       </div>

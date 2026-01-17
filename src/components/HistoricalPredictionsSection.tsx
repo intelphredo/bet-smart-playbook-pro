@@ -92,10 +92,26 @@ const ALGORITHM_IDS = {
   STATISTICAL_EDGE: "85c48bbe-5b1a-4c1e-a0d5-e284e9e952f1",
 };
 
-const ALGORITHM_DISPLAY = {
-  [ALGORITHM_IDS.ML_POWER_INDEX]: { name: "ML Power Index", icon: "🤖", color: "text-blue-500 bg-blue-500/10 border-blue-500/30" },
-  [ALGORITHM_IDS.VALUE_PICK_FINDER]: { name: "Value Pick Finder", icon: "💎", color: "text-green-500 bg-green-500/10 border-green-500/30" },
-  [ALGORITHM_IDS.STATISTICAL_EDGE]: { name: "Statistical Edge", icon: "📊", color: "text-purple-500 bg-purple-500/10 border-purple-500/30", primary: true },
+const ALGORITHM_DISPLAY: Record<string, { name: string; icon: string; color: string; description: string; primary?: boolean }> = {
+  [ALGORITHM_IDS.ML_POWER_INDEX]: { 
+    name: "ML Power Index", 
+    icon: "🤖", 
+    color: "text-blue-500 bg-blue-500/10 border-blue-500/30",
+    description: "Machine learning algorithm that analyzes historical data, player stats, and team performance trends."
+  },
+  [ALGORITHM_IDS.VALUE_PICK_FINDER]: { 
+    name: "Value Pick Finder", 
+    icon: "💎", 
+    color: "text-green-500 bg-green-500/10 border-green-500/30",
+    description: "Specialized algorithm finding betting value through odds analysis and market inefficiencies."
+  },
+  [ALGORITHM_IDS.STATISTICAL_EDGE]: { 
+    name: "Statistical Edge", 
+    icon: "📊", 
+    color: "text-purple-500 bg-purple-500/10 border-purple-500/30", 
+    description: "Pure statistics-based algorithm using situational spots, weather, and matchup data.",
+    primary: true 
+  },
 };
 
 const HistoricalPredictionsSection = () => {
@@ -1533,21 +1549,29 @@ const PredictionRow = ({ prediction, showTypeTag = true, onClick }: { prediction
       <div className="flex-1 min-w-0 space-y-1.5">
         {/* Algorithm, League & Time Row */}
         <div className="flex items-center gap-2 flex-wrap">
-          {/* Algorithm Badge */}
+          {/* Algorithm Badge with Tooltip */}
           {prediction.algorithm_id && ALGORITHM_DISPLAY[prediction.algorithm_id] && (
-            <Badge 
-              variant="outline" 
-              className={cn(
-                "text-[9px] shrink-0 px-1.5 py-0.5",
-                ALGORITHM_DISPLAY[prediction.algorithm_id].color
-              )}
-            >
-              <span className="mr-0.5">{ALGORITHM_DISPLAY[prediction.algorithm_id].icon}</span>
-              {ALGORITHM_DISPLAY[prediction.algorithm_id].name}
-              {ALGORITHM_DISPLAY[prediction.algorithm_id].primary && (
-                <span className="ml-1 text-[8px] opacity-70">★</span>
-              )}
-            </Badge>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge 
+                  variant="outline" 
+                  className={cn(
+                    "text-[9px] shrink-0 px-1.5 py-0.5 cursor-help",
+                    ALGORITHM_DISPLAY[prediction.algorithm_id].color
+                  )}
+                >
+                  <span className="mr-0.5">{ALGORITHM_DISPLAY[prediction.algorithm_id].icon}</span>
+                  {ALGORITHM_DISPLAY[prediction.algorithm_id].name}
+                  {ALGORITHM_DISPLAY[prediction.algorithm_id].primary && (
+                    <span className="ml-1 text-[8px] opacity-70">★</span>
+                  )}
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-xs">
+                <p className="font-medium">{ALGORITHM_DISPLAY[prediction.algorithm_id].name}</p>
+                <p className="text-xs text-muted-foreground">{ALGORITHM_DISPLAY[prediction.algorithm_id].description}</p>
+              </TooltipContent>
+            </Tooltip>
           )}
           <Badge variant="outline" className="text-[10px] shrink-0 px-1.5 py-0.5">
             {prediction.league || "Unknown"}
