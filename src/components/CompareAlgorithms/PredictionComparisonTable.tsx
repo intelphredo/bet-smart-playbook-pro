@@ -18,6 +18,14 @@ const algorithmDescriptions: Record<string, string> = {
   'ML Power Index': 'Machine learning algorithm that analyzes historical data, player stats, and team performance trends.',
   'Value Pick Finder': 'Specialized algorithm finding betting value through odds analysis and market inefficiencies.',
   'Statistical Edge': 'Pure statistics-based algorithm using situational spots, weather, and matchup data.',
+  'Sharp Money': 'Tracks professional bettor activity and line movements.',
+};
+
+const algorithmBadgeColors: Record<string, string> = {
+  'ML Power Index': 'bg-blue-500/15 text-blue-600 border-blue-500/30',
+  'Value Pick Finder': 'bg-green-500/15 text-green-600 border-green-500/30',
+  'Statistical Edge': 'bg-purple-500/15 text-purple-600 border-purple-500/30',
+  'Sharp Money': 'bg-amber-500/15 text-amber-600 border-amber-500/30',
 };
 
 interface PredictionComparisonTableProps {
@@ -157,10 +165,10 @@ export function PredictionComparisonTable({ consensusPicks }: PredictionComparis
                             <Tooltip key={i}>
                               <TooltipTrigger asChild>
                                 <Badge 
-                                  variant="secondary" 
+                                  variant="outline" 
                                   className={cn(
-                                    "text-xs cursor-help",
-                                    isConsensus ? "bg-primary/10" : "bg-muted"
+                                    "text-xs cursor-help border",
+                                    algorithmBadgeColors[alg.algorithmName] || (isConsensus ? "bg-primary/10" : "bg-muted")
                                   )}
                                 >
                                   {alg.algorithmName.split(' ')[0].charAt(0)}: {alg.prediction.substring(0, 15)}

@@ -165,6 +165,8 @@ export class PredictionService {
           evPercentage: prediction.evPercentage,
           kellyFraction: prediction.kellyFraction,
           kellyStakeUnits: prediction.kellyStakeUnits,
+          algorithmId: prediction.algorithmId,
+          algorithmName: prediction.algorithmName,
         },
       } as Match;
     });
