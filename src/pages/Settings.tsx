@@ -24,7 +24,9 @@ import {
   X,
   BellRing,
   CheckCircle2,
-  XCircle
+  XCircle,
+  CreditCard,
+  ChevronRight
 } from 'lucide-react';
 import { usePreferences } from '@/hooks/usePreferences';
 import { useAuth } from '@/hooks/useAuth';
@@ -117,6 +119,23 @@ export default function SettingsPage() {
             </Button>
           </div>
         </div>
+
+        {/* Billing Quick Link */}
+        <Card 
+          className="mb-6 cursor-pointer hover:bg-accent/50 transition-colors"
+          onClick={() => navigate('/settings/billing')}
+        >
+          <CardContent className="flex items-center justify-between py-4">
+            <div className="flex items-center gap-3">
+              <CreditCard className="h-5 w-5 text-primary" />
+              <div>
+                <p className="font-medium">Subscription & Billing</p>
+                <p className="text-sm text-muted-foreground">Manage your plan and payment methods</p>
+              </div>
+            </div>
+            <ChevronRight className="h-5 w-5 text-muted-foreground" />
+          </CardContent>
+        </Card>
 
         <Tabs defaultValue="display" className="space-y-6">
           <TabsList className="grid grid-cols-2 md:grid-cols-5 gap-2 h-auto p-1">
