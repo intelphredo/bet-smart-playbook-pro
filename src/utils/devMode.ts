@@ -10,16 +10,26 @@
  */
 
 export const isDevMode = (): boolean => {
-  // Check Vite development mode
-  if (import.meta.env.DEV) {
+  // Only enable dev mode when explicitly requested.
+  // (Preview builds run in dev-like environments; we don't want mock auth enabled by default.)
+
+  // Explicit creator mode flag (for production testing)
+  if (import.meta.env.VITE_CREATOR_MODE === "true") {
     return true;
   }
-  
-  // Check for explicit creator mode flag (for production testing)
-  if (import.meta.env.VITE_CREATOR_MODE === 'true') {
-    return true;
+
+  // Optional explicit runtime toggle
+  if (typeof window !== "undefined") {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const paramEnabled = params.get("dev") === "1" || params.get("devMode") === "true";
+      const storageEnabled = window.localStorage.getItem("EDGEIQ_DEV_MODE") === "true";
+      return paramEnabled || storageEnabled;
+    } catch {
+      // ignore
+    }
   }
-  
+
   return false;
 };
 

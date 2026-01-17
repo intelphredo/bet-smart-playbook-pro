@@ -23,9 +23,14 @@ import {
   FlaskConical,
   Sparkles,
   ChevronRight,
+  LogIn,
+  LogOut,
+  CreditCard,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 const navItems = [
   { path: "/", label: "Home", icon: Home },
@@ -45,7 +50,13 @@ const navItems = [
 export function MobileNav() {
   const [open, setOpen] = useState(false);
   const location = useLocation();
+  const { user, loading: authLoading } = useAuth();
   const isActivePath = (path: string) => location.pathname === path;
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    setOpen(false);
+  };
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -125,6 +136,33 @@ export function MobileNav() {
             })}
           </ul>
         </nav>
+
+        {/* Auth + Billing actions */}
+        {!authLoading && (
+          <div className="mt-6 space-y-2">
+            {!user ? (
+              <Link to="/auth" onClick={() => setOpen(false)} className="block">
+                <Button className="w-full" size="sm">
+                  <LogIn className="h-4 w-4 mr-2" />
+                  Sign in / Create account
+                </Button>
+              </Link>
+            ) : (
+              <>
+                <Link to="/settings/billing" onClick={() => setOpen(false)} className="block">
+                  <Button className="w-full" size="sm" variant="outline">
+                    <CreditCard className="h-4 w-4 mr-2" />
+                    Billing (Start free trial)
+                  </Button>
+                </Link>
+                <Button className="w-full" size="sm" variant="ghost" onClick={handleSignOut}>
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Sign out
+                </Button>
+              </>
+            )}
+          </div>
+        )}
 
         {/* Bottom decoration */}
         <div className="absolute bottom-6 left-4 right-4">
