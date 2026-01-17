@@ -72,6 +72,8 @@ export function usePredictions(options: UsePredictionsOptions) {
           evPercentage: prediction.evPercentage,
           kellyFraction: prediction.kellyFraction,
           kellyStakeUnits: prediction.kellyStakeUnits,
+          algorithmId: prediction.algorithmId,
+          algorithmName: prediction.algorithmName,
         },
       };
     });
