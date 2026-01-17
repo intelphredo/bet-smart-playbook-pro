@@ -1,5 +1,5 @@
 // Premium NavBar with gold accents and dark theme styling
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ModeToggle } from "@/components/ModeToggle";
 import { MobileNav } from "@/components/MobileNav";
@@ -11,6 +11,17 @@ import { GlossaryModal } from "@/components/ui/InfoExplainer";
 import edgeiqLogo from "@/assets/edgeiq-logo.png";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { User, CreditCard, History, Settings, LogOut } from "lucide-react";
+import { toast } from "sonner";
 
 interface NavBarProps {
   className?: string;
@@ -18,12 +29,28 @@ interface NavBarProps {
 
 export default function NavBar({ className }: NavBarProps) {
   const location = useLocation();
+  const navigate = useNavigate();
   const isHome = location.pathname === '/';
-  const { user, loading: authLoading } = useAuth();
+  const { user, profile, loading: authLoading } = useAuth();
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
+    toast.success("Signed out successfully");
+    navigate("/");
   };
+
+  // Get user initials for avatar fallback
+  const getUserInitials = () => {
+    if (profile?.full_name) {
+      return profile.full_name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
+    }
+    if (user?.email) {
+      return user.email[0].toUpperCase();
+    }
+    return 'U';
+  };
+
+  const displayName = profile?.full_name || user?.email?.split('@')[0] || 'User';
 
   return (
     <>
@@ -92,17 +119,72 @@ export default function NavBar({ className }: NavBarProps) {
 
                 {!authLoading && !user && (
                   <Link to="/auth" className="ml-2">
-                    <Button size="sm">Sign in</Button>
+                    <Button 
+                      size="sm" 
+                      className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium px-4"
+                    >
+                      Sign In
+                    </Button>
                   </Link>
                 )}
 
                 {!authLoading && !!user && (
-                  <div className="ml-2 flex items-center gap-1">
-                    <Link to="/settings/billing">
-                      <Button size="sm" variant="ghost">Billing</Button>
-                    </Link>
-                    <Button size="sm" variant="ghost" onClick={handleSignOut}>Sign out</Button>
-                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        className="ml-2 relative h-9 w-9 rounded-full p-0 hover:ring-2 hover:ring-primary/50 transition-all"
+                      >
+                        <Avatar className="h-9 w-9 border-2 border-primary/30">
+                          <AvatarImage 
+                            src={profile?.avatar_url || undefined} 
+                            alt={displayName} 
+                          />
+                          <AvatarFallback className="bg-primary/20 text-primary font-semibold text-sm">
+                            {getUserInitials()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-green-500 border-2 border-background" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-56" align="end" forceMount>
+                      <DropdownMenuLabel className="font-normal">
+                        <div className="flex flex-col space-y-1">
+                          <p className="text-sm font-medium leading-none">{displayName}</p>
+                          <p className="text-xs leading-none text-muted-foreground">
+                            {user.email}
+                          </p>
+                        </div>
+                      </DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem asChild>
+                        <Link to="/bet-history" className="flex items-center cursor-pointer">
+                          <History className="mr-2 h-4 w-4" />
+                          <span>Bet History</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/settings/billing" className="flex items-center cursor-pointer">
+                          <CreditCard className="mr-2 h-4 w-4" />
+                          <span>Billing</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/settings" className="flex items-center cursor-pointer">
+                          <Settings className="mr-2 h-4 w-4" />
+                          <span>Settings</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem 
+                        onClick={handleSignOut}
+                        className="text-destructive focus:text-destructive cursor-pointer"
+                      >
+                        <LogOut className="mr-2 h-4 w-4" />
+                        <span>Sign out</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 )}
               </div>
 
