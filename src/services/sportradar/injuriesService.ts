@@ -1,11 +1,12 @@
-// Sportradar Injuries Service
-// Fetches and maps injury data for all sports via edge function
+// Injuries Service
+// Fetches and maps injury data for all sports via ESPN API (more reliable than Sportradar)
 
 import { SportLeague, SportradarInjury, InjuryStatus } from '@/types/sportradar';
 import { 
-  fetchSportradar, 
   INJURY_CACHE_DURATION, 
-  shouldUseMockData 
+  shouldUseMockData,
+  getCachedData,
+  setCachedData
 } from './sportradarCore';
 
 // Mock injury data for development
@@ -177,80 +178,137 @@ const MOCK_INJURIES: Record<SportLeague, SportradarInjury[]> = {
   ]
 };
 
-// Map API response to our injury type
-const mapApiInjury = (apiInjury: any, league: SportLeague): SportradarInjury => {
-  const statusMap: Record<string, InjuryStatus> = {
-    'OUT': 'out',
-    'DOUBTFUL': 'doubtful',
-    'QUESTIONABLE': 'questionable',
-    'PROBABLE': 'probable',
-    'DAY-TO-DAY': 'day-to-day',
-    'D2D': 'day-to-day',
-    'IR': 'injured-reserve',
-    'INJURED_RESERVE': 'injured-reserve',
-    'O': 'out',
-    'D': 'doubtful',
-    'Q': 'questionable',
-    'P': 'probable'
-  };
-
-  return {
-    id: apiInjury.id || `injury-${apiInjury.player?.id || Math.random()}`,
-    playerId: apiInjury.player?.id || '',
-    playerName: apiInjury.player?.full_name || apiInjury.player?.name || 'Unknown',
-    team: apiInjury.team?.name || apiInjury.team?.market || '',
-    teamId: apiInjury.team?.id || '',
-    position: apiInjury.player?.position || apiInjury.player?.primary_position || '',
-    status: statusMap[apiInjury.status?.toUpperCase()] || 'questionable',
-    description: apiInjury.desc || apiInjury.description || apiInjury.comment || '',
-    injuryType: apiInjury.injury_type || apiInjury.type || 'Unknown',
-    startDate: apiInjury.start_date || apiInjury.update_date || new Date().toISOString(),
-    expectedReturn: apiInjury.expected_return || undefined,
-    practice: apiInjury.practice_status?.toLowerCase() as any,
-    comment: apiInjury.comment,
-    updatedAt: apiInjury.update_date || new Date().toISOString()
-  };
+// Map ESPN status to InjuryStatus type
+const mapESPNStatus = (status: string): InjuryStatus => {
+  const statusLower = status?.toLowerCase() || '';
+  
+  if (statusLower.includes('out') || statusLower === 'o') return 'out';
+  if (statusLower.includes('doubtful') || statusLower === 'd') return 'doubtful';
+  if (statusLower.includes('questionable') || statusLower === 'q') return 'questionable';
+  if (statusLower.includes('probable') || statusLower === 'p') return 'probable';
+  if (statusLower.includes('day-to-day') || statusLower.includes('day to day') || statusLower === 'dtd') return 'day-to-day';
+  if (statusLower.includes('injured reserve') || statusLower === 'ir') return 'injured-reserve';
+  if (statusLower.includes('out for season') || statusLower === 'ofs') return 'out-for-season';
+  
+  return 'questionable';
 };
 
-// Fetch league injuries via edge function
+// Map league to ESPN API path configuration
+const getESPNConfig = (league: SportLeague): { sport: string; leaguePath: string } | null => {
+  const mapping: Record<SportLeague, { sport: string; leaguePath: string }> = {
+    NBA: { sport: 'basketball', leaguePath: 'nba' },
+    NFL: { sport: 'football', leaguePath: 'nfl' },
+    MLB: { sport: 'baseball', leaguePath: 'mlb' },
+    NHL: { sport: 'hockey', leaguePath: 'nhl' },
+    SOCCER: { sport: 'soccer', leaguePath: 'eng.1' },
+  };
+  
+  return mapping[league] || null;
+};
+
+// Fetch injuries from ESPN scoreboard/summary APIs
+const fetchESPNInjuries = async (league: SportLeague): Promise<SportradarInjury[]> => {
+  const config = getESPNConfig(league);
+  if (!config) return MOCK_INJURIES[league] || [];
+
+  const injuries: SportradarInjury[] = [];
+  const now = new Date().toISOString();
+
+  try {
+    // Get today's games from scoreboard
+    const scoreboardUrl = `https://site.api.espn.com/apis/site/v2/sports/${config.sport}/${config.leaguePath}/scoreboard`;
+    const scoreboardResponse = await fetch(scoreboardUrl);
+    
+    if (!scoreboardResponse.ok) {
+      console.warn(`[Injuries] ESPN Scoreboard returned ${scoreboardResponse.status} for ${league}`);
+      return MOCK_INJURIES[league] || [];
+    }
+    
+    const scoreboardData = await scoreboardResponse.json();
+    const events = scoreboardData.events || [];
+    
+    // Extract injuries from game summaries (up to 10 games)
+    const summaryPromises = events.slice(0, 10).map(async (event: any) => {
+      try {
+        const summaryUrl = `https://site.api.espn.com/apis/site/v2/sports/${config.sport}/${config.leaguePath}/summary?event=${event.id}`;
+        const summaryResponse = await fetch(summaryUrl);
+        
+        if (!summaryResponse.ok) return [];
+        
+        const summaryData = await summaryResponse.json();
+        const eventInjuries: SportradarInjury[] = [];
+        
+        // Parse injuries from game summary
+        const injuryReports = summaryData.injuries || summaryData.gameInfo?.injuries || [];
+        
+        injuryReports.forEach((report: any) => {
+          const teamName = report.team?.displayName || report.team?.name || 'Unknown Team';
+          const teamId = report.team?.id || '';
+          
+          const entries = report.injuries || report.items || [];
+          entries.forEach((injury: any) => {
+            eventInjuries.push({
+              id: `${injury.athlete?.id || injury.playerId || Date.now()}-${Date.now()}`,
+              playerId: injury.athlete?.id || injury.playerId || '',
+              playerName: injury.athlete?.displayName || injury.athlete?.fullName || injury.playerName || 'Unknown Player',
+              position: injury.athlete?.position?.abbreviation || injury.position || '',
+              team: teamName,
+              teamId: teamId,
+              status: mapESPNStatus(injury.status || injury.type?.abbreviation || ''),
+              injuryType: injury.type?.name || injury.details?.type || injury.description || 'Undisclosed',
+              description: injury.details?.detail || injury.longComment || injury.shortComment || injury.type?.description || '',
+              expectedReturn: injury.details?.returnDate,
+              startDate: injury.date || now,
+              updatedAt: injury.date || now,
+            });
+          });
+        });
+        
+        return eventInjuries;
+      } catch (err) {
+        console.warn(`[Injuries] Error fetching summary for event ${event.id}:`, err);
+        return [];
+      }
+    });
+    
+    const summaryInjuries = await Promise.all(summaryPromises);
+    injuries.push(...summaryInjuries.flat());
+    
+    // Deduplicate by player ID
+    const seen = new Set<string>();
+    const unique = injuries.filter(inj => {
+      const key = inj.playerId || inj.playerName;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+    
+    return unique.length > 0 ? unique : (MOCK_INJURIES[league] || []);
+  } catch (error) {
+    console.error(`[Injuries] ESPN fetch error for ${league}:`, error);
+    return MOCK_INJURIES[league] || [];
+  }
+};
+
+// Fetch league injuries via ESPN (primary) with caching
 export const fetchLeagueInjuries = async (league: SportLeague): Promise<SportradarInjury[]> => {
   if (shouldUseMockData()) {
     console.log(`[Injuries] Using mock data for ${league}`);
     return MOCK_INJURIES[league] || [];
   }
 
+  // Check cache first
+  const cacheKey = `injuries:${league}`;
+  const cached = getCachedData<SportradarInjury[]>(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
   try {
-    const response = await fetchSportradar<any>(
-      league,
-      'INJURIES',
-      { cacheDuration: INJURY_CACHE_DURATION }
-    );
-
-    // Extract injuries from response (structure varies by sport)
-    let injuries: any[] = [];
-    
-    if (response.data.teams) {
-      // NBA/NFL format: injuries nested under teams
-      response.data.teams.forEach((team: any) => {
-        if (team.players) {
-          team.players.forEach((player: any) => {
-            if (player.injuries?.length > 0) {
-              injuries.push(...player.injuries.map((inj: any) => ({
-                ...inj,
-                player,
-                team
-              })));
-            }
-          });
-        }
-      });
-    } else if (response.data.injuries) {
-      injuries = response.data.injuries;
-    } else if (response.data.players) {
-      injuries = response.data.players.filter((p: any) => p.injury);
-    }
-
-    return injuries.map(inj => mapApiInjury(inj, league));
+    const injuries = await fetchESPNInjuries(league);
+    // Cache the result
+    setCachedData(cacheKey, injuries, INJURY_CACHE_DURATION);
+    return injuries;
   } catch (error) {
     console.error(`[Injuries] Error fetching ${league} injuries:`, error);
     return MOCK_INJURIES[league] || [];
