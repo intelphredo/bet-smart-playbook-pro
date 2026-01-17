@@ -12,6 +12,7 @@ import AnimatedRoutes from "@/components/layout/AnimatedRoutes";
 import OnboardingModal from "@/components/onboarding/OnboardingModal";
 import { CalibrationProvider } from "@/components/ModelCalibration";
 import { CookieConsent, ResponsibleGamblingBadge } from "@/components/legal";
+import BettingAssistant from "@/components/BettingAssistant";
 // Create a client
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -70,6 +71,7 @@ function App() {
                     <FloatingBetSlip />
                     <SharpMoneyMonitor />
                     <OnboardingModal />
+                    <BettingAssistant />
                     <CookieConsent />
                     <ResponsibleGamblingBadge />
                   </Router>
