@@ -20,6 +20,7 @@ import {
   Maximize2
 } from "lucide-react";
 import { toast } from "sonner";
+import DOMPurify from "dompurify";
 
 interface Message {
   role: "user" | "assistant";
@@ -196,22 +197,37 @@ export default function BettingAssistant() {
     setIsMinimized(!isMinimized);
   };
 
-  // Render message content with basic markdown support
+  // Render message content with safe markdown support using DOMPurify
   const renderMessage = (content: string) => {
     return content
       .split('\n')
       .map((line, i) => {
-        // Bold text
-        line = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        // Bold text - apply regex transformation
+        let processedLine = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        
+        // Sanitize the processed line to prevent XSS
+        const sanitizedLine = DOMPurify.sanitize(processedLine, {
+          ALLOWED_TAGS: ['strong', 'b', 'em', 'i'],
+          ALLOWED_ATTR: []
+        });
+        
         // Bullet points
         if (line.startsWith('- ') || line.startsWith('• ')) {
-          return <li key={i} className="ml-4" dangerouslySetInnerHTML={{ __html: line.slice(2) }} />;
+          const bulletContent = DOMPurify.sanitize(processedLine.slice(2), {
+            ALLOWED_TAGS: ['strong', 'b', 'em', 'i'],
+            ALLOWED_ATTR: []
+          });
+          return <li key={i} className="ml-4" dangerouslySetInnerHTML={{ __html: bulletContent }} />;
         }
         // Numbered lists
         if (/^\d+\.\s/.test(line)) {
-          return <li key={i} className="ml-4 list-decimal" dangerouslySetInnerHTML={{ __html: line.replace(/^\d+\.\s/, '') }} />;
+          const numberedContent = DOMPurify.sanitize(processedLine.replace(/^\d+\.\s/, ''), {
+            ALLOWED_TAGS: ['strong', 'b', 'em', 'i'],
+            ALLOWED_ATTR: []
+          });
+          return <li key={i} className="ml-4 list-decimal" dangerouslySetInnerHTML={{ __html: numberedContent }} />;
         }
-        return <p key={i} dangerouslySetInnerHTML={{ __html: line }} />;
+        return <p key={i} dangerouslySetInnerHTML={{ __html: sanitizedLine }} />;
       });
   };
 
