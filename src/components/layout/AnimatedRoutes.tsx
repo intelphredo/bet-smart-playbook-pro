@@ -23,6 +23,7 @@ import BetHistory from "@/pages/BetHistory";
 import Settings from "@/pages/Settings";
 import Billing from "@/pages/settings/Billing";
 import Auth from "@/pages/Auth";
+import Profile from "@/pages/Profile";
 
 // Legal pages
 import TermsOfService from "@/pages/legal/TermsOfService";
@@ -184,6 +185,14 @@ const AnimatedRoutes = () => {
           element={
             <PageTransition>
               <Billing />
+            </PageTransition>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <PageTransition>
+              <Profile />
             </PageTransition>
           }
         />
