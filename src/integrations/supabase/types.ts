@@ -977,6 +977,23 @@ export type Database = {
       cleanup_old_job_logs: { Args: never; Returns: number }
       cleanup_old_odds_history: { Args: never; Returns: undefined }
       cleanup_rate_limits: { Args: never; Returns: undefined }
+      get_clv_leaderboard: {
+        Args: never
+        Returns: {
+          avg_clv: number
+          best_clv: number
+          display_name: string
+          is_current_user: boolean
+          median_clv: number
+          positive_clv_bets: number
+          positive_clv_rate: number
+          rank_position: number
+          roi_percentage: number
+          total_bets_with_clv: number
+          total_profit: number
+          worst_clv: number
+        }[]
+      }
       get_cron_job_status: {
         Args: never
         Returns: {
