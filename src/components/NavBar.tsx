@@ -9,6 +9,8 @@ import BetSlipDrawer from "@/components/BetSlip/BetSlipDrawer";
 import NotificationCenter from "@/components/NotificationCenter";
 import { GlossaryModal } from "@/components/ui/InfoExplainer";
 import edgeiqLogo from "@/assets/edgeiq-logo.png";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 interface NavBarProps {
   className?: string;
@@ -17,6 +19,11 @@ interface NavBarProps {
 export default function NavBar({ className }: NavBarProps) {
   const location = useLocation();
   const isHome = location.pathname === '/';
+  const { user, loading: authLoading } = useAuth();
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+  };
 
   return (
     <>
@@ -82,7 +89,23 @@ export default function NavBar({ className }: NavBarProps) {
                 <div className="ml-1">
                   <BetSlipDrawer />
                 </div>
+
+                {!authLoading && !user && (
+                  <Link to="/auth" className="ml-2">
+                    <Button size="sm">Sign in</Button>
+                  </Link>
+                )}
+
+                {!authLoading && !!user && (
+                  <div className="ml-2 flex items-center gap-1">
+                    <Link to="/settings/billing">
+                      <Button size="sm" variant="ghost">Billing</Button>
+                    </Link>
+                    <Button size="sm" variant="ghost" onClick={handleSignOut}>Sign out</Button>
+                  </div>
+                )}
               </div>
+
               <div className="p-0.5 rounded-full bg-muted/50 dark:bg-muted/30 border border-border/20">
                 <ModeToggle />
               </div>
