@@ -5,9 +5,9 @@ import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { UnifiedGame } from "@/hooks/useGames";
 import { cn } from "@/lib/utils";
-import { Star, TrendingUp, Users, Activity, Target, Clock, Zap, ChevronRight, Brain, BarChart3 } from "lucide-react";
+import { Star, TrendingUp, Users, Activity, Target, Clock, Zap, ChevronRight, Brain, BarChart3, Sparkles } from "lucide-react";
 import { getPrimaryOdds, formatMoneylineOdds } from "@/utils/sportsbook";
-import { LiveOdds } from "@/types/sports";
+import { LiveOdds, Match } from "@/types/sports";
 import { useLiveScoresContext } from "@/providers/LiveScoresProvider";
 import { LivePulse, StaleDataWarning } from "@/components/ui/LiveScoreIndicators";
 import { isMatchLive, isMatchFinished } from "@/utils/matchStatus";
@@ -19,6 +19,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { ALGORITHM_REGISTRY } from "@/domain/prediction/algorithms";
+import AIBetAnalysis from "@/components/AIBetAnalysis";
 
 // Algorithm color configurations for match cards
 const ALGORITHM_STYLES: Record<string, { 
@@ -299,18 +300,51 @@ export const MatchCard: React.FC<MatchCardProps> = ({ game, expanded = false }) 
                 className={cn("h-1.5", algoStyle.progressClass)}
               />
               
-              {/* Quick Factors */}
-              {quickFactors.length > 0 && (
-                <div className="flex items-center gap-3 pt-1">
-                  {quickFactors.map((factor, idx) => (
-                    <div key={idx} className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                      <factor.icon className="h-3 w-3" />
-                      <span>{factor.label}:</span>
-                      <span className="font-medium text-foreground">{factor.value}</span>
-                    </div>
-                  ))}
+              {/* Quick Factors and AI Analysis */}
+              <div className="flex items-center justify-between pt-1">
+                {quickFactors.length > 0 && (
+                  <div className="flex items-center gap-3">
+                    {quickFactors.map((factor, idx) => (
+                      <div key={idx} className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                        <factor.icon className="h-3 w-3" />
+                        <span>{factor.label}:</span>
+                        <span className="font-medium text-foreground">{factor.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {/* AI Analysis Button */}
+                <div onClick={(e) => e.stopPropagation()}>
+                  <AIBetAnalysis 
+                    match={{
+                      id: game.id,
+                      league: (game.league || 'NFL') as any,
+                      homeTeam: { id: game.id + '-home', name: game.homeTeam, shortName: game.homeTeam?.slice(0, 3) || 'HOM', logo: '' },
+                      awayTeam: { id: game.id + '-away', name: game.awayTeam, shortName: game.awayTeam?.slice(0, 3) || 'AWY', logo: '' },
+                      startTime: game.startTime,
+                      odds: {
+                        homeWin: primaryOdds?.homeWin || -110,
+                        awayWin: primaryOdds?.awayWin || -110,
+                        draw: primaryOdds?.draw,
+                      },
+                      prediction: {
+                        recommended: prediction.recommended === game.homeTeam ? 'home' : 
+                                     prediction.recommended === game.awayTeam ? 'away' : 
+                                     prediction.recommended?.toLowerCase() === 'draw' ? 'draw' : 'home',
+                        confidence: prediction.confidence,
+                        projectedScore: prediction.projectedScore || { home: 0, away: 0 },
+                        algorithmId: prediction.algorithmId,
+                        expectedValue: prediction.expectedValue,
+                        evPercentage: prediction.evPercentage,
+                        keyFactors: prediction.keyFactors,
+                      },
+                      status: game.status as any,
+                    }}
+                    variant="button"
+                    className="h-7 text-xs"
+                  />
                 </div>
-              )}
+              </div>
             </div>
           );
         })()}
