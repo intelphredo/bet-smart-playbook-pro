@@ -50,6 +50,26 @@ import {
   LEAGUE_CATEGORIES, 
   groupLeaguesByCategory 
 } from "@/components/filters/GroupedLeagueSelect";
+import { ALGORITHM_REGISTRY } from "@/domain/prediction/algorithms";
+
+// Helper to get algorithm name from ID
+const getAlgorithmName = (algorithmId: string | null): string => {
+  if (!algorithmId) return 'Unknown';
+  const algo = ALGORITHM_REGISTRY.find(a => a.id === algorithmId);
+  return algo?.name || 'Unknown';
+};
+
+// Get short algorithm name for badges
+const getAlgorithmShortName = (algorithmId: string | null): string => {
+  const name = getAlgorithmName(algorithmId);
+  const shortNames: Record<string, string> = {
+    'ML Power Index': 'ML Power',
+    'Value Pick Finder': 'Value Pick',
+    'Statistical Edge': 'Stat Edge',
+    'Sharp Money': 'Sharp',
+  };
+  return shortNames[name] || name;
+};
 
 // League icon component with fallback
 function LeagueIcon({ league, size = 16 }: { league: string; size?: number }) {
@@ -82,6 +102,7 @@ export default function AIPredictions() {
   const [timeRange, setTimeRange] = useState<TimeRange>("14d");
   const [predictionType, setPredictionType] = useState<PredictionType>("all");
   const [leagueFilter, setLeagueFilter] = useState<string>("all");
+  const [algorithmFilter, setAlgorithmFilter] = useState<string>("all");
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const { data, isLoading, error, refetch } = useHistoricalPredictions(timeRange, predictionType);
@@ -99,6 +120,7 @@ export default function AIPredictions() {
   // Filter predictions
   const filteredPredictions = predictions.filter(p => {
     if (leagueFilter !== "all" && p.league !== leagueFilter) return false;
+    if (algorithmFilter !== "all" && p.algorithm_id !== algorithmFilter) return false;
     return true;
   });
 
@@ -317,16 +339,29 @@ export default function AIPredictions() {
               <p className="text-sm text-muted-foreground">
                 Showing {filteredPredictions.length} predictions
               </p>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <GroupedLeagueSelect
                   value={leagueFilter}
                   onValueChange={setLeagueFilter}
                   leagues={leagues}
                   allLabel="All Leagues"
-                  className="w-[180px]"
+                  className="w-[160px]"
                 />
+                <Select value={algorithmFilter} onValueChange={setAlgorithmFilter}>
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue placeholder="Algorithm" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Algorithms</SelectItem>
+                    {ALGORITHM_REGISTRY.map(algo => (
+                      <SelectItem key={algo.id} value={algo.id}>
+                        {algo.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <Select value={predictionType} onValueChange={(v) => setPredictionType(v as PredictionType)}>
-                  <SelectTrigger className="w-[120px]">
+                  <SelectTrigger className="w-[110px]">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -465,11 +500,19 @@ function PredictionRow({ prediction, showType }: { prediction: any; showType?: b
             <StatusIcon className={cn("h-5 w-5 shrink-0", statusColor)} />
             <div className="min-w-0">
               <p className="font-medium text-sm truncate">{matchTitle}</p>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
                 <LeagueIcon league={prediction.league || 'NBA'} size={14} />
                 <span>{getLeagueDisplayName(prediction.league) || 'Unknown'}</span>
                 <span>•</span>
                 <span>{format(new Date(prediction.predicted_at), 'MMM d, h:mm a')}</span>
+                {prediction.algorithm_id && (
+                  <>
+                    <span>•</span>
+                    <Badge variant="secondary" className="text-xs py-0 px-1.5 bg-primary/10 text-primary border-0">
+                      {getAlgorithmShortName(prediction.algorithm_id)}
+                    </Badge>
+                  </>
+                )}
                 {showType && (
                   <>
                     <span>•</span>
