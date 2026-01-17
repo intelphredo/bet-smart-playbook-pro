@@ -158,6 +158,12 @@ export default function NavBar({ className }: NavBarProps) {
                       </DropdownMenuLabel>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem asChild>
+                        <Link to="/profile" className="flex items-center cursor-pointer">
+                          <User className="mr-2 h-4 w-4" />
+                          <span>Profile</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
                         <Link to="/bet-history" className="flex items-center cursor-pointer">
                           <History className="mr-2 h-4 w-4" />
                           <span>Bet History</span>
