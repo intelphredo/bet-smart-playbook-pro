@@ -63,10 +63,29 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
 
       if (data && typeof data === 'object') {
         const parsedData = data as Record<string, unknown>;
-        setPreferences({ 
-          ...DEFAULT_PREFERENCES, 
-          ...(parsedData as unknown as Partial<UserPreferences>)
-        });
+        // Deep merge to ensure all nested arrays/objects exist
+        const merged = { 
+          ...DEFAULT_PREFERENCES,
+          ...(parsedData as unknown as Partial<UserPreferences>),
+          // Ensure favorites has all required array fields
+          favorites: {
+            ...DEFAULT_PREFERENCES.favorites,
+            ...((parsedData as any)?.favorites ?? {}),
+            leagues: Array.isArray((parsedData as any)?.favorites?.leagues) 
+              ? (parsedData as any).favorites.leagues 
+              : DEFAULT_PREFERENCES.favorites.leagues,
+            teams: Array.isArray((parsedData as any)?.favorites?.teams) 
+              ? (parsedData as any).favorites.teams 
+              : DEFAULT_PREFERENCES.favorites.teams,
+            sportsbooks: Array.isArray((parsedData as any)?.favorites?.sportsbooks) 
+              ? (parsedData as any).favorites.sportsbooks 
+              : DEFAULT_PREFERENCES.favorites.sportsbooks,
+            matches: Array.isArray((parsedData as any)?.favorites?.matches) 
+              ? (parsedData as any).favorites.matches 
+              : DEFAULT_PREFERENCES.favorites.matches,
+          },
+        };
+        setPreferences(merged);
       }
     } catch (error: any) {
       console.error('Error fetching preferences:', error);
