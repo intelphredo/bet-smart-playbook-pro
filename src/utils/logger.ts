@@ -14,10 +14,18 @@ if (typeof window !== 'undefined') {
       finishedMatches: [],
       algorithmPerformance: null,
       addLog: function(message: string) {
-        this.logs.push(`[${new Date().toISOString()}] ${message}`);
-        // Keep only last 100 logs
-        if (this.logs.length > 100) {
-          this.logs.shift();
+        try {
+          // Ensure logs array exists
+          if (!Array.isArray(this.logs)) {
+            this.logs = [];
+          }
+          this.logs.push(`[${new Date().toISOString()}] ${message}`);
+          // Keep only last 100 logs
+          if (this.logs.length > 100) {
+            this.logs.shift();
+          }
+        } catch (e) {
+          // Silently fail - logging should never crash the app
         }
       }
     };
@@ -28,14 +36,23 @@ if (typeof window !== 'undefined') {
  * Centralized logger utility that respects environment settings
  * Only outputs to console in development mode
  */
+// Safe wrapper for EdgeIQ logging
+const safeAddLog = (message: string) => {
+  try {
+    if (typeof window !== 'undefined' && window.__EdgeIQ && typeof window.__EdgeIQ.addLog === 'function') {
+      window.__EdgeIQ.addLog(message);
+    }
+  } catch (e) {
+    // Silently fail - logging should never crash the app
+  }
+};
+
 export const logger = {
   /**
    * Log informational messages - only outputs in development
    */
   log: (message: string, ...args: unknown[]) => {
-    if (typeof window !== 'undefined' && window.__EdgeIQ) {
-      window.__EdgeIQ.addLog(message);
-    }
+    safeAddLog(message);
     if (isDevelopment) {
       console.log(message, ...args);
     }
@@ -45,9 +62,7 @@ export const logger = {
    * Log debug messages - only outputs in development
    */
   debug: (message: string, ...args: unknown[]) => {
-    if (typeof window !== 'undefined' && window.__EdgeIQ) {
-      window.__EdgeIQ.addLog(`DEBUG: ${message}`);
-    }
+    safeAddLog(`DEBUG: ${message}`);
     if (isDevelopment) {
       console.debug(message, ...args);
     }
@@ -57,9 +72,7 @@ export const logger = {
    * Log warning messages - outputs in all environments
    */
   warn: (message: string, ...args: unknown[]) => {
-    if (typeof window !== 'undefined' && window.__EdgeIQ) {
-      window.__EdgeIQ.addLog(`WARN: ${message}`);
-    }
+    safeAddLog(`WARN: ${message}`);
     console.warn(message, ...args);
   },
   
@@ -67,9 +80,7 @@ export const logger = {
    * Log error messages - outputs in all environments
    */
   error: (message: string, ...args: unknown[]) => {
-    if (typeof window !== 'undefined' && window.__EdgeIQ) {
-      window.__EdgeIQ.addLog(`ERROR: ${message}`);
-    }
+    safeAddLog(`ERROR: ${message}`);
     console.error(message, ...args);
   },
   

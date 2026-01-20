@@ -60,7 +60,7 @@ export function useRecommendedPicks(options: {
   });
 
   const recommendedPicks = useMemo(() => {
-    if (!upcomingMatches?.length) return [];
+    if (!Array.isArray(upcomingMatches) || upcomingMatches.length === 0) return [];
 
     // Filter matches based on date
     const now = new Date();
@@ -148,6 +148,6 @@ export function useRecommendedPicks(options: {
     error,
     lastRefreshTime,
     refetch: refetchWithTimestamp,
-    totalUpcoming: upcomingMatches?.length || 0,
+    totalUpcoming: Array.isArray(upcomingMatches) ? upcomingMatches.length : 0,
   };
 }

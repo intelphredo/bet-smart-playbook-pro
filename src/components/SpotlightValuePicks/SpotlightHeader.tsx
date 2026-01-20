@@ -91,7 +91,7 @@ export function SpotlightHeader({
   
   // Curate top picks based on conviction + value
   const spotlightPicks = useMemo((): SpotlightPick[] => {
-    if (!matches?.length) return [];
+    if (!Array.isArray(matches) || matches.length === 0) return [];
     
     // Score each match for spotlight worthiness
     const scoredMatches = matches

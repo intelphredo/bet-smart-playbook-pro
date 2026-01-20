@@ -161,9 +161,10 @@ const fetchESPNCoreInjuries = async (league: ExtendedSportLeague): Promise<Sport
           stats.forEach((statGroup: any) => {
             const athletes = statGroup.athletes || [];
             athletes.forEach((athlete: any) => {
-              // Check if athlete has injury status
-              if (athlete.athlete?.injuries?.length > 0) {
-                athlete.athlete.injuries.forEach((injury: any) => {
+              // Check if athlete has injury status (safely access injuries array)
+              const athleteInjuries = athlete?.athlete?.injuries;
+              if (Array.isArray(athleteInjuries) && athleteInjuries.length > 0) {
+                athleteInjuries.forEach((injury: any) => {
                   eventInjuries.push({
                     id: `${athlete.athlete.id}-${injury.id || Date.now()}`,
                     playerId: athlete.athlete.id,
