@@ -1,4 +1,4 @@
-import { Routes, Route, useLocation } from "react-router-dom";
+import { Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import PageTransition from "./PageTransition";
 
@@ -24,6 +24,7 @@ import Settings from "@/pages/Settings";
 import Billing from "@/pages/settings/Billing";
 import Auth from "@/pages/Auth";
 import Profile from "@/pages/Profile";
+import NotFound from "@/pages/NotFound";
 
 // Legal pages
 import TermsOfService from "@/pages/legal/TermsOfService";
@@ -225,6 +226,19 @@ const AnimatedRoutes = () => {
           element={
             <PageTransition>
               <ResponsibleGambling />
+            </PageTransition>
+          }
+        />
+
+        {/* Legacy / invalid paths */}
+        <Route path="/betslip" element={<Navigate to="/" replace />} />
+
+        {/* Catch-all */}
+        <Route
+          path="*"
+          element={
+            <PageTransition>
+              <NotFound />
             </PageTransition>
           }
         />
