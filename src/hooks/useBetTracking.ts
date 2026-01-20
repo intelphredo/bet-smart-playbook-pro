@@ -94,9 +94,9 @@ export function useBetTracking() {
         .from('user_betting_stats')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') throw error;
+      if (error) throw error;
       setStats(data as UserBettingStats | null);
     } catch (error: any) {
       console.error('Error fetching stats:', error);

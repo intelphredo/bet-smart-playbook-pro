@@ -94,8 +94,10 @@ const Index = () => {
     });
   }, []);
 
-  // Count favorites for badge
-  const favoritesCount = preferences.favorites.matches.length + preferences.favorites.teams.length;
+  // Count favorites for badge (safe access for potentially missing arrays)
+  const favMatches = Array.isArray(preferences?.favorites?.matches) ? preferences.favorites.matches : [];
+  const favTeams = Array.isArray(preferences?.favorites?.teams) ? preferences.favorites.teams : [];
+  const favoritesCount = favMatches.length + favTeams.length;
 
   const handleMatchClick = (match: Match) => {
     navigate(`/game/${match.id}`);
@@ -229,7 +231,7 @@ const Index = () => {
                   value={selectedLeague === "ALL" ? "all" : selectedLeague}
                   onValueChange={(val) => setSelectedLeague(val === "all" ? "ALL" : val)}
                   leagues={ALL_LEAGUES}
-                  allLabel={`All Leagues (${rawUpcoming.length + rawLive.length})`}
+                  allLabel={`All Leagues (${(rawUpcoming?.length ?? 0) + (rawLive?.length ?? 0)})`}
                   className="w-[200px]"
                 />
               </div>

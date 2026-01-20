@@ -27,37 +27,41 @@ const FavoritesTab = ({ allMatches }: FavoritesTabProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddTeam, setShowAddTeam] = useState(false);
 
+  // Safe access to favorites arrays
+  const favoriteMatchIds = Array.isArray(preferences?.favorites?.matches) ? preferences.favorites.matches : [];
+  const favoriteTeamsList = Array.isArray(preferences?.favorites?.teams) ? preferences.favorites.teams : [];
+
   const favoriteMatches = useMemo(() => {
     return allMatches.filter(match => 
-      preferences.favorites.matches.includes(match.id)
+      favoriteMatchIds.includes(match.id)
     );
-  }, [allMatches, preferences.favorites.matches]);
+  }, [allMatches, favoriteMatchIds]);
 
   const matchesWithFavoriteTeams = useMemo(() => {
-    if (preferences.favorites.teams.length === 0) return [];
+    if (favoriteTeamsList.length === 0) return [];
     
     return allMatches.filter(match => {
       const homeTeam = match.homeTeam?.shortName || match.homeTeam?.name || "";
       const awayTeam = match.awayTeam?.shortName || match.awayTeam?.name || "";
       
-      return preferences.favorites.teams.some(team => 
+      return favoriteTeamsList.some(team => 
         homeTeam.toLowerCase().includes(team.toLowerCase()) ||
         awayTeam.toLowerCase().includes(team.toLowerCase()) ||
         team.toLowerCase().includes(homeTeam.toLowerCase()) ||
         team.toLowerCase().includes(awayTeam.toLowerCase())
       );
-    }).filter(match => !preferences.favorites.matches.includes(match.id));
-  }, [allMatches, preferences.favorites.teams, preferences.favorites.matches]);
+    }).filter(match => !favoriteMatchIds.includes(match.id));
+  }, [allMatches, favoriteTeamsList, favoriteMatchIds]);
 
   // Get team suggestions based on search
   const teamSuggestions = useMemo(() => {
-    if (!searchQuery) return POPULAR_TEAMS.filter(t => !preferences.favorites.teams.includes(t)).slice(0, 8);
+    if (!searchQuery) return POPULAR_TEAMS.filter(t => !favoriteTeamsList.includes(t)).slice(0, 8);
     
     const query = searchQuery.toLowerCase();
     return POPULAR_TEAMS
-      .filter(t => t.toLowerCase().includes(query) && !preferences.favorites.teams.includes(t))
+      .filter(t => t.toLowerCase().includes(query) && !favoriteTeamsList.includes(t))
       .slice(0, 8);
-  }, [searchQuery, preferences.favorites.teams]);
+  }, [searchQuery, favoriteTeamsList]);
 
   const handleAddTeam = (team: string) => {
     toggleFavoriteTeam(team);
@@ -66,7 +70,7 @@ const FavoritesTab = ({ allMatches }: FavoritesTabProps) => {
 
   const hasNoFavorites = favoriteMatches.length === 0 && 
     matchesWithFavoriteTeams.length === 0 && 
-    preferences.favorites.teams.length === 0;
+    favoriteTeamsList.length === 0;
 
   if (hasNoFavorites && !showAddTeam) {
     return (
@@ -144,20 +148,20 @@ const FavoritesTab = ({ allMatches }: FavoritesTabProps) => {
       </Card>
 
       {/* Favorite Teams Section */}
-      {preferences.favorites.teams.length > 0 && (
+      {favoriteTeamsList.length > 0 && (
         <Card className="bg-card/80 backdrop-blur-sm">
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <Users className="h-4 w-4 text-primary" />
               Favorite Teams
               <Badge variant="secondary" className="ml-auto">
-                {preferences.favorites.teams.length}
+                {favoriteTeamsList.length}
               </Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">
-              {preferences.favorites.teams.map((team) => (
+              {favoriteTeamsList.map((team) => (
                 <Badge 
                   key={team} 
                   variant="outline" 
@@ -219,7 +223,7 @@ const FavoritesTab = ({ allMatches }: FavoritesTabProps) => {
       )}
 
       {/* Empty state when teams exist but no matching games */}
-      {preferences.favorites.teams.length > 0 && 
+      {favoriteTeamsList.length > 0 && 
        matchesWithFavoriteTeams.length === 0 && 
        favoriteMatches.length === 0 && (
         <Card className="bg-card/80 backdrop-blur-sm border-dashed">
