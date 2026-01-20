@@ -13,6 +13,7 @@ import OnboardingModal from "@/components/onboarding/OnboardingModal";
 import { CalibrationProvider } from "@/components/ModelCalibration";
 import { CookieConsent, ResponsibleGamblingBadge } from "@/components/legal";
 import BettingAssistant from "@/components/BettingAssistant";
+import ErrorBoundary from "@/components/ErrorBoundary";
 // Create a client
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -59,30 +60,32 @@ if (typeof window !== "undefined") {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <PreferencesProvider>
-          <OddsFormatProvider>
-            <BetSlipProvider>
-              <TooltipProvider>
-                <CalibrationProvider>
-                  <Router>
-                    <AnimatedRoutes />
-                    <FloatingBetSlip />
-                    <SharpMoneyMonitor />
-                    <OnboardingModal />
-                    <BettingAssistant />
-                    <CookieConsent />
-                    <ResponsibleGamblingBadge />
-                  </Router>
-                </CalibrationProvider>
-                <Toaster richColors position="top-center" />
-              </TooltipProvider>
-            </BetSlipProvider>
-          </OddsFormatProvider>
-        </PreferencesProvider>
-      </AuthProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <PreferencesProvider>
+            <OddsFormatProvider>
+              <BetSlipProvider>
+                <TooltipProvider>
+                  <CalibrationProvider>
+                    <Router>
+                      <AnimatedRoutes />
+                      <FloatingBetSlip />
+                      <SharpMoneyMonitor />
+                      <OnboardingModal />
+                      <BettingAssistant />
+                      <CookieConsent />
+                      <ResponsibleGamblingBadge />
+                    </Router>
+                  </CalibrationProvider>
+                  <Toaster richColors position="top-center" />
+                </TooltipProvider>
+              </BetSlipProvider>
+            </OddsFormatProvider>
+          </PreferencesProvider>
+        </AuthProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 

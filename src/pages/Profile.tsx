@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useBetSlip } from "@/components/BetSlip/BetSlipContext";
@@ -33,10 +33,17 @@ import {
 export default function Profile() {
   const { user, profile, loading: authLoading } = useAuth();
   const { stats, isLoading: statsLoading } = useBetSlip();
-  const [fullName, setFullName] = useState(profile?.full_name || "");
+  const [fullName, setFullName] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Sync fullName state when profile loads
+  useEffect(() => {
+    if (profile?.full_name) {
+      setFullName(profile.full_name);
+    }
+  }, [profile?.full_name]);
 
   // Redirect if not logged in
   if (!authLoading && !user) {
