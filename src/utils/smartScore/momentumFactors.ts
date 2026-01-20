@@ -1,5 +1,5 @@
 
-import { Match } from "@/types/sports";
+import { Match, SmartScoreFactor } from "@/types/sports";
 
 // Rename function to match expected import in smartScoreCalculator.ts
 export function calculateMomentumImpact(match: Match) {
@@ -12,7 +12,8 @@ export function calculateMomentumFactors(match: Match) {
     return calculateMLBMomentumFactors(match);
   }
   let momentumScore = 50;
-  const momentumFactors = [];
+  const momentumFactors: SmartScoreFactor[] = [];
+  
   if (match.prediction && match.prediction.confidence >= 75) {
     momentumScore += 15;
     momentumFactors.push({
@@ -30,10 +31,14 @@ export function calculateMomentumFactors(match: Match) {
       description: 'Moderate confidence prediction'
     });
   }
-  if (match.homeTeam.recentForm) {
+  
+  // Home team recent form analysis
+  if (match.homeTeam?.recentForm && Array.isArray(match.homeTeam.recentForm) && match.homeTeam.recentForm.length > 0) {
     const wins = match.homeTeam.recentForm.filter(result => result === 'W').length;
     const totalGames = match.homeTeam.recentForm.length;
-    if (wins / totalGames >= 0.8) {
+    const winRate = wins / totalGames;
+    
+    if (winRate >= 0.8) {
       momentumScore += 15;
       momentumFactors.push({
         key: 'home-hot-streak',
@@ -41,7 +46,7 @@ export function calculateMomentumFactors(match: Match) {
         weight: 9,
         description: 'Home team on hot streak'
       });
-    } else if (wins / totalGames >= 0.6) {
+    } else if (winRate >= 0.6) {
       momentumScore += 10;
       momentumFactors.push({
         key: 'home-form',
@@ -49,7 +54,7 @@ export function calculateMomentumFactors(match: Match) {
         weight: 7,
         description: 'Home team in good form'
       });
-    } else if (wins / totalGames <= 0.2) {
+    } else if (winRate <= 0.2) {
       momentumScore -= 15;
       momentumFactors.push({
         key: 'home-cold-streak',
@@ -57,7 +62,7 @@ export function calculateMomentumFactors(match: Match) {
         weight: 9,
         description: 'Home team on cold streak'
       });
-    } else if (wins / totalGames <= 0.3) {
+    } else if (winRate <= 0.3) {
       momentumScore -= 10;
       momentumFactors.push({
         key: 'home-form-bad',
@@ -66,6 +71,8 @@ export function calculateMomentumFactors(match: Match) {
         description: 'Home team in poor form'
       });
     }
+    
+    // Check last 3 games streak
     if (match.homeTeam.recentForm.length >= 3) {
       const lastThree = match.homeTeam.recentForm.slice(0, 3);
       if (lastThree.every(result => result === 'W')) {
@@ -87,10 +94,14 @@ export function calculateMomentumFactors(match: Match) {
       }
     }
   }
-  if (match.awayTeam.recentForm) {
+  
+  // Away team recent form analysis
+  if (match.awayTeam?.recentForm && Array.isArray(match.awayTeam.recentForm) && match.awayTeam.recentForm.length > 0) {
     const wins = match.awayTeam.recentForm.filter(result => result === 'W').length;
     const totalGames = match.awayTeam.recentForm.length;
-    if (wins / totalGames >= 0.8) {
+    const winRate = wins / totalGames;
+    
+    if (winRate >= 0.8) {
       momentumScore += 15;
       momentumFactors.push({
         key: 'away-hot-streak',
@@ -98,7 +109,7 @@ export function calculateMomentumFactors(match: Match) {
         weight: 9,
         description: 'Away team on hot streak'
       });
-    } else if (wins / totalGames >= 0.6) {
+    } else if (winRate >= 0.6) {
       momentumScore += 10;
       momentumFactors.push({
         key: 'away-form',
@@ -106,7 +117,7 @@ export function calculateMomentumFactors(match: Match) {
         weight: 7,
         description: 'Away team in good form'
       });
-    } else if (wins / totalGames <= 0.2) {
+    } else if (winRate <= 0.2) {
       momentumScore -= 15;
       momentumFactors.push({
         key: 'away-cold-streak',
@@ -114,7 +125,7 @@ export function calculateMomentumFactors(match: Match) {
         weight: 9,
         description: 'Away team on cold streak'
       });
-    } else if (wins / totalGames <= 0.3) {
+    } else if (winRate <= 0.3) {
       momentumScore -= 10;
       momentumFactors.push({
         key: 'away-form-bad',
@@ -123,6 +134,8 @@ export function calculateMomentumFactors(match: Match) {
         description: 'Away team in poor form'
       });
     }
+    
+    // Check last 3 games streak
     if (match.awayTeam.recentForm.length >= 3) {
       const lastThree = match.awayTeam.recentForm.slice(0, 3);
       if (lastThree.every(result => result === 'W')) {
@@ -144,16 +157,19 @@ export function calculateMomentumFactors(match: Match) {
       }
     }
   }
+  
   if (match.league === "NBA" || match.league === "NHL") {
     momentumScore = momentumScore * 1.1;
   }
+  
   return { momentumScore, momentumFactors };
 }
 
 // MLB momentum factor
 export function calculateMLBMomentumFactors(match: Match) {
   let momentumScore = 50;
-  const momentumFactors = [];
+  const momentumFactors: SmartScoreFactor[] = [];
+  
   if (match.prediction && match.prediction.confidence >= 65) {
     momentumScore += 10;
     momentumFactors.push({
@@ -171,10 +187,13 @@ export function calculateMLBMomentumFactors(match: Match) {
       description: 'Moderate confidence MLB prediction'
     });
   }
-  if (match.homeTeam.recentForm) {
+  
+  if (match.homeTeam?.recentForm && Array.isArray(match.homeTeam.recentForm) && match.homeTeam.recentForm.length > 0) {
     const wins = match.homeTeam.recentForm.filter(result => result === 'W').length;
     const totalGames = match.homeTeam.recentForm.length;
-    if (wins / totalGames >= 0.8) {
+    const winRate = wins / totalGames;
+    
+    if (winRate >= 0.8) {
       momentumScore += 12;
       momentumFactors.push({
         key: 'mlb-home-hot',
@@ -182,7 +201,7 @@ export function calculateMLBMomentumFactors(match: Match) {
         weight: 7,
         description: 'Home team winning recently'
       });
-    } else if (wins / totalGames <= 0.2) {
+    } else if (winRate <= 0.2) {
       momentumScore -= 10;
       momentumFactors.push({
         key: 'mlb-home-cold',
@@ -192,10 +211,13 @@ export function calculateMLBMomentumFactors(match: Match) {
       });
     }
   }
-  if (match.awayTeam.recentForm) {
+  
+  if (match.awayTeam?.recentForm && Array.isArray(match.awayTeam.recentForm) && match.awayTeam.recentForm.length > 0) {
     const wins = match.awayTeam.recentForm.filter(result => result === 'W').length;
     const totalGames = match.awayTeam.recentForm.length;
-    if (wins / totalGames >= 0.8) {
+    const winRate = wins / totalGames;
+    
+    if (winRate >= 0.8) {
       momentumScore += 12;
       momentumFactors.push({
         key: 'mlb-away-hot',
@@ -203,7 +225,7 @@ export function calculateMLBMomentumFactors(match: Match) {
         weight: 7,
         description: 'Away team winning recently'
       });
-    } else if (wins / totalGames <= 0.2) {
+    } else if (winRate <= 0.2) {
       momentumScore -= 10;
       momentumFactors.push({
         key: 'mlb-away-cold',
@@ -213,6 +235,7 @@ export function calculateMLBMomentumFactors(match: Match) {
       });
     }
   }
+  
   if (match.prediction && match.prediction.recommended === 'home') {
     momentumScore += 3;
     momentumFactors.push({
@@ -222,5 +245,6 @@ export function calculateMLBMomentumFactors(match: Match) {
       description: 'Small MLB home field advantage'
     });
   }
+  
   return { momentumScore, momentumFactors };
 }

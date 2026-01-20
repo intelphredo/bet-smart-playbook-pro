@@ -135,7 +135,7 @@ const Index = () => {
 
   // Arbitrage
   const allMatchesWithOdds = useMemo(() => 
-    [...filteredUpcoming, ...filteredLive].filter(m => m.liveOdds && m.liveOdds.length >= 2),
+    [...filteredUpcoming, ...filteredLive].filter(m => m.liveOdds && Array.isArray(m.liveOdds) && m.liveOdds.length >= 2),
     [filteredUpcoming, filteredLive]
   );
   const { opportunities } = useArbitrageCalculator(allMatchesWithOdds);
