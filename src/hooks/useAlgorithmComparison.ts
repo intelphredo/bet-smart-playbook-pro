@@ -3,6 +3,17 @@ import { supabase } from '@/integrations/supabase/client';
 import { ALGORITHM_IDS, getAlgorithmNameFromId } from '@/utils/predictions/algorithms';
 import { subDays, startOfDay, format } from 'date-fns';
 
+export interface RecentResult {
+  result: 'W' | 'L';
+  matchId: string;
+  matchTitle: string;
+  homeTeam: string;
+  awayTeam: string;
+  prediction: string;
+  confidence: number;
+  date: string;
+}
+
 export interface AlgorithmSummary {
   algorithmId: string;
   algorithmName: string;
@@ -11,7 +22,7 @@ export interface AlgorithmSummary {
   losses: number;
   winRate: number;
   avgConfidence: number;
-  recentResults: ('W' | 'L')[];
+  recentResults: RecentResult[];
   roi: number; // Simulated based on win rate
   streak: number; // Current streak (positive = wins, negative = losses)
 }
@@ -147,9 +158,18 @@ export function useAlgorithmComparison(options: UseAlgorithmComparisonOptions = 
         const losses = settled.filter(p => p.status === 'lost').length;
         const total = settled.length;
 
-        const recentResults = settled
+        const recentResults: RecentResult[] = settled
           .slice(0, 10)
-          .map(p => (p.status === 'won' ? 'W' : 'L') as 'W' | 'L');
+          .map(p => ({
+            result: (p.status === 'won' ? 'W' : 'L') as 'W' | 'L',
+            matchId: p.match_id,
+            matchTitle: p.match_title || 'Unknown Match',
+            homeTeam: p.home_team || '',
+            awayTeam: p.away_team || '',
+            prediction: p.prediction || '',
+            confidence: p.confidence || 0,
+            date: format(new Date(p.predicted_at), 'MMM d'),
+          }));
 
         const avgConfidence = algPreds.length > 0
           ? algPreds.reduce((sum, p) => sum + (p.confidence || 0), 0) / algPreds.length
@@ -157,10 +177,10 @@ export function useAlgorithmComparison(options: UseAlgorithmComparisonOptions = 
 
         // Calculate streak
         let streak = 0;
-        for (const result of recentResults) {
+        for (const r of recentResults) {
           if (streak === 0) {
-            streak = result === 'W' ? 1 : -1;
-          } else if ((streak > 0 && result === 'W') || (streak < 0 && result === 'L')) {
+            streak = r.result === 'W' ? 1 : -1;
+          } else if ((streak > 0 && r.result === 'W') || (streak < 0 && r.result === 'L')) {
             streak += streak > 0 ? 1 : -1;
           } else {
             break;

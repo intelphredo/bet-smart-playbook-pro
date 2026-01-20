@@ -146,8 +146,10 @@ const StreakBadge = ({ streak }: { streak: number }) => {
   );
 };
 
-// Recent results display
-const RecentResults = ({ results }: { results: ('W' | 'L')[] }) => {
+// Recent results display with tooltips
+import type { RecentResult } from "@/hooks/useAlgorithmComparison";
+
+const RecentResults = ({ results }: { results: RecentResult[] }) => {
   if (!results.length) {
     return <span className="text-muted-foreground text-xs">No data</span>;
   }
@@ -155,17 +157,38 @@ const RecentResults = ({ results }: { results: ('W' | 'L')[] }) => {
   return (
     <div className="flex gap-0.5">
       {results.slice(0, 10).map((result, i) => (
-        <div
-          key={i}
-          className={cn(
-            "w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold",
-            result === 'W' 
-              ? "bg-green-500/20 text-green-600" 
-              : "bg-red-500/20 text-red-600"
-          )}
-        >
-          {result}
-        </div>
+        <Tooltip key={i}>
+          <TooltipTrigger asChild>
+            <button
+              className={cn(
+                "w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold cursor-pointer transition-all hover:scale-110",
+                result.result === 'W' 
+                  ? "bg-green-500/20 text-green-600 hover:bg-green-500/30" 
+                  : "bg-red-500/20 text-red-600 hover:bg-red-500/30"
+              )}
+            >
+              {result.result}
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="top" className="max-w-xs">
+            <div className="space-y-1">
+              <p className="font-medium text-sm">{result.matchTitle}</p>
+              <p className="text-xs text-muted-foreground">{result.date}</p>
+              <div className="flex items-center gap-2 text-xs">
+                <span className={cn(
+                  "font-medium",
+                  result.result === 'W' ? "text-green-500" : "text-red-500"
+                )}>
+                  {result.result === 'W' ? 'Won' : 'Lost'}
+                </span>
+                <span className="text-muted-foreground">•</span>
+                <span>{result.prediction}</span>
+                <span className="text-muted-foreground">•</span>
+                <span>{result.confidence.toFixed(0)}% conf</span>
+              </div>
+            </div>
+          </TooltipContent>
+        </Tooltip>
       ))}
     </div>
   );
@@ -185,7 +208,7 @@ const AlgorithmCard = ({
     losses: number;
     winRate: number;
     avgConfidence: number;
-    recentResults: ('W' | 'L')[];
+    recentResults: RecentResult[];
     roi: number;
     streak: number;
   };

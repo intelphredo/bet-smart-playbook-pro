@@ -7,7 +7,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import type { AlgorithmSummary } from "@/hooks/useAlgorithmComparison";
+import type { AlgorithmSummary, RecentResult } from "@/hooks/useAlgorithmComparison";
 
 interface ComparisonCardProps {
   algorithm: AlgorithmSummary;
@@ -122,17 +122,38 @@ export function ComparisonCard({ algorithm, rank, isLeader }: ComparisonCardProp
           <p className="text-xs text-muted-foreground mb-2">Recent Results</p>
           <div className="flex gap-1">
             {algorithm.recentResults.slice(0, 10).map((result, i) => (
-              <div
-                key={i}
-                className={cn(
-                  "w-6 h-6 rounded text-xs font-bold flex items-center justify-center",
-                  result === 'W' 
-                    ? "bg-green-500/20 text-green-500" 
-                    : "bg-red-500/20 text-red-500"
-                )}
-              >
-                {result}
-              </div>
+              <Tooltip key={i}>
+                <TooltipTrigger asChild>
+                  <button
+                    className={cn(
+                      "w-6 h-6 rounded text-xs font-bold flex items-center justify-center cursor-pointer transition-all hover:scale-110 hover:shadow-md",
+                      result.result === 'W' 
+                        ? "bg-green-500/20 text-green-500 hover:bg-green-500/30" 
+                        : "bg-red-500/20 text-red-500 hover:bg-red-500/30"
+                    )}
+                  >
+                    {result.result}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-xs">
+                  <div className="space-y-1">
+                    <p className="font-medium text-sm">{result.matchTitle}</p>
+                    <p className="text-xs text-muted-foreground">{result.date}</p>
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className={cn(
+                        "font-medium",
+                        result.result === 'W' ? "text-green-500" : "text-red-500"
+                      )}>
+                        {result.result === 'W' ? 'Won' : 'Lost'}
+                      </span>
+                      <span className="text-muted-foreground">•</span>
+                      <span>{result.prediction}</span>
+                      <span className="text-muted-foreground">•</span>
+                      <span>{result.confidence.toFixed(0)}% conf</span>
+                    </div>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
             ))}
             {algorithm.recentResults.length === 0 && (
               <span className="text-xs text-muted-foreground">No results yet</span>
