@@ -123,9 +123,10 @@ function SignalBadge({ signal }: { signal: SharpSignal }) {
 }
 
 function SharpIndicator({ trend }: { trend: BettingTrend }) {
-  const { sharpBetting } = trend;
-  const hasSignals = sharpBetting.signals.length > 0;
-  const strongSignals = sharpBetting.signals.filter(s => s.strength === 'strong').length;
+  const sharpBetting = trend?.sharpBetting;
+  const signals = Array.isArray(sharpBetting?.signals) ? sharpBetting.signals : [];
+  const hasSignals = signals.length > 0;
+  const strongSignals = signals.filter(s => s?.strength === 'strong').length;
   
   return (
     <div className="space-y-3">
@@ -147,7 +148,7 @@ function SharpIndicator({ trend }: { trend: BettingTrend }) {
         <div className="space-y-2">
           <p className="text-xs text-muted-foreground">Detected Signals:</p>
           <div className="flex flex-wrap gap-1.5">
-            {sharpBetting.signals.map((signal, i) => (
+            {signals.map((signal, i) => (
               <SignalBadge key={i} signal={signal} />
             ))}
           </div>
@@ -266,7 +267,8 @@ function LineMovementDisplay({ trend }: { trend: BettingTrend }) {
 }
 
 export function BettingTrendsCard({ trend, isLoading, compact }: BettingTrendsCardProps) {
-  const hasSharpSignals = trend?.sharpBetting?.signals?.length > 0;
+  const signals = trend?.sharpBetting?.signals;
+  const hasSharpSignals = Array.isArray(signals) && signals.length > 0;
   
   if (isLoading) {
     return (

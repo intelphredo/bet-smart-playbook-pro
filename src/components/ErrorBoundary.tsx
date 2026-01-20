@@ -25,8 +25,15 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    logger.error(`Uncaught error: ${error.message}`);
-    logger.error(`Error Info: ${JSON.stringify(errorInfo, null, 2)}`);
+    // Always use console.error as primary - guaranteed safe
+    console.error('ErrorBoundary caught error:', error, errorInfo);
+    
+    // Try logger as secondary, but don't let it crash
+    try {
+      logger.error(`Uncaught error: ${error.message}`);
+    } catch (e) {
+      // Silently ignore logger failures
+    }
   }
 
   handleResetError = () => {

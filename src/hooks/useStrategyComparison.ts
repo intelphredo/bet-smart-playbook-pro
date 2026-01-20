@@ -212,7 +212,7 @@ async function runBacktestForStrategy(
         selectedPred = matchPreds.reduce((best, curr) =>
           (curr.confidence || 0) > (best.confidence || 0) ? curr : best
         );
-        algorithmsAgreed = predictionCounts.get(selectedPred?.prediction || '')?.length || 1;
+        algorithmsAgreed = (predictionCounts.get(selectedPred?.prediction || '') ?? []).length || 1;
         break;
 
       case 'best_performer':
@@ -228,7 +228,7 @@ async function runBacktestForStrategy(
           }
         }
         if (selectedPred) {
-          algorithmsAgreed = predictionCounts.get(selectedPred.prediction || '')?.length || 1;
+          algorithmsAgreed = (predictionCounts.get(selectedPred.prediction || '') ?? []).length || 1;
         }
         break;
 
@@ -241,7 +241,7 @@ async function runBacktestForStrategy(
           getAlgorithmNameFromId(p.algorithm_id || '') === targetName
         ) || null;
         if (selectedPred) {
-          algorithmsAgreed = predictionCounts.get(selectedPred.prediction || '')?.length || 1;
+          algorithmsAgreed = (predictionCounts.get(selectedPred.prediction || '') ?? []).length || 1;
         }
         break;
     }
