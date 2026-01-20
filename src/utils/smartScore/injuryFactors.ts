@@ -100,19 +100,19 @@ export function calculateInjuryImpact(match: Match): { injuriesScore: number; in
   const injuryFactors: string[] = [];
   
   // Check team records for losing streaks (proxy for potential injury impact)
-  const homeRecord = match.homeTeam.record || '';
-  const awayRecord = match.awayTeam.record || '';
+  const homeRecord = match.homeTeam?.record || '';
+  const awayRecord = match.awayTeam?.record || '';
   
   // Parse recent losses from record
   const homeLosses = (homeRecord.match(/L/g) || []).length;
   const awayLosses = (awayRecord.match(/L/g) || []).length;
   
-  if (homeLosses >= 3) {
+  if (homeLosses >= 3 && match.homeTeam?.shortName) {
     injuriesScore -= 10;
     injuryFactors.push(`${match.homeTeam.shortName} on losing streak (possible injury impact)`);
   }
   
-  if (awayLosses >= 3) {
+  if (awayLosses >= 3 && match.awayTeam?.shortName) {
     injuriesScore -= 10;
     injuryFactors.push(`${match.awayTeam.shortName} on losing streak (possible injury impact)`);
   }

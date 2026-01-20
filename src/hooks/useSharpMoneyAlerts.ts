@@ -142,8 +142,8 @@ export function useSharpMoneyAlerts(league: League, enabled: boolean = true) {
   return {
     isMonitoring: enabled && !!user,
     trendsCount: trends?.length || 0,
-    sharpSignalsCount: trends?.filter(t => t.sharpBetting.signals.length > 0).length || 0,
-    rlmCount: trends?.filter(t => t.lineMovement.reverseLineMovement).length || 0,
+    sharpSignalsCount: trends?.filter(t => t.sharpBetting?.signals?.length > 0).length || 0,
+    rlmCount: trends?.filter(t => t.lineMovement?.reverseLineMovement).length || 0,
   };
 }
 
