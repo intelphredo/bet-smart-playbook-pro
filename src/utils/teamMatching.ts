@@ -44,6 +44,12 @@ export function isSameTeam(name1: string, name2: string): boolean {
  * Check if two matches represent the same game
  */
 export function isSameGame(match1: Match, match2: Match): boolean {
+  // Null safety: if either match is missing team data, they can't be compared
+  if (!match1?.homeTeam?.name || !match1?.awayTeam?.name ||
+      !match2?.homeTeam?.name || !match2?.awayTeam?.name) {
+    return false;
+  }
+
   // Check league match
   const sameLeague = match1.league === match2.league;
 
@@ -92,6 +98,11 @@ export function dedupeMatches(matches: Match[]): Match[] {
   };
 
   for (const match of matches) {
+    // Skip invalid matches without team data
+    if (!match?.homeTeam?.name || !match?.awayTeam?.name) {
+      continue;
+    }
+
     let isDuplicate = false;
 
     for (const [key, existing] of seen) {
