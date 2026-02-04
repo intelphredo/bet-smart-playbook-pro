@@ -208,12 +208,24 @@ export function useSportsData({
     if (!oddsApiMatches.length) return allMatches;
     
     return allMatches.map(match => {
+      // Skip matches without valid team data
+      if (!match?.homeTeam?.name || !match?.awayTeam?.name) {
+        return match;
+      }
+      
       // Find matching odds data by team names
       const oddsMatch = oddsApiMatches.find(om => {
-        const homeMatch = om.homeTeam.name.toLowerCase().includes(match.homeTeam.name.toLowerCase().split(' ').pop() || '') ||
-                          match.homeTeam.name.toLowerCase().includes(om.homeTeam.name.toLowerCase().split(' ').pop() || '');
-        const awayMatch = om.awayTeam.name.toLowerCase().includes(match.awayTeam.name.toLowerCase().split(' ').pop() || '') ||
-                          match.awayTeam.name.toLowerCase().includes(om.awayTeam.name.toLowerCase().split(' ').pop() || '');
+        if (!om?.homeTeam?.name || !om?.awayTeam?.name) return false;
+        
+        const matchHomeName = match.homeTeam.name.toLowerCase();
+        const matchAwayName = match.awayTeam.name.toLowerCase();
+        const omHomeName = om.homeTeam.name.toLowerCase();
+        const omAwayName = om.awayTeam.name.toLowerCase();
+        
+        const homeMatch = omHomeName.includes(matchHomeName.split(' ').pop() || '') ||
+                          matchHomeName.includes(omHomeName.split(' ').pop() || '');
+        const awayMatch = omAwayName.includes(matchAwayName.split(' ').pop() || '') ||
+                          matchAwayName.includes(omAwayName.split(' ').pop() || '');
         return homeMatch && awayMatch;
       });
 
