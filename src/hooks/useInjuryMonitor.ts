@@ -205,8 +205,10 @@ export function useInjuryMonitor(options: UseInjuryMonitorOptions) {
           
           // Only alert on high/critical injuries
           if (impactLevel === 'critical' || impactLevel === 'high') {
-            const isHomeTeam = injury.team.toLowerCase().includes(match.homeTeam.name.toLowerCase()) ||
-                               match.homeTeam.name.toLowerCase().includes(injury.team.toLowerCase());
+            const homeTeamName = match?.homeTeam?.name?.toLowerCase() || '';
+            const injuryTeamName = injury?.team?.toLowerCase() || '';
+            const isHomeTeam = homeTeamName && injuryTeamName && 
+                               (injuryTeamName.includes(homeTeamName) || homeTeamName.includes(injuryTeamName));
             
             const lineImpact = getLineImpact(match.league, injury.playerPosition, injury.status, isHomeTeam);
             
