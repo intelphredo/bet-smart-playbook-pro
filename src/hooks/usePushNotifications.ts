@@ -54,7 +54,7 @@ export function usePushNotifications() {
 
     try {
       const registration = await navigator.serviceWorker.ready;
-      const subscription = await registration.pushManager.getSubscription();
+      const subscription = await (registration as any).pushManager.getSubscription();
       
       setState(prev => ({
         ...prev,
@@ -135,7 +135,7 @@ export function usePushNotifications() {
 
       // Subscribe to push
       // Note: In production, you'd use your VAPID public key here
-      const subscription = await registration.pushManager.subscribe({
+      const subscription = await (registration as any).pushManager.subscribe({
         userVisibleOnly: true,
         // applicationServerKey would go here with your VAPID public key
       });
@@ -199,7 +199,7 @@ export function usePushNotifications() {
       }
 
       const registration = await navigator.serviceWorker.ready;
-      const subscription = await registration.pushManager.getSubscription();
+      const subscription = await (registration as any).pushManager.getSubscription();
 
       if (subscription) {
         await subscription.unsubscribe();

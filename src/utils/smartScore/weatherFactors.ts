@@ -420,8 +420,10 @@ function calculateMLBSimulatedImpact(match: Match, pseudoRandom: number): Weathe
   const weatherFactors: WeatherFactor[] = [];
   
   const indoorVenues = ['Rays', 'Marlins', 'Blue Jays', 'Diamondbacks', 'Rangers', 'Astros'];
+  const homeTeamName = match.homeTeam?.name ?? '';
+  const homeTeamShort = match.homeTeam?.shortName ?? '';
   const isIndoor = indoorVenues.some(team => 
-    match.homeTeam.name.includes(team) || match.homeTeam.shortName?.includes(team)
+    homeTeamName.includes(team) || homeTeamShort.includes(team)
   );
   
   if (isIndoor) {
@@ -477,8 +479,10 @@ function calculateNFLSimulatedImpact(match: Match, pseudoRandom: number): Weathe
   const weatherFactors: WeatherFactor[] = [];
   
   const indoorVenues = ['Saints', 'Vikings', 'Falcons', 'Lions', 'Colts', 'Raiders', 'Cardinals', 'Cowboys', 'Texans', 'Rams', 'Chargers'];
+  const nflHomeTeamName = match.homeTeam?.name ?? '';
+  const nflHomeTeamShort = match.homeTeam?.shortName ?? '';
   const isIndoor = indoorVenues.some(team => 
-    match.homeTeam.name.includes(team) || match.homeTeam.shortName?.includes(team)
+    nflHomeTeamName.includes(team) || nflHomeTeamShort.includes(team)
   );
   
   if (isIndoor) {
