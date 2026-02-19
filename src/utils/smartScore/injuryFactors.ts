@@ -136,14 +136,14 @@ export async function calculateInjuryImpactAsync(match: Match): Promise<{
   
   const homeInjuries = filterTeamInjuries(
     allInjuries,
-    match.homeTeam.name,
-    match.homeTeam.shortName
+    match.homeTeam?.name ?? '',
+    match.homeTeam?.shortName ?? ''
   );
   
   const awayInjuries = filterTeamInjuries(
     allInjuries,
-    match.awayTeam.name,
-    match.awayTeam.shortName
+    match.awayTeam?.name ?? '',
+    match.awayTeam?.shortName ?? ''
   );
   
   const homeImpact = calculateTeamInjuryScore(homeInjuries, match.league);
@@ -156,11 +156,11 @@ export async function calculateInjuryImpactAsync(match: Match): Promise<{
   const injuryFactors: string[] = [];
   
   if (homeImpact.factors.length > 0) {
-    injuryFactors.push(`${match.homeTeam.shortName}: ${homeImpact.factors.slice(0, 2).join(', ')}`);
+    injuryFactors.push(`${match.homeTeam?.shortName ?? 'Home'}: ${homeImpact.factors.slice(0, 2).join(', ')}`);
   }
   
   if (awayImpact.factors.length > 0) {
-    injuryFactors.push(`${match.awayTeam.shortName}: ${awayImpact.factors.slice(0, 2).join(', ')}`);
+    injuryFactors.push(`${match.awayTeam?.shortName ?? 'Away'}: ${awayImpact.factors.slice(0, 2).join(', ')}`);
   }
   
   if (injuryFactors.length === 0) {

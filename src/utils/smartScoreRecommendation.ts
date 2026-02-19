@@ -14,13 +14,13 @@ export function getRecommendation(overall: number, match: Match): SmartScore['re
       recommendation = {
         betOn: 'home',
         confidence: overall >= 80 ? 'high' : 'medium',
-        reasoning: `Strong statistical edge for ${match.homeTeam.name} with a SmartScore of ${overall}.`
+        reasoning: `Strong statistical edge for ${match.homeTeam?.name ?? 'home team'} with a SmartScore of ${overall}.`
       };
     } else if (match.prediction.recommended === 'away') {
       recommendation = {
         betOn: 'away',
         confidence: overall >= 80 ? 'high' : 'medium',
-        reasoning: `Strong statistical edge for ${match.awayTeam.name} with a SmartScore of ${overall}.`
+        reasoning: `Strong statistical edge for ${match.awayTeam?.name ?? 'away team'} with a SmartScore of ${overall}.`
       };
     } else if (match.prediction.recommended === 'draw') {
       recommendation = {

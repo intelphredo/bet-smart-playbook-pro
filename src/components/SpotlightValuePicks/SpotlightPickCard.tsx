@@ -97,7 +97,7 @@ export function SpotlightPickCard({ pick, index, onViewMatch }: SpotlightPickCar
       {/* Match info */}
       <div className="mb-3">
         <p className="text-sm text-muted-foreground">
-          {match.homeTeam.shortName || match.homeTeam.name} vs {match.awayTeam.shortName || match.awayTeam.name}
+          {match.homeTeam?.shortName || match.homeTeam?.name || 'Home'} vs {match.awayTeam?.shortName || match.awayTeam?.name || 'Away'}
         </p>
         <div className="flex items-center gap-2 mt-1">
           <Zap className="h-4 w-4 text-primary" />

@@ -67,18 +67,23 @@ export function useMatchInjuryImpact(match: Match | null) {
     if (!match || !leagueInjuries || leagueInjuries.length === 0) {
       return null;
     }
+
+    // Guard against missing team data
+    if (!match.homeTeam?.name || !match.awayTeam?.name) {
+      return null;
+    }
     
     // Filter injuries by team
     const homeInjuries = filterInjuriesByTeam(
       leagueInjuries,
       match.homeTeam.name,
-      match.homeTeam.shortName
+      match.homeTeam.shortName ?? ''
     );
     
     const awayInjuries = filterInjuriesByTeam(
       leagueInjuries,
       match.awayTeam.name,
-      match.awayTeam.shortName
+      match.awayTeam.shortName ?? ''
     );
     
     // If no injuries for either team, return minimal impact
@@ -124,20 +129,20 @@ export function useMatchInjuryImpact(match: Match | null) {
   
   // Get injuries split by team
   const homeInjuries = useMemo(() => {
-    if (!match || !leagueInjuries) return [];
+    if (!match || !leagueInjuries || !match.homeTeam?.name) return [];
     return filterInjuriesByTeam(
       leagueInjuries,
       match.homeTeam.name,
-      match.homeTeam.shortName
+      match.homeTeam.shortName ?? ''
     );
   }, [match, leagueInjuries]);
   
   const awayInjuries = useMemo(() => {
-    if (!match || !leagueInjuries) return [];
+    if (!match || !leagueInjuries || !match.awayTeam?.name) return [];
     return filterInjuriesByTeam(
       leagueInjuries,
       match.awayTeam.name,
-      match.awayTeam.shortName
+      match.awayTeam.shortName ?? ''
     );
   }, [match, leagueInjuries]);
   

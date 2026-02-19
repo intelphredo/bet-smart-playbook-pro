@@ -23,6 +23,8 @@ const ConfidentTeamPickCard = ({ match }: ConfidentTeamPickCardProps) => {
     return "bg-red-500";
   };
 
+  if (!match.homeTeam?.name || !match.awayTeam?.name) return null;
+
   const recommendedTeam = recommended === "home" 
     ? match.homeTeam.name 
     : recommended === "away" 
