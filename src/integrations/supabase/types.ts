@@ -402,6 +402,51 @@ export type Database = {
         }
         Relationships: []
       }
+      savings_transactions: {
+        Row: {
+          actual_wager: number
+          amount: number
+          created_at: string
+          id: string
+          league: string | null
+          match_title: string | null
+          note: string | null
+          original_stake: number
+          savings_rate_applied: number
+          type: string
+          user_bet_id: string | null
+          user_id: string
+        }
+        Insert: {
+          actual_wager: number
+          amount: number
+          created_at?: string
+          id?: string
+          league?: string | null
+          match_title?: string | null
+          note?: string | null
+          original_stake: number
+          savings_rate_applied: number
+          type?: string
+          user_bet_id?: string | null
+          user_id: string
+        }
+        Update: {
+          actual_wager?: number
+          amount?: number
+          created_at?: string
+          id?: string
+          league?: string | null
+          match_title?: string | null
+          note?: string | null
+          original_stake?: number
+          savings_rate_applied?: number
+          type?: string
+          user_bet_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       scheduled_job_logs: {
         Row: {
           completed_at: string | null
@@ -774,6 +819,42 @@ export type Database = {
           total_staked?: number | null
           user_id?: string
           wins?: number | null
+        }
+        Relationships: []
+      }
+      user_savings: {
+        Row: {
+          balance: number
+          created_at: string
+          id: string
+          is_active: boolean
+          savings_rate: number
+          total_contributed: number
+          total_saved_from_bets: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          savings_rate?: number
+          total_contributed?: number
+          total_saved_from_bets?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          savings_rate?: number
+          total_contributed?: number
+          total_saved_from_bets?: number
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
