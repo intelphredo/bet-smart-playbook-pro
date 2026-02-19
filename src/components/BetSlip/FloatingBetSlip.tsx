@@ -78,16 +78,19 @@ export default function FloatingBetSlip() {
 
     if (stakeNum <= 0) return;
 
-    // Calculate savings split before placing
+    // Calculate savings split BEFORE placing; use the reduced wager amount
     const split = calculateSplit(stakeNum);
     const wager = split.savingsAmount > 0 ? split.actualWager : stakeNum;
 
     setPlacingBets(prev => new Set(prev).add(key));
-    const betId = (await placeBet(item, wager) as unknown as string | undefined);
 
-    // Record savings contribution if active
-    if (split.savingsAmount > 0) {
-      await recordContribution(split, betId, item.matchTitle, item.league);
+    // placeBet returns UserBet | null — extract the id for savings linking
+    const placedBet = await placeBet(item, wager);
+    const betId = placedBet?.id ?? undefined;
+
+    // Record savings contribution if savings is active and there's an amount to save
+    if (split.savingsAmount > 0 && placedBet !== null) {
+      await recordContribution(split, betId, item.matchTitle, item.league ?? undefined);
     }
 
     setPlacingBets(prev => {

@@ -518,6 +518,9 @@ const Index = () => {
                 transition={{ duration: 0.2, ease: "easeOut" }}
                 className="space-y-6"
               >
+                {/* Bet Savings Vault */}
+                <SavingsWidget />
+
                 {/* Stats Overview */}
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                   <StatCard 
