@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { useSavings } from '@/hooks/useSavings';
+import { BetSavingsSplitPreview } from '@/components/Savings/BetSavingsSplitPreview';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -32,6 +34,7 @@ import { cn } from '@/lib/utils';
 export default function FloatingBetSlip() {
   const { betSlip, clearBetSlip, removeFromBetSlip, placeBet, stats } = useBetSlip();
   const { user } = useAuth();
+  const { calculateSplit, recordContribution, account: savingsAccount } = useSavings();
   const devMode = isDevMode();
   const navigate = useNavigate();
   const [isExpanded, setIsExpanded] = useState(false);
@@ -72,10 +75,21 @@ export default function FloatingBetSlip() {
   const handlePlaceBet = async (item: BetSlipItemType) => {
     const key = `${item.matchId}-${item.betType}-${item.selection}`;
     const stakeNum = parseFloat(stakes[key] || '0') || 0;
+
     if (stakeNum <= 0) return;
 
+    // Calculate savings split before placing
+    const split = calculateSplit(stakeNum);
+    const wager = split.savingsAmount > 0 ? split.actualWager : stakeNum;
+
     setPlacingBets(prev => new Set(prev).add(key));
-    await placeBet(item, stakeNum);
+    const betId = (await placeBet(item, wager) as unknown as string | undefined);
+
+    // Record savings contribution if active
+    if (split.savingsAmount > 0) {
+      await recordContribution(split, betId, item.matchTitle, item.league);
+    }
+
     setPlacingBets(prev => {
       const next = new Set(prev);
       next.delete(key);
@@ -390,6 +404,14 @@ export default function FloatingBetSlip() {
                                             <TrendingUp className="h-3 w-3 mr-1" />
                                             Use Kelly: ${item.kellyRecommended.toFixed(0)}
                                           </Button>
+                                        )}
+
+                                        {/* Savings Split Preview */}
+                                        {stakeNum > 0 && savingsAccount?.is_active && savingsAccount?.savings_rate > 0 && (
+                                          <BetSavingsSplitPreview
+                                            split={calculateSplit(stakeNum)}
+                                            compact
+                                          />
                                         )}
 
                                         {/* Payout Preview */}

@@ -33,6 +33,7 @@ import { PredictionDisclaimer } from "@/components/legal";
 import { useSmartNotifications } from "@/hooks/useSmartNotifications";
 import { RankingsTable } from "@/components/NCAAB";
 import { LiveScoresProvider } from "@/providers/LiveScoresProvider";
+import { SavingsWidget } from "@/components/Savings/SavingsWidget";
 
 import { 
   Radio, Clock, TrendingUp, RefreshCw, ChevronRight, 
