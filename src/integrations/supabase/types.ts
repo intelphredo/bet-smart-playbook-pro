@@ -828,6 +828,8 @@ export type Database = {
           created_at: string
           id: string
           is_active: boolean
+          milestones_celebrated: number[] | null
+          savings_goal: number | null
           savings_rate: number
           total_contributed: number
           total_saved_from_bets: number
@@ -839,6 +841,8 @@ export type Database = {
           created_at?: string
           id?: string
           is_active?: boolean
+          milestones_celebrated?: number[] | null
+          savings_goal?: number | null
           savings_rate?: number
           total_contributed?: number
           total_saved_from_bets?: number
@@ -850,6 +854,8 @@ export type Database = {
           created_at?: string
           id?: string
           is_active?: boolean
+          milestones_celebrated?: number[] | null
+          savings_goal?: number | null
           savings_rate?: number
           total_contributed?: number
           total_saved_from_bets?: number
