@@ -12,6 +12,7 @@ import { useSavings } from '@/hooks/useSavings';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
+import { SavingsGoalSection } from '@/components/Savings/SavingsGoalSection';
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(value);
@@ -27,7 +28,7 @@ const leagueColor: Record<string, string> = {
 
 export function SavingsWidget() {
   const { user } = useAuth();
-  const { account, transactions, isLoading, isSaving, updateSavingsRate, toggleSavings } = useSavings();
+  const { account, transactions, isLoading, isSaving, updateSavingsRate, toggleSavings, updateSavingsGoal } = useSavings();
   const [showSettings, setShowSettings] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [pendingRate, setPendingRate] = useState<number | null>(null);
@@ -131,6 +132,15 @@ export function SavingsWidget() {
             <p className="text-xs text-muted-foreground">wagers</p>
           </div>
         </div>
+
+        {/* Savings Goal */}
+        <SavingsGoalSection
+          balance={balance}
+          goal={account?.savings_goal ?? null}
+          celebrated={account?.milestones_celebrated ?? []}
+          isSaving={isSaving}
+          onSetGoal={updateSavingsGoal}
+        />
 
         {/* How it works — quick visual */}
         <div className="p-3 rounded-xl bg-muted/40 border border-border/20">

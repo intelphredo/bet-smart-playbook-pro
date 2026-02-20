@@ -11,6 +11,8 @@ export interface SavingsAccount {
   total_contributed: number;
   total_saved_from_bets: number;
   is_active: boolean;
+  savings_goal: number | null;
+  milestones_celebrated: number[];
   created_at: string;
   updated_at: string;
 }
@@ -37,6 +39,8 @@ export interface BetSavingsSplit {
   savingsRate: number;
 }
 
+const MILESTONES = [25, 50, 75, 100];
+
 export function useSavings() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -45,7 +49,6 @@ export function useSavings() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Fetch or create savings account
   const fetchAccount = useCallback(async () => {
     if (!user) { setIsLoading(false); return; }
     try {
@@ -58,7 +61,6 @@ export function useSavings() {
       if (error) throw error;
 
       if (!data) {
-        // Create default account
         const { data: created, error: createError } = await supabase
           .from('user_savings' as any)
           .insert({ user_id: user.id, savings_rate: 10, balance: 0, total_contributed: 0, total_saved_from_bets: 0 })
@@ -76,7 +78,6 @@ export function useSavings() {
     }
   }, [user]);
 
-  // Fetch recent transactions
   const fetchTransactions = useCallback(async () => {
     if (!user) return;
     try {
@@ -98,9 +99,6 @@ export function useSavings() {
     fetchTransactions();
   }, [fetchAccount, fetchTransactions]);
 
-  /**
-   * Calculate bet split — call this BEFORE placing the bet to show the user the breakdown
-   */
   const calculateSplit = useCallback((stake: number): BetSavingsSplit => {
     const rate = account?.savings_rate ?? 10;
     const isActive = account?.is_active ?? true;
@@ -113,9 +111,42 @@ export function useSavings() {
   }, [account]);
 
   /**
-   * Record a savings contribution after a bet is placed.
-   * Returns true on success.
+   * Check for newly crossed milestones and show celebrations
    */
+  const checkMilestones = useCallback(async (
+    oldBalance: number,
+    newBalance: number,
+    goal: number,
+    alreadyCelebrated: number[],
+  ) => {
+    if (!user || goal <= 0) return;
+
+    const newlyCrossed = MILESTONES.filter(pct => {
+      const threshold = (goal * pct) / 100;
+      return oldBalance < threshold && newBalance >= threshold && !alreadyCelebrated.includes(pct);
+    });
+
+    if (newlyCrossed.length === 0) return;
+
+    const topMilestone = Math.max(...newlyCrossed);
+    const emoji = topMilestone === 100 ? '🎉' : topMilestone === 75 ? '🔥' : topMilestone === 50 ? '💪' : '⭐';
+    const msg = topMilestone === 100
+      ? `You've reached your $${goal} savings goal!`
+      : `You're ${topMilestone}% of the way to your $${goal} goal!`;
+
+    toast({
+      title: `${emoji} Milestone reached: ${topMilestone}%`,
+      description: msg,
+    });
+
+    // Persist which milestones have been celebrated
+    const updatedCelebrated = [...alreadyCelebrated, ...newlyCrossed];
+    await supabase
+      .from('user_savings' as any)
+      .update({ milestones_celebrated: updatedCelebrated } as any)
+      .eq('user_id', user.id);
+  }, [user, toast]);
+
   const recordContribution = useCallback(async (
     split: BetSavingsSplit,
     betId?: string,
@@ -124,7 +155,6 @@ export function useSavings() {
   ): Promise<boolean> => {
     if (!user || !account || split.savingsAmount <= 0) return false;
     try {
-      // Insert the transaction
       const { error: txError } = await supabase
         .from('savings_transactions' as any)
         .insert({
@@ -141,11 +171,13 @@ export function useSavings() {
 
       if (txError) throw txError;
 
-      // Update the balance in the account
+      const oldBalance = account.balance || 0;
+      const newBalance = oldBalance + split.savingsAmount;
+
       const { error: accError } = await supabase
         .from('user_savings' as any)
         .update({
-          balance: (account.balance || 0) + split.savingsAmount,
+          balance: newBalance,
           total_contributed: (account.total_contributed || 0) + split.savingsAmount,
           total_saved_from_bets: (account.total_saved_from_bets || 0) + 1,
           updated_at: new Date().toISOString(),
@@ -154,7 +186,16 @@ export function useSavings() {
 
       if (accError) throw accError;
 
-      // Refresh local state
+      // Check for milestone celebrations
+      if (account.savings_goal) {
+        await checkMilestones(
+          oldBalance,
+          newBalance,
+          account.savings_goal,
+          account.milestones_celebrated || [],
+        );
+      }
+
       await fetchAccount();
       await fetchTransactions();
       return true;
@@ -162,11 +203,8 @@ export function useSavings() {
       console.error('[useSavings] Error recording contribution:', err);
       return false;
     }
-  }, [user, account, fetchAccount, fetchTransactions]);
+  }, [user, account, fetchAccount, fetchTransactions, checkMilestones]);
 
-  /**
-   * Update the savings rate (0–100)
-   */
   const updateSavingsRate = useCallback(async (rate: number) => {
     if (!user || rate < 0 || rate > 100) return;
     setIsSaving(true);
@@ -186,9 +224,33 @@ export function useSavings() {
     }
   }, [user, toast]);
 
-  /**
-   * Toggle savings on/off
-   */
+  const updateSavingsGoal = useCallback(async (goal: number | null) => {
+    if (!user) return;
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from('user_savings' as any)
+        .update({
+          savings_goal: goal,
+          // Reset milestones when goal changes
+          milestones_celebrated: [],
+          updated_at: new Date().toISOString(),
+        } as any)
+        .eq('user_id', user.id);
+      if (error) throw error;
+      setAccount(prev => prev ? { ...prev, savings_goal: goal, milestones_celebrated: [] } : prev);
+      toast({
+        title: goal ? 'Savings goal set!' : 'Goal removed',
+        description: goal ? `Working toward $${goal.toFixed(2)}` : 'Savings goal has been cleared.',
+      });
+    } catch (err) {
+      console.error('[useSavings] Error updating goal:', err);
+      toast({ title: 'Error', description: 'Could not update savings goal.', variant: 'destructive' });
+    } finally {
+      setIsSaving(false);
+    }
+  }, [user, toast]);
+
   const toggleSavings = useCallback(async () => {
     if (!user || !account) return;
     const newActive = !account.is_active;
@@ -218,6 +280,7 @@ export function useSavings() {
     calculateSplit,
     recordContribution,
     updateSavingsRate,
+    updateSavingsGoal,
     toggleSavings,
     refetch: () => { fetchAccount(); fetchTransactions(); },
   };
