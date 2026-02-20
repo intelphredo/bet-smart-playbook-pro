@@ -19,6 +19,7 @@ const ROUTE_CONFIG: Record<string, { label: string; parent?: string }> = {
   "/scenarios": { label: "Scenario Guide", parent: "/" },
   "/bankroll": { label: "Bankroll Manager", parent: "/" },
   "/bet-history": { label: "Bet History", parent: "/" },
+  "/savings": { label: "Savings Vault", parent: "/" },
   "/settings": { label: "Settings", parent: "/" },
   "/auth": { label: "Sign In" },
 };

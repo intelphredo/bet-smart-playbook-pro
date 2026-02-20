@@ -16,6 +16,7 @@ import {
   Target,
   Activity,
   Calendar,
+  PiggyBank,
 } from 'lucide-react';
 
 interface SidebarNavProps {
@@ -36,6 +37,7 @@ const toolsNavItems = [
   { path: '/scenarios', label: 'Scenarios', icon: Target },
   { path: '/bankroll', label: 'Bankroll', icon: Wallet },
   { path: '/bet-history', label: 'Bet History', icon: History },
+  { path: '/savings', label: 'Savings Vault', icon: PiggyBank },
 ];
 
 const settingsNavItems = [
