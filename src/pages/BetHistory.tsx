@@ -24,7 +24,8 @@ import {
   Zap,
   Award,
   ExternalLink,
-  Trophy
+  Trophy,
+  Scan
 } from 'lucide-react';
 import { useBetSlip } from '@/components/BetSlip/BetSlipContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -37,6 +38,7 @@ import AlgorithmAccuracyDashboard from '@/components/AlgorithmAccuracyDashboard'
 import AlgorithmComparisonDashboard from '@/components/AlgorithmComparisonDashboard';
 import VirtualizedList from '@/components/VirtualizedList';
 import BetDetailsDialog from '@/components/BetDetailsDialog';
+import { BetSlipScanner } from '@/components/Savings/BetSlipScanner';
 
 const statusConfig: Record<BetStatus, { icon: React.ElementType; color: string; label: string }> = {
   pending: { icon: Clock, color: 'text-yellow-500', label: 'Pending' },
@@ -162,6 +164,7 @@ export default function BetHistory() {
   const [activeTab, setActiveTab] = useState<string>(!user && !devMode ? 'predictions' : 'bets');
   const [selectedBet, setSelectedBet] = useState<UserBet | null>(null);
   const [betDialogOpen, setBetDialogOpen] = useState(false);
+  const [scannerOpen, setScannerOpen] = useState(false);
 
   const handleBetClick = useCallback((bet: UserBet) => {
     setSelectedBet(bet);
@@ -218,14 +221,27 @@ export default function BetHistory() {
         
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold">Bet History</h1>
-          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isRefreshing}>
-            {isRefreshing ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <RefreshCw className="h-4 w-4" />
-            )}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              className="gap-1.5 h-8"
+              onClick={() => setScannerOpen(true)}
+            >
+              <Scan className="h-3.5 w-3.5" />
+              Scan Bet Slip
+            </Button>
+            <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleRefresh} disabled={isRefreshing}>
+              {isRefreshing ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
         </div>
+
+        {/* Bet Slip Scanner Modal */}
+        <BetSlipScanner open={scannerOpen} onOpenChange={setScannerOpen} />
 
         {/* Main Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">

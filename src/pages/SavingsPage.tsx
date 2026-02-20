@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   PiggyBank, TrendingUp, Lock, Filter, Calendar,
-  ArrowLeft, Target, Zap, ChevronDown
+  ArrowLeft, Target, Zap, ChevronDown, Scan
 } from 'lucide-react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -19,6 +19,7 @@ import PageFooter from '@/components/PageFooter';
 import { useSavings, SavingsTransaction } from '@/hooks/useSavings';
 import { useAuth } from '@/hooks/useAuth';
 import { SavingsGoalSection } from '@/components/Savings/SavingsGoalSection';
+import { BetSlipScanner } from '@/components/Savings/BetSlipScanner';
 import { cn } from '@/lib/utils';
 import { format, parseISO, subDays, startOfDay } from 'date-fns';
 
@@ -96,6 +97,7 @@ export default function SavingsPage() {
 
   const [leagueFilter, setLeagueFilter] = useState<string>('all');
   const [dateRange, setDateRange] = useState<DateRange>('all');
+  const [scannerOpen, setScannerOpen] = useState(false);
 
   // Collect all unique leagues from transactions
   const leagues = useMemo(() => {
@@ -169,13 +171,26 @@ export default function SavingsPage() {
               </p>
             </div>
           </div>
-          <Badge
-            variant="outline"
-            className={cn("ml-auto text-xs", account?.is_active ? "border-primary/40 text-primary" : "border-border text-muted-foreground")}
-          >
-            {account?.is_active ? 'Active' : 'Paused'}
-          </Badge>
+          <div className="ml-auto flex items-center gap-2">
+            <Badge
+              variant="outline"
+              className={cn("text-xs", account?.is_active ? "border-primary/40 text-primary" : "border-border text-muted-foreground")}
+            >
+              {account?.is_active ? 'Active' : 'Paused'}
+            </Badge>
+            <Button
+              size="sm"
+              className="gap-1.5 h-8"
+              onClick={() => setScannerOpen(true)}
+            >
+              <Scan className="h-3.5 w-3.5" />
+              Scan Bet Slip
+            </Button>
+          </div>
         </motion.div>
+
+        {/* Bet Slip Scanner Modal */}
+        <BetSlipScanner open={scannerOpen} onOpenChange={setScannerOpen} />
 
         {/* Stats row */}
         <motion.div
