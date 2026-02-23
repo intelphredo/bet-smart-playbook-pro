@@ -54,10 +54,10 @@ const PlaceBetCard: React.FC<PlaceBetCardProps> = ({ match, league }) => {
         </CardHeader>
         <CardContent className="space-y-4">
           <Tabs value={selectedBetType} onValueChange={(v) => setSelectedBetType(v as BetType)}>
-            <TabsList className="grid w-full grid-cols-3 h-10">
-              <TabsTrigger value="moneyline" className="text-xs">Moneyline</TabsTrigger>
-              <TabsTrigger value="spread" disabled={!spreadData} className="text-xs">Spread</TabsTrigger>
-              <TabsTrigger value="total" disabled={!totalsData} className="text-xs">Total</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-3 h-12">
+              <TabsTrigger value="moneyline" className="text-sm min-h-[44px]">Moneyline</TabsTrigger>
+              <TabsTrigger value="spread" disabled={!spreadData} className="text-sm min-h-[44px]">Spread</TabsTrigger>
+              <TabsTrigger value="total" disabled={!totalsData} className="text-sm min-h-[44px]">Total</TabsTrigger>
             </TabsList>
 
             <TabsContent value="moneyline" className="mt-3">

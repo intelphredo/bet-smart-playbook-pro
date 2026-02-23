@@ -1,4 +1,4 @@
-import React, { useMemo, lazy, Suspense } from "react";
+import React, { useMemo, lazy, Suspense, useCallback, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useSportsData } from "@/hooks/useSportsData";
 import { applySmartScores } from "@/utils/smartScoreCalculator";
@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { AlertTriangle, ArrowLeft } from "lucide-react";
 import { useLockedPredictions } from "@/hooks/useLockedPredictions";
 import { motion } from "framer-motion";
+import CollapsibleSection from "@/components/GameDetail/CollapsibleSection";
 
 // New section components
 import {
@@ -41,9 +42,36 @@ import { useDebateAnalysis } from "@/hooks/useDebateAnalysis";
 import { useMonteCarloUncertainty } from "@/hooks/useMonteCarloUncertainty";
 import { getMCConfigForLeague } from "@/domain/prediction/monteCarloEngine";
 
+const SECTION_LABELS = ["Header", "Teams", "AI", "Ensemble", "Bet", "H2H", "Odds", "Trends", "More"];
+
 const GameDetailPage: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+
+  // Swipe navigation
+  const sectionRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
+  const [activeSection, setActiveSection] = useState(0);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  }, []);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (!touchStart.current) return;
+    const dx = e.changedTouches[0].clientX - touchStart.current.x;
+    const dy = e.changedTouches[0].clientY - touchStart.current.y;
+    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+      const next = dx < 0
+        ? Math.min(activeSection + 1, SECTION_LABELS.length - 1)
+        : Math.max(activeSection - 1, 0);
+      if (next !== activeSection) {
+        setActiveSection(next);
+        sectionRefs.current[next]?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }
+    touchStart.current = null;
+  }, [activeSection]);
 
   const { upcomingMatches, liveMatches, finishedMatches, isLoading } = useSportsData({
     refreshInterval: 30000,
@@ -142,7 +170,7 @@ const GameDetailPage: React.FC = () => {
               <p className="text-muted-foreground mb-4">
                 The game you're looking for doesn't exist or has been removed.
               </p>
-              <Button onClick={() => navigate("/")}>
+              <Button onClick={() => navigate("/")} className="min-h-[44px] min-w-[120px]">
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back to Dashboard
               </Button>
@@ -156,120 +184,160 @@ const GameDetailPage: React.FC = () => {
   const league = match.league as League;
   const isFinished = match.status === "finished";
 
+  let sectionIndex = 0;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5">
       <NavBar />
-      <div className="container max-w-4xl mx-auto py-6 px-4 space-y-6">
+      <div
+        className="container max-w-4xl mx-auto py-6 px-4 space-y-6"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
         <AppBreadcrumb />
 
+        {/* Swipe dots indicator — mobile only */}
+        <div className="flex items-center justify-center gap-1.5 py-1 md:hidden">
+          {SECTION_LABELS.slice(0, 6).map((label, i) => (
+            <button
+              key={label}
+              onClick={() => {
+                setActiveSection(i);
+                sectionRefs.current[i]?.scrollIntoView({ behavior: "smooth", block: "start" });
+              }}
+              className={`h-1.5 rounded-full transition-all ${
+                i === activeSection ? "w-5 bg-primary" : "w-1.5 bg-muted-foreground/30"
+              }`}
+              aria-label={`Jump to ${label}`}
+            />
+          ))}
+        </div>
+
         {/* SECTION 1: Game Header */}
-        <GameHeader match={match} league={league} />
+        <div ref={(el) => { sectionRefs.current[sectionIndex++] = el; }}>
+          <GameHeader match={match} league={league} />
+        </div>
 
         {/* SECTION 2: Team Snapshots */}
-        <TeamSnapshots match={match} league={league} />
+        <div ref={(el) => { sectionRefs.current[sectionIndex++] = el; }}>
+          <TeamSnapshots match={match} league={league} />
+        </div>
 
         {/* SECTION 3: AI Prediction Dashboard */}
-        <AIPredictionDashboard match={match} league={league} />
+        <div ref={(el) => { sectionRefs.current[sectionIndex++] = el; }}>
+          <AIPredictionDashboard match={match} league={league} />
+        </div>
 
-        {/* SECTION 4: Ensemble Analysis (simplified) */}
-        {localEnsemble && (
-          <EnsembleSummary
-            ensemble={localEnsemble}
-            metaSynthesis={fullEnsemble?.metaSynthesis}
-            isLoadingMeta={metaLoading}
-            homeTeamName={match.homeTeam?.name || "Home"}
-            awayTeamName={match.awayTeam?.name || "Away"}
-          />
-        )}
+        {/* SECTION 4: Ensemble Analysis — collapsible on mobile */}
+        <div ref={(el) => { sectionRefs.current[sectionIndex++] = el; }}>
+          {localEnsemble && (
+            <CollapsibleSection title="Show Ensemble Details" defaultOpen={false} desktopAlwaysOpen>
+              <EnsembleSummary
+                ensemble={localEnsemble}
+                metaSynthesis={fullEnsemble?.metaSynthesis}
+                isLoadingMeta={metaLoading}
+                homeTeamName={match.homeTeam?.name || "Home"}
+                awayTeamName={match.awayTeam?.name || "Away"}
+              />
+            </CollapsibleSection>
+          )}
+        </div>
 
         {/* Place Bet Card */}
-        <PlaceBetCard match={match} league={league} />
+        <div ref={(el) => { sectionRefs.current[sectionIndex++] = el; }}>
+          <PlaceBetCard match={match} league={league} />
+        </div>
 
         {/* SECTION 5: Head-to-Head History */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.25 }}
-        >
-          <HeadToHeadHistory
-            homeTeamId={match.homeTeam?.id || "home"}
-            homeTeamName={match.homeTeam?.name || "Home Team"}
-            homeTeamShortName={match.homeTeam?.shortName}
-            homeTeamLogo={match.homeTeam?.logo}
-            awayTeamId={match.awayTeam?.id || "away"}
-            awayTeamName={match.awayTeam?.name || "Away Team"}
-            awayTeamShortName={match.awayTeam?.shortName}
-            awayTeamLogo={match.awayTeam?.logo}
-            league={league}
-          />
-        </motion.div>
+        <div ref={(el) => { sectionRefs.current[sectionIndex++] = el; }}>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+          >
+            <HeadToHeadHistory
+              homeTeamId={match.homeTeam?.id || "home"}
+              homeTeamName={match.homeTeam?.name || "Home Team"}
+              homeTeamShortName={match.homeTeam?.shortName}
+              homeTeamLogo={match.homeTeam?.logo}
+              awayTeamId={match.awayTeam?.id || "away"}
+              awayTeamName={match.awayTeam?.name || "Away Team"}
+              awayTeamShortName={match.awayTeam?.shortName}
+              awayTeamLogo={match.awayTeam?.logo}
+              league={league}
+            />
+          </motion.div>
+        </div>
 
         {/* SECTION 6: Odds & Value */}
-        <OddsValueSection
-          match={match}
-          league={league}
-          bettingTrend={bettingTrend}
-        />
+        <div ref={(el) => { sectionRefs.current[sectionIndex++] = el; }}>
+          <OddsValueSection match={match} league={league} bettingTrend={bettingTrend} />
+        </div>
 
         {/* SECTION 7: Betting Trends */}
-        <BettingTrendsSection
-          bettingTrend={bettingTrend}
-          isLoading={trendLoading}
-          match={match}
-        />
+        <div ref={(el) => { sectionRefs.current[sectionIndex++] = el; }}>
+          <BettingTrendsSection bettingTrend={bettingTrend} isLoading={trendLoading} match={match} />
+        </div>
 
-        {/* Sharp Money Alert Banner */}
-        {!isFinished && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-          >
-            <SharpMoneyAlertBanner trend={bettingTrend} isLoading={trendLoading} />
-          </motion.div>
-        )}
+        {/* Advanced sections — collapsible on mobile */}
+        <div ref={(el) => { sectionRefs.current[sectionIndex++] = el; }}>
+          <CollapsibleSection title="Show Advanced Analytics" defaultOpen={false} desktopAlwaysOpen>
+            <div className="space-y-6">
+              {/* Sharp Money Alert Banner */}
+              {!isFinished && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                >
+                  <SharpMoneyAlertBanner trend={bettingTrend} isLoading={trendLoading} />
+                </motion.div>
+              )}
 
-        {/* Cross-Section Intelligence */}
-        {!isFinished && crossSectionData.hasData && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.32 }}
-          >
-            <CrossSectionPanel match={match} crossSectionData={crossSectionData} />
-          </motion.div>
-        )}
+              {/* Cross-Section Intelligence */}
+              {!isFinished && crossSectionData.hasData && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.32 }}
+                >
+                  <CrossSectionPanel match={match} crossSectionData={crossSectionData} />
+                </motion.div>
+              )}
 
-        {/* AI Debate Analysis */}
-        {(debate || debateLoading) && (
-          <Suspense fallback={<Skeleton className="h-48 w-full rounded-lg" />}>
-            <DebateAnalysisCard
-              debate={debate}
-              isLoading={debateLoading}
-              error={debateError}
-              homeTeam={match.homeTeam?.name || "Home"}
-              awayTeam={match.awayTeam?.name || "Away"}
-            />
-          </Suspense>
-        )}
+              {/* AI Debate Analysis */}
+              {(debate || debateLoading) && (
+                <Suspense fallback={<Skeleton className="h-48 w-full rounded-lg" />}>
+                  <DebateAnalysisCard
+                    debate={debate}
+                    isLoading={debateLoading}
+                    error={debateError}
+                    homeTeam={match.homeTeam?.name || "Home"}
+                    awayTeam={match.awayTeam?.name || "Away"}
+                  />
+                </Suspense>
+              )}
 
-        {/* Monte Carlo Uncertainty */}
-        {mcResult && (
-          <Suspense fallback={<Skeleton className="h-48 w-full rounded-lg" />}>
-            <MonteCarloCard
-              mc={mcResult}
-              homeTeam={match.homeTeam?.name || "Home"}
-              awayTeam={match.awayTeam?.name || "Away"}
-            />
-          </Suspense>
-        )}
+              {/* Monte Carlo Uncertainty */}
+              {mcResult && (
+                <Suspense fallback={<Skeleton className="h-48 w-full rounded-lg" />}>
+                  <MonteCarloCard
+                    mc={mcResult}
+                    homeTeam={match.homeTeam?.name || "Home"}
+                    awayTeam={match.awayTeam?.name || "Away"}
+                  />
+                </Suspense>
+              )}
 
-        {/* MLB World Model */}
-        {league === "MLB" && (
-          <Suspense fallback={<Skeleton className="h-48 w-full rounded-lg" />}>
-            <MLBWorldModelCard />
-          </Suspense>
-        )}
+              {/* MLB World Model */}
+              {league === "MLB" && (
+                <Suspense fallback={<Skeleton className="h-48 w-full rounded-lg" />}>
+                  <MLBWorldModelCard />
+                </Suspense>
+              )}
+            </div>
+          </CollapsibleSection>
+        </div>
 
         {/* Team News & Injuries */}
         <motion.div
