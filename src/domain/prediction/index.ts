@@ -53,3 +53,16 @@ export type {
   GradientBoostingState,
   SequentialPattern,
 } from './ensembleEngine';
+
+// Monte Carlo
+export {
+  runMonteCarloSimulation,
+  runMonteCarloFromEnsemble,
+  runMonteCarloFromConsensus,
+  DEFAULT_MC_CONFIG,
+} from './monteCarloEngine';
+export type {
+  MonteCarloConfig,
+  MonteCarloResult,
+  UncertaintyBand,
+} from './monteCarloEngine';

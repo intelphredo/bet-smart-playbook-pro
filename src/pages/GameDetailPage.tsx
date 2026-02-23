@@ -24,8 +24,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const EnsembleAnalysisCard = lazy(() => import("@/components/EnsembleAnalysisCard"));
 const DebateAnalysisCard = lazy(() => import("@/components/DebateAnalysisCard"));
+const MonteCarloCard = lazy(() => import("@/components/MonteCarloCard"));
 
 import { useDebateAnalysis } from "@/hooks/useDebateAnalysis";
+import { useMonteCarloUncertainty } from "@/hooks/useMonteCarloUncertainty";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -124,6 +126,9 @@ const GameDetailPage: React.FC = () => {
     weights: debateWeights,
     enabled: !!match && predictionsArray.length > 0,
   });
+
+  // Monte Carlo Uncertainty
+  const mcResult = useMonteCarloUncertainty(localEnsemble);
 
   if (isLoading) {
     return (
@@ -707,6 +712,23 @@ const GameDetailPage: React.FC = () => {
                 debate={debate}
                 isLoading={debateLoading}
                 error={debateError}
+                homeTeam={match.homeTeam?.name || 'Home'}
+                awayTeam={match.awayTeam?.name || 'Away'}
+              />
+            </Suspense>
+          </motion.div>
+        )}
+
+        {/* Monte Carlo Uncertainty Card */}
+        {mcResult && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.22 }}
+          >
+            <Suspense fallback={<Skeleton className="h-48 w-full rounded-lg" />}>
+              <MonteCarloCard
+                mc={mcResult}
                 homeTeam={match.homeTeam?.name || 'Home'}
                 awayTeam={match.awayTeam?.name || 'Away'}
               />
