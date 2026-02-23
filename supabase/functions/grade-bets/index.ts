@@ -1,5 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from "../_shared/rate-limiter.ts";
+import { fetchWithRetry } from "../_shared/fetch-utils.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -65,9 +67,8 @@ async function fetchESPNGame(matchId: string, league: string): Promise<ESPNGame 
   const sportConfig = ESPN_SPORT_MAP[league] || ESPN_SPORT_MAP.NFL;
   
   try {
-    // Try to fetch the specific game
     const url = `https://site.api.espn.com/apis/site/v2/sports/${sportConfig.sport}/${sportConfig.league}/summary?event=${matchId}`;
-    const response = await fetch(url);
+    const response = await fetchWithRetry(url, { timeout: 10000 }, { maxRetries: 1 });
     
     if (!response.ok) {
       console.log(`ESPN API returned ${response.status} for match ${matchId}`);
@@ -101,7 +102,6 @@ function determineMoneylineOutcome(
   const homeScore = parseInt(homeTeam.score, 10);
   const awayScore = parseInt(awayTeam.score, 10);
   
-  // Determine which team the bet was on
   const selectionLower = bet.selection.toLowerCase();
   const isHomeBet = selectionLower.includes(homeTeam.team.displayName.toLowerCase()) ||
                     selectionLower.includes(homeTeam.team.abbreviation.toLowerCase()) ||
@@ -115,7 +115,6 @@ function determineMoneylineOutcome(
   }
 
   if (betTeamWon) {
-    // Calculate profit based on American odds
     const odds = bet.odds_at_placement;
     const profit = odds > 0 
       ? bet.stake * (odds / 100)
@@ -142,7 +141,6 @@ function determineSpreadOutcome(
   const awayScore = parseInt(awayTeam.score, 10);
   const pointDiff = homeScore - awayScore;
 
-  // Extract spread from selection (e.g., "Chiefs -3.5" or "Home -3.5")
   const spreadMatch = bet.selection.match(/([+-]?\d+\.?\d*)/);
   if (!spreadMatch) return null;
   
@@ -152,7 +150,6 @@ function determineSpreadOutcome(
                     selectionLower.includes(homeTeam.team.abbreviation.toLowerCase()) ||
                     selectionLower.includes("home");
 
-  // Calculate if spread was covered
   const adjustedDiff = isHomeBet ? pointDiff + spread : -pointDiff + spread;
 
   if (adjustedDiff === 0) {
@@ -184,7 +181,6 @@ function determineTotalOutcome(
 
   const totalScore = parseInt(homeTeam.score, 10) + parseInt(awayTeam.score, 10);
 
-  // Extract total line from selection (e.g., "Over 45.5" or "Under 220")
   const totalMatch = bet.selection.match(/(\d+\.?\d*)/);
   if (!totalMatch) return null;
   
@@ -210,7 +206,6 @@ function determineTotalOutcome(
   return { status: "lost", resultProfit: -bet.stake };
 }
 
-// Grade sharp money predictions based on game results
 async function gradeSharpPredictions(
   supabase: any,
   game: ESPNGame,
@@ -227,7 +222,6 @@ async function gradeSharpPredictions(
   const homeScore = parseInt(homeTeam.score, 10);
   const awayScore = parseInt(awayTeam.score, 10);
 
-  // Fetch pending sharp money predictions for this match
   const { data: predictions, error } = await supabase
     .from("sharp_money_predictions")
     .select("*")
@@ -239,13 +233,13 @@ async function gradeSharpPredictions(
   }
 
   let gradedCount = 0;
+  const updates: any[] = [];
 
   for (const pred of predictions) {
     let result = "pending";
     const scoreDiff = homeScore - awayScore;
 
     if (pred.market_type === "spread") {
-      // Spread betting: sharp_side wins if their team covers
       if (pred.sharp_side === "home") {
         const adjustedDiff = scoreDiff + (pred.detection_line || 0);
         result = adjustedDiff > 0 ? "won" : adjustedDiff < 0 ? "lost" : "push";
@@ -270,26 +264,28 @@ async function gradeSharpPredictions(
     }
 
     if (result !== "pending") {
-      const { error: updateError } = await supabase
-        .from("sharp_money_predictions")
-        .update({
-          game_result: result,
-          actual_score_home: homeScore,
-          actual_score_away: awayScore,
-          result_verified_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", pred.id)
-        .eq("game_result", "pending"); // Idempotency check
+      updates.push({
+        id: pred.id,
+        game_result: result,
+        actual_score_home: homeScore,
+        actual_score_away: awayScore,
+        result_verified_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+    }
+  }
 
-      if (!updateError) {
-        gradedCount++;
-        log.info(`Graded sharp prediction ${pred.id}`, {
-          signalType: pred.signal_type,
-          result,
-          matchId: pred.match_id,
-        });
-      }
+  // Batch update sharp predictions
+  for (const update of updates) {
+    const { error: updateError } = await supabase
+      .from("sharp_money_predictions")
+      .update(update)
+      .eq("id", update.id)
+      .eq("game_result", "pending");
+
+    if (!updateError) {
+      gradedCount++;
+      log.info(`Graded sharp prediction ${update.id}`, { result: update.game_result, matchId });
     }
   }
 
@@ -299,6 +295,15 @@ async function gradeSharpPredictions(
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // Rate limiting
+  const rateLimitResult = await checkRateLimit(req, {
+    ...RATE_LIMITS.SCHEDULED,
+    endpoint: "grade-bets",
+  });
+  if (!rateLimitResult.allowed) {
+    return rateLimitResponse(rateLimitResult, corsHeaders);
   }
 
   const startTime = Date.now();
@@ -319,20 +324,18 @@ Deno.serve(async (req) => {
 
     log.info("Starting bet grading process");
 
-    // Get all pending bets that haven't been graded yet
     const { data: pendingBets, error: betsError } = await supabase
       .from("user_bets")
       .select("id, user_id, match_id, match_title, bet_type, selection, odds_at_placement, stake, league, graded_at")
       .eq("status", "pending")
       .is("graded_at", null)
-      .limit(100); // Process in batches for reliability
+      .limit(100);
 
     if (betsError) {
       log.error("Error fetching pending bets", betsError);
       throw betsError;
     }
 
-    // Also get pending sharp money predictions
     const { data: pendingSharpPredictions, error: sharpError } = await supabase
       .from("sharp_money_predictions")
       .select("match_id, league")
@@ -343,7 +346,6 @@ Deno.serve(async (req) => {
       log.error("Error fetching pending sharp predictions", sharpError);
     }
 
-    // Combine unique match IDs from both bets and sharp predictions
     const matchIdsToCheck = new Set<string>();
     const matchLeagues = new Map<string, string>();
 
@@ -374,29 +376,30 @@ Deno.serve(async (req) => {
     const alertsToCreate: any[] = [];
     const completedGames = new Map<string, ESPNGame>();
 
-    // Fetch all games and check completion status
-    for (const matchId of matchIdsToCheck) {
-      const league = matchLeagues.get(matchId) || "NFL";
-      const game = await fetchESPNGame(matchId, league);
-      
-      if (!game) {
-        console.log(`Could not fetch game data for ${matchId}`);
-        continue;
+    // Fetch games in parallel batches of 5 to avoid overwhelming ESPN
+    const matchIds = Array.from(matchIdsToCheck);
+    const BATCH_SIZE = 5;
+    for (let i = 0; i < matchIds.length; i += BATCH_SIZE) {
+      const batch = matchIds.slice(i, i + BATCH_SIZE);
+      const batchResults = await Promise.allSettled(
+        batch.map(matchId => {
+          const league = matchLeagues.get(matchId) || "NFL";
+          return fetchESPNGame(matchId, league).then(game => ({ matchId, game }));
+        })
+      );
+
+      for (const result of batchResults) {
+        if (result.status !== "fulfilled" || !result.value.game) continue;
+        const { matchId, game } = result.value;
+        if (!game.status?.type?.completed) continue;
+
+        completedGames.set(matchId, game);
+        const sharpGraded = await gradeSharpPredictions(supabase, game, matchId);
+        gradedSharpCount += sharpGraded;
       }
-
-      if (!game.status?.type?.completed) {
-        console.log(`Game ${matchId} not yet completed`);
-        continue;
-      }
-
-      completedGames.set(matchId, game);
-
-      // Grade sharp money predictions for this completed game
-      const sharpGraded = await gradeSharpPredictions(supabase, game, matchId);
-      gradedSharpCount += sharpGraded;
     }
 
-    // Now grade user bets
+    // Grade user bets
     for (const bet of (pendingBets || []) as PendingBet[]) {
       const game = completedGames.get(bet.match_id);
       if (!game) continue;
@@ -420,7 +423,6 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // Update the bet with idempotency check
       const { error: updateError } = await supabase
         .from("user_bets")
         .update({
@@ -431,7 +433,7 @@ Deno.serve(async (req) => {
           updated_at: new Date().toISOString()
         })
         .eq("id", bet.id)
-        .is("graded_at", null); // Idempotency: only update if not already graded
+        .is("graded_at", null);
 
       if (updateError) {
         console.error(`Error updating bet ${bet.id}:`, updateError);
@@ -445,7 +447,6 @@ Deno.serve(async (req) => {
         matchId: bet.match_id 
       });
 
-      // Create alert for bet result
       const emoji = outcome.status === "won" ? "🎉" : outcome.status === "lost" ? "😔" : "↔️";
       const profitText = outcome.resultProfit > 0 
         ? `+$${outcome.resultProfit.toFixed(2)}` 
@@ -469,7 +470,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Create alerts in batch
     if (alertsToCreate.length > 0) {
       const { error: alertError } = await supabase
         .from("user_alerts")
@@ -504,16 +504,10 @@ Deno.serve(async (req) => {
     );
 
   } catch (error) {
-    log.error("Error in grade-bets", error);
+    const duration = Date.now() - startTime;
+    log.error("Bet grading failed", error, { durationMs: duration });
     return new Response(
-      JSON.stringify({ 
-        success: false, 
-        error: { 
-          code: "GRADING_ERROR", 
-          message: error instanceof Error ? error.message : "Unknown error",
-          timestamp: new Date().toISOString()
-        } 
-      }),
+      JSON.stringify({ success: false, error: { message: error.message, duration_ms: duration } }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

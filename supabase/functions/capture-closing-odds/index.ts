@@ -1,5 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from "../_shared/rate-limiter.ts";
+import { fetchWithRetry } from "../_shared/fetch-utils.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -31,32 +33,36 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Rate limiting
+  const rateLimitResult = await checkRateLimit(req, {
+    ...RATE_LIMITS.SCHEDULED,
+    endpoint: "capture-closing-odds",
+  });
+  if (!rateLimitResult.allowed) {
+    return rateLimitResponse(rateLimitResult, corsHeaders);
+  }
+
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Parse optional match_id from request body
     let targetMatchId: string | null = null;
     if (req.method === "POST") {
       try {
         const body = await req.json();
         targetMatchId = body.match_id || null;
-      } catch {
-        // Empty body is fine
-      }
+      } catch { /* Empty body is fine */ }
     }
 
     console.log(`Starting CLV capture process...${targetMatchId ? ` for match ${targetMatchId}` : ""}`);
 
-    // Build query for pending bets without closing odds
     let query = supabase
       .from("user_bets")
       .select("id, user_id, match_id, bet_type, selection, odds_at_placement, closing_odds")
       .eq("status", "pending")
       .is("closing_odds", null);
 
-    // If specific match_id provided, filter by it
     if (targetMatchId) {
       query = query.eq("match_id", targetMatchId);
     }
@@ -80,9 +86,7 @@ Deno.serve(async (req) => {
 
     const updates: { id: string; closing_odds: number; clv_percentage: number; user_id: string }[] = [];
 
-    // Process each bet
     for (const bet of pendingBets as PendingBet[]) {
-      // Get the most recent odds for this match
       const { data: oddsHistory, error: oddsError } = await supabase
         .from("odds_history")
         .select("home_odds, away_odds, spread_home_odds, spread_away_odds, over_odds, under_odds, recorded_at")
@@ -98,9 +102,7 @@ Deno.serve(async (req) => {
       const latestOdds = oddsHistory[0] as OddsRecord;
       let closingOdds: number | null = null;
 
-      // Determine closing odds based on bet type and selection
       if (bet.bet_type === "moneyline") {
-        // Parse selection to determine home/away
         const isHome = bet.selection.toLowerCase().includes("home") || 
                        bet.selection.split(" vs ")[0]?.trim() === bet.selection.split("@")[1]?.trim();
         closingOdds = isHome ? latestOdds.home_odds : latestOdds.away_odds;
@@ -113,22 +115,16 @@ Deno.serve(async (req) => {
       }
 
       if (closingOdds !== null) {
-        // Calculate CLV percentage
-        // Positive CLV means you got better odds than closing
         const clvPercentage = ((bet.odds_at_placement - closingOdds) / Math.abs(closingOdds)) * 100;
-        
         updates.push({
           id: bet.id,
           closing_odds: closingOdds,
           clv_percentage: Math.round(clvPercentage * 100) / 100,
           user_id: bet.user_id
         });
-
-        console.log(`Bet ${bet.id}: Placement odds ${bet.odds_at_placement}, Closing odds ${closingOdds}, CLV ${clvPercentage.toFixed(2)}%`);
       }
     }
 
-    // Batch update all bets
     let updatedCount = 0;
     const alertsToCreate: any[] = [];
 
@@ -144,13 +140,10 @@ Deno.serve(async (req) => {
 
       if (!updateError) {
         updatedCount++;
-        
-        // Create alert for significant CLV
         if (Math.abs(update.clv_percentage) >= 2) {
           const isPositive = update.clv_percentage > 0;
           alertsToCreate.push({
-            user_id: update.user_id,
-            type: "clv_update",
+            user_id: update.user_id, type: "clv_update",
             title: isPositive ? "Positive CLV Captured! 📈" : "CLV Update",
             message: `Your bet closed with ${update.clv_percentage > 0 ? "+" : ""}${update.clv_percentage.toFixed(1)}% CLV. ${isPositive ? "You beat the closing line!" : ""}`,
             bet_id: update.id,
@@ -162,27 +155,16 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Create alerts
     if (alertsToCreate.length > 0) {
-      const { error: alertError } = await supabase
-        .from("user_alerts")
-        .insert(alertsToCreate);
-      
-      if (alertError) {
-        console.error("Error creating alerts:", alertError);
-      } else {
-        console.log(`Created ${alertsToCreate.length} CLV alerts`);
-      }
+      const { error: alertError } = await supabase.from("user_alerts").insert(alertsToCreate);
+      if (alertError) console.error("Error creating alerts:", alertError);
+      else console.log(`Created ${alertsToCreate.length} CLV alerts`);
     }
 
     console.log(`Successfully updated ${updatedCount} bets with closing odds`);
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        updated: updatedCount,
-        alerts_created: alertsToCreate.length
-      }),
+      JSON.stringify({ success: true, updated: updatedCount, alerts_created: alertsToCreate.length }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 

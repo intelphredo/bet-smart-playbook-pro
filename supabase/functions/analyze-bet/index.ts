@@ -1,4 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { fetchWithTimeout } from "../_shared/fetch-utils.ts";
+import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from "../_shared/rate-limiter.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -40,6 +42,10 @@ serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
+
+  // Rate limiting
+  const rl = await checkRateLimit(req, { ...RATE_LIMITS.WRITE, endpoint: "analyze-bet" });
+  if (!rl.allowed) return rateLimitResponse(rl, corsHeaders);
 
   try {
     const { match } = await req.json() as { match: MatchData };
@@ -109,7 +115,8 @@ Please provide:
 
 Keep the total response under 400 words.`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetchWithTimeout("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      timeout: 30000,
       method: "POST",
       headers: {
         Authorization: `Bearer ${LOVABLE_API_KEY}`,

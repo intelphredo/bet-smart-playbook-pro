@@ -1,5 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from "../_shared/rate-limiter.ts";
+import { fetchWithRetry } from "../_shared/fetch-utils.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -27,7 +29,7 @@ async function fetchGameStatuses(): Promise<GameStatus[]> {
 
   const fetches = ESPN_ENDPOINTS.map(async ({ url, league }) => {
     try {
-      const res = await fetch(url);
+      const res = await fetchWithRetry(url, { timeout: 10000 }, { maxRetries: 1 });
       if (!res.ok) return;
 
       const json = await res.json();
@@ -68,6 +70,15 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Rate limiting
+  const rateLimitResult = await checkRateLimit(req, {
+    ...RATE_LIMITS.SCHEDULED,
+    endpoint: "detect-game-starts",
+  });
+  if (!rateLimitResult.allowed) {
+    return rateLimitResponse(rateLimitResult, corsHeaders);
+  }
+
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -83,18 +94,15 @@ Deno.serve(async (req) => {
 
     console.log("Detecting game starts...");
 
-    // Fetch current game statuses from ESPN
     const games = await fetchGameStatuses();
     const liveGames = games.filter(g => g.status === "live");
     const finishedGames = games.filter(g => g.status === "finished");
 
     console.log(`Found ${liveGames.length} live games and ${finishedGames.length} finished games`);
 
-    // Check for pending bets on games that just started
     if (liveGames.length > 0) {
       const liveMatchIds = liveGames.map(g => g.id);
       
-      // Update pending bets with game_started_at
       const { data: updatedBets, error: updateError } = await supabase
         .from("user_bets")
         .update({ game_started_at: new Date().toISOString() })
@@ -107,23 +115,6 @@ Deno.serve(async (req) => {
         console.error("Error updating bets:", updateError);
       } else if (updatedBets && updatedBets.length > 0) {
         console.log(`Marked ${updatedBets.length} bets as game started`);
-
-        // Create alerts for users whose games just started
-        const alerts = updatedBets.map(bet => {
-          const game = liveGames.find(g => g.id === bet.match_id);
-          return {
-            user_id: bet.user_id,
-            type: "game_started",
-            title: "Game Started! 🏀",
-            message: game 
-              ? `${game.awayTeam} @ ${game.homeTeam} has started!`
-              : "A game you bet on has started!",
-            match_id: bet.match_id,
-            bet_id: bet.id,
-          };
-        });
-
-        // Note: We'd need user_id from the bets query to create alerts
       }
     }
 

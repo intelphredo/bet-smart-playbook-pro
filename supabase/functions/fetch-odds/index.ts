@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from "../_shared/rate-limiter.ts";
+import { fetchWithRetry } from "../_shared/fetch-utils.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -9,24 +10,15 @@ const corsHeaders = {
 const ODDS_API_BASE_URL = "https://api.the-odds-api.com/v4";
 
 const SPORT_KEYS: Record<string, string> = {
-  // American Football
   NFL: "americanfootball_nfl",
   NCAAF: "americanfootball_ncaaf",
   CFL: "americanfootball_cfl",
   XFL: "americanfootball_xfl",
-  
-  // Basketball
   NBA: "basketball_nba",
   NCAAB: "basketball_ncaab",
   WNBA: "basketball_wnba",
-  
-  // Baseball
   MLB: "baseball_mlb",
-  
-  // Hockey
   NHL: "icehockey_nhl",
-  
-  // Soccer
   SOCCER: "soccer_epl",
   EPL: "soccer_epl",
   LA_LIGA: "soccer_spain_la_liga",
@@ -35,26 +27,18 @@ const SPORT_KEYS: Record<string, string> = {
   LIGUE_1: "soccer_france_ligue_one",
   MLS: "soccer_usa_mls",
   CHAMPIONS_LEAGUE: "soccer_uefa_champs_league",
-  
-  // Combat Sports
   UFC: "mma_mixed_martial_arts",
-  
-  // Tennis (uses current/upcoming tournaments)
   ATP: "tennis_atp_aus_open",
   WTA: "tennis_wta_aus_open",
-  
-  // Golf (uses current/upcoming tournaments)
   PGA: "golf_pga_championship",
 };
 
 Deno.serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Apply rate limiting for odds API calls
     const rateLimitResult = await checkRateLimit(req, {
       ...RATE_LIMITS.PUBLIC_READ,
       endpoint: "fetch-odds",
@@ -75,13 +59,10 @@ Deno.serve(async (req) => {
     const league = url.searchParams.get("league") || "ALL";
     const markets = url.searchParams.get("markets") || "h2h,spreads,totals";
     const regions = url.searchParams.get("regions") || "us";
-    // Include all major US sportsbooks with FanDuel first for primary display
-    // Keep all sportsbooks for arbitrage calculations
     const bookmakers = url.searchParams.get("bookmakers") || "fanduel,draftkings,betmgm,caesars,pointsbetus,betrivers,williamhill_us,unibet_us";
 
     console.log(`Fetching odds for league: ${league}`);
 
-    // Determine which sports to fetch
     const sportsToFetch = league === "ALL" 
       ? Object.entries(SPORT_KEYS)
       : [[league, SPORT_KEYS[league]]].filter(([_, key]) => key);
@@ -93,14 +74,13 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Fetch odds for all requested sports in parallel
     const results = await Promise.allSettled(
       sportsToFetch.map(async ([leagueName, sportKey]) => {
         const oddsUrl = `${ODDS_API_BASE_URL}/sports/${sportKey}/odds?apiKey=${apiKey}&regions=${regions}&markets=${markets}&bookmakers=${bookmakers}&oddsFormat=american`;
         
         console.log(`Fetching: ${leagueName} (${sportKey})`);
         
-        const response = await fetch(oddsUrl);
+        const response = await fetchWithRetry(oddsUrl, { timeout: 15000 });
         
         if (!response.ok) {
           const errorText = await response.text();
@@ -109,8 +89,6 @@ Deno.serve(async (req) => {
         }
 
         const data = await response.json();
-        
-        // Get remaining requests from headers
         const remainingRequests = response.headers.get("x-requests-remaining");
         const usedRequests = response.headers.get("x-requests-used");
         
@@ -119,15 +97,11 @@ Deno.serve(async (req) => {
         return {
           league: leagueName,
           events: data,
-          apiUsage: {
-            remaining: remainingRequests,
-            used: usedRequests,
-          },
+          apiUsage: { remaining: remainingRequests, used: usedRequests },
         };
       })
     );
 
-    // Process results
     const successfulResults = results
       .filter((r): r is PromiseFulfilledResult<any> => r.status === "fulfilled")
       .map(r => r.value);
@@ -136,29 +110,22 @@ Deno.serve(async (req) => {
       .filter((r): r is PromiseRejectedResult => r.status === "rejected")
       .map(r => r.reason.message);
 
-    // Combine all events
     const allEvents = successfulResults.flatMap(r => 
-      r.events.map((event: any) => ({
-        ...event,
-        league: r.league,
-      }))
+      r.events.map((event: any) => ({ ...event, league: r.league }))
     );
 
-    // Get API usage from first successful result
     const apiUsage = successfulResults[0]?.apiUsage || { remaining: "unknown", used: "unknown" };
 
-    const responseData = {
+    console.log(`Total events fetched: ${allEvents.length}`);
+
+    return new Response(JSON.stringify({
       success: true,
       events: allEvents,
       totalEvents: allEvents.length,
       apiUsage,
       errors: failedResults.length > 0 ? failedResults : undefined,
       fetchedAt: new Date().toISOString(),
-    };
-
-    console.log(`Total events fetched: ${allEvents.length}`);
-
-    return new Response(JSON.stringify(responseData), {
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
 

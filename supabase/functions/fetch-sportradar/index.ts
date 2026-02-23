@@ -1,4 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from "../_shared/rate-limiter.ts";
+import { fetchWithRetry } from "../_shared/fetch-utils.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -101,6 +103,15 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Rate limiting
+  const rateLimitResult = await checkRateLimit(req, {
+    ...RATE_LIMITS.PUBLIC_READ,
+    endpoint: "fetch-sportradar",
+  });
+  if (!rateLimitResult.allowed) {
+    return rateLimitResponse(rateLimitResult, corsHeaders);
+  }
+
   try {
     const apiKey = Deno.env.get("SPORTRADAR_API_KEY");
     if (!apiKey) {
@@ -151,11 +162,11 @@ Deno.serve(async (req) => {
 
     console.log(`Fetching: ${SPORTRADAR_BASE_URL}${endpoint}`);
 
-    const response = await fetch(fullUrl, {
-      headers: {
-        "Accept": "application/json",
-      },
-    });
+    const response = await fetchWithRetry(
+      fullUrl,
+      { timeout: 15000, headers: { "Accept": "application/json" } },
+      { maxRetries: 1 }
+    );
 
     if (!response.ok) {
       const errorText = await response.text();

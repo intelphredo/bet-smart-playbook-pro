@@ -1,4 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from "../_shared/rate-limiter.ts";
+import { fetchWithRetry } from "../_shared/fetch-utils.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -30,72 +32,88 @@ interface WeatherResponse {
   cached: boolean;
 }
 
-// Convert wind degrees to cardinal direction
+// Helper functions
 function degreesToCardinal(degrees: number): string {
   const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
   const index = Math.round(degrees / 22.5) % 16;
   return directions[index];
 }
 
-// Map OpenWeatherMap condition to our simplified conditions
 function mapCondition(weatherId: number, main: string): { condition: string; playable: boolean } {
-  // Thunderstorm: 200-299
-  if (weatherId >= 200 && weatherId < 300) {
-    return { condition: 'thunderstorm', playable: false };
-  }
-  // Drizzle: 300-399
-  if (weatherId >= 300 && weatherId < 400) {
-    return { condition: 'drizzle', playable: true };
-  }
-  // Rain: 500-599
-  if (weatherId >= 500 && weatherId < 600) {
-    const playable = weatherId < 502; // Light rain is playable
-    return { condition: 'rain', playable };
-  }
-  // Snow: 600-699
-  if (weatherId >= 600 && weatherId < 700) {
-    return { condition: 'snow', playable: weatherId < 602 };
-  }
-  // Atmosphere (mist, fog, etc.): 700-799
-  if (weatherId >= 700 && weatherId < 800) {
-    return { condition: weatherId === 741 ? 'fog' : 'mist', playable: true };
-  }
-  // Clear: 800
-  if (weatherId === 800) {
-    return { condition: 'clear', playable: true };
-  }
-  // Clouds: 801-899
-  if (weatherId > 800 && weatherId < 900) {
-    return { condition: 'clouds', playable: true };
-  }
-  
+  if (weatherId >= 200 && weatherId < 300) return { condition: 'thunderstorm', playable: false };
+  if (weatherId >= 300 && weatherId < 400) return { condition: 'drizzle', playable: true };
+  if (weatherId >= 500 && weatherId < 600) return { condition: 'rain', playable: weatherId < 502 };
+  if (weatherId >= 600 && weatherId < 700) return { condition: 'snow', playable: weatherId < 602 };
+  if (weatherId >= 700 && weatherId < 800) return { condition: weatherId === 741 ? 'fog' : 'mist', playable: true };
+  if (weatherId === 800) return { condition: 'clear', playable: true };
+  if (weatherId > 800 && weatherId < 900) return { condition: 'clouds', playable: true };
   return { condition: main.toLowerCase(), playable: true };
 }
 
-// Convert Kelvin to Fahrenheit
-function kelvinToFahrenheit(kelvin: number): number {
-  return Math.round((kelvin - 273.15) * 9/5 + 32);
+function kelvinToFahrenheit(kelvin: number): number { return Math.round((kelvin - 273.15) * 9/5 + 32); }
+function kelvinToCelsius(kelvin: number): number { return Math.round(kelvin - 273.15); }
+function msToMph(ms: number): number { return Math.round(ms * 2.237); }
+function metersToMiles(meters: number): number { return Math.round(meters / 1609.34 * 10) / 10; }
+
+function getWeatherIcon(condition: string): string {
+  const icons: Record<string, string> = {
+    clear: '☀️', clouds: '☁️', rain: '🌧️', drizzle: '🌦️',
+    snow: '❄️', thunderstorm: '⛈️', mist: '🌫️', fog: '🌁', wind: '💨',
+  };
+  return icons[condition] || '🌤️';
 }
 
-// Convert Kelvin to Celsius
-function kelvinToCelsius(kelvin: number): number {
-  return Math.round(kelvin - 273.15);
-}
-
-// Convert m/s to mph
-function msToMph(ms: number): number {
-  return Math.round(ms * 2.237);
-}
-
-// Convert meters to miles
-function metersToMiles(meters: number): number {
-  return Math.round(meters / 1609.34 * 10) / 10;
+function generateSimulatedWeather(lat: number, lon: number) {
+  const now = new Date();
+  const month = now.getMonth();
+  const isWinter = month >= 11 || month <= 2;
+  const isSummer = month >= 5 && month <= 8;
+  const latFactor = Math.abs(lat - 35) / 20;
+  let baseTemp = isSummer ? 78 : isWinter ? 42 : 60;
+  baseTemp -= latFactor * (isWinter ? 15 : 8);
+  const seed = (lat * 1000 + lon * 100) % 100;
+  const variance = ((seed % 20) - 10);
+  const temperature = Math.round(baseTemp + variance);
+  let condition = 'clear';
+  let playable = true;
+  if (seed < 15) { condition = isWinter && temperature < 35 ? 'snow' : 'rain'; playable = seed > 10; }
+  else if (seed < 30) { condition = 'clouds'; }
+  else if (seed > 85) { condition = 'wind'; }
+  const windSpeed = 5 + (seed % 20);
+  const response: WeatherResponse = {
+    temperature, temperatureCelsius: Math.round((temperature - 32) * 5/9),
+    feelsLike: temperature - (windSpeed > 15 ? 5 : 0), condition, conditionDescription: condition,
+    humidity: 40 + (seed % 40), windSpeed,
+    windDirection: ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'][seed % 8],
+    windGust: windSpeed > 15 ? windSpeed + 10 : null,
+    precipitation: condition === 'rain' || condition === 'snow' ? 0.1 + (seed % 5) / 10 : 0,
+    visibility: condition === 'rain' || condition === 'snow' ? 5 : 10,
+    uvIndex: isSummer ? 6 + (seed % 4) : 2 + (seed % 3),
+    pressure: 1010 + (seed % 20), isOutdoorPlayable: playable,
+    icon: getWeatherIcon(condition), cached: false,
+  };
+  const dbRecord = {
+    temperature, temperature_celsius: response.temperatureCelsius, feels_like: response.feelsLike,
+    condition, condition_description: condition, humidity: response.humidity,
+    wind_speed: windSpeed, wind_direction: response.windDirection, wind_gust: response.windGust,
+    precipitation: response.precipitation, visibility: response.visibility,
+    uv_index: response.uvIndex, pressure: response.pressure, is_outdoor_playable: playable,
+  };
+  return { response, dbRecord };
 }
 
 Deno.serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // Rate limiting
+  const rateLimitResult = await checkRateLimit(req, {
+    ...RATE_LIMITS.PUBLIC_READ,
+    endpoint: "fetch-weather",
+  });
+  if (!rateLimitResult.allowed) {
+    return rateLimitResponse(rateLimitResult, corsHeaders);
   }
 
   try {
@@ -151,35 +169,25 @@ Deno.serve(async (req) => {
       });
     }
 
-    // If no API key, return simulated weather based on location
     if (!openWeatherApiKey) {
       console.log('No API key, generating simulated weather');
       const simulated = generateSimulatedWeather(latitude, longitude);
-      
-      // Cache simulated result
       await supabase.from('weather_cache').insert({
-        venue_key: cacheKey,
-        latitude,
-        longitude,
-        ...simulated.dbRecord,
+        venue_key: cacheKey, latitude, longitude, ...simulated.dbRecord,
       });
-
       return new Response(JSON.stringify({ ...simulated.response, cached: false, simulated: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Fetch from OpenWeatherMap API
     console.log(`Fetching weather for ${latitude}, ${longitude}`);
     const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=${openWeatherApiKey}`;
     
-    const weatherRes = await fetch(weatherUrl);
+    const weatherRes = await fetchWithRetry(weatherUrl, { timeout: 10000 }, { maxRetries: 1 });
     
     if (!weatherRes.ok) {
       const errorText = await weatherRes.text();
       console.error('OpenWeatherMap API error:', errorText);
-      
-      // Fallback to simulated weather
       const simulated = generateSimulatedWeather(latitude, longitude);
       return new Response(JSON.stringify({ ...simulated.response, cached: false, simulated: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -187,13 +195,8 @@ Deno.serve(async (req) => {
     }
 
     const weatherData = await weatherRes.json();
-    console.log('Weather data received:', JSON.stringify(weatherData));
 
-    const { condition, playable } = mapCondition(
-      weatherData.weather[0].id,
-      weatherData.weather[0].main
-    );
-
+    const { condition, playable } = mapCondition(weatherData.weather[0].id, weatherData.weather[0].main);
     const temperature = kelvinToFahrenheit(weatherData.main.temp);
     const temperatureCelsius = kelvinToCelsius(weatherData.main.temp);
     const feelsLike = kelvinToFahrenheit(weatherData.main.feels_like);
@@ -202,48 +205,28 @@ Deno.serve(async (req) => {
     const visibility = metersToMiles(weatherData.visibility || 10000);
     const precipitation = (weatherData.rain?.['1h'] || 0) + (weatherData.snow?.['1h'] || 0);
 
-    // Determine if outdoor play is safe
     let isOutdoorPlayable = playable;
     if (windSpeed > 40) isOutdoorPlayable = false;
     if (temperature < 0 || temperature > 110) isOutdoorPlayable = false;
 
     const response: WeatherResponse = {
-      temperature,
-      temperatureCelsius,
-      feelsLike,
-      condition,
+      temperature, temperatureCelsius, feelsLike, condition,
       conditionDescription: weatherData.weather[0].description,
-      humidity: weatherData.main.humidity,
-      windSpeed,
+      humidity: weatherData.main.humidity, windSpeed,
       windDirection: degreesToCardinal(weatherData.wind?.deg || 0),
-      windGust,
-      precipitation: Math.round(precipitation * 100) / 100,
-      visibility,
-      uvIndex: 0, // Not available in basic API
-      pressure: weatherData.main.pressure,
-      isOutdoorPlayable,
-      icon: getWeatherIcon(condition),
-      cached: false,
+      windGust, precipitation: Math.round(precipitation * 100) / 100,
+      visibility, uvIndex: 0, pressure: weatherData.main.pressure,
+      isOutdoorPlayable, icon: getWeatherIcon(condition), cached: false,
     };
 
-    // Cache the result
     await supabase.from('weather_cache').insert({
-      venue_key: cacheKey,
-      latitude,
-      longitude,
-      temperature,
-      temperature_celsius: temperatureCelsius,
-      feels_like: feelsLike,
-      condition,
+      venue_key: cacheKey, latitude, longitude, temperature,
+      temperature_celsius: temperatureCelsius, feels_like: feelsLike, condition,
       condition_description: weatherData.weather[0].description,
-      humidity: weatherData.main.humidity,
-      wind_speed: windSpeed,
+      humidity: weatherData.main.humidity, wind_speed: windSpeed,
       wind_direction: degreesToCardinal(weatherData.wind?.deg || 0),
-      wind_gust: windGust,
-      precipitation,
-      visibility,
-      uv_index: 0,
-      pressure: weatherData.main.pressure,
+      wind_gust: windGust, precipitation, visibility,
+      uv_index: 0, pressure: weatherData.main.pressure,
       is_outdoor_playable: isOutdoorPlayable,
     });
 
@@ -259,90 +242,3 @@ Deno.serve(async (req) => {
     );
   }
 });
-
-function getWeatherIcon(condition: string): string {
-  const icons: Record<string, string> = {
-    clear: '☀️',
-    clouds: '☁️',
-    rain: '🌧️',
-    drizzle: '🌦️',
-    snow: '❄️',
-    thunderstorm: '⛈️',
-    mist: '🌫️',
-    fog: '🌁',
-    wind: '💨',
-  };
-  return icons[condition] || '🌤️';
-}
-
-function generateSimulatedWeather(lat: number, lon: number) {
-  // Generate somewhat realistic weather based on latitude and time of year
-  const now = new Date();
-  const month = now.getMonth();
-  const isWinter = month >= 11 || month <= 2;
-  const isSummer = month >= 5 && month <= 8;
-  
-  // Northern locations are colder
-  const latFactor = Math.abs(lat - 35) / 20; // 35°N is mild baseline
-  
-  let baseTemp = isSummer ? 78 : isWinter ? 42 : 60;
-  baseTemp -= latFactor * (isWinter ? 15 : 8);
-  
-  // Add some randomness based on coordinates
-  const seed = (lat * 1000 + lon * 100) % 100;
-  const variance = ((seed % 20) - 10);
-  const temperature = Math.round(baseTemp + variance);
-  
-  // Determine condition based on temp and randomness
-  let condition = 'clear';
-  let playable = true;
-  
-  if (seed < 15) {
-    condition = isWinter && temperature < 35 ? 'snow' : 'rain';
-    playable = seed > 10;
-  } else if (seed < 30) {
-    condition = 'clouds';
-  } else if (seed > 85) {
-    condition = 'wind';
-  }
-  
-  const windSpeed = 5 + (seed % 20);
-  
-  const response: WeatherResponse = {
-    temperature,
-    temperatureCelsius: Math.round((temperature - 32) * 5/9),
-    feelsLike: temperature - (windSpeed > 15 ? 5 : 0),
-    condition,
-    conditionDescription: condition,
-    humidity: 40 + (seed % 40),
-    windSpeed,
-    windDirection: ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'][seed % 8],
-    windGust: windSpeed > 15 ? windSpeed + 10 : null,
-    precipitation: condition === 'rain' || condition === 'snow' ? 0.1 + (seed % 5) / 10 : 0,
-    visibility: condition === 'rain' || condition === 'snow' ? 5 : 10,
-    uvIndex: isSummer ? 6 + (seed % 4) : 2 + (seed % 3),
-    pressure: 1010 + (seed % 20),
-    isOutdoorPlayable: playable,
-    icon: getWeatherIcon(condition),
-    cached: false,
-  };
-  
-  const dbRecord = {
-    temperature,
-    temperature_celsius: response.temperatureCelsius,
-    feels_like: response.feelsLike,
-    condition,
-    condition_description: condition,
-    humidity: response.humidity,
-    wind_speed: windSpeed,
-    wind_direction: response.windDirection,
-    wind_gust: response.windGust,
-    precipitation: response.precipitation,
-    visibility: response.visibility,
-    uv_index: response.uvIndex,
-    pressure: response.pressure,
-    is_outdoor_playable: playable,
-  };
-  
-  return { response, dbRecord };
-}

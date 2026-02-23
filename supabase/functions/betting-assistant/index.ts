@@ -1,4 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { fetchWithTimeout } from "../_shared/fetch-utils.ts";
+import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from "../_shared/rate-limiter.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -14,6 +16,9 @@ serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
+
+  const rl = await checkRateLimit(req, { ...RATE_LIMITS.WRITE, endpoint: "betting-assistant" });
+  if (!rl.allowed) return rateLimitResponse(rl, corsHeaders);
 
   try {
     const { messages } = await req.json() as { messages: Message[] };
@@ -66,7 +71,8 @@ serve(async (req) => {
 
 Be friendly, helpful, and always promote responsible gambling practices.`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetchWithTimeout("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      timeout: 45000,
       method: "POST",
       headers: {
         Authorization: `Bearer ${LOVABLE_API_KEY}`,
