@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { format, subDays, subMonths, startOfDay, eachDayOfInterval } from "date-fns";
 import { toast } from "sonner";
+import { fetchAllPredictions } from "@/utils/fetchAllPredictions";
 
 export type TimeRange = "1d" | "7d" | "14d" | "1m" | "3m" | "all";
 export type PredictionType = "all" | "live" | "prelive";
@@ -167,46 +168,9 @@ export const useHistoricalPredictions = (
       // Fetch all predictions using pagination to bypass the 1000-row default limit
       const startDate = getDateFromRange(timeRange);
       
-      const fetchPage = async (from: number, to: number) => {
-        let query = supabase
-          .from("algorithm_predictions")
-          .select("*")
-          .order("predicted_at", { ascending: false })
-          .range(from, to);
-
-        if (startDate) {
-          query = query.or(`predicted_at.gte.${startDate.toISOString()},result_updated_at.gte.${startDate.toISOString()}`);
-        }
-
-        return query;
-      };
-
-      // Fetch in pages of 1000
-      const pageSize = 1000;
-      let allData: HistoricalPrediction[] = [];
-      let page = 0;
-      let hasMore = true;
-
-      while (hasMore) {
-        const from = page * pageSize;
-        const to = from + pageSize - 1;
-        const { data, error } = await fetchPage(from, to);
-
-        if (error) {
-          console.error("Error fetching historical predictions:", error);
-          throw error;
-        }
-
-        if (data && data.length > 0) {
-          allData = allData.concat(data as HistoricalPrediction[]);
-          hasMore = data.length === pageSize;
-          page++;
-        } else {
-          hasMore = false;
-        }
-      }
-
-      const data = allData;
+      const data = await fetchAllPredictions({
+        orFilter: startDate ? `predicted_at.gte.${startDate.toISOString()},result_updated_at.gte.${startDate.toISOString()}` : undefined,
+      }) as HistoricalPrediction[];
 
       // Use database column for is_live_prediction, with fallback for old records
       // Sort by most recent activity: graded predictions by result_updated_at, pending by predicted_at

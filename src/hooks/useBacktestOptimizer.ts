@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { getAlgorithmNameFromId } from '@/utils/predictions/algorithms';
 import { startOfDay, format, parseISO } from 'date-fns';
+import { fetchAllPredictions } from '@/utils/fetchAllPredictions';
 import type { BacktestStrategy, BacktestBet } from './useBacktestSimulator';
 import { getStrategyDisplayName } from './useBacktestSimulator';
 
@@ -238,28 +238,15 @@ export function useBacktestOptimizer() {
     }));
 
     try {
-      // Fetch predictions
-      let query = supabase
-        .from('algorithm_predictions')
-        .select('*')
-        .not('prediction', 'is', null)
-        .in('status', ['won', 'lost'])
-        .order('predicted_at', { ascending: true });
-
-      if (config.startDate) {
-        query = query.gte('predicted_at', startOfDay(config.startDate).toISOString());
-      }
-      if (config.endDate) {
-        query = query.lte('predicted_at', config.endDate.toISOString());
-      }
-      if (config.league && config.league !== 'all') {
-        query = query.eq('league', config.league);
-      }
-
-      const { data: predictions, error } = await query;
-      if (error) throw error;
-
-      const preds = predictions || [];
+      // Fetch predictions with pagination
+      const preds = await fetchAllPredictions({
+        startDate: config.startDate ? startOfDay(config.startDate).toISOString() : undefined,
+        endDate: config.endDate ? config.endDate.toISOString() : undefined,
+        league: config.league,
+        statuses: ['won', 'lost'],
+        excludeNullPrediction: true,
+        ascending: true,
+      });
       
       if (preds.length === 0) {
         setState(prev => ({ 

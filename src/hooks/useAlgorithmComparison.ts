@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { ALGORITHM_IDS, getAlgorithmNameFromId } from '@/utils/predictions/algorithms';
 import { subDays, startOfDay, format } from 'date-fns';
+import { fetchAllPredictions } from '@/utils/fetchAllPredictions';
 
 export interface RecentResult {
   result: 'W' | 'L';
@@ -120,26 +120,11 @@ export function useAlgorithmComparison(options: UseAlgorithmComparisonOptions = 
     queryFn: async (): Promise<ComparisonData> => {
       const startDate = startOfDay(subDays(new Date(), days)).toISOString();
 
-      // Fetch all predictions with actual data
-      let query = supabase
-        .from('algorithm_predictions')
-        .select('*')
-        .gte('predicted_at', startDate)
-        .not('prediction', 'is', null)
-        .order('predicted_at', { ascending: false });
-
-      if (league && league !== 'all') {
-        query = query.eq('league', league);
-      }
-
-      const { data: predictions, error } = await query;
-
-      if (error) {
-        console.error('Error fetching predictions for comparison:', error);
-        throw error;
-      }
-
-      const preds = predictions || [];
+      const preds = await fetchAllPredictions({
+        startDate,
+        league,
+        excludeNullPrediction: true,
+      });
 
       // Build algorithm summaries
       const algorithmMap = new Map<string, typeof preds>();
