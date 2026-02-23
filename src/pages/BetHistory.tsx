@@ -9,23 +9,10 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
-  TrendingUp, 
-  Clock, 
-  CheckCircle, 
-  XCircle, 
-  MinusCircle,
-  DollarSign,
-  Target,
-  Percent,
-  BarChart3,
-  RefreshCw,
-  Loader2,
-  Calendar,
-  Zap,
-  Award,
-  ExternalLink,
-  Trophy,
-  Scan
+  TrendingUp, Clock, CheckCircle, XCircle, MinusCircle,
+  DollarSign, Target, Percent, BarChart3, RefreshCw, Loader2,
+  Calendar, Zap, Award, ExternalLink, Trophy, Scan, Plus,
+  PieChart, Calculator, Brain
 } from 'lucide-react';
 import { useBetSlip } from '@/components/BetSlip/BetSlipContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -39,6 +26,10 @@ import AlgorithmComparisonDashboard from '@/components/AlgorithmComparisonDashbo
 import VirtualizedList from '@/components/VirtualizedList';
 import BetDetailsDialog from '@/components/BetDetailsDialog';
 import { BetSlipScanner } from '@/components/Savings/BetSlipScanner';
+import ManualBetEntryDialog from '@/components/Portfolio/ManualBetEntryDialog';
+import PortfolioDashboard from '@/components/Portfolio/PortfolioDashboard';
+import BetsVsAIPicks from '@/components/Portfolio/BetsVsAIPicks';
+import WhatIfCalculator from '@/components/Portfolio/WhatIfCalculator';
 
 const statusConfig: Record<BetStatus, { icon: React.ElementType; color: string; label: string }> = {
   pending: { icon: Clock, color: 'text-yellow-500', label: 'Pending' },
@@ -93,7 +84,7 @@ const BetRow = memo(function BetRow({
               <Button
                 size="sm"
                 variant="outline"
-                className="h-7 text-xs text-green-600 hover:bg-green-50 hover:text-green-700"
+                className="h-8 min-h-[44px] text-xs text-green-600 hover:bg-green-50 hover:text-green-700"
                 onClick={() => onSettle(bet, 'won')}
               >
                 Won
@@ -101,7 +92,7 @@ const BetRow = memo(function BetRow({
               <Button
                 size="sm"
                 variant="outline"
-                className="h-7 text-xs text-red-600 hover:bg-red-50 hover:text-red-700"
+                className="h-8 min-h-[44px] text-xs text-red-600 hover:bg-red-50 hover:text-red-700"
                 onClick={() => onSettle(bet, 'lost')}
               >
                 Lost
@@ -109,7 +100,7 @@ const BetRow = memo(function BetRow({
               <Button
                 size="sm"
                 variant="outline"
-                className="h-7 text-xs"
+                className="h-8 min-h-[44px] text-xs"
                 onClick={() => onSettle(bet, 'push')}
               >
                 Push
@@ -127,33 +118,6 @@ const BetRow = memo(function BetRow({
   );
 });
 
-// Stats card component
-const StatCard = memo(function StatCard({ 
-  icon: Icon, 
-  value, 
-  label, 
-  valueClassName 
-}: { 
-  icon: React.ElementType; 
-  value: string | number; 
-  label: string;
-  valueClassName?: string;
-}) {
-  return (
-    <Card>
-      <CardContent className="pt-4">
-        <div className="flex items-center gap-2">
-          <Icon className="h-5 w-5 text-primary" />
-          <div>
-            <p className={`text-2xl font-bold ${valueClassName || ''}`}>{value}</p>
-            <p className="text-xs text-muted-foreground">{label}</p>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-});
-
 export default function BetHistory() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -161,10 +125,11 @@ export default function BetHistory() {
   const { bets, stats, isLoading, updateBetStatus, refetch } = useBetSlip();
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState<string>(!user && !devMode ? 'predictions' : 'bets');
+  const [activeTab, setActiveTab] = useState<string>(!user && !devMode ? 'predictions' : 'portfolio');
   const [selectedBet, setSelectedBet] = useState<UserBet | null>(null);
   const [betDialogOpen, setBetDialogOpen] = useState(false);
   const [scannerOpen, setScannerOpen] = useState(false);
+  const [manualEntryOpen, setManualEntryOpen] = useState(false);
 
   const handleBetClick = useCallback((bet: UserBet) => {
     setSelectedBet(bet);
@@ -193,25 +158,6 @@ export default function BetHistory() {
     await updateBetStatus(bet.id, status, profit);
   }, [updateBetStatus]);
 
-  // Memoized stats display values
-  const statsDisplay = useMemo(() => {
-    if (!stats) return null;
-    
-    const settled = (stats.wins || 0) + (stats.losses || 0);
-    const winRate = settled > 0 
-      ? (((stats.wins || 0) / settled) * 100).toFixed(1) 
-      : '0';
-    
-    return {
-      totalBets: stats.total_bets,
-      winRate: `${winRate}%`,
-      roi: `${stats.roi_percentage >= 0 ? '+' : ''}${stats.roi_percentage.toFixed(1)}%`,
-      roiClass: stats.roi_percentage >= 0 ? 'text-green-500' : 'text-red-500',
-      profit: `${stats.total_profit >= 0 ? '+' : '-'}$${Math.abs(stats.total_profit).toFixed(2)}`,
-      profitClass: stats.total_profit >= 0 ? 'text-green-500' : 'text-red-500',
-    };
-  }, [stats]);
-
   const isAuthenticated = user || devMode;
 
   return (
@@ -221,17 +167,28 @@ export default function BetHistory() {
         <AppBreadcrumb className="mb-4" />
         
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold">Bet History</h1>
+          <h1 className="text-2xl font-bold">My Bets</h1>
           <div className="flex items-center gap-2">
+            {isAuthenticated && (
+              <Button
+                size="sm"
+                className="gap-1.5 min-h-[44px]"
+                onClick={() => setManualEntryOpen(true)}
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Add Bet
+              </Button>
+            )}
             <Button
               size="sm"
-              className="gap-1.5 h-8"
+              variant="outline"
+              className="gap-1.5 min-h-[44px]"
               onClick={() => setScannerOpen(true)}
             >
               <Scan className="h-3.5 w-3.5" />
-              Scan Bet Slip
+              Scan
             </Button>
-            <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleRefresh} disabled={isRefreshing}>
+            <Button variant="outline" size="icon" className="h-10 w-10 min-h-[44px]" onClick={handleRefresh} disabled={isRefreshing}>
               {isRefreshing ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
@@ -241,64 +198,68 @@ export default function BetHistory() {
           </div>
         </div>
 
-        {/* Bet Slip Scanner Modal */}
+        {/* Modals */}
         <BetSlipScanner open={scannerOpen} onOpenChange={setScannerOpen} />
+        <ManualBetEntryDialog open={manualEntryOpen} onOpenChange={setManualEntryOpen} />
 
         {/* Main Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
-          <TabsList className="flex-wrap h-auto gap-1">
-            {isAuthenticated && (
-              <TabsTrigger value="bets" className="flex items-center gap-2">
-                <Target className="h-4 w-4" />
-                Your Bets
+          <div className="overflow-x-auto -mx-4 px-4">
+            <TabsList className="flex w-max gap-1 h-auto">
+              {isAuthenticated && (
+                <TabsTrigger value="portfolio" className="flex items-center gap-2 min-h-[44px]">
+                  <PieChart className="h-4 w-4" />
+                  Portfolio
+                </TabsTrigger>
+              )}
+              {isAuthenticated && (
+                <TabsTrigger value="bets" className="flex items-center gap-2 min-h-[44px]">
+                  <Target className="h-4 w-4" />
+                  All Bets
+                </TabsTrigger>
+              )}
+              {isAuthenticated && (
+                <TabsTrigger value="vs-ai" className="flex items-center gap-2 min-h-[44px]">
+                  <Brain className="h-4 w-4" />
+                  You vs AI
+                </TabsTrigger>
+              )}
+              {isAuthenticated && (
+                <TabsTrigger value="what-if" className="flex items-center gap-2 min-h-[44px]">
+                  <Calculator className="h-4 w-4" />
+                  What If
+                </TabsTrigger>
+              )}
+              <TabsTrigger value="predictions" className="flex items-center gap-2 min-h-[44px]">
+                <Zap className="h-4 w-4" />
+                AI History
               </TabsTrigger>
-            )}
-            <TabsTrigger value="predictions" className="flex items-center gap-2">
-              <Zap className="h-4 w-4" />
-              AI Predictions
-            </TabsTrigger>
-            <TabsTrigger value="accuracy" className="flex items-center gap-2">
-              <Award className="h-4 w-4" />
-              Accuracy
-            </TabsTrigger>
-            <TabsTrigger value="compare" className="flex items-center gap-2">
-              <Trophy className="h-4 w-4" />
-              Compare
-            </TabsTrigger>
-            {isAuthenticated && (
-              <TabsTrigger value="summary" className="flex items-center gap-2">
-                <Calendar className="h-4 w-4" />
-                Weekly Summary
+              <TabsTrigger value="accuracy" className="flex items-center gap-2 min-h-[44px]">
+                <Award className="h-4 w-4" />
+                Accuracy
               </TabsTrigger>
-            )}
-          </TabsList>
+              {isAuthenticated && (
+                <TabsTrigger value="summary" className="flex items-center gap-2 min-h-[44px]">
+                  <Calendar className="h-4 w-4" />
+                  Weekly
+                </TabsTrigger>
+              )}
+            </TabsList>
+          </div>
 
+          {/* Portfolio Dashboard Tab */}
+          {isAuthenticated && (
+            <TabsContent value="portfolio" className="mt-6">
+              <PortfolioDashboard bets={bets} stats={stats} />
+            </TabsContent>
+          )}
+
+          {/* All Bets Tab */}
           {isAuthenticated && (
             <TabsContent value="bets" className="mt-6">
-              {/* Stats Overview */}
-              {statsDisplay && (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                  <StatCard icon={Target} value={statsDisplay.totalBets} label="Total Bets" />
-                  <StatCard icon={Percent} value={statsDisplay.winRate} label="Win Rate" />
-                  <StatCard 
-                    icon={BarChart3} 
-                    value={statsDisplay.roi} 
-                    label="ROI" 
-                    valueClassName={statsDisplay.roiClass}
-                  />
-                  <StatCard 
-                    icon={DollarSign} 
-                    value={statsDisplay.profit} 
-                    label="Total Profit"
-                    valueClassName={statsDisplay.profitClass}
-                  />
-                </div>
-              )}
-
-              {/* Bets List */}
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
-                  <CardTitle>Your Bets</CardTitle>
+                  <CardTitle>All Bets</CardTitle>
                   <Select value={statusFilter} onValueChange={setStatusFilter}>
                     <SelectTrigger className="w-[140px]">
                       <SelectValue />
@@ -322,9 +283,19 @@ export default function BetHistory() {
                       <TrendingUp className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
                       <p className="text-muted-foreground">
                         {statusFilter === 'all' 
-                          ? 'No bets yet. Start tracking your bets to see them here.'
+                          ? 'No bets yet. Tap "Add Bet" to start tracking.'
                           : `No ${statusFilter} bets found.`}
                       </p>
+                      {statusFilter === 'all' && (
+                        <Button
+                          variant="outline"
+                          className="mt-4 min-h-[44px]"
+                          onClick={() => setManualEntryOpen(true)}
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add Your First Bet
+                        </Button>
+                      )}
                     </div>
                   ) : (
                     <VirtualizedList
@@ -346,16 +317,26 @@ export default function BetHistory() {
             </TabsContent>
           )}
 
+          {/* You vs AI Tab */}
+          {isAuthenticated && (
+            <TabsContent value="vs-ai" className="mt-6">
+              <BetsVsAIPicks bets={bets} />
+            </TabsContent>
+          )}
+
+          {/* What If Calculator Tab */}
+          {isAuthenticated && (
+            <TabsContent value="what-if" className="mt-6">
+              <WhatIfCalculator />
+            </TabsContent>
+          )}
+
           <TabsContent value="predictions" className="mt-6">
             <HistoricalPredictionsSection />
           </TabsContent>
 
           <TabsContent value="accuracy" className="mt-6">
             <AlgorithmAccuracyDashboard />
-          </TabsContent>
-
-          <TabsContent value="compare" className="mt-6">
-            <AlgorithmComparisonDashboard />
           </TabsContent>
 
           {isAuthenticated && (
