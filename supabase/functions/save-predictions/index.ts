@@ -250,7 +250,10 @@ async function fetchUpcomingGames(league: string): Promise<ESPNEvent[]> {
 
   try {
     const url = `https://site.api.espn.com/apis/site/v2/sports/${config.sport}/${config.league}/scoreboard`;
-    const response = await fetch(url);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    const response = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeoutId);
     
     if (!response.ok) {
       console.error(`ESPN API error for ${league}: ${response.status}`);
@@ -270,11 +273,6 @@ async function fetchUpcomingGames(league: string): Promise<ESPNEvent[]> {
     return [];
   }
 }
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {

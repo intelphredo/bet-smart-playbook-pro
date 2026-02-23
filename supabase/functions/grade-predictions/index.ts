@@ -62,7 +62,10 @@ async function fetchESPNGameResult(matchId: string, league: string): Promise<{
 
   try {
     const url = `https://site.api.espn.com/apis/site/v2/sports/${config.sport}/${config.league}/summary?event=${matchId}`;
-    const response = await fetch(url);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    const response = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       console.log(`ESPN API returned ${response.status} for match ${matchId}`);
