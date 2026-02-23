@@ -205,13 +205,13 @@ export function SharpMoneyCard({ game, onClick, compact = false }: SharpMoneyCar
                 <span className="font-medium">Reverse Line Movement</span>
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                Spread: {trend.lineMovement.openSpread > 0 ? '+' : ''}{trend.lineMovement.openSpread.toFixed(1)} → 
-                {trend.lineMovement.currentSpread > 0 ? '+' : ''}{trend.lineMovement.currentSpread.toFixed(1)}
+                Spread: {trend.lineMovement.openSpread > 0 ? '+' : ''}{(Math.round(trend.lineMovement.openSpread * 2) / 2).toFixed(1)} → 
+                {trend.lineMovement.currentSpread > 0 ? '+' : ''}{(Math.round(trend.lineMovement.currentSpread * 2) / 2).toFixed(1)}
                 <span className={cn(
                   'ml-2 px-1.5 py-0.5 rounded',
                   trend.lineMovement.spreadMovement > 0 ? 'bg-green-500/20 text-green-600' : 'bg-red-500/20 text-red-600'
                 )}>
-                  {trend.lineMovement.spreadMovement > 0 ? '+' : ''}{trend.lineMovement.spreadMovement.toFixed(1)}
+                  {trend.lineMovement.spreadMovement > 0 ? '+' : ''}{(Math.round(trend.lineMovement.spreadMovement * 2) / 2).toFixed(1)}
                 </span>
               </p>
             </div>

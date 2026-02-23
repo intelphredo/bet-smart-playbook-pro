@@ -2,7 +2,6 @@ import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import TeamLogo from "@/components/match/TeamLogo";
-import AddToBetSlipButton from "@/components/BetSlip/AddToBetSlipButton";
 import { League, Match } from "@/types/sports";
 import { BarChart3, DollarSign, TrendingUp, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
@@ -19,9 +18,35 @@ const formatOdds = (odds: number): string => {
   if (!odds) return "N/A";
   if (odds >= 2) {
     const american = Math.round((odds - 1) * 100);
-    return american > 0 ? `+${american}` : `${american}`;
+    return `+${american}`;
   }
-  return odds > 0 ? `+${Math.round(odds)}` : `${Math.round(odds)}`;
+  const american = Math.round(-100 / (odds - 1));
+  return `${american}`;
+};
+
+const BOOK_EMOJI: Record<string, string> = {
+  draftkings: "🎰",
+  fanduel: "🏇",
+  betmgm: "🦁",
+  caesars: "👑",
+  pointsbet: "📍",
+  betrivers: "🌊",
+  williamhill_us: "🇬🇧",
+  unibet_us: "🎯",
+  espnbet: "📺",
+};
+
+const getBookEmoji = (bookId: string): string => {
+  const id = bookId.toLowerCase();
+  for (const [key, emoji] of Object.entries(BOOK_EMOJI)) {
+    if (id.includes(key)) return emoji;
+  }
+  return "📊";
+};
+
+const roundSpread = (spread: number): number => {
+  // Round to nearest 0.5
+  return Math.round(spread * 2) / 2;
 };
 
 const OddsValueSection: React.FC<OddsValueSectionProps> = ({ match, league, bettingTrend }) => {
@@ -56,7 +81,7 @@ const OddsValueSection: React.FC<OddsValueSectionProps> = ({ match, league, bett
     }
   }
 
-  // Line movement from betting trend
+  // Line movement from betting trend - round to standard increments
   const lineMovement = bettingTrend?.lineMovement;
 
   return (
@@ -144,9 +169,9 @@ const OddsValueSection: React.FC<OddsValueSectionProps> = ({ match, league, bett
               <div>
                 <p className="text-xs font-medium">Line Movement</p>
                 <p className="text-xs text-muted-foreground">
-                  Opened {lineMovement.openSpread > 0 ? "+" : ""}{lineMovement.openSpread}
+                  Opened {roundSpread(lineMovement.openSpread) > 0 ? "+" : ""}{roundSpread(lineMovement.openSpread).toFixed(1)}
                   {" → "}
-                  Current {lineMovement.currentSpread > 0 ? "+" : ""}{lineMovement.currentSpread}
+                  Current {roundSpread(lineMovement.currentSpread) > 0 ? "+" : ""}{roundSpread(lineMovement.currentSpread).toFixed(1)}
                   {lineMovement.reverseLineMovement && (
                     <Badge variant="destructive" className="text-[9px] ml-2">
                       RLM
@@ -165,50 +190,40 @@ const OddsValueSection: React.FC<OddsValueSectionProps> = ({ match, league, bett
               </p>
               {liveOdds.map((odds, index) => {
                 const bookName = typeof odds.sportsbook === "string" ? odds.sportsbook : odds.sportsbook?.name || `Book ${index + 1}`;
+                const bookId = typeof odds.sportsbook === "string" ? odds.sportsbook : odds.sportsbook?.id || "";
+                const emoji = getBookEmoji(bookId);
+                const homeShort = match.homeTeam?.shortName || "Home";
+                const awayShort = match.awayTeam?.shortName || "Away";
+                
                 return (
                   <div
                     key={index}
                     className="flex items-center justify-between p-3 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors"
                   >
-                    <span className="text-sm font-medium">{bookName}</span>
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-1.5">
-                        <TeamLogo teamName={match.homeTeam?.name || ""} league={league} size="sm" />
-                        <AddToBetSlipButton
-                          matchId={match.id}
-                          matchTitle={matchTitle}
-                          league={match.league}
-                          betType="moneyline"
-                          selection={match.homeTeam?.name || "Home"}
-                          odds={odds.homeWin}
-                          sportsbook={bookName}
-                          variant="compact"
-                        />
-                      </div>
-                      {odds.draw !== undefined && (
-                        <AddToBetSlipButton
-                          matchId={match.id}
-                          matchTitle={matchTitle}
-                          league={match.league}
-                          betType="moneyline"
-                          selection="Draw"
-                          odds={odds.draw}
-                          sportsbook={bookName}
-                          variant="compact"
-                        />
+                    <div className="flex items-center gap-2">
+                      <span className="text-base">{emoji}</span>
+                      <span className="text-sm font-medium">{bookName}</span>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      {/* Spread */}
+                      {odds.spread && (
+                        <div className="text-right">
+                          <p className="text-[10px] text-muted-foreground uppercase">Spread</p>
+                          <p className="text-xs font-mono font-medium">
+                            {homeShort} {roundSpread(odds.spread.homeSpread) > 0 ? "+" : ""}{roundSpread(odds.spread.homeSpread).toFixed(1)}
+                          </p>
+                        </div>
                       )}
-                      <div className="flex items-center gap-1.5">
-                        <AddToBetSlipButton
-                          matchId={match.id}
-                          matchTitle={matchTitle}
-                          league={match.league}
-                          betType="moneyline"
-                          selection={match.awayTeam?.name || "Away"}
-                          odds={odds.awayWin}
-                          sportsbook={bookName}
-                          variant="compact"
-                        />
-                        <TeamLogo teamName={match.awayTeam?.name || ""} league={league} size="sm" />
+                      {/* Moneyline */}
+                      <div className="text-right">
+                        <p className="text-[10px] text-muted-foreground uppercase">Moneyline</p>
+                        <div className="flex items-center gap-2">
+                          <TeamLogo teamName={match.homeTeam?.name || ""} league={league} size="sm" />
+                          <span className="text-xs font-mono font-medium">{formatOdds(odds.homeWin)}</span>
+                          <span className="text-muted-foreground text-xs">/</span>
+                          <span className="text-xs font-mono font-medium">{formatOdds(odds.awayWin)}</span>
+                          <TeamLogo teamName={match.awayTeam?.name || ""} league={league} size="sm" />
+                        </div>
                       </div>
                     </div>
                   </div>
