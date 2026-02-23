@@ -2,3 +2,6 @@ project_id = "pyknizknsygpmodoioae"
 
 [functions.grade-predictions]
 verify_jwt = false
+
+[functions.ensemble-synthesize]
+verify_jwt = false
