@@ -128,18 +128,31 @@ Deno.serve(async (req) => {
     let updatedCount = 0;
     const alertsToCreate: any[] = [];
 
-    for (const update of updates) {
-      const { error: updateError } = await supabase
-        .from("user_bets")
-        .update({
-          closing_odds: update.closing_odds,
-          clv_percentage: update.clv_percentage,
-          updated_at: new Date().toISOString()
-        })
-        .eq("id", update.id);
+    // Batch all closing odds updates in parallel
+    if (updates.length > 0) {
+      const now = new Date().toISOString();
+      const updateResults = await Promise.allSettled(
+        updates.map(update =>
+          supabase
+            .from("user_bets")
+            .update({
+              closing_odds: update.closing_odds,
+              clv_percentage: update.clv_percentage,
+              updated_at: now,
+            })
+            .eq("id", update.id)
+            .then(({ error }: { error: any }) => ({ id: update.id, error }))
+        )
+      );
 
-      if (!updateError) {
+      for (let i = 0; i < updateResults.length; i++) {
+        const result = updateResults[i];
+        if (result.status !== "fulfilled" || result.value.error) {
+          console.error(`Error updating bet ${updates[i].id}:`, result.status === "fulfilled" ? result.value.error : result.reason);
+          continue;
+        }
         updatedCount++;
+        const update = updates[i];
         if (Math.abs(update.clv_percentage) >= 2) {
           const isPositive = update.clv_percentage > 0;
           alertsToCreate.push({
@@ -150,9 +163,8 @@ Deno.serve(async (req) => {
             metadata: { clv_percentage: update.clv_percentage, closing_odds: update.closing_odds }
           });
         }
-      } else {
-        console.error(`Error updating bet ${update.id}:`, updateError);
       }
+      console.log(`Batch updated ${updatedCount}/${updates.length} bets with closing odds`);
     }
 
     if (alertsToCreate.length > 0) {
