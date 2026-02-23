@@ -28,6 +28,7 @@ const MonteCarloCard = lazy(() => import("@/components/MonteCarloCard"));
 
 import { useDebateAnalysis } from "@/hooks/useDebateAnalysis";
 import { useMonteCarloUncertainty } from "@/hooks/useMonteCarloUncertainty";
+import { getMCConfigForLeague } from "@/domain/prediction/monteCarloEngine";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -127,8 +128,9 @@ const GameDetailPage: React.FC = () => {
     enabled: !!match && predictionsArray.length > 0,
   });
 
-  // Monte Carlo Uncertainty
-  const mcResult = useMonteCarloUncertainty(localEnsemble);
+  // Monte Carlo Uncertainty — use league-specific config (NBA = tighter noise)
+  const mcConfig = getMCConfigForLeague(match?.league);
+  const mcResult = useMonteCarloUncertainty(localEnsemble, mcConfig);
 
   if (isLoading) {
     return (
