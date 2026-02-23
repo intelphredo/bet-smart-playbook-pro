@@ -30,6 +30,7 @@ const MLBWorldModelCard = lazy(() => import("@/components/MLBWorldModelCard"));
 import { useDebateAnalysis } from "@/hooks/useDebateAnalysis";
 import { useMonteCarloUncertainty } from "@/hooks/useMonteCarloUncertainty";
 import { getMCConfigForLeague } from "@/domain/prediction/monteCarloEngine";
+import { useLockedPredictions } from "@/hooks/useLockedPredictions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -65,6 +66,9 @@ const GameDetailPage: React.FC = () => {
     refreshInterval: 30000,
     useExternalApis: true,
   });
+
+  // Hydrate locked predictions cache for this match
+  useLockedPredictions(id ? [id] : undefined);
 
   // Combine all matches and apply smart scores
   const allMatches = useMemo(() => {

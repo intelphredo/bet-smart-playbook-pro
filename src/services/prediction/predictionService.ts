@@ -6,6 +6,7 @@
  */
 
 import { Match, League } from "@/types/sports";
+import { getLockedPredictionsBulk } from "@/hooks/useLockedPredictions";
 import { 
   PredictionResult, 
   EnhancedMatch,
@@ -119,18 +120,52 @@ export class PredictionService {
     const engine = this.getEngine(algorithmId ?? this.config.defaultAlgorithm!);
     const results = new Map<string, PredictionResult>();
 
-    // Check cache for existing predictions
-    if (this.config.cacheEnabled) {
-      const matchIds = matches.map(m => m.id);
-      const cached = await this.predictionRepo.getByMatchIds(matchIds);
-      cached.forEach((prediction, id) => {
-        if (prediction.algorithmId === engine.algorithmId) {
-          results.set(id, prediction);
+    // LOCK CHECK: Fetch DB-locked predictions first — these are immutable
+    const matchIds = matches.map(m => m.id);
+    try {
+      const lockedMap = await getLockedPredictionsBulk(matchIds);
+      lockedMap.forEach((predictions, matchId) => {
+        const locked = predictions.find(p => p.algorithm_id === engine.algorithmId) ?? predictions[0];
+        if (locked) {
+          results.set(matchId, {
+            matchId,
+            recommended: locked.prediction as 'home' | 'away' | 'draw' | 'skip',
+            confidence: locked.confidence ?? 50,
+            trueProbability: (locked.confidence ?? 50) / 100,
+            projectedScore: {
+              home: locked.projected_score_home ?? 0,
+              away: locked.projected_score_away ?? 0,
+            },
+            impliedOdds: 100 / (locked.confidence ?? 50),
+            expectedValue: 0,
+            evPercentage: 0,
+            kellyFraction: 0,
+            kellyStakeUnits: 0,
+            factors: {} as any,
+            algorithmId: locked.algorithm_id,
+            algorithmName: '',
+            generatedAt: locked.predicted_at,
+          });
         }
       });
+    } catch (error) {
+      console.warn('[PredictionService] Failed to fetch locked predictions, falling back to generation:', error);
     }
 
-    // Generate predictions for uncached matches
+    // Check in-memory cache for remaining uncached
+    if (this.config.cacheEnabled) {
+      const uncheckedIds = matchIds.filter(id => !results.has(id));
+      if (uncheckedIds.length > 0) {
+        const cached = await this.predictionRepo.getByMatchIds(uncheckedIds);
+        cached.forEach((prediction, id) => {
+          if (prediction.algorithmId === engine.algorithmId) {
+            results.set(id, prediction);
+          }
+        });
+      }
+    }
+
+    // Generate predictions ONLY for matches with no locked/cached prediction
     const uncachedMatches = matches.filter(m => !results.has(m.id));
     if (uncachedMatches.length > 0) {
       const matchDataList = uncachedMatches.map(mapMatchToMatchData);
@@ -140,7 +175,7 @@ export class PredictionService {
         results.set(prediction.matchId, prediction);
       });
 
-      // Cache new predictions
+      // Cache new predictions (INSERT only, won't overwrite locked)
       if (this.config.cacheEnabled) {
         await this.predictionRepo.saveBatch(newPredictions);
       }
