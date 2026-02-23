@@ -9,6 +9,7 @@ import { useSportsData } from "@/hooks/useSportsData";
 import { useArbitrageCalculator } from "@/hooks/useArbitrageCalculator";
 import { useBetTracking } from "@/hooks/useBetTracking";
 import { applySmartScores } from "@/utils/smartScoreCalculator";
+import { useLockedPredictions } from "@/hooks/useLockedPredictions";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { usePreferences } from "@/hooks/usePreferences";
@@ -120,6 +121,10 @@ const Index = () => {
     refreshInterval: 60000,
     useExternalApis: true,
   });
+
+  // Hydrate locked predictions cache from DB so prediction engine respects pre-live locks
+  const allMatchIds = useMemo(() => [...rawUpcoming, ...rawLive].map(m => m.id), [rawUpcoming, rawLive]);
+  useLockedPredictions(allMatchIds.length > 0 ? allMatchIds : undefined);
 
   // Apply smart scores
   const upcomingMatches = useMemo(() => applySmartScores(rawUpcoming), [rawUpcoming]);

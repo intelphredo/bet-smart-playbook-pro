@@ -141,9 +141,10 @@ export class PredictionRepository implements IPredictionRepository {
 
   private async persistToDatabase(prediction: PredictionResult): Promise<void> {
     try {
+      // Use INSERT only — never overwrite existing (locked) predictions
       const { error } = await supabase
         .from('algorithm_predictions')
-        .upsert({
+        .insert({
           match_id: prediction.matchId,
           algorithm_id: prediction.algorithmId,
           prediction: prediction.recommended,
@@ -152,11 +153,10 @@ export class PredictionRepository implements IPredictionRepository {
           projected_score_away: prediction.projectedScore.away,
           status: 'pending',
           predicted_at: prediction.generatedAt,
-        }, {
-          onConflict: 'match_id,algorithm_id',
         });
 
-      if (error) throw error;
+      // Silently ignore unique constraint violations (prediction already locked)
+      if (error && error.code !== '23505') throw error;
     } catch (error) {
       console.error('[PredictionRepository] Error persisting prediction:', error);
     }
@@ -175,13 +175,14 @@ export class PredictionRepository implements IPredictionRepository {
         predicted_at: p.generatedAt,
       }));
 
+      // Use INSERT only — never overwrite existing (locked) predictions
+      // ignoreDuplicates ensures existing predictions are not modified
       const { error } = await supabase
         .from('algorithm_predictions')
-        .upsert(records, {
-          onConflict: 'match_id,algorithm_id',
-        });
+        .insert(records);
 
-      if (error) throw error;
+      // Silently ignore unique constraint violations (predictions already locked)
+      if (error && error.code !== '23505') throw error;
     } catch (error) {
       console.error('[PredictionRepository] Error batch persisting:', error);
     }
