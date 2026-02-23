@@ -26,6 +26,7 @@ import {
   LogIn,
   LogOut,
   CreditCard,
+  GraduationCap,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -44,6 +45,7 @@ const navItems = [
   { path: "/scenarios", label: "Scenarios", icon: BookOpen },
   { path: "/bankroll", label: "Bankroll", icon: Wallet },
   { path: "/bet-history", label: "Bet History", icon: History },
+  { path: "/learning", label: "Learning Center", icon: GraduationCap },
   { path: "/settings", label: "Settings", icon: Settings },
 ];
 

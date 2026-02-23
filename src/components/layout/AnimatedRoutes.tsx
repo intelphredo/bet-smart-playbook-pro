@@ -21,6 +21,7 @@ import ScenarioGuide from "@/pages/ScenarioGuide";
 import BankrollManager from "@/pages/BankrollManager";
 import BetHistory from "@/pages/BetHistory";
 import SavingsPage from "@/pages/SavingsPage";
+import LearningCenter from "@/pages/LearningCenter";
 import Settings from "@/pages/Settings";
 import Billing from "@/pages/settings/Billing";
 import Auth from "@/pages/Auth";
@@ -235,6 +236,15 @@ const AnimatedRoutes = () => {
           element={
             <PageTransition>
               <ResponsibleGambling />
+            </PageTransition>
+          }
+        />
+
+        <Route
+          path="/learning"
+          element={
+            <PageTransition>
+              <LearningCenter />
             </PageTransition>
           }
         />
