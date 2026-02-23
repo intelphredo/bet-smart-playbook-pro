@@ -23,6 +23,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const EnsembleAnalysisCard = lazy(() => import("@/components/EnsembleAnalysisCard"));
+const DebateAnalysisCard = lazy(() => import("@/components/DebateAnalysisCard"));
+
+import { useDebateAnalysis } from "@/hooks/useDebateAnalysis";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -108,9 +111,19 @@ const GameDetailPage: React.FC = () => {
     };
   }, [match]);
 
-  const { consensus, isLoading: consensusLoading } = useAlgorithmComparison({ match: match || null, enabled: !!match });
+  const { predictions: algPredictions, consensus, isLoading: consensusLoading } = useAlgorithmComparison({ match: match || null, enabled: !!match });
   const localEnsemble = useLocalEnsemble(consensus, matchData);
   const { data: fullEnsemble, isLoading: metaLoading } = useFullEnsemble(consensus, matchData, !!consensus && !!matchData);
+
+  // AI Debate Layer
+  const predictionsArray = useMemo(() => Array.from(algPredictions.values()), [algPredictions]);
+  const debateWeights = useMemo(() => consensus?.weights ?? [], [consensus]);
+  const { debate, isLoading: debateLoading, error: debateError } = useDebateAnalysis({
+    match: match || null,
+    predictions: predictionsArray,
+    weights: debateWeights,
+    enabled: !!match && predictionsArray.length > 0,
+  });
 
   if (isLoading) {
     return (
@@ -677,6 +690,25 @@ const GameDetailPage: React.FC = () => {
                 ensemble={localEnsemble}
                 metaSynthesis={fullEnsemble?.metaSynthesis}
                 isLoadingMeta={metaLoading}
+              />
+            </Suspense>
+          </motion.div>
+        )}
+
+        {/* AI Debate Analysis Card */}
+        {(debate || debateLoading) && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.207 }}
+          >
+            <Suspense fallback={<Skeleton className="h-48 w-full rounded-lg" />}>
+              <DebateAnalysisCard
+                debate={debate}
+                isLoading={debateLoading}
+                error={debateError}
+                homeTeam={match.homeTeam?.name || 'Home'}
+                awayTeam={match.awayTeam?.name || 'Away'}
               />
             </Suspense>
           </motion.div>
