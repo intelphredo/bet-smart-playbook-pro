@@ -88,5 +88,59 @@ export async function requestDebateAnalysis(input: DebateInput): Promise<DebateR
     throw new Error(data.error);
   }
 
-  return data as DebateResult;
+  const result = data as DebateResult;
+
+  // Persist debate result to database alongside algorithm predictions
+  persistDebateResult(input, result).catch(err =>
+    console.warn('[DebateService] Failed to persist debate result:', err)
+  );
+
+  return result;
+}
+
+/**
+ * Persist debate analysis result to algorithm_predictions table
+ * with debate-specific columns (agreement_level, biases, risk_flag, etc.)
+ */
+async function persistDebateResult(input: DebateInput, result: DebateResult): Promise<void> {
+  // Derive a stable match_id from the first prediction if available
+  const matchId = input.predictions[0]?.matchId;
+  if (!matchId) return;
+
+  const avgProjectedHome = Math.round(
+    input.predictions.reduce((sum, p) => sum + p.projectedScore.home, 0) / input.predictions.length
+  );
+  const avgProjectedAway = Math.round(
+    input.predictions.reduce((sum, p) => sum + p.projectedScore.away, 0) / input.predictions.length
+  );
+
+  const { error } = await supabase
+    .from('algorithm_predictions')
+    .upsert({
+      match_id: matchId,
+      algorithm_id: 'ai-debate-moderator',
+      prediction: result.finalPick,
+      confidence: Math.round(result.adjustedConfidence),
+      projected_score_home: avgProjectedHome,
+      projected_score_away: avgProjectedAway,
+      home_team: input.homeTeam,
+      away_team: input.awayTeam,
+      match_title: input.matchTitle,
+      league: input.league,
+      status: 'pending',
+      // Debate-specific columns
+      agreement_level: result.agreementLevel,
+      biases_identified: result.biasesIdentified,
+      risk_flag: result.riskFlag ?? null,
+      debate_reasoning: result.reasoning,
+      key_factor: result.keyFactor,
+      temporal_insight: result.temporalInsight ?? null,
+      adjusted_confidence: result.adjustedConfidence,
+    } as any, {
+      onConflict: 'match_id,algorithm_id',
+    });
+
+  if (error) {
+    console.error('[DebateService] Persist error:', error);
+  }
 }

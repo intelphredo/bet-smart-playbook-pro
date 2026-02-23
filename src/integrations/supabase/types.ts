@@ -19,12 +19,17 @@ export type Database = {
           accuracy_rating: number | null
           actual_score_away: number | null
           actual_score_home: number | null
+          adjusted_confidence: number | null
+          agreement_level: string | null
           algorithm_id: string | null
           away_team: string | null
+          biases_identified: Json | null
           confidence: number | null
+          debate_reasoning: string | null
           home_team: string | null
           id: string
           is_live_prediction: boolean | null
+          key_factor: string | null
           league: string | null
           match_id: string
           match_title: string | null
@@ -33,18 +38,25 @@ export type Database = {
           projected_score_away: number | null
           projected_score_home: number | null
           result_updated_at: string | null
+          risk_flag: string | null
           status: string
+          temporal_insight: string | null
         }
         Insert: {
           accuracy_rating?: number | null
           actual_score_away?: number | null
           actual_score_home?: number | null
+          adjusted_confidence?: number | null
+          agreement_level?: string | null
           algorithm_id?: string | null
           away_team?: string | null
+          biases_identified?: Json | null
           confidence?: number | null
+          debate_reasoning?: string | null
           home_team?: string | null
           id?: string
           is_live_prediction?: boolean | null
+          key_factor?: string | null
           league?: string | null
           match_id: string
           match_title?: string | null
@@ -53,18 +65,25 @@ export type Database = {
           projected_score_away?: number | null
           projected_score_home?: number | null
           result_updated_at?: string | null
+          risk_flag?: string | null
           status?: string
+          temporal_insight?: string | null
         }
         Update: {
           accuracy_rating?: number | null
           actual_score_away?: number | null
           actual_score_home?: number | null
+          adjusted_confidence?: number | null
+          agreement_level?: string | null
           algorithm_id?: string | null
           away_team?: string | null
+          biases_identified?: Json | null
           confidence?: number | null
+          debate_reasoning?: string | null
           home_team?: string | null
           id?: string
           is_live_prediction?: boolean | null
+          key_factor?: string | null
           league?: string | null
           match_id?: string
           match_title?: string | null
@@ -73,7 +92,9 @@ export type Database = {
           projected_score_away?: number | null
           projected_score_home?: number | null
           result_updated_at?: string | null
+          risk_flag?: string | null
           status?: string
+          temporal_insight?: string | null
         }
         Relationships: [
           {
