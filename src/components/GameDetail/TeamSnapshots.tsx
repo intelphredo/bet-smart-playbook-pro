@@ -148,7 +148,7 @@ const TeamSnapshots: React.FC<TeamSnapshotsProps> = ({ match, league }) => {
               )}
             />
           }
-          label="Diff"
+          label="Pt Diff"
           value={formatDiff(record?.pointDifferential)}
           colorize
         />

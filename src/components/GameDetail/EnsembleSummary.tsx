@@ -29,6 +29,10 @@ const EnsembleSummary: React.FC<EnsembleSummaryProps> = ({
   const layerContribs = ensemble.ensemble?.layerContributions;
   const pattern = ensemble.ensemble?.sequentialPattern;
 
+  // The AI prediction confidence (from prediction.confidence) may differ from
+  // ensemble consensus (from ensemble.confidence). The AI prediction is the
+  // final output after all adjustments; ensemble consensus is just one input layer.
+
   const diversityLabel =
     diversity < 0.05
       ? "Models strongly agree"
@@ -40,18 +44,20 @@ const EnsembleSummary: React.FC<EnsembleSummaryProps> = ({
   const layerDescriptions: { name: string; icon: React.ReactNode; description: string }[] = [];
 
   if (layerContribs) {
-    const basePct = Math.round(layerContribs.baseLearners * 100);
+    // layerContribs.baseLearners is already a percentage-scale value (e.g. 43.0)
+    const basePct = Math.round(layerContribs.baseLearners);
     layerDescriptions.push({
       name: "Base Models",
       icon: <Layers className="h-4 w-4" />,
       description: basePct > 55 ? `Strong support for ${pick} (${basePct}% weight)` : `Slight lean toward ${pick} (${basePct}% weight)`,
     });
 
-    const boostPct = Math.round(layerContribs.gradientBoosting * 100);
+    // gradientBoosting is also already percentage-scale
+    const boostPct = Math.round(layerContribs.gradientBoosting);
     layerDescriptions.push({
       name: "Gradient Boosting",
       icon: <TrendingUp className="h-4 w-4" />,
-      description: boostPct > 10 ? `Confirms pick with ${boostPct}% adjustment` : "Neutral — not enough signal",
+      description: Math.abs(boostPct) > 2 ? `Adjusts confidence by ${boostPct > 0 ? "+" : ""}${boostPct}%` : "Neutral — not enough signal",
     });
 
     layerDescriptions.push({
@@ -90,17 +96,22 @@ const EnsembleSummary: React.FC<EnsembleSummaryProps> = ({
           <div className="grid grid-cols-3 gap-3">
             <div className="text-center p-3 bg-primary/10 rounded-lg">
               <p className="text-2xl font-bold text-primary">{consensusPct}%</p>
-              <p className="text-[10px] text-muted-foreground">Model Consensus</p>
+              <p className="text-[10px] text-muted-foreground">Ensemble Confidence</p>
             </div>
             <div className="text-center p-3 bg-muted/50 rounded-lg">
               <p className="text-sm font-bold capitalize">{pick}</p>
-              <p className="text-[10px] text-muted-foreground">Predicted Winner</p>
+              <p className="text-[10px] text-muted-foreground">Ensemble Pick</p>
             </div>
             <div className="text-center p-3 bg-muted/50 rounded-lg">
               <p className="text-lg font-bold">{diversity.toFixed(2)}</p>
               <p className="text-[10px] text-muted-foreground">{diversityLabel}</p>
             </div>
           </div>
+
+          {/* Clarification note */}
+          <p className="text-[11px] text-muted-foreground italic px-1">
+            Note: The AI Prediction above combines this ensemble with additional factors (odds, injuries, calibration) to produce the final win probability.
+          </p>
 
           {/* Key factor from meta synthesis */}
           {isLoadingMeta ? (
