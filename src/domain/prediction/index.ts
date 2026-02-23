@@ -37,3 +37,19 @@ export {
   synthesizeConsensus,
 } from './consensusEngine';
 export type { AlgorithmWeight, ConsensusResult } from './consensusEngine';
+
+// Advanced Ensemble
+export {
+  runAdvancedEnsemble,
+  applyGradientBoosting,
+  detectSequentialPattern,
+  calculateDiversityScore,
+  stackEnsemble,
+  DEFAULT_ENSEMBLE_CONFIG,
+} from './ensembleEngine';
+export type {
+  EnsembleConfig,
+  EnsembleResult,
+  GradientBoostingState,
+  SequentialPattern,
+} from './ensembleEngine';
