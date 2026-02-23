@@ -15,6 +15,16 @@ interface AlgorithmPrediction {
   trueProbability: number;
 }
 
+interface TemporalContext {
+  seasonSegment: string;
+  homeFormWeighted: number;
+  awayFormWeighted: number;
+  homeMomentumDecay: number;
+  awayMomentumDecay: number;
+  homeTrajectory: string;
+  awayTrajectory: string;
+}
+
 interface DebateRequest {
   matchTitle: string;
   league: string;
@@ -22,6 +32,7 @@ interface DebateRequest {
   awayTeam: string;
   predictions: AlgorithmPrediction[];
   weights: { algorithmName: string; weight: number; winRate: number }[];
+  temporal?: TemporalContext;
 }
 
 serve(async (req) => {
@@ -31,7 +42,7 @@ serve(async (req) => {
 
   try {
     const body: DebateRequest = await req.json();
-    const { matchTitle, league, homeTeam, awayTeam, predictions, weights } = body;
+    const { matchTitle, league, homeTeam, awayTeam, predictions, weights, temporal } = body;
 
     if (!predictions || predictions.length === 0) {
       return new Response(
@@ -72,8 +83,13 @@ Your role: Analyze each algorithm's prediction, identify potential biases, find 
    - ML Power Index: Momentum and trend-heavy — may overreact to recent form
    - Value Pick Finder: EV-focused — may see value others miss but can be contrarian
    - Statistical Edge: Historical matchup heavy — may miss recent context changes
-3. **Check for Biases**: Flag when a model's known bias might be affecting its prediction
-4. **Synthesize**: Produce a final recommendation that accounts for all perspectives
+3. **Temporal Analysis**: Use the temporal context to:
+   - Adjust trust in recent form based on season segment (early season form is noisy)
+   - Identify momentum decay — is a hot streak sustainable or fading?
+   - Detect trajectory mismatches (ascending team vs descending team)
+   - Flag when models may be overweighting stale momentum
+4. **Check for Biases**: Flag when a model's known bias might be affecting its prediction
+5. **Synthesize**: Produce a final recommendation that accounts for all perspectives + temporal patterns
 
 ## Output Format (STRICT JSON):
 {
@@ -83,10 +99,22 @@ Your role: Analyze each algorithm's prediction, identify potential biases, find 
   "biasesIdentified": ["<bias 1>", "<bias 2>"],
   "keyFactor": "<single most important factor driving the prediction>",
   "agreementLevel": "unanimous" | "strong" | "split" | "contested",
+  "temporalInsight": "<1 sentence about how timing/form trends affect this pick>",
   "riskFlag": "<optional: any concern about this pick>"
 }
 
 IMPORTANT: Return ONLY valid JSON. No markdown, no code fences, no extra text.`;
+
+    // Build temporal context section
+    let temporalSection = '';
+    if (temporal) {
+      temporalSection = `
+
+## Temporal Context:
+- **Season Segment:** ${temporal.seasonSegment} (${temporal.seasonSegment === 'early' ? 'small sample — trust form less' : temporal.seasonSegment === 'postseason' ? 'high stakes — form is amplified' : 'mid-season — balanced trust'})
+- **${homeTeam} Recency-Weighted Form:** ${temporal.homeFormWeighted}% | Momentum Decay: ${(temporal.homeMomentumDecay * 100).toFixed(0)}% sustained | Trajectory: ${temporal.homeTrajectory}
+- **${awayTeam} Recency-Weighted Form:** ${temporal.awayFormWeighted}% | Momentum Decay: ${(temporal.awayMomentumDecay * 100).toFixed(0)}% sustained | Trajectory: ${temporal.awayTrajectory}`;
+    }
 
     const userPrompt = `## Match: ${matchTitle}
 **League:** ${league}
@@ -95,10 +123,11 @@ IMPORTANT: Return ONLY valid JSON. No markdown, no code fences, no extra text.`;
 ## Algorithm Predictions:
 
 ${algorithmSummaries}
+${temporalSection}
 
 ## Current Status: ${allAgree ? 'UNANIMOUS AGREEMENT' : 'DISAGREEMENT DETECTED — debate required'}
 
-Analyze these predictions through the debate framework and return your synthesized JSON recommendation.`;
+Analyze these predictions through the debate framework (including temporal patterns) and return your synthesized JSON recommendation.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

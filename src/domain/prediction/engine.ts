@@ -17,6 +17,8 @@ import {
   AlgorithmConfig,
   IPredictionEngine,
   DEFAULT_ALGORITHM_WEIGHTS,
+  TemporalFactors,
+  SeasonSegment,
 } from "./interfaces";
 
 // ============================================
@@ -96,6 +98,158 @@ export function calculateHomeAdvantage(league: League, _teamName?: string): numb
   };
 
   return baseAdvantage[league] ?? baseAdvantage.DEFAULT;
+}
+
+// ============================================
+// Temporal Encoding Functions
+// ============================================
+
+/**
+ * Determine season segment from match date and league (PURE FUNCTION)
+ */
+export function determineSeasonSegment(matchDate: string, league: League): SeasonSegment {
+  const month = new Date(matchDate).getMonth(); // 0-indexed
+
+  const schedules: Record<string, { early: number[]; mid: number[]; late: number[]; post: number[] }> = {
+    NBA:   { early: [9, 10, 11], mid: [0, 1], late: [2, 3], post: [4, 5] },
+    NFL:   { early: [8, 9], mid: [10, 11], late: [0], post: [0, 1] },
+    MLB:   { early: [3, 4], mid: [5, 6], late: [7, 8], post: [9, 10] },
+    NHL:   { early: [9, 10, 11], mid: [0, 1], late: [2, 3], post: [4, 5] },
+    NCAAB: { early: [10, 11], mid: [0, 1], late: [2], post: [2, 3] },
+    NCAAF: { early: [8, 9], mid: [10], late: [11], post: [0, 1] },
+  };
+
+  const sched = schedules[league] ?? schedules.NBA;
+  if (sched.post.includes(month)) return 'postseason';
+  if (sched.late.includes(month)) return 'late';
+  if (sched.mid.includes(month)) return 'mid';
+  return 'early';
+}
+
+/**
+ * Calculate exponentially weighted recent form (PURE FUNCTION)
+ * More recent games get exponentially higher weight.
+ * Decay factor of 0.85 means each older game is worth 85% of the next.
+ */
+export function calculateRecencyWeightedForm(recentForm?: string[], decayFactor: number = 0.85): number {
+  if (!recentForm || recentForm.length === 0) return 50;
+
+  let weightedWins = 0;
+  let totalWeight = 0;
+
+  recentForm.forEach((result, index) => {
+    // index 0 = most recent game
+    const weight = Math.pow(decayFactor, index);
+    if (result === 'W') weightedWins += weight;
+    totalWeight += weight;
+  });
+
+  if (totalWeight === 0) return 50;
+  return Math.round((weightedWins / totalWeight) * 100);
+}
+
+/**
+ * Calculate momentum decay (PURE FUNCTION)
+ * Measures how sustained a streak is — a 5-game streak has more
+ * momentum than alternating W/L even if both are 3-2.
+ */
+export function calculateMomentumDecay(recentForm?: string[]): number {
+  if (!recentForm || recentForm.length < 2) return 0.5;
+
+  // Count consecutive same results from most recent
+  let streakLength = 1;
+  for (let i = 1; i < recentForm.length; i++) {
+    if (recentForm[i] === recentForm[0]) {
+      streakLength++;
+    } else {
+      break;
+    }
+  }
+
+  // Normalize: streak of 5+ games = near 1.0, single game = ~0.2
+  return Math.min(1, streakLength / 5);
+}
+
+/**
+ * Detect form trajectory (PURE FUNCTION)
+ * Compares first-half performance to second-half performance.
+ */
+export function detectFormTrajectory(recentForm?: string[]): 'ascending' | 'descending' | 'stable' {
+  if (!recentForm || recentForm.length < 4) return 'stable';
+
+  const mid = Math.floor(recentForm.length / 2);
+  const recentHalf = recentForm.slice(0, mid);
+  const olderHalf = recentForm.slice(mid);
+
+  const recentWinPct = recentHalf.filter(r => r === 'W').length / recentHalf.length;
+  const olderWinPct = olderHalf.filter(r => r === 'W').length / olderHalf.length;
+
+  const diff = recentWinPct - olderWinPct;
+  if (diff > 0.15) return 'ascending';
+  if (diff < -0.15) return 'descending';
+  return 'stable';
+}
+
+/**
+ * Calculate full temporal factors for a match (PURE FUNCTION)
+ */
+export function calculateTemporalFactors(
+  match: MatchData,
+  homeForm?: string[],
+  awayForm?: string[]
+): TemporalFactors {
+  const seasonSegment = determineSeasonSegment(match.startTime, match.league);
+
+  const recencyWeightedForm = {
+    home: calculateRecencyWeightedForm(homeForm),
+    away: calculateRecencyWeightedForm(awayForm),
+  };
+
+  const momentumDecay = {
+    home: calculateMomentumDecay(homeForm),
+    away: calculateMomentumDecay(awayForm),
+  };
+
+  const formTrajectory = {
+    home: detectFormTrajectory(homeForm),
+    away: detectFormTrajectory(awayForm),
+  };
+
+  // Calculate temporal impact on confidence
+  let impact = 0;
+
+  // Recency-weighted form differential
+  const formDiff = (recencyWeightedForm.home - recencyWeightedForm.away) / 100;
+  impact += formDiff * 8; // Up to ±8 points
+
+  // Momentum sustainability bonus
+  const momentumDiff = momentumDecay.home - momentumDecay.away;
+  impact += momentumDiff * 4; // Up to ±4 points
+
+  // Trajectory bonus
+  const trajScore = (t: 'ascending' | 'descending' | 'stable') =>
+    t === 'ascending' ? 1 : t === 'descending' ? -1 : 0;
+  impact += (trajScore(formTrajectory.home) - trajScore(formTrajectory.away)) * 1.5;
+
+  // Season segment modifier: trust form less in early season, more in late/postseason
+  const segmentMultiplier: Record<SeasonSegment, number> = {
+    early: 0.6,      // Small sample, don't trust form much
+    mid: 0.85,
+    late: 1.0,
+    postseason: 1.15, // Postseason intensity amplifies real differences
+  };
+  impact *= segmentMultiplier[seasonSegment];
+
+  // Clamp
+  impact = Math.max(-15, Math.min(15, impact));
+
+  return {
+    seasonSegment,
+    recencyWeightedForm,
+    momentumDecay,
+    formTrajectory,
+    impact,
+  };
 }
 
 /**
@@ -286,6 +440,13 @@ export class BasePredictionEngine implements IPredictionEngine {
       };
     }
 
+    // Temporal factors — always compute from available form data
+    factors.temporal = calculateTemporalFactors(
+      match,
+      match.homeTeam.recentForm,
+      match.awayTeam.recentForm
+    );
+
     return factors;
   }
 
@@ -310,9 +471,14 @@ export class BasePredictionEngine implements IPredictionEngine {
     if (factors.historical) {
       confidence += factors.historical.impact * weights.historical;
     }
+
+    // Temporal factors — the key Transformer-inspired addition
+    if (factors.temporal) {
+      confidence += factors.temporal.impact;
+    }
     
     // Clamp to valid range
-    return Math.max(this.config.thresholds.minConfidence, Math.min(85, confidence));
+    return Math.max(this.config.thresholds.minConfidence, Math.min(88, confidence));
   }
 
   /**

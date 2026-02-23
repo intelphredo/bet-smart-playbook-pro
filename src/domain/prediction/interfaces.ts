@@ -98,6 +98,35 @@ export interface PredictionFactors {
     condition: string;
     impact: number;
   };
+  temporal?: TemporalFactors;
+}
+
+// ============================================
+// Temporal Encoding Types
+// ============================================
+
+export type SeasonSegment = 'early' | 'mid' | 'late' | 'postseason';
+
+export interface TemporalFactors {
+  /** Season segment affects how much to trust form vs. baseline */
+  seasonSegment: SeasonSegment;
+  /** Exponentially weighted recent form (more recent = more weight) */
+  recencyWeightedForm: {
+    home: number; // 0-100
+    away: number; // 0-100
+  };
+  /** Momentum decay: how fast a team's hot/cold streak is fading */
+  momentumDecay: {
+    home: number; // 0-1 (1 = sustained momentum, 0 = fully decayed)
+    away: number;
+  };
+  /** Form trajectory: is the team trending up or down? */
+  formTrajectory: {
+    home: 'ascending' | 'descending' | 'stable';
+    away: 'ascending' | 'descending' | 'stable';
+  };
+  /** Overall temporal impact on confidence (-15 to +15) */
+  impact: number;
 }
 
 export interface PredictionResult {
