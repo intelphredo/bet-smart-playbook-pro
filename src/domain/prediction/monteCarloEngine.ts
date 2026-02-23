@@ -39,6 +39,29 @@ export const DEFAULT_MC_CONFIG: MonteCarloConfig = {
   percentiles: [10, 90], // 80% confidence interval
 };
 
+/**
+ * NBA-specific config: tighter noise reflecting highly efficient moneyline markets.
+ * Research (Jan 2026) shows NBA pricing leaves minimal exploitable edge,
+ * so uncertainty bands should be narrower to avoid false-positive signals.
+ */
+export const NBA_MC_CONFIG: MonteCarloConfig = {
+  numSamples: 300,        // more samples for tighter estimates
+  confidenceNoise: 3.5,   // ±3.5pp — market is well-priced
+  scoreNoise: 2.5,        // ±2.5 pts — NBA scoring is more predictable
+  probabilityNoise: 0.05, // ±5% — efficient odds ≈ accurate probabilities
+  percentiles: [5, 95],   // 90% CI — narrower noise justifies wider percentile window
+};
+
+/** Lookup league-specific MC config; falls back to default */
+export function getMCConfigForLeague(league?: string): MonteCarloConfig {
+  switch (league?.toUpperCase()) {
+    case 'NBA':
+      return NBA_MC_CONFIG;
+    default:
+      return DEFAULT_MC_CONFIG;
+  }
+}
+
 export interface UncertaintyBand {
   /** Point estimate (original value) */
   point: number;
