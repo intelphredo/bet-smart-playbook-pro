@@ -32,6 +32,7 @@ import { useHighValueAlerts } from "@/hooks/useHighValueAlerts";
 import { useIntelligentAlerts } from "@/hooks/useIntelligentAlertsHook";
 import { GroupedLeagueSelect, LEAGUE_CATEGORIES } from "@/components/filters/GroupedLeagueSelect";
 import { LazyRender } from "@/components/ui/lazy-render";
+import EngagementWidget from "@/components/engagement/EngagementWidget";
 
 const ALL_LEAGUES = Object.values(LEAGUE_CATEGORIES).flatMap(cat => cat.leagues);
 
@@ -205,6 +206,11 @@ const Index = () => {
                 matches={allActiveMatches}
               />
             </div>
+
+            {/* Engagement Widget */}
+            <LazyRender height="200px" rootMargin="300px">
+              <EngagementWidget />
+            </LazyRender>
 
             {/* BOTTOM: Recent Games + Live Scores (lazy-loaded) */}
             <LazyRender height="300px" rootMargin="300px">

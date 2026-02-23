@@ -34,6 +34,7 @@ const NotFound = lazy(() => import("@/pages/NotFound"));
 const TermsOfService = lazy(() => import("@/pages/legal/TermsOfService"));
 const PrivacyPolicy = lazy(() => import("@/pages/legal/PrivacyPolicy"));
 const ResponsibleGambling = lazy(() => import("@/pages/legal/ResponsibleGambling"));
+const Rewards = lazy(() => import("@/pages/Rewards"));
 
 function LazyPage({ children }: { children: React.ReactNode }) {
   return (
@@ -85,6 +86,7 @@ const AnimatedRoutes = () => {
         <Route path="/terms" element={<LazyPage><TermsOfService /></LazyPage>} />
         <Route path="/privacy" element={<LazyPage><PrivacyPolicy /></LazyPage>} />
         <Route path="/responsible-gambling" element={<LazyPage><ResponsibleGambling /></LazyPage>} />
+        <Route path="/rewards" element={<LazyPage><Rewards /></LazyPage>} />
 
         {/* Legacy / invalid paths */}
         <Route path="/betslip" element={<Navigate to="/" replace />} />
