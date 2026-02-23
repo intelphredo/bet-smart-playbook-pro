@@ -155,119 +155,163 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    console.log("Starting prediction grading process");
+    // Only grade predictions for leagues ESPN supports
+    const supportedLeagues = Object.keys(ESPN_SPORT_MAP);
+    console.log(`Starting prediction grading for leagues: ${supportedLeagues.join(", ")}`);
 
-    // Get all pending predictions that haven't been graded
+    // Get pending predictions — newest first, only for supported leagues, only real match IDs
     const { data: pendingPredictions, error: fetchError } = await supabase
       .from("algorithm_predictions")
       .select("*")
       .eq("status", "pending")
       .is("result_updated_at", null)
-      .limit(100);
+      .in("league", supportedLeagues)
+      .order("predicted_at", { ascending: false })
+      .limit(200);
 
     if (fetchError) {
       console.error("Error fetching pending predictions:", fetchError);
       throw fetchError;
     }
 
-    if (!pendingPredictions || pendingPredictions.length === 0) {
-      console.log("No pending predictions to grade");
+    // Filter to only numeric ESPN match IDs (skip test data like "ncaab-test-008")
+    const validPredictions = (pendingPredictions || []).filter(
+      (p) => /^\d+$/.test(p.match_id)
+    );
+
+    console.log(`Found ${pendingPredictions?.length || 0} pending, ${validPredictions.length} with valid ESPN match IDs`);
+
+    if (validPredictions.length === 0) {
       return new Response(
-        JSON.stringify({ success: true, data: { graded: 0, message: "No pending predictions" } }),
+        JSON.stringify({
+          success: true,
+          data: {
+            graded: 0,
+            checked: pendingPredictions?.length || 0,
+            skipped_invalid_ids: (pendingPredictions?.length || 0) - validPredictions.length,
+            message: "No valid pending predictions to grade",
+          },
+        }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log(`Found ${pendingPredictions.length} pending predictions to check`);
+    // Deduplicate by match_id to avoid fetching ESPN multiple times for the same game
+    const uniqueMatchIds = new Map<string, string>(); // match_id -> league
+    for (const p of validPredictions) {
+      if (!uniqueMatchIds.has(p.match_id)) {
+        uniqueMatchIds.set(p.match_id, p.league);
+      }
+    }
+
+    console.log(`Fetching ESPN results for ${uniqueMatchIds.size} unique games`);
+
+    // Fetch ESPN results for all unique games in parallel batches
+    const BATCH_SIZE = 10;
+    const gameResults = new Map<string, Awaited<ReturnType<typeof fetchESPNGameResult>>>();
+    const matchEntries = Array.from(uniqueMatchIds.entries());
+
+    for (let i = 0; i < matchEntries.length; i += BATCH_SIZE) {
+      const batch = matchEntries.slice(i, i + BATCH_SIZE);
+      const results = await Promise.all(
+        batch.map(([matchId, league]) =>
+          fetchESPNGameResult(matchId, league).then((result) => ({ matchId, result }))
+        )
+      );
+      for (const { matchId, result } of results) {
+        gameResults.set(matchId, result);
+      }
+    }
+
+    // Count completed games
+    const completedGames = Array.from(gameResults.values()).filter((r) => r?.completed).length;
+    console.log(`ESPN results: ${completedGames} completed out of ${uniqueMatchIds.size} checked`);
 
     let gradedCount = 0;
+    let skippedCount = 0;
     const statsUpdates: Map<string, { wins: number; total: number; confidenceSum: number }> = new Map();
     const updatePromises: Promise<void>[] = [];
 
-    // Process predictions in batches for better performance
-    const BATCH_SIZE = 10;
-    
-    for (let i = 0; i < pendingPredictions.length; i += BATCH_SIZE) {
-      const batch = (pendingPredictions as PendingPrediction[]).slice(i, i + BATCH_SIZE);
-      
-      // Fetch results in parallel for the batch
-      const resultsPromises = batch.map(prediction => 
-        fetchESPNGameResult(prediction.match_id, prediction.league || "NBA")
-          .then(result => ({ prediction, result }))
-      );
-      
-      const batchResults = await Promise.all(resultsPromises);
-      
-      for (const { prediction, result } of batchResults) {
-        if (!result || !result.completed) {
-          continue; // Game not finished yet
-        }
-
-        // Determine if prediction was correct
-        const predictionLower = prediction.prediction?.toLowerCase() || "";
-        
-        // Check if predicted home or away win
-        const predictedHome = 
-          predictionLower.includes(result.homeTeam.toLowerCase()) ||
-          predictionLower.includes("home");
-        
-        const isCorrect = predictedHome ? result.homeWon : !result.homeWon;
-        const newStatus = isCorrect ? "won" : "lost";
-
-        // Calculate accuracy rating
-        const accuracyRating = calculateAccuracyRating(
-          { home: prediction.projected_score_home, away: prediction.projected_score_away },
-          { home: result.homeScore, away: result.awayScore },
-          isCorrect
-        );
-
-        // Queue update promise - also populate team names if missing
-        const matchTitle = `${result.awayTeam} @ ${result.homeTeam}`;
-        
-        updatePromises.push(
-          supabase
-            .from("algorithm_predictions")
-            .update({
-              status: newStatus,
-              actual_score_home: result.homeScore,
-              actual_score_away: result.awayScore,
-              accuracy_rating: accuracyRating,
-              result_updated_at: new Date().toISOString(),
-              // Populate missing team data for old predictions
-              home_team: result.homeTeam,
-              away_team: result.awayTeam,
-              match_title: matchTitle,
-            })
-            .eq("id", prediction.id)
-            .is("result_updated_at", null)
-            .then(({ error }) => {
-              if (error) {
-                console.error(`Error updating prediction ${prediction.id}:`, error);
-                return;
-              }
-              gradedCount++;
-              console.log(`Graded prediction ${prediction.id}: ${newStatus} (${accuracyRating} accuracy)`);
-            })
-        );
-
-        // Track stats for algorithm_stats update
-        const algId = prediction.algorithm_id;
-        if (!statsUpdates.has(algId)) {
-          statsUpdates.set(algId, { wins: 0, total: 0, confidenceSum: 0 });
-        }
-        const stats = statsUpdates.get(algId)!;
-        stats.total++;
-        if (isCorrect) stats.wins++;
-        stats.confidenceSum += prediction.confidence || 0;
+    // Grade all predictions using cached ESPN results
+    for (const prediction of validPredictions as PendingPrediction[]) {
+      const result = gameResults.get(prediction.match_id);
+      if (!result || !result.completed) {
+        skippedCount++;
+        continue;
       }
+
+      // Determine if prediction was correct
+      const predictionLower = prediction.prediction?.toLowerCase() || "";
+
+      const predictedHome =
+        predictionLower.includes(result.homeTeam.toLowerCase()) ||
+        predictionLower.includes("home");
+
+      // Handle "draw" predictions
+      const predictedDraw = predictionLower.includes("draw") || predictionLower.includes("tie");
+      const isDraw = result.homeScore === result.awayScore;
+
+      let isCorrect: boolean;
+      if (predictedDraw) {
+        isCorrect = isDraw;
+      } else if (isDraw) {
+        isCorrect = false; // Predicted a winner but game drew
+      } else {
+        isCorrect = predictedHome ? result.homeWon : !result.homeWon;
+      }
+
+      const newStatus = isCorrect ? "won" : "lost";
+
+      const accuracyRating = calculateAccuracyRating(
+        { home: prediction.projected_score_home, away: prediction.projected_score_away },
+        { home: result.homeScore, away: result.awayScore },
+        isCorrect
+      );
+
+      const matchTitle = `${result.awayTeam} @ ${result.homeTeam}`;
+
+      updatePromises.push(
+        supabase
+          .from("algorithm_predictions")
+          .update({
+            status: newStatus,
+            actual_score_home: result.homeScore,
+            actual_score_away: result.awayScore,
+            accuracy_rating: accuracyRating,
+            result_updated_at: new Date().toISOString(),
+            home_team: result.homeTeam,
+            away_team: result.awayTeam,
+            match_title: matchTitle,
+          })
+          .eq("id", prediction.id)
+          .is("result_updated_at", null)
+          .then(({ error }) => {
+            if (error) {
+              console.error(`Error updating prediction ${prediction.id}:`, error);
+              return;
+            }
+            gradedCount++;
+          })
+      );
+
+      // Track stats for algorithm_stats update
+      const algId = prediction.algorithm_id;
+      if (!statsUpdates.has(algId)) {
+        statsUpdates.set(algId, { wins: 0, total: 0, confidenceSum: 0 });
+      }
+      const stats = statsUpdates.get(algId)!;
+      stats.total++;
+      if (isCorrect) stats.wins++;
+      stats.confidenceSum += prediction.confidence || 0;
     }
-    
+
     // Wait for all updates to complete
     await Promise.all(updatePromises);
 
+    console.log(`Graded ${gradedCount} predictions (${skippedCount} games not yet completed)`);
+
     // Update algorithm_stats table
     for (const [algId, stats] of statsUpdates) {
-      // Get current stats
       const { data: currentStats } = await supabase
         .from("algorithm_stats")
         .select("*")
@@ -278,8 +322,7 @@ Deno.serve(async (req) => {
         const newTotal = currentStats.total_predictions + stats.total;
         const newCorrect = currentStats.correct_predictions + stats.wins;
         const newWinRate = newTotal > 0 ? (newCorrect / newTotal) * 100 : 0;
-        
-        // Weighted average for confidence
+
         const oldConfidenceWeight = currentStats.total_predictions * currentStats.avg_confidence;
         const newConfidenceWeight = stats.confidenceSum;
         const newAvgConfidence = newTotal > 0 ? (oldConfidenceWeight + newConfidenceWeight) / newTotal : 0;
@@ -306,14 +349,17 @@ Deno.serve(async (req) => {
         success: true,
         data: {
           graded: gradedCount,
-          checked: pendingPredictions.length,
+          checked: validPredictions.length,
+          unique_games: uniqueMatchIds.size,
+          completed_games: completedGames,
+          skipped_not_completed: skippedCount,
+          skipped_invalid_ids: (pendingPredictions?.length || 0) - validPredictions.length,
           algorithms_updated: statsUpdates.size,
           duration_ms: duration,
         },
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-
   } catch (error) {
     console.error("Error in grade-predictions:", error);
     return new Response(
