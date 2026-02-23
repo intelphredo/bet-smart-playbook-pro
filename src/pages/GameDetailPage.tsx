@@ -1,6 +1,6 @@
 // src/pages/GameDetailPage.tsx
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, lazy, Suspense } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useSportsData } from "@/hooks/useSportsData";
 import { applySmartScores } from "@/utils/smartScoreCalculator";
@@ -16,7 +16,13 @@ import { SharpMoneyAlertBanner } from "@/components/BettingTrends";
 import { useMatchBettingTrend } from "@/hooks/useBettingTrends";
 import { useCrossSectionData } from "@/hooks/useCrossSectionData";
 import { CrossSectionPanel, CrossSectionBanner } from "@/components/CrossSection";
+import { useAlgorithmComparison } from "@/hooks/usePredictions";
+import { useLocalEnsemble, useFullEnsemble } from "@/hooks/useEnsemblePrediction";
+import { MatchData } from "@/domain/prediction/interfaces";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
+const EnsembleAnalysisCard = lazy(() => import("@/components/EnsembleAnalysisCard"));
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -73,6 +79,38 @@ const GameDetailPage: React.FC = () => {
 
   // Cross-Section Intelligence Data
   const crossSectionData = useCrossSectionData(match || null);
+
+  // Ensemble Prediction Pipeline
+  const matchData: MatchData | null = useMemo(() => {
+    if (!match) return null;
+    return {
+      id: match.id,
+      homeTeam: {
+        id: match.homeTeam?.id || 'home',
+        name: match.homeTeam?.name || 'Home',
+        shortName: match.homeTeam?.shortName || 'HME',
+        record: match.homeTeam?.record,
+        recentForm: match.homeTeam?.recentForm,
+        logo: match.homeTeam?.logo,
+      },
+      awayTeam: {
+        id: match.awayTeam?.id || 'away',
+        name: match.awayTeam?.name || 'Away',
+        shortName: match.awayTeam?.shortName || 'AWY',
+        record: match.awayTeam?.record,
+        recentForm: match.awayTeam?.recentForm,
+        logo: match.awayTeam?.logo,
+      },
+      league: (match.league as League) || 'NBA',
+      startTime: match.startTime,
+      status: match.status || 'scheduled',
+      odds: match.odds,
+    };
+  }, [match]);
+
+  const { consensus, isLoading: consensusLoading } = useAlgorithmComparison({ match: match || null, enabled: !!match });
+  const localEnsemble = useLocalEnsemble(consensus, matchData);
+  const { data: fullEnsemble, isLoading: metaLoading } = useFullEnsemble(consensus, matchData, !!consensus && !!matchData);
 
   if (isLoading) {
     return (
@@ -624,6 +662,23 @@ const GameDetailPage: React.FC = () => {
                 )}
               </CardContent>
             </Card>
+          </motion.div>
+        )}
+
+        {/* Ensemble Analysis Card */}
+        {localEnsemble && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.205 }}
+          >
+            <Suspense fallback={<Skeleton className="h-48 w-full rounded-lg" />}>
+              <EnsembleAnalysisCard
+                ensemble={localEnsemble}
+                metaSynthesis={fullEnsemble?.metaSynthesis}
+                isLoadingMeta={metaLoading}
+              />
+            </Suspense>
           </motion.div>
         )}
 
