@@ -7,7 +7,7 @@ import { getESPNGames } from "@/services/data-providers/espn";
 import { getSportradarGames } from "@/services/data-providers/sportradar";
 import { getOddsApiGames } from "@/services/data-providers/odds-api";
 import { getMockGames } from "@/services/data-providers/mock";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import { gameCache } from "@/utils/cache/cacheManager";
 import { throttle } from "@/utils/cache/updateBatcher";
 
@@ -93,10 +93,8 @@ export const useGames = () => {
   useEffect(() => {
     if (query.data?.some((g) => g.source === "Mock") && !hasShownMockToast.current) {
       hasShownMockToast.current = true;
-      toast({
-        title: "Mock Data Active",
+      toast.error("Mock Data Active", {
         description: "Live data unavailable — showing mock results.",
-        variant: "destructive",
       });
     }
   }, [query.data]);
