@@ -1,6 +1,8 @@
 import { BrowserRouter as Router } from "react-router-dom";
 import { Toaster } from "sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
+import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/useAuth";
 import { OddsFormatProvider } from "@/contexts/OddsFormatContext";
@@ -20,10 +22,37 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       refetchOnWindowFocus: false,
-      staleTime: 60 * 1000, // 1 minute
-      gcTime: 10 * 60 * 1000, // 10 minutes - keep unused data longer for cache hits
+      staleTime: 2 * 60 * 1000, // 2 minutes — reduces redundant fetches
+      gcTime: 30 * 60 * 1000, // 30 minutes — keep cache warm much longer
       retry: 2,
+      refetchOnMount: 'always',
     },
+  },
+});
+
+// Persist query cache to localStorage for instant load on return visits
+const persister = createSyncStoragePersister({
+  storage: window.localStorage,
+  key: 'edgeiq-query-cache',
+  // Only persist settled data (not loading/error states)
+  throttleTime: 2000,
+  serialize: (data) => {
+    try {
+      // Only keep queries that are successful and not too large
+      const filtered = {
+        ...data,
+        clientState: {
+          ...data.clientState,
+          queries: data.clientState.queries.filter(q =>
+            q.state.status === 'success' &&
+            q.queryKey?.[0] !== 'match-weather' // Skip weather (changes fast)
+          ).slice(0, 50), // Keep max 50 queries
+        },
+      };
+      return JSON.stringify(filtered);
+    } catch {
+      return JSON.stringify(data);
+    }
   },
 });
 
@@ -52,7 +81,6 @@ if (typeof window !== "undefined") {
     addLog: function(message: string) {
       if (this.logs) {
         this.logs.push(`[${new Date().toISOString()}] ${message}`);
-        // Keep only last 100 logs
         if (this.logs.length > 100) {
           this.logs.shift();
         }
@@ -64,7 +92,19 @@ if (typeof window !== "undefined") {
 function App() {
   return (
     <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
+      <PersistQueryClientProvider
+        client={queryClient}
+        persistOptions={{
+          persister,
+          maxAge: 24 * 60 * 60 * 1000, // 24 hours
+          dehydrateOptions: {
+            shouldDehydrateQuery: (query) => {
+              // Only persist successful queries with data
+              return query.state.status === 'success' && !!query.state.data;
+            },
+          },
+        }}
+      >
         <AuthProvider>
           <PreferencesProvider>
             <OddsFormatProvider>
@@ -87,7 +127,7 @@ function App() {
             </OddsFormatProvider>
           </PreferencesProvider>
         </AuthProvider>
-      </QueryClientProvider>
+      </PersistQueryClientProvider>
     </ErrorBoundary>
   );
 }

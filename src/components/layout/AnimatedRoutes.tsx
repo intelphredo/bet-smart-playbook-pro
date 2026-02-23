@@ -1,37 +1,47 @@
 import { Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
+import { lazy, Suspense } from "react";
 import PageTransition from "./PageTransition";
+import { RouteLoadingSkeleton } from "@/components/ui/route-loading-skeleton";
 
-// Page imports
+// Critical path - loaded eagerly
 import Index from "@/pages/Index";
-import GameDetailPage from "@/pages/GameDetailPage";
-import LiveGamesPage from "@/pages/LiveGamesPage";
-import GamesPage from "@/pages/GamesPage";
-import Standings from "@/pages/Standings";
-import Injuries from "@/pages/Injuries";
-import BettingTrends from "@/pages/BettingTrends";
-import ROITracker from "@/pages/ROITracker";
-import AIPredictions from "@/pages/AIPredictions";
-import RecentResultsPage from "@/pages/RecentResultsPage";
-import AlgorithmsComparison from "@/pages/AlgorithmsComparison";
-import CompareAlgorithms from "@/pages/CompareAlgorithms";
-import BacktestSimulator from "@/pages/BacktestSimulator";
-import CreatorDashboard from "@/pages/CreatorDashboard";
-import ScenarioGuide from "@/pages/ScenarioGuide";
-import BankrollManager from "@/pages/BankrollManager";
-import BetHistory from "@/pages/BetHistory";
-import SavingsPage from "@/pages/SavingsPage";
-import LearningCenter from "@/pages/LearningCenter";
-import Settings from "@/pages/Settings";
-import Billing from "@/pages/settings/Billing";
-import Auth from "@/pages/Auth";
-import Profile from "@/pages/Profile";
-import NotFound from "@/pages/NotFound";
 
-// Legal pages
-import TermsOfService from "@/pages/legal/TermsOfService";
-import PrivacyPolicy from "@/pages/legal/PrivacyPolicy";
-import ResponsibleGambling from "@/pages/legal/ResponsibleGambling";
+// Lazy-loaded routes (code-split per page)
+const GameDetailPage = lazy(() => import("@/pages/GameDetailPage"));
+const LiveGamesPage = lazy(() => import("@/pages/LiveGamesPage"));
+const GamesPage = lazy(() => import("@/pages/GamesPage"));
+const Standings = lazy(() => import("@/pages/Standings"));
+const Injuries = lazy(() => import("@/pages/Injuries"));
+const BettingTrends = lazy(() => import("@/pages/BettingTrends"));
+const ROITracker = lazy(() => import("@/pages/ROITracker"));
+const AIPredictions = lazy(() => import("@/pages/AIPredictions"));
+const RecentResultsPage = lazy(() => import("@/pages/RecentResultsPage"));
+const AlgorithmsComparison = lazy(() => import("@/pages/AlgorithmsComparison"));
+const CompareAlgorithms = lazy(() => import("@/pages/CompareAlgorithms"));
+const BacktestSimulator = lazy(() => import("@/pages/BacktestSimulator"));
+const CreatorDashboard = lazy(() => import("@/pages/CreatorDashboard"));
+const ScenarioGuide = lazy(() => import("@/pages/ScenarioGuide"));
+const BankrollManager = lazy(() => import("@/pages/BankrollManager"));
+const BetHistory = lazy(() => import("@/pages/BetHistory"));
+const SavingsPage = lazy(() => import("@/pages/SavingsPage"));
+const LearningCenter = lazy(() => import("@/pages/LearningCenter"));
+const Settings = lazy(() => import("@/pages/Settings"));
+const Billing = lazy(() => import("@/pages/settings/Billing"));
+const Auth = lazy(() => import("@/pages/Auth"));
+const Profile = lazy(() => import("@/pages/Profile"));
+const NotFound = lazy(() => import("@/pages/NotFound"));
+const TermsOfService = lazy(() => import("@/pages/legal/TermsOfService"));
+const PrivacyPolicy = lazy(() => import("@/pages/legal/PrivacyPolicy"));
+const ResponsibleGambling = lazy(() => import("@/pages/legal/ResponsibleGambling"));
+
+function LazyPage({ children }: { children: React.ReactNode }) {
+  return (
+    <Suspense fallback={<RouteLoadingSkeleton />}>
+      <PageTransition>{children}</PageTransition>
+    </Suspense>
+  );
+}
 
 const AnimatedRoutes = () => {
   const location = useLocation();
@@ -39,6 +49,7 @@ const AnimatedRoutes = () => {
   return (
     <AnimatePresence mode="wait" initial={false}>
       <Routes location={location} key={location.pathname}>
+        {/* Home - eagerly loaded for fastest FCP */}
         <Route
           path="/"
           element={
@@ -47,220 +58,39 @@ const AnimatedRoutes = () => {
             </PageTransition>
           }
         />
-        <Route
-          path="/game/:id"
-          element={
-            <PageTransition>
-              <GameDetailPage />
-            </PageTransition>
-          }
-        />
-        <Route
-          path="/live"
-          element={
-            <PageTransition>
-              <LiveGamesPage />
-            </PageTransition>
-          }
-        />
-        <Route
-          path="/games"
-          element={
-            <PageTransition>
-              <GamesPage />
-            </PageTransition>
-          }
-        />
-        <Route
-          path="/standings"
-          element={
-            <PageTransition>
-              <Standings />
-            </PageTransition>
-          }
-        />
-        <Route
-          path="/injuries"
-          element={
-            <PageTransition>
-              <Injuries />
-            </PageTransition>
-          }
-        />
-        <Route
-          path="/betting-trends"
-          element={
-            <PageTransition>
-              <BettingTrends />
-            </PageTransition>
-          }
-        />
-        <Route
-          path="/roi"
-          element={
-            <PageTransition>
-              <ROITracker />
-            </PageTransition>
-          }
-        />
-        <Route
-          path="/ai-predictions"
-          element={
-            <PageTransition>
-              <AIPredictions />
-            </PageTransition>
-          }
-        />
-        <Route
-          path="/recent-results"
-          element={
-            <PageTransition>
-              <RecentResultsPage />
-            </PageTransition>
-          }
-        />
-        <Route
-          path="/algorithms"
-          element={
-            <PageTransition>
-              <AlgorithmsComparison />
-            </PageTransition>
-          }
-        />
-        <Route
-          path="/compare-algorithms"
-          element={
-            <PageTransition>
-              <CompareAlgorithms />
-            </PageTransition>
-          }
-        />
-        <Route
-          path="/backtest"
-          element={
-            <PageTransition>
-              <BacktestSimulator />
-            </PageTransition>
-          }
-        />
-        <Route
-          path="/creator"
-          element={
-            <PageTransition>
-              <CreatorDashboard />
-            </PageTransition>
-          }
-        />
-        <Route
-          path="/scenarios"
-          element={
-            <PageTransition>
-              <ScenarioGuide />
-            </PageTransition>
-          }
-        />
-        <Route
-          path="/bankroll"
-          element={
-            <PageTransition>
-              <BankrollManager />
-            </PageTransition>
-          }
-        />
-        <Route
-          path="/bet-history"
-          element={
-            <PageTransition>
-              <BetHistory />
-            </PageTransition>
-          }
-        />
-        <Route
-          path="/savings"
-          element={
-            <PageTransition>
-              <SavingsPage />
-            </PageTransition>
-          }
-        />
-        <Route
-          path="/settings"
-          element={
-            <PageTransition>
-              <Settings />
-            </PageTransition>
-          }
-        />
-        <Route
-          path="/settings/billing"
-          element={
-            <PageTransition>
-              <Billing />
-            </PageTransition>
-          }
-        />
-        <Route
-          path="/profile"
-          element={
-            <PageTransition>
-              <Profile />
-            </PageTransition>
-          }
-        />
-        <Route
-          path="/auth"
-          element={
-            <PageTransition>
-              <Auth />
-            </PageTransition>
-          }
-        />
-        <Route
-          path="/terms"
-          element={
-            <PageTransition>
-              <TermsOfService />
-            </PageTransition>
-          }
-        />
-        <Route
-          path="/privacy"
-          element={
-            <PageTransition>
-              <PrivacyPolicy />
-            </PageTransition>
-          }
-        />
-        <Route
-          path="/responsible-gambling"
-          element={
-            <PageTransition>
-              <ResponsibleGambling />
-            </PageTransition>
-          }
-        />
 
-        <Route
-          path="/learning"
-          element={
-            <PageTransition>
-              <LearningCenter />
-            </PageTransition>
-          }
-        />
+        {/* All other routes lazy-loaded */}
+        <Route path="/game/:id" element={<LazyPage><GameDetailPage /></LazyPage>} />
+        <Route path="/live" element={<LazyPage><LiveGamesPage /></LazyPage>} />
+        <Route path="/games" element={<LazyPage><GamesPage /></LazyPage>} />
+        <Route path="/standings" element={<LazyPage><Standings /></LazyPage>} />
+        <Route path="/injuries" element={<LazyPage><Injuries /></LazyPage>} />
+        <Route path="/betting-trends" element={<LazyPage><BettingTrends /></LazyPage>} />
+        <Route path="/roi" element={<LazyPage><ROITracker /></LazyPage>} />
+        <Route path="/ai-predictions" element={<LazyPage><AIPredictions /></LazyPage>} />
+        <Route path="/recent-results" element={<LazyPage><RecentResultsPage /></LazyPage>} />
+        <Route path="/algorithms" element={<LazyPage><AlgorithmsComparison /></LazyPage>} />
+        <Route path="/compare-algorithms" element={<LazyPage><CompareAlgorithms /></LazyPage>} />
+        <Route path="/backtest" element={<LazyPage><BacktestSimulator /></LazyPage>} />
+        <Route path="/creator" element={<LazyPage><CreatorDashboard /></LazyPage>} />
+        <Route path="/scenarios" element={<LazyPage><ScenarioGuide /></LazyPage>} />
+        <Route path="/bankroll" element={<LazyPage><BankrollManager /></LazyPage>} />
+        <Route path="/bet-history" element={<LazyPage><BetHistory /></LazyPage>} />
+        <Route path="/savings" element={<LazyPage><SavingsPage /></LazyPage>} />
+        <Route path="/learning" element={<LazyPage><LearningCenter /></LazyPage>} />
+        <Route path="/settings" element={<LazyPage><Settings /></LazyPage>} />
+        <Route path="/settings/billing" element={<LazyPage><Billing /></LazyPage>} />
+        <Route path="/profile" element={<LazyPage><Profile /></LazyPage>} />
+        <Route path="/auth" element={<LazyPage><Auth /></LazyPage>} />
+        <Route path="/terms" element={<LazyPage><TermsOfService /></LazyPage>} />
+        <Route path="/privacy" element={<LazyPage><PrivacyPolicy /></LazyPage>} />
+        <Route path="/responsible-gambling" element={<LazyPage><ResponsibleGambling /></LazyPage>} />
 
         {/* Legacy / invalid paths */}
         <Route path="/betslip" element={<Navigate to="/" replace />} />
 
         {/* Catch-all */}
-        <Route
-          path="*"
-          element={
-            <PageTransition>
-              <NotFound />
-            </PageTransition>
-          }
-        />
+        <Route path="*" element={<LazyPage><NotFound /></LazyPage>} />
       </Routes>
     </AnimatePresence>
   );
