@@ -104,17 +104,15 @@ function LeagueIcon({ league, size = 16 }: { league: string; size?: number }) {
   );
 }
 
-const TIME_RANGE_OPTIONS: { value: TimeRange; label: string }[] = [
-  { value: "1d", label: "24 Hours" },
-  { value: "7d", label: "1 Week" },
-  { value: "14d", label: "2 Weeks" },
-  { value: "1m", label: "1 Month" },
-  { value: "3m", label: "3 Months" },
+const TIME_RANGE_TABS: { value: TimeRange; label: string }[] = [
+  { value: "1d", label: "24H" },
+  { value: "7d", label: "7D" },
+  { value: "1m", label: "30D" },
   { value: "all", label: "All Time" },
 ];
 
 export default function AIPredictions() {
-  const [timeRange, setTimeRange] = useState<TimeRange>("14d");
+  const [timeRange, setTimeRange] = useState<TimeRange>("all");
   const [predictionType, setPredictionType] = useState<PredictionType>("all");
   const [leagueFilter, setLeagueFilter] = useState<string>("all");
   const [algorithmFilter, setAlgorithmFilter] = useState<string>("all");
@@ -164,16 +162,22 @@ export default function AIPredictions() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Select value={timeRange} onValueChange={(v) => setTimeRange(v as TimeRange)}>
-              <SelectTrigger className="w-[130px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {TIME_RANGE_OPTIONS.map(opt => (
-                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex items-center bg-muted/50 rounded-lg border border-border/30 p-0.5 gap-0.5">
+              {TIME_RANGE_TABS.map(opt => (
+                <button
+                  key={opt.value}
+                  onClick={() => setTimeRange(opt.value)}
+                  className={cn(
+                    "px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-200",
+                    timeRange === opt.value
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+                  )}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
             <Button 
               variant="outline" 
               size="icon"
@@ -195,7 +199,7 @@ export default function AIPredictions() {
             <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
               <StatCard
                 title="Total"
-                value={predictions.length.toString()}
+                value={stats.total.toString()}
                 icon={Brain}
                 isLoading={isLoading}
               />
