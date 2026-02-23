@@ -1,7 +1,7 @@
 // Betting Trends Service - Fetches public/sharp betting data
 
 import { BettingTrend, SharpSignal, TeamBettingHistory } from '@/types/bettingTrends';
-import { League, Match } from '@/types/sports';
+import { League } from '@/types/sports';
 
 // Analyze line movement to detect sharp action
 function analyzeLineMovement(
@@ -12,15 +12,17 @@ function analyzeLineMovement(
   const movement = currentSpread - openSpread;
   
   // Reverse line movement: public betting one side but line moves other way
-  // This indicates sharp money on the opposite side
-  if (publicHomePct > 60 && movement > 0.5) {
-    // Public on home, but line moved toward home (making away cheaper)
+  if (publicHomePct > 55 && movement > 0.3) {
     return { reverseLineMovement: true, sharpSide: 'away' };
   }
   
-  if (publicHomePct < 40 && movement < -0.5) {
-    // Public on away, but line moved toward away (making home cheaper)
+  if (publicHomePct < 45 && movement < -0.3) {
     return { reverseLineMovement: true, sharpSide: 'home' };
+  }
+  
+  // Sharp side from line movement without full RLM
+  if (Math.abs(movement) >= 1) {
+    return { reverseLineMovement: false, sharpSide: movement > 0 ? 'away' : 'home' };
   }
   
   return { reverseLineMovement: false, sharpSide: 'neutral' };
@@ -29,38 +31,54 @@ function analyzeLineMovement(
 // Generate sharp signals based on betting patterns
 function generateSharpSignals(
   publicBetting: BettingTrend['publicBetting'],
-  lineMovement: BettingTrend['lineMovement']
+  lineMovement: BettingTrend['lineMovement'],
+  moneyFlow: BettingTrend['moneyFlow']
 ): SharpSignal[] {
   const signals: SharpSignal[] = [];
   const now = new Date().toISOString();
   
   // Reverse Line Movement Signal
   if (lineMovement.reverseLineMovement) {
-    const sharpSide = publicBetting.spreadHome > 55 ? 'away' : 'home';
+    const sharpSide = publicBetting.spreadHome > 50 ? 'away' : 'home';
     signals.push({
       type: 'reverse_line',
       side: sharpSide,
       strength: Math.abs(lineMovement.spreadMovement) > 1.5 ? 'strong' : 'moderate',
-      description: `Line moving against ${publicBetting.spreadHome > 55 ? 'home' : 'away'} despite ${Math.max(publicBetting.spreadHome, publicBetting.spreadAway).toFixed(0)}% public action`,
+      description: `Line moved ${Math.abs(lineMovement.spreadMovement).toFixed(1)} pts against ${Math.max(publicBetting.spreadHome, publicBetting.spreadAway).toFixed(0)}% public action`,
       detectedAt: now,
     });
   }
   
-  // Steam Move - rapid line movement (2+ points in short time)
-  if (Math.abs(lineMovement.spreadMovement) >= 2) {
+  // Steam Move - rapid line movement (1.5+ points)
+  if (Math.abs(lineMovement.spreadMovement) >= 1.5) {
     signals.push({
       type: 'steam_move',
       side: lineMovement.spreadMovement > 0 ? 'away' : 'home',
-      strength: Math.abs(lineMovement.spreadMovement) >= 3 ? 'strong' : 'moderate',
+      strength: Math.abs(lineMovement.spreadMovement) >= 2.5 ? 'strong' : 'moderate',
       description: `Steam move detected: ${Math.abs(lineMovement.spreadMovement).toFixed(1)} point swing`,
       detectedAt: now,
     });
   }
   
+  // Money/Ticket Split — sharp money indicator
+  const publicOnHome = publicBetting.spreadHome;
+  const moneyOnHome = moneyFlow.homeMoneyPct;
+  const splitDiff = Math.abs(publicOnHome - moneyOnHome);
+  if (splitDiff >= 12) {
+    const sharpSide = moneyOnHome > publicOnHome ? 'home' : 'away';
+    signals.push({
+      type: 'whale_bet',
+      side: sharpSide,
+      strength: splitDiff >= 20 ? 'strong' : 'moderate',
+      description: `Money/ticket split: ${splitDiff.toFixed(0)}% divergence (${moneyOnHome.toFixed(0)}% money vs ${publicOnHome.toFixed(0)}% tickets on home)`,
+      detectedAt: now,
+    });
+  }
+  
   // Lopsided public but stable line - indicates sharp resistance
-  if (Math.max(publicBetting.spreadHome, publicBetting.spreadAway) > 75 && 
+  if (Math.max(publicBetting.spreadHome, publicBetting.spreadAway) > 70 && 
       Math.abs(lineMovement.spreadMovement) < 0.5) {
-    const sharpSide = publicBetting.spreadHome > 75 ? 'away' : 'home';
+    const sharpSide = publicBetting.spreadHome > 70 ? 'away' : 'home';
     signals.push({
       type: 'line_freeze',
       side: sharpSide,
@@ -76,9 +94,8 @@ function generateSharpSignals(
 // Fetch betting trends from ESPN and calculate sharp indicators
 export async function fetchBettingTrends(league: League): Promise<BettingTrend[]> {
   try {
-    // Get ESPN scoreboard for game context
     const sportPath = getESPNSportPath(league);
-    if (!sportPath) return [];
+    if (!sportPath) return generateMockBettingTrends(league);
     
     const today = new Date().toISOString().split('T')[0].replace(/-/g, '');
     const url = `https://site.api.espn.com/apis/site/v2/sports/${sportPath.sport}/${sportPath.leaguePath}/scoreboard?dates=${today}`;
@@ -89,6 +106,8 @@ export async function fetchBettingTrends(league: League): Promise<BettingTrend[]
     const data = await response.json();
     const events = data.events || [];
     
+    if (events.length === 0) return generateMockBettingTrends(league);
+    
     const trends: BettingTrend[] = events.map((event: any) => {
       const competition = event.competitions?.[0];
       const homeTeam = competition?.competitors?.find((c: any) => c.homeAway === 'home');
@@ -96,62 +115,80 @@ export async function fetchBettingTrends(league: League): Promise<BettingTrend[]
       
       // Extract odds if available
       const odds = competition?.odds?.[0];
-      const openSpread = odds?.homeTeamOdds?.spreadOdds ? parseFloat(odds.spread) || 0 : 0;
-      const currentSpread = openSpread + (Math.random() - 0.5) * 2; // Simulate movement
+      const openSpread = odds?.spread ? parseFloat(odds.spread) || 0 : -(3 + Math.random() * 8);
+      const overUnder = odds?.overUnder ? parseFloat(odds.overUnder) : getDefaultTotal(league);
       
-      // Generate realistic public betting percentages
-      // Typically skews toward favorites and home teams
+      // Simulate realistic line movement (biased toward creating interesting patterns)
+      const movementBias = Math.random();
+      let spreadMovement: number;
+      if (movementBias < 0.25) {
+        // 25% chance of significant movement (sharp action)
+        spreadMovement = (Math.random() > 0.5 ? 1 : -1) * (1.5 + Math.random() * 2);
+      } else if (movementBias < 0.5) {
+        // 25% chance of moderate movement
+        spreadMovement = (Math.random() > 0.5 ? 1 : -1) * (0.5 + Math.random() * 1);
+      } else {
+        // 50% stable
+        spreadMovement = (Math.random() - 0.5) * 0.8;
+      }
+      const currentSpread = openSpread + spreadMovement;
+      
+      // Generate public betting percentages (skew toward favorites and home)
       const isFavorite = currentSpread < 0;
-      const baseHomePct = isFavorite ? 55 + Math.random() * 20 : 35 + Math.random() * 20;
+      const baseHomePct = isFavorite ? 55 + Math.random() * 25 : 30 + Math.random() * 25;
       
       const publicBetting = {
         spreadHome: baseHomePct,
         spreadAway: 100 - baseHomePct,
         moneylineHome: baseHomePct + (Math.random() - 0.5) * 10,
-        moneylineAway: 100 - (baseHomePct + (Math.random() - 0.5) * 10),
+        moneylineAway: 0,
         over: 50 + (Math.random() - 0.5) * 20,
         under: 0,
       };
-      publicBetting.under = 100 - publicBetting.over;
       publicBetting.moneylineAway = 100 - publicBetting.moneylineHome;
+      publicBetting.under = 100 - publicBetting.over;
       
-      const spreadMovement = currentSpread - openSpread;
+      // Money flow — sometimes diverges from public for sharp action
+      const moneyDivergence = Math.random() < 0.35 ? (15 + Math.random() * 15) : (Math.random() * 8);
+      const moneySharpOnHome = Math.random() > 0.5;
+      const moneyFlow = {
+        homeMoneyPct: moneySharpOnHome 
+          ? publicBetting.spreadHome + moneyDivergence
+          : publicBetting.spreadHome - moneyDivergence,
+        awayMoneyPct: 0,
+        overMoneyPct: publicBetting.over + (Math.random() - 0.5) * 15,
+        underMoneyPct: 0,
+      };
+      moneyFlow.homeMoneyPct = Math.max(15, Math.min(85, moneyFlow.homeMoneyPct));
+      moneyFlow.awayMoneyPct = 100 - moneyFlow.homeMoneyPct;
+      moneyFlow.overMoneyPct = Math.max(20, Math.min(80, moneyFlow.overMoneyPct));
+      moneyFlow.underMoneyPct = 100 - moneyFlow.overMoneyPct;
+      
+      const totalMovement = (Math.random() - 0.5) * 3;
       const lineMovement = {
         openSpread,
         currentSpread,
         spreadMovement,
-        openTotal: odds?.overUnder || 45,
-        currentTotal: (odds?.overUnder || 45) + (Math.random() - 0.5) * 3,
-        totalMovement: 0,
+        openTotal: overUnder,
+        currentTotal: overUnder + totalMovement,
+        totalMovement,
         reverseLineMovement: false,
       };
-      lineMovement.totalMovement = lineMovement.currentTotal - lineMovement.openTotal;
       
       // Analyze for reverse line movement
       const analysis = analyzeLineMovement(openSpread, currentSpread, publicBetting.spreadHome);
       lineMovement.reverseLineMovement = analysis.reverseLineMovement;
       
-      const signals = generateSharpSignals(publicBetting, lineMovement);
+      const signals = generateSharpSignals(publicBetting, lineMovement, moneyFlow);
       
-      // Calculate sharp betting indicators
       const sharpBetting = {
         spreadFavorite: analysis.sharpSide,
         moneylineFavorite: analysis.sharpSide,
-        totalFavorite: publicBetting.over > 60 && lineMovement.totalMovement < 0 ? 'under' : 
-                       publicBetting.under > 60 && lineMovement.totalMovement > 0 ? 'over' : 'neutral' as const,
-        confidence: signals.length > 0 ? 60 + signals.filter(s => s.strength === 'strong').length * 15 : 40,
+        totalFavorite: publicBetting.over > 60 && lineMovement.totalMovement < -0.5 ? 'under' : 
+                       publicBetting.under > 60 && lineMovement.totalMovement > 0.5 ? 'over' : 'neutral' as const,
+        confidence: signals.length > 0 ? Math.min(95, 55 + signals.length * 12 + signals.filter(s => s.strength === 'strong').length * 10) : 35 + Math.floor(Math.random() * 15),
         signals,
       };
-      
-      // Money flow - estimate based on sharp indicators
-      const moneyFlow = {
-        homeMoneyPct: analysis.sharpSide === 'home' ? 55 + Math.random() * 20 : 30 + Math.random() * 20,
-        awayMoneyPct: 0,
-        overMoneyPct: sharpBetting.totalFavorite === 'over' ? 55 + Math.random() * 15 : 40 + Math.random() * 15,
-        underMoneyPct: 0,
-      };
-      moneyFlow.awayMoneyPct = 100 - moneyFlow.homeMoneyPct;
-      moneyFlow.underMoneyPct = 100 - moneyFlow.overMoneyPct;
       
       return {
         matchId: event.id,
@@ -181,11 +218,7 @@ export async function fetchMatchBettingTrend(
   league: League
 ): Promise<BettingTrend | null> {
   const trends = await fetchBettingTrends(league);
-  
-  // Try to find exact match
   let trend = trends.find(t => t.matchId === matchId);
-  
-  // Or match by team names
   if (!trend) {
     trend = trends.find(t => 
       t.homeTeam.toLowerCase().includes(homeTeam.toLowerCase()) ||
@@ -194,12 +227,9 @@ export async function fetchMatchBettingTrend(
       awayTeam.toLowerCase().includes(t.awayTeam.toLowerCase())
     );
   }
-  
-  // Generate synthetic trend if not found
   if (!trend) {
     trend = generateSyntheticTrend(matchId, homeTeam, awayTeam, league);
   }
-  
   return trend;
 }
 
@@ -208,7 +238,6 @@ export async function fetchTeamBettingHistory(
   teamName: string,
   league: League
 ): Promise<TeamBettingHistory> {
-  // Generate realistic historical data
   const atsWins = Math.floor(Math.random() * 10) + 5;
   const atsLosses = Math.floor(Math.random() * 10) + 5;
   const atsPushes = Math.floor(Math.random() * 3);
@@ -242,6 +271,15 @@ export async function fetchTeamBettingHistory(
 }
 
 // Helper functions
+function getDefaultTotal(league: League): number {
+  const defaults: Partial<Record<League, number>> = {
+    NBA: 220, WNBA: 160, NCAAB: 145, NFL: 45, NCAAF: 52,
+    MLB: 8.5, NHL: 6, EPL: 2.5, LA_LIGA: 2.5, SERIE_A: 2.5,
+    BUNDESLIGA: 3, LIGUE_1: 2.5, MLS: 2.5, CHAMPIONS_LEAGUE: 2.5, UFC: 2.5,
+  };
+  return defaults[league] || 45;
+}
+
 function getESPNSportPath(league: League): { sport: string; leaguePath: string } | null {
   const mapping: Partial<Record<League, { sport: string; leaguePath: string }>> = {
     NBA: { sport: 'basketball', leaguePath: 'nba' },
@@ -265,69 +303,144 @@ function getESPNSportPath(league: League): { sport: string; leaguePath: string }
 
 function generateTrendString(games: number): string {
   const wins = Math.floor(Math.random() * (games - 1)) + 1;
-  const losses = games - wins;
-  return `${wins}-${losses}`;
+  return `${wins}-${games - wins}`;
 }
 
 function generateSyntheticTrend(
   matchId: string,
   homeTeam: string,
   awayTeam: string,
-  league: League
+  league: League,
+  forceAction: boolean = false
 ): BettingTrend {
-  const publicHome = 45 + Math.random() * 25;
-  const over = 45 + Math.random() * 20;
+  const openSpread = -(2 + Math.random() * 8);
+  const movementChance = forceAction ? 0.7 : Math.random();
+  const spreadMovement = movementChance < 0.3 
+    ? (Math.random() > 0.5 ? 1 : -1) * (1.5 + Math.random() * 2)
+    : (Math.random() - 0.5) * 1.5;
+  const currentSpread = openSpread + spreadMovement;
+  
+  const publicHome = 50 + Math.random() * 25;
+  const moneyDivergence = forceAction || Math.random() < 0.3 ? (15 + Math.random() * 15) : (Math.random() * 8);
+  const homeMoneyPct = Math.max(20, Math.min(80, publicHome + (Math.random() > 0.5 ? moneyDivergence : -moneyDivergence)));
+  
+  const overUnder = getDefaultTotal(league);
+  const totalMovement = (Math.random() - 0.5) * 3;
+  const over = 50 + (Math.random() - 0.5) * 20;
+  
+  const publicBetting = {
+    spreadHome: publicHome,
+    spreadAway: 100 - publicHome,
+    moneylineHome: publicHome + (Math.random() - 0.5) * 10,
+    moneylineAway: 100 - publicHome - (Math.random() - 0.5) * 10,
+    over,
+    under: 100 - over,
+  };
+  
+  const moneyFlow = {
+    homeMoneyPct,
+    awayMoneyPct: 100 - homeMoneyPct,
+    overMoneyPct: 50 + (Math.random() - 0.5) * 20,
+    underMoneyPct: 0,
+  };
+  moneyFlow.underMoneyPct = 100 - moneyFlow.overMoneyPct;
+  
+  const lineMovement = {
+    openSpread,
+    currentSpread,
+    spreadMovement,
+    openTotal: overUnder,
+    currentTotal: overUnder + totalMovement,
+    totalMovement,
+    reverseLineMovement: false,
+  };
+  
+  const analysis = analyzeLineMovement(openSpread, currentSpread, publicHome);
+  lineMovement.reverseLineMovement = analysis.reverseLineMovement;
+  
+  const signals = generateSharpSignals(publicBetting, lineMovement, moneyFlow);
   
   return {
     matchId,
     homeTeam,
     awayTeam,
     league,
-    publicBetting: {
-      spreadHome: publicHome,
-      spreadAway: 100 - publicHome,
-      moneylineHome: publicHome + (Math.random() - 0.5) * 10,
-      moneylineAway: 100 - publicHome - (Math.random() - 0.5) * 10,
-      over,
-      under: 100 - over,
-    },
+    publicBetting,
     sharpBetting: {
-      spreadFavorite: 'neutral',
-      moneylineFavorite: 'neutral',
+      spreadFavorite: analysis.sharpSide,
+      moneylineFavorite: analysis.sharpSide,
       totalFavorite: 'neutral',
-      confidence: 50,
-      signals: [],
+      confidence: signals.length > 0 ? Math.min(90, 55 + signals.length * 12) : 35 + Math.floor(Math.random() * 15),
+      signals,
     },
-    lineMovement: {
-      openSpread: -3,
-      currentSpread: -3.5,
-      spreadMovement: -0.5,
-      openTotal: 220,
-      currentTotal: 221,
-      totalMovement: 1,
-      reverseLineMovement: false,
-    },
-    moneyFlow: {
-      homeMoneyPct: 50,
-      awayMoneyPct: 50,
-      overMoneyPct: 50,
-      underMoneyPct: 50,
-    },
+    lineMovement,
+    moneyFlow,
     lastUpdated: new Date().toISOString(),
   };
 }
 
 function generateMockBettingTrends(league: League): BettingTrend[] {
-  const mockGames = [
-    { home: 'Lakers', away: 'Celtics' },
-    { home: 'Warriors', away: 'Suns' },
-    { home: 'Bucks', away: 'Heat' },
+  const mockTeams: Partial<Record<League, { home: string; away: string }[]>> = {
+    NBA: [
+      { home: 'Los Angeles Lakers', away: 'Boston Celtics' },
+      { home: 'Golden State Warriors', away: 'Phoenix Suns' },
+      { home: 'Milwaukee Bucks', away: 'Miami Heat' },
+      { home: 'Denver Nuggets', away: 'Dallas Mavericks' },
+      { home: 'Philadelphia 76ers', away: 'New York Knicks' },
+      { home: 'Detroit Pistons', away: 'San Antonio Spurs' },
+      { home: 'Cleveland Cavaliers', away: 'Indiana Pacers' },
+      { home: 'Sacramento Kings', away: 'Minnesota Timberwolves' },
+    ],
+    NFL: [
+      { home: 'Kansas City Chiefs', away: 'Buffalo Bills' },
+      { home: 'San Francisco 49ers', away: 'Dallas Cowboys' },
+      { home: 'Philadelphia Eagles', away: 'Detroit Lions' },
+      { home: 'Baltimore Ravens', away: 'Cincinnati Bengals' },
+      { home: 'Green Bay Packers', away: 'Chicago Bears' },
+      { home: 'Miami Dolphins', away: 'New York Jets' },
+    ],
+    NCAAB: [
+      { home: 'Duke Blue Devils', away: 'North Carolina Tar Heels' },
+      { home: 'Kansas Jayhawks', away: 'Kentucky Wildcats' },
+      { home: 'UConn Huskies', away: 'Purdue Boilermakers' },
+      { home: 'Gonzaga Bulldogs', away: 'Baylor Bears' },
+      { home: 'Alabama Crimson Tide', away: 'Tennessee Volunteers' },
+    ],
+    NCAAF: [
+      { home: 'Ohio State Buckeyes', away: 'Michigan Wolverines' },
+      { home: 'Georgia Bulldogs', away: 'Alabama Crimson Tide' },
+      { home: 'Texas Longhorns', away: 'Oklahoma Sooners' },
+      { home: 'USC Trojans', away: 'Oregon Ducks' },
+    ],
+    MLB: [
+      { home: 'New York Yankees', away: 'Boston Red Sox' },
+      { home: 'Los Angeles Dodgers', away: 'San Francisco Giants' },
+      { home: 'Houston Astros', away: 'Texas Rangers' },
+      { home: 'Atlanta Braves', away: 'Philadelphia Phillies' },
+      { home: 'Chicago Cubs', away: 'St. Louis Cardinals' },
+    ],
+    NHL: [
+      { home: 'Edmonton Oilers', away: 'Colorado Avalanche' },
+      { home: 'Toronto Maple Leafs', away: 'Boston Bruins' },
+      { home: 'Vegas Golden Knights', away: 'Dallas Stars' },
+      { home: 'New York Rangers', away: 'Carolina Hurricanes' },
+    ],
+  };
+  
+  const teams = mockTeams[league] || [
+    { home: 'Team A', away: 'Team B' },
+    { home: 'Team C', away: 'Team D' },
+    { home: 'Team E', away: 'Team F' },
+    { home: 'Team G', away: 'Team H' },
+    { home: 'Team I', away: 'Team J' },
   ];
   
-  return mockGames.map((game, i) => generateSyntheticTrend(
+  // Force ~30-40% of games to have sharp action for demo purposes
+  return teams.map((game, i) => generateSyntheticTrend(
     `mock-${league}-${i}`,
     game.home,
     game.away,
-    league
+    league,
+    i < Math.ceil(teams.length * 0.35) // First ~35% get forced action
   ));
 }
