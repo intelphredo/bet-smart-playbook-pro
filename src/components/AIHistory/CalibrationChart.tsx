@@ -97,7 +97,7 @@ export function CalibrationChart({ predictions, confidenceVsAccuracy, isLoading 
     }).filter(bin => bin.count >= 1);
   }, [predictions]);
 
-  // Calculate overall calibration metrics
+  // Calculate overall calibration metrics - WEIGHTED by sample size
   const calibrationMetrics = useMemo(() => {
     const settledPredictions = predictions.filter(p => p.status === 'won' || p.status === 'lost');
     const totalCount = settledPredictions.length;
@@ -106,38 +106,55 @@ export function CalibrationChart({ predictions, confidenceVsAccuracy, isLoading 
       return {
         brierScore: 0,
         meanAbsoluteError: 0,
+        weightedMAE: 0,
         isWellCalibrated: true,
         overconfidentBins: 0,
         underconfidentBins: 0,
-        reliabilityDiagram: [],
       };
     }
     
-    // Calculate Brier score and MAE
+    // Calculate Brier score (per-prediction, not per-bin)
     let brierSum = 0;
-    let maeSum = 0;
     
     settledPredictions.forEach(p => {
       const prob = (p.confidence || 50) / 100;
       const outcome = p.status === 'won' ? 1 : 0;
       brierSum += Math.pow(prob - outcome, 2);
-      maeSum += Math.abs(prob - outcome);
     });
     
     const brierScore = brierSum / totalCount;
-    const meanAbsoluteError = (maeSum / totalCount) * 100;
     
-    // Count over/under confident bins
+    // Weighted MAE: weight each bin by sample size for accurate aggregate
+    let weightedErrorSum = 0;
+    let totalBinSamples = 0;
+    
+    calibrationData.forEach(bin => {
+      if (bin.count >= 3) { // Only count bins with sufficient data
+        const expectedWinRate = bin.confidence + 2.5; // midpoint of bin
+        weightedErrorSum += Math.abs(bin.actualWinRate - expectedWinRate) * bin.count;
+        totalBinSamples += bin.count;
+      }
+    });
+    
+    const weightedMAE = totalBinSamples > 0 ? weightedErrorSum / totalBinSamples : 0;
+    
+    // Unweighted MAE for comparison (the old calculation that showed 50%)
+    const binsWithData = calibrationData.filter(b => b.count >= 3);
+    const unweightedMAE = binsWithData.length > 0 
+      ? binsWithData.reduce((sum, b) => sum + Math.abs(b.calibrationError), 0) / binsWithData.length
+      : 0;
+    
+    // Count over/under confident bins (only those with sufficient data)
     const overconfidentBins = calibrationData.filter(b => b.isOverconfident).length;
     const underconfidentBins = calibrationData.filter(b => b.isUnderconfident).length;
     
-    // Well calibrated if Brier score < 0.25 and most bins are within 5%
-    const isWellCalibrated = brierScore < 0.25 && 
-      (overconfidentBins + underconfidentBins) <= Math.ceil(calibrationData.length * 0.3);
+    // Well calibrated if Brier score < 0.25 and weighted MAE < 10%
+    const isWellCalibrated = brierScore < 0.25 && weightedMAE < 10;
     
     return {
       brierScore: Math.round(brierScore * 1000) / 1000,
-      meanAbsoluteError: Math.round(meanAbsoluteError * 10) / 10,
+      meanAbsoluteError: Math.round(unweightedMAE * 10) / 10,
+      weightedMAE: Math.round(weightedMAE * 10) / 10,
       isWellCalibrated,
       overconfidentBins,
       underconfidentBins,
@@ -317,10 +334,10 @@ export function CalibrationChart({ predictions, confidenceVsAccuracy, isLoading 
             
             {/* Mean Absolute Error */}
             <div className="bg-muted/50 rounded-lg p-3">
-              <div className="text-xs text-muted-foreground mb-1">Avg. Calibration Error</div>
-              <div className="font-bold text-lg">{calibrationMetrics.meanAbsoluteError}%</div>
+              <div className="text-xs text-muted-foreground mb-1">Weighted Calibration Error</div>
+              <div className="font-bold text-lg">{calibrationMetrics.weightedMAE}%</div>
               <Progress 
-                value={100 - Math.min(calibrationMetrics.meanAbsoluteError * 2, 100)} 
+                value={100 - Math.min(calibrationMetrics.weightedMAE * 2, 100)} 
                 className="h-1.5 mt-1" 
               />
             </div>

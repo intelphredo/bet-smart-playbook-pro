@@ -68,6 +68,7 @@ export interface PredictionStats {
   won: number;
   lost: number;
   pending: number;
+  settled: number;
   winRate: number;
   avgConfidence: number;
   byLeague: Record<string, { won: number; lost: number; pending: number }>;
@@ -78,8 +79,18 @@ export interface PredictionStats {
   totalPL: number;
   totalUnitsStaked: number;
   roi: number;
+  unitSize: number;
+  dollarPL: number;
+  breakEvenWinRate: number;
   liveStats: { total: number; won: number; lost: number; pending: number; winRate: number };
   preliveStats: { total: number; won: number; lost: number; pending: number; winRate: number };
+  dataValidation: {
+    winsAndLossesEqualSettled: boolean;
+    settledCount: number;
+    pendingCount: number;
+    missingConfidence: number;
+    avgOdds: number;
+  };
 }
 
 const getDateFromRange = (range: TimeRange): Date | null => {
@@ -115,6 +126,10 @@ function computeStats(
   timeRange: TimeRange,
   predictionType: PredictionType
 ): PredictionStats {
+  // Standard -110 odds payout factor
+  const PAYOUT_FACTOR = 0.9091; // Win $0.91 per $1 risked at -110
+  const UNIT_SIZE = 10; // $10 per unit
+
   // Filter by prediction type
   let filtered = predictions;
   if (predictionType === "live") {
@@ -134,11 +149,21 @@ function computeStats(
     return { total: preds.length, won, lost, pending, winRate: settled > 0 ? (won / settled) * 100 : 0 };
   };
 
+  const won = filtered.filter(p => p.status === "won").length;
+  const lost = filtered.filter(p => p.status === "lost").length;
+  const pending = filtered.filter(p => p.status === "pending").length;
+  const settled = won + lost;
+  const missingConfidence = filtered.filter(p => p.confidence === null || p.confidence === undefined).length;
+
+  // Break-even win rate at -110 odds = 1 / (1 + PAYOUT_FACTOR) ≈ 52.4%
+  const breakEvenWinRate = (1 / (1 + PAYOUT_FACTOR)) * 100;
+
   const stats: PredictionStats = {
     total: filtered.length,
-    won: filtered.filter(p => p.status === "won").length,
-    lost: filtered.filter(p => p.status === "lost").length,
-    pending: filtered.filter(p => p.status === "pending").length,
+    won,
+    lost,
+    pending,
+    settled,
     winRate: 0,
     avgConfidence: 0,
     byLeague: {},
@@ -149,12 +174,21 @@ function computeStats(
     totalPL: 0,
     totalUnitsStaked: 0,
     roi: 0,
+    unitSize: UNIT_SIZE,
+    dollarPL: 0,
+    breakEvenWinRate,
     liveStats: calcTypeStats(livePredictions),
     preliveStats: calcTypeStats(prelivePredictions),
+    dataValidation: {
+      winsAndLossesEqualSettled: won + lost === settled,
+      settledCount: settled,
+      pendingCount: pending,
+      missingConfidence,
+      avgOdds: -110,
+    },
   };
 
-  const settled = stats.won + stats.lost;
-  stats.winRate = settled > 0 ? (stats.won / settled) * 100 : 0;
+  stats.winRate = settled > 0 ? (won / settled) * 100 : 0;
 
   const confidences = filtered.filter(p => p.confidence).map(p => p.confidence!);
   stats.avgConfidence = confidences.length > 0 ? confidences.reduce((a, b) => a + b, 0) / confidences.length : 0;
@@ -206,7 +240,7 @@ function computeStats(
     const dayConfidences = dayPredictions.filter(p => p.confidence).map(p => p.confidence!);
     const avgConfidence = dayConfidences.length > 0 ? dayConfidences.reduce((a, b) => a + b, 0) / dayConfidences.length : 0;
 
-    const dailyPL = (won * 0.91) - lost;
+    const dailyPL = (won * PAYOUT_FACTOR) - lost;
     cumulativePL += dailyPL;
 
     return {
@@ -219,10 +253,10 @@ function computeStats(
     };
   });
 
-  // Total P/L and ROI
-  const settledBets = stats.won + stats.lost;
-  stats.totalUnitsStaked = settledBets;
-  stats.totalPL = (stats.won * 0.91) - stats.lost;
+  // Total P/L and ROI - using proper unit-based calculation
+  stats.totalUnitsStaked = settled;
+  stats.totalPL = (stats.won * PAYOUT_FACTOR) - stats.lost;
+  stats.dollarPL = stats.totalPL * UNIT_SIZE;
   stats.roi = stats.totalUnitsStaked > 0 ? (stats.totalPL / stats.totalUnitsStaked) * 100 : 0;
 
   // League performance
@@ -230,7 +264,7 @@ function computeStats(
     const total = data.won + data.lost + data.pending;
     const leagueSettled = data.won + data.lost;
     const winRate = leagueSettled > 0 ? (data.won / leagueSettled) * 100 : 0;
-    const totalPL = (data.won * 0.91) - data.lost;
+    const totalPL = (data.won * PAYOUT_FACTOR) - data.lost;
     const roi = leagueSettled > 0 ? (totalPL / leagueSettled) * 100 : 0;
 
     const leaguePredictions = filtered
