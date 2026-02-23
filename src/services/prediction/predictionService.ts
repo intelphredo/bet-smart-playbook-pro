@@ -21,6 +21,12 @@ import {
 import { BasePredictionEngine } from "@/domain/prediction/engine";
 import { MatchRepository, mapMatchToMatchData, mapMatchDataToMatch } from "@/data/repositories/matchRepository";
 import { PredictionRepository } from "@/data/repositories/predictionRepository";
+import { 
+  fetchAlgorithmWeights, 
+  synthesizeConsensus, 
+  AlgorithmWeight,
+  ConsensusResult,
+} from "@/domain/prediction/consensusEngine";
 
 // ============================================
 // Service Configuration
@@ -40,6 +46,9 @@ export class PredictionService {
   private engines: Map<string, BasePredictionEngine> = new Map();
   private predictionRepo: PredictionRepository;
   private config: PredictionServiceConfig;
+  private cachedWeights: AlgorithmWeight[] | null = null;
+  private weightsLastFetched: number = 0;
+  private readonly WEIGHTS_TTL = 15 * 60 * 1000; // 15 minutes
 
   constructor(config: PredictionServiceConfig = {}) {
     this.config = {
@@ -191,48 +200,30 @@ export class PredictionService {
   }
 
   /**
-   * Get consensus prediction from all algorithms
+   * Get weighted consensus prediction from all algorithms.
+   * Uses historical accuracy to weight each algorithm's contribution.
    */
-  async getConsensusPrediction(match: Match): Promise<PredictionResult> {
-    const allPredictions = await this.getAllAlgorithmPredictions(match);
-    
-    let homeVotes = 0;
-    let awayVotes = 0;
-    let totalConfidence = 0;
-    let totalHomeScore = 0;
-    let totalAwayScore = 0;
+  async getConsensusPrediction(match: Match): Promise<ConsensusResult> {
+    const [allPredictions, weights] = await Promise.all([
+      this.getAllAlgorithmPredictions(match),
+      this.getWeights(),
+    ]);
 
-    allPredictions.forEach(prediction => {
-      if (prediction.recommended === 'home') homeVotes++;
-      if (prediction.recommended === 'away') awayVotes++;
-      totalConfidence += prediction.confidence;
-      totalHomeScore += prediction.projectedScore.home;
-      totalAwayScore += prediction.projectedScore.away;
-    });
+    return synthesizeConsensus(allPredictions, weights, match.id);
+  }
 
-    const count = allPredictions.size;
-    const recommended = homeVotes > awayVotes ? 'home' : 'away';
-    const avgConfidence = totalConfidence / count;
+  /**
+   * Get algorithm weights (cached with TTL)
+   */
+  private async getWeights(): Promise<AlgorithmWeight[]> {
+    const now = Date.now();
+    if (this.cachedWeights && now - this.weightsLastFetched < this.WEIGHTS_TTL) {
+      return this.cachedWeights;
+    }
 
-    return {
-      matchId: match.id,
-      recommended,
-      confidence: Math.round(avgConfidence),
-      trueProbability: avgConfidence / 100,
-      projectedScore: {
-        home: Math.round(totalHomeScore / count * 10) / 10,
-        away: Math.round(totalAwayScore / count * 10) / 10,
-      },
-      impliedOdds: 100 / avgConfidence,
-      expectedValue: 0, // Would need odds to calculate
-      evPercentage: 0,
-      kellyFraction: 0,
-      kellyStakeUnits: 0,
-      factors: {} as any,
-      algorithmId: 'consensus',
-      algorithmName: 'Consensus',
-      generatedAt: new Date().toISOString(),
-    };
+    this.cachedWeights = await fetchAlgorithmWeights();
+    this.weightsLastFetched = now;
+    return this.cachedWeights;
   }
 
   /**
@@ -247,6 +238,8 @@ export class PredictionService {
    */
   clearCache(): void {
     this.predictionRepo.clearCache();
+    this.cachedWeights = null;
+    this.weightsLastFetched = 0;
   }
 }
 

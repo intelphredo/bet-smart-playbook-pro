@@ -11,6 +11,7 @@ import { Match } from "@/types/sports";
 import { PredictionResult } from "@/domain/prediction/interfaces";
 import { getPredictionService } from "@/services/prediction/predictionService";
 import { ALGORITHM_IDS, ALGORITHM_REGISTRY } from "@/domain/prediction/algorithms";
+import { ConsensusResult } from "@/domain/prediction/consensusEngine";
 
 // ============================================
 // Hook Options
@@ -146,7 +147,7 @@ export function useAlgorithmComparison(options: UseAlgorithmComparisonOptions) {
   const { match, enabled = true } = options;
   const service = useMemo(() => getPredictionService(), []);
 
-  const query = useQuery({
+  const predictionsQuery = useQuery({
     queryKey: ['algorithm-comparison', match?.id],
     queryFn: async () => {
       if (!match) return new Map<string, PredictionResult>();
@@ -156,30 +157,21 @@ export function useAlgorithmComparison(options: UseAlgorithmComparisonOptions) {
     staleTime: 10 * 60 * 1000,
   });
 
-  // Find consensus
-  const consensus = useMemo(() => {
-    if (!query.data || query.data.size === 0) return null;
-
-    let homeVotes = 0;
-    let awayVotes = 0;
-    
-    query.data.forEach(p => {
-      if (p.recommended === 'home') homeVotes++;
-      if (p.recommended === 'away') awayVotes++;
-    });
-
-    return {
-      unanimous: homeVotes === query.data.size || awayVotes === query.data.size,
-      recommendation: homeVotes > awayVotes ? 'home' : 'away',
-      agreement: Math.max(homeVotes, awayVotes) / query.data.size,
-    };
-  }, [query.data]);
+  const consensusQuery = useQuery({
+    queryKey: ['consensus-prediction', match?.id],
+    queryFn: async () => {
+      if (!match) return null;
+      return service.getConsensusPrediction(match);
+    },
+    enabled: enabled && !!match,
+    staleTime: 10 * 60 * 1000,
+  });
 
   return {
-    predictions: query.data ?? new Map<string, PredictionResult>(),
-    consensus,
-    isLoading: query.isLoading,
-    error: query.error,
+    predictions: predictionsQuery.data ?? new Map<string, PredictionResult>(),
+    consensus: consensusQuery.data ?? null,
+    isLoading: predictionsQuery.isLoading || consensusQuery.isLoading,
+    error: predictionsQuery.error || consensusQuery.error,
     algorithms: ALGORITHM_REGISTRY,
   };
 }

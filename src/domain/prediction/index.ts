@@ -25,3 +25,10 @@ export {
   StatisticalEdgeEngine,
 } from './algorithms';
 export type { AlgorithmId } from './algorithms';
+
+// Consensus
+export {
+  fetchAlgorithmWeights,
+  synthesizeConsensus,
+} from './consensusEngine';
+export type { AlgorithmWeight, ConsensusResult } from './consensusEngine';
