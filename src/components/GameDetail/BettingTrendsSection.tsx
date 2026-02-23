@@ -134,11 +134,11 @@ const BettingTrendsSection: React.FC<BettingTrendsSectionProps> = ({
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <div>
                   <span className="text-muted-foreground">{match.homeTeam?.shortName}:</span>{" "}
-                  <span className="font-medium">{bettingTrend.moneyFlow.homeMoneyPct}%</span>
+                 <span className="font-medium">{Math.round(bettingTrend.moneyFlow.homeMoneyPct)}%</span>
                 </div>
                 <div>
                   <span className="text-muted-foreground">{match.awayTeam?.shortName}:</span>{" "}
-                  <span className="font-medium">{bettingTrend.moneyFlow.awayMoneyPct}%</span>
+                  <span className="font-medium">{Math.round(bettingTrend.moneyFlow.awayMoneyPct)}%</span>
                 </div>
               </div>
             </div>
@@ -185,8 +185,8 @@ const SplitBar: React.FC<{
         <span className="text-[10px] font-medium w-10">{awayName}</span>
       </div>
       <div className="flex justify-between text-[10px] text-muted-foreground px-11">
-        <span>{publicPct}%</span>
-        <span>{awayPct}%</span>
+        <span>{Math.round(publicPct)}%</span>
+        <span>{Math.round(awayPct)}%</span>
       </div>
     </div>
   );
