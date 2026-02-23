@@ -109,7 +109,7 @@ const SeasonRecordCard: React.FC<SeasonRecordCardProps> = ({
             record.pointDifferential > 0 ? "text-green-500" : 
             record.pointDifferential < 0 ? "text-red-500" : "text-muted-foreground"
           )} />
-          <span className="text-muted-foreground">Diff:</span>
+          <span className="text-muted-foreground">Pt Diff:</span>
           <span className={cn(
             "font-medium",
             record.pointDifferential > 0 ? "text-green-500" : 
@@ -387,13 +387,13 @@ const HeadToHeadHistory: React.FC<HeadToHeadHistoryProps> = ({
         </div>
 
         {/* Average Score & Stats */}
-        <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3">
           <div className="flex items-center justify-center gap-2 p-3 bg-muted/30 rounded-lg">
             <TrendingUp className="h-4 w-4 text-primary" />
             <span className="text-sm text-muted-foreground">Avg:</span>
             <span className="font-semibold">{homeTeam.shortName}</span>
             <Badge variant="outline">
-              {isNaN(h2hData.avgTeam1Score) || h2hData.avgTeam1Score === 0 ? "—" : h2hData.avgTeam1Score}
+              {(!h2hData.avgTeam1Score && h2hData.avgTeam1Score !== 0) || isNaN(h2hData.avgTeam1Score) || h2hData.avgTeam1Score === 0 ? "N/A" : h2hData.avgTeam1Score}
             </Badge>
           </div>
           <div className="flex items-center justify-center gap-2 p-3 bg-muted/30 rounded-lg">
@@ -401,7 +401,7 @@ const HeadToHeadHistory: React.FC<HeadToHeadHistoryProps> = ({
             <span className="text-sm text-muted-foreground">Avg:</span>
             <span className="font-semibold">{awayTeam.shortName}</span>
             <Badge variant="outline">
-              {isNaN(h2hData.avgTeam2Score) || h2hData.avgTeam2Score === 0 ? "—" : h2hData.avgTeam2Score}
+              {(!h2hData.avgTeam2Score && h2hData.avgTeam2Score !== 0) || isNaN(h2hData.avgTeam2Score) || h2hData.avgTeam2Score === 0 ? "N/A" : h2hData.avgTeam2Score}
             </Badge>
           </div>
         </div>
@@ -409,25 +409,39 @@ const HeadToHeadHistory: React.FC<HeadToHeadHistoryProps> = ({
         {/* Trend summary */}
         {h2hData.totalGames > 0 && (
           <div className="p-3 bg-muted/30 rounded-lg text-center text-sm">
-            {h2hData.team1Wins > h2hData.team2Wins ? (
-              <span>
-                <strong>{homeTeam.shortName}</strong> leads the series{" "}
-                <strong>{h2hData.team1Wins}-{h2hData.team2Wins}</strong>
-                {h2hData.avgTeam1Score > 0 && h2hData.avgTeam2Score > 0 && !isNaN(h2hData.avgTeam1Score) && !isNaN(h2hData.avgTeam2Score) && (
-                  <> • Avg margin: <strong>{Math.abs(h2hData.avgTeam1Score - h2hData.avgTeam2Score)} pts</strong></>
-                )}
-              </span>
-            ) : h2hData.team2Wins > h2hData.team1Wins ? (
-              <span>
-                <strong>{awayTeam.shortName}</strong> leads the series{" "}
-                <strong>{h2hData.team2Wins}-{h2hData.team1Wins}</strong>
-                {h2hData.avgTeam1Score > 0 && h2hData.avgTeam2Score > 0 && !isNaN(h2hData.avgTeam1Score) && !isNaN(h2hData.avgTeam2Score) && (
-                  <> • Avg margin: <strong>{Math.abs(h2hData.avgTeam1Score - h2hData.avgTeam2Score)} pts</strong></>
-                )}
-              </span>
-            ) : (
-              <span>Series is <strong>tied {h2hData.team1Wins}-{h2hData.team2Wins}</strong></span>
-            )}
+            {(() => {
+              const hasScoreData = h2hData.avgTeam1Score > 0 || h2hData.avgTeam2Score > 0;
+              const t1Wins = h2hData.team1Wins;
+              const t2Wins = h2hData.team2Wins;
+              
+              if (t1Wins === 0 && t2Wins === 0 && !hasScoreData) {
+                return <span>{h2hData.totalGames} matchups found — score data unavailable from ESPN</span>;
+              }
+              
+              if (t1Wins > t2Wins) {
+                return (
+                  <span>
+                    <strong>{homeTeam.shortName}</strong> leads the series{" "}
+                    <strong>{t1Wins}-{t2Wins}</strong>
+                    {hasScoreData && !isNaN(h2hData.avgTeam1Score) && !isNaN(h2hData.avgTeam2Score) && (
+                      <> • Avg margin: <strong>{Math.abs(h2hData.avgTeam1Score - h2hData.avgTeam2Score)} pts</strong></>
+                    )}
+                  </span>
+                );
+              }
+              if (t2Wins > t1Wins) {
+                return (
+                  <span>
+                    <strong>{awayTeam.shortName}</strong> leads the series{" "}
+                    <strong>{t2Wins}-{t1Wins}</strong>
+                    {hasScoreData && !isNaN(h2hData.avgTeam1Score) && !isNaN(h2hData.avgTeam2Score) && (
+                      <> • Avg margin: <strong>{Math.abs(h2hData.avgTeam1Score - h2hData.avgTeam2Score)} pts</strong></>
+                    )}
+                  </span>
+                );
+              }
+              return <span>Series is <strong>tied {t1Wins}-{t2Wins}</strong></span>;
+            })()}
           </div>
         )}
 
@@ -541,21 +555,25 @@ const HeadToHeadHistory: React.FC<HeadToHeadHistoryProps> = ({
                     </div>
                     
                     <div className="flex items-center gap-1 px-3 py-1 bg-background rounded-md min-w-[60px] justify-center">
-                      <span className={cn(
-                        "font-bold",
-                        !isNaN(match.homeScore) && !isNaN(match.awayScore) && match.homeScore > match.awayScore && "text-green-500",
-                        !isNaN(match.homeScore) && !isNaN(match.awayScore) && match.homeScore < match.awayScore && "text-muted-foreground"
-                      )}>
-                        {isNaN(match.homeScore) ? "—" : match.homeScore}
-                      </span>
-                      <span className="text-muted-foreground">-</span>
-                      <span className={cn(
-                        "font-bold",
-                        !isNaN(match.homeScore) && !isNaN(match.awayScore) && match.awayScore > match.homeScore && "text-green-500",
-                        !isNaN(match.homeScore) && !isNaN(match.awayScore) && match.awayScore < match.homeScore && "text-muted-foreground"
-                      )}>
-                        {isNaN(match.awayScore) ? "—" : match.awayScore}
-                      </span>
+                      {(() => {
+                        const homeS = match.homeScore;
+                        const awayS = match.awayScore;
+                        const hasValidScores = !isNaN(homeS) && !isNaN(awayS) && !(homeS === 0 && awayS === 0);
+                        if (!hasValidScores) {
+                          return <span className="text-xs text-muted-foreground">No score</span>;
+                        }
+                        return (
+                          <>
+                            <span className={cn("font-bold", homeS > awayS && "text-green-500", homeS < awayS && "text-muted-foreground")}>
+                              {homeS}
+                            </span>
+                            <span className="text-muted-foreground">-</span>
+                            <span className={cn("font-bold", awayS > homeS && "text-green-500", awayS < homeS && "text-muted-foreground")}>
+                              {awayS}
+                            </span>
+                          </>
+                        );
+                      })()}
                     </div>
                     
                     <div className="flex items-center gap-2 flex-1">
