@@ -843,6 +843,54 @@ export type Database = {
         }
         Relationships: []
       }
+      user_engagement: {
+        Row: {
+          achievements: Json
+          created_at: string
+          current_streak: number
+          daily_challenges: Json
+          daily_challenges_date: string | null
+          id: string
+          last_active_date: string | null
+          level: number
+          longest_streak: number
+          stats: Json
+          updated_at: string
+          user_id: string
+          xp: number
+        }
+        Insert: {
+          achievements?: Json
+          created_at?: string
+          current_streak?: number
+          daily_challenges?: Json
+          daily_challenges_date?: string | null
+          id?: string
+          last_active_date?: string | null
+          level?: number
+          longest_streak?: number
+          stats?: Json
+          updated_at?: string
+          user_id: string
+          xp?: number
+        }
+        Update: {
+          achievements?: Json
+          created_at?: string
+          current_streak?: number
+          daily_challenges?: Json
+          daily_challenges_date?: string | null
+          id?: string
+          last_active_date?: string | null
+          level?: number
+          longest_streak?: number
+          stats?: Json
+          updated_at?: string
+          user_id?: string
+          xp?: number
+        }
+        Relationships: []
+      }
       user_savings: {
         Row: {
           balance: number
