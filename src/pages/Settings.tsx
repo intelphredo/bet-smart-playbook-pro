@@ -26,7 +26,8 @@ import {
   CheckCircle2,
   XCircle,
   CreditCard,
-  ChevronRight
+  ChevronRight,
+  Zap
 } from 'lucide-react';
 import { usePreferences } from '@/hooks/usePreferences';
 import { useAuth } from '@/hooks/useAuth';
@@ -351,11 +352,88 @@ export default function SettingsPage() {
                 </CardContent>
               </Card>
 
-              {/* In-App Notifications Card */}
+              {/* Intelligent Alerts Card */}
+              <Card className="border-2 border-primary/10">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Zap className="h-5 w-5 text-primary" />
+                    Intelligent Alerts
+                  </CardTitle>
+                  <CardDescription>Smart alerts that detect market-moving events in real-time</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label>⚡ Steam Move Alerts</Label>
+                      <p className="text-sm text-muted-foreground">Line moved 2+ points in 5 minutes</p>
+                    </div>
+                    <Switch
+                      checked={localPrefs.notifications.steam_moves}
+                      onCheckedChange={(checked) =>
+                        setLocalPrefs({ ...localPrefs, notifications: { ...localPrefs.notifications, steam_moves: checked } })
+                      }
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label>🧠 Sharp Money Alerts</Label>
+                      <p className="text-sm text-muted-foreground">Professional money hitting a side</p>
+                    </div>
+                    <Switch
+                      checked={localPrefs.notifications.sharp_money}
+                      onCheckedChange={(checked) =>
+                        setLocalPrefs({ ...localPrefs, notifications: { ...localPrefs.notifications, sharp_money: checked } })
+                      }
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label>🎯 AI Confidence Alerts</Label>
+                      <p className="text-sm text-muted-foreground">Model confidence crosses 80% threshold</p>
+                    </div>
+                    <Switch
+                      checked={localPrefs.notifications.ai_confidence}
+                      onCheckedChange={(checked) =>
+                        setLocalPrefs({ ...localPrefs, notifications: { ...localPrefs.notifications, ai_confidence: checked } })
+                      }
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label>💰 Value Drop Alerts</Label>
+                      <p className="text-sm text-muted-foreground">SmartScore 70+ game at favorable odds</p>
+                    </div>
+                    <Switch
+                      checked={localPrefs.notifications.value_drops}
+                      onCheckedChange={(checked) =>
+                        setLocalPrefs({ ...localPrefs, notifications: { ...localPrefs.notifications, value_drops: checked } })
+                      }
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label>📊 Daily Briefing</Label>
+                      <p className="text-sm text-muted-foreground">Summary of today's high-value opportunities</p>
+                    </div>
+                    <Switch
+                      checked={localPrefs.notifications.daily_briefing}
+                      onCheckedChange={(checked) =>
+                        setLocalPrefs({ ...localPrefs, notifications: { ...localPrefs.notifications, daily_briefing: checked } })
+                      }
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Standard Notifications Card */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Alert Preferences</CardTitle>
-                  <CardDescription>Choose which in-app alerts you want to receive</CardDescription>
+                  <CardTitle>Standard Alerts</CardTitle>
+                  <CardDescription>Basic in-app notifications</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex items-center justify-between">
