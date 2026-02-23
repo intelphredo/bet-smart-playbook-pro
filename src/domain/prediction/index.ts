@@ -13,6 +13,11 @@ export {
   projectScore,
   calculateKellyCriterion,
   calculateExpectedValue,
+  calculateTemporalFactors,
+  calculateRecencyWeightedForm,
+  calculateMomentumDecay,
+  detectFormTrajectory,
+  determineSeasonSegment,
 } from './engine';
 
 // Algorithms

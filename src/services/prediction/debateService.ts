@@ -8,6 +8,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { PredictionResult } from "@/domain/prediction/interfaces";
 import { AlgorithmWeight } from "@/domain/prediction/consensusEngine";
+import { ConsensusResult } from "@/domain/prediction/consensusEngine";
 
 // ============================================
 // Types
@@ -20,6 +21,7 @@ export interface DebateResult {
   biasesIdentified: string[];
   keyFactor: string;
   agreementLevel: 'unanimous' | 'strong' | 'split' | 'contested';
+  temporalInsight?: string;
   riskFlag?: string;
 }
 
@@ -37,7 +39,10 @@ interface DebateInput {
 // ============================================
 
 export async function requestDebateAnalysis(input: DebateInput): Promise<DebateResult> {
-  const payload = {
+  // Extract temporal data from the first prediction's factors if available
+  const temporalFactors = input.predictions[0]?.factors?.temporal;
+
+  const payload: Record<string, unknown> = {
     matchTitle: input.matchTitle,
     league: input.league,
     homeTeam: input.homeTeam,
@@ -57,6 +62,19 @@ export async function requestDebateAnalysis(input: DebateInput): Promise<DebateR
       winRate: w.winRate,
     })),
   };
+
+  // Add temporal context if available
+  if (temporalFactors) {
+    payload.temporal = {
+      seasonSegment: temporalFactors.seasonSegment,
+      homeFormWeighted: temporalFactors.recencyWeightedForm.home,
+      awayFormWeighted: temporalFactors.recencyWeightedForm.away,
+      homeMomentumDecay: temporalFactors.momentumDecay.home,
+      awayMomentumDecay: temporalFactors.momentumDecay.away,
+      homeTrajectory: temporalFactors.formTrajectory.home,
+      awayTrajectory: temporalFactors.formTrajectory.away,
+    };
+  }
 
   const { data, error } = await supabase.functions.invoke('prediction-debate', {
     body: payload,
