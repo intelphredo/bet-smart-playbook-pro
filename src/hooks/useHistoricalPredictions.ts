@@ -164,26 +164,49 @@ export const useHistoricalPredictions = (
   return useQuery({
     queryKey,
     queryFn: async (): Promise<{ predictions: HistoricalPrediction[]; stats: PredictionStats }> => {
-      // Fetch all predictions matching time range - remove default 1000 row limit
-      let query = supabase
-        .from("algorithm_predictions")
-        .select("*")
-        .order("predicted_at", { ascending: false })
-        .limit(10000); // Explicit high limit to get all predictions
-
-      // Apply time range filter based on when prediction was created OR graded
+      // Fetch all predictions using pagination to bypass the 1000-row default limit
       const startDate = getDateFromRange(timeRange);
-      if (startDate) {
-        // Include predictions made OR graded within the time range
-        query = query.or(`predicted_at.gte.${startDate.toISOString()},result_updated_at.gte.${startDate.toISOString()}`);
+      
+      const fetchPage = async (from: number, to: number) => {
+        let query = supabase
+          .from("algorithm_predictions")
+          .select("*")
+          .order("predicted_at", { ascending: false })
+          .range(from, to);
+
+        if (startDate) {
+          query = query.or(`predicted_at.gte.${startDate.toISOString()},result_updated_at.gte.${startDate.toISOString()}`);
+        }
+
+        return query;
+      };
+
+      // Fetch in pages of 1000
+      const pageSize = 1000;
+      let allData: HistoricalPrediction[] = [];
+      let page = 0;
+      let hasMore = true;
+
+      while (hasMore) {
+        const from = page * pageSize;
+        const to = from + pageSize - 1;
+        const { data, error } = await fetchPage(from, to);
+
+        if (error) {
+          console.error("Error fetching historical predictions:", error);
+          throw error;
+        }
+
+        if (data && data.length > 0) {
+          allData = allData.concat(data as HistoricalPrediction[]);
+          hasMore = data.length === pageSize;
+          page++;
+        } else {
+          hasMore = false;
+        }
       }
 
-      const { data, error } = await query;
-
-      if (error) {
-        console.error("Error fetching historical predictions:", error);
-        throw error;
-      }
+      const data = allData;
 
       // Use database column for is_live_prediction, with fallback for old records
       // Sort by most recent activity: graded predictions by result_updated_at, pending by predicted_at
