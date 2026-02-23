@@ -197,8 +197,9 @@ export default function BetHistory() {
   const statsDisplay = useMemo(() => {
     if (!stats) return null;
     
-    const winRate = stats.total_bets > 0 
-      ? ((stats.wins / (stats.wins + stats.losses)) * 100).toFixed(1) 
+    const settled = (stats.wins || 0) + (stats.losses || 0);
+    const winRate = settled > 0 
+      ? (((stats.wins || 0) / settled) * 100).toFixed(1) 
       : '0';
     
     return {

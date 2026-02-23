@@ -156,7 +156,10 @@ const SplitBar: React.FC<{
   homeName: string;
   awayName: string;
 }> = ({ label, publicPct, sharpSide, homeName, awayName }) => {
-  const awayPct = 100 - publicPct;
+  // Clamp to 0-100 and handle NaN
+  const safePct = isNaN(publicPct) || !isFinite(publicPct) ? 50 : Math.max(0, Math.min(100, publicPct));
+  const awayPct = Math.round(100 - safePct);
+  const homePctDisplay = Math.round(safePct);
 
   return (
     <div className="space-y-1">
@@ -175,7 +178,7 @@ const SplitBar: React.FC<{
         <div className="flex-1 flex h-2.5 rounded-full overflow-hidden bg-muted">
           <div
             className="bg-primary/70 transition-all"
-            style={{ width: `${publicPct}%` }}
+            style={{ width: `${homePctDisplay}%` }}
           />
           <div
             className="bg-secondary transition-all"
@@ -185,8 +188,8 @@ const SplitBar: React.FC<{
         <span className="text-[10px] font-medium w-10">{awayName}</span>
       </div>
       <div className="flex justify-between text-[10px] text-muted-foreground px-11">
-        <span>{Math.round(publicPct)}%</span>
-        <span>{Math.round(awayPct)}%</span>
+        <span>{homePctDisplay}%</span>
+        <span>{awayPct}%</span>
       </div>
     </div>
   );

@@ -729,9 +729,9 @@ const MatchDetailModal = ({ match, isOpen, onClose }: MatchDetailModalProps) => 
                     </Card>
                     <Card className="p-3">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Avg Score</span>
+                        <span className="text-sm text-muted-foreground">Avg Pts</span>
                         <span className="font-bold">
-                          {h2hData.avgTeam1Score} - {h2hData.avgTeam2Score}
+                          {!isNaN(h2hData.avgTeam1Score) && h2hData.avgTeam1Score > 0 ? h2hData.avgTeam1Score.toFixed(1) : "—"} - {!isNaN(h2hData.avgTeam2Score) && h2hData.avgTeam2Score > 0 ? h2hData.avgTeam2Score.toFixed(1) : "—"}
                         </span>
                       </div>
                     </Card>

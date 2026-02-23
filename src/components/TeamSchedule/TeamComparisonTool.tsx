@@ -678,11 +678,19 @@ export const TeamComparisonTool: React.FC<TeamComparisonToolProps> = ({
                       <p className="text-xs text-muted-foreground">Total Games</p>
                     </div>
                     <div className="bg-muted/30 rounded-lg p-3 text-center">
-                      <p className="text-lg font-semibold">{h2hHistory.avgTeam1Score.toFixed(1)}</p>
+                      <p className="text-lg font-semibold">
+                        {!isNaN(h2hHistory.avgTeam1Score) && isFinite(h2hHistory.avgTeam1Score) && h2hHistory.avgTeam1Score > 0
+                          ? h2hHistory.avgTeam1Score.toFixed(1)
+                          : "—"}
+                      </p>
                       <p className="text-xs text-muted-foreground">{team1.shortName} Avg Pts</p>
                     </div>
                     <div className="bg-muted/30 rounded-lg p-3 text-center">
-                      <p className="text-lg font-semibold">{h2hHistory.avgTeam2Score.toFixed(1)}</p>
+                      <p className="text-lg font-semibold">
+                        {!isNaN(h2hHistory.avgTeam2Score) && isFinite(h2hHistory.avgTeam2Score) && h2hHistory.avgTeam2Score > 0
+                          ? h2hHistory.avgTeam2Score.toFixed(1)
+                          : "—"}
+                      </p>
                       <p className="text-xs text-muted-foreground">{team2.shortName} Avg Pts</p>
                     </div>
                     {h2hHistory.streakTeam && h2hHistory.streakCount > 1 && (

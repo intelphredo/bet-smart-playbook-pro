@@ -72,8 +72,8 @@ const SeasonRecordCard: React.FC<SeasonRecordCardProps> = ({
             <span className="text-2xl font-bold text-yellow-500">{record.ties}</span>
           </>
         )}
-        <span className="ml-2 text-sm text-muted-foreground">
-          ({record.winPercentage}%)
+      <span className="ml-2 text-sm text-muted-foreground">
+          ({!isNaN(record.winPercentage) && isFinite(record.winPercentage) ? Math.min(100, Math.max(0, record.winPercentage)).toFixed(1) : "0"}%)
         </span>
       </div>
 
@@ -115,7 +115,7 @@ const SeasonRecordCard: React.FC<SeasonRecordCardProps> = ({
             record.pointDifferential > 0 ? "text-green-500" : 
             record.pointDifferential < 0 ? "text-red-500" : ""
           )}>
-            {record.pointDifferential > 0 ? "+" : ""}{record.pointDifferential}
+            {isNaN(record.pointDifferential) || !isFinite(record.pointDifferential) ? "—" : `${record.pointDifferential > 0 ? "+" : ""}${record.pointDifferential} pts`}
           </span>
         </div>
 
@@ -390,18 +390,22 @@ const HeadToHeadHistory: React.FC<HeadToHeadHistoryProps> = ({
           <div className="grid grid-cols-2 gap-3">
           <div className="flex items-center justify-center gap-2 p-3 bg-muted/30 rounded-lg">
             <TrendingUp className="h-4 w-4 text-primary" />
-            <span className="text-sm text-muted-foreground">Avg:</span>
+            <span className="text-sm text-muted-foreground">Avg Pts:</span>
             <span className="font-semibold">{homeTeam.shortName}</span>
             <Badge variant="outline">
-              {(!h2hData.avgTeam1Score && h2hData.avgTeam1Score !== 0) || isNaN(h2hData.avgTeam1Score) || h2hData.avgTeam1Score === 0 ? "N/A" : h2hData.avgTeam1Score}
+              {h2hData.avgTeam1Score > 0 && !isNaN(h2hData.avgTeam1Score) && isFinite(h2hData.avgTeam1Score)
+                ? h2hData.avgTeam1Score.toFixed(1)
+                : "N/A"}
             </Badge>
           </div>
           <div className="flex items-center justify-center gap-2 p-3 bg-muted/30 rounded-lg">
             <TrendingUp className="h-4 w-4 text-secondary-foreground" />
-            <span className="text-sm text-muted-foreground">Avg:</span>
+            <span className="text-sm text-muted-foreground">Avg Pts:</span>
             <span className="font-semibold">{awayTeam.shortName}</span>
             <Badge variant="outline">
-              {(!h2hData.avgTeam2Score && h2hData.avgTeam2Score !== 0) || isNaN(h2hData.avgTeam2Score) || h2hData.avgTeam2Score === 0 ? "N/A" : h2hData.avgTeam2Score}
+              {h2hData.avgTeam2Score > 0 && !isNaN(h2hData.avgTeam2Score) && isFinite(h2hData.avgTeam2Score)
+                ? h2hData.avgTeam2Score.toFixed(1)
+                : "N/A"}
             </Badge>
           </div>
         </div>
