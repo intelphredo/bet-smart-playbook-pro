@@ -226,12 +226,14 @@ const QuickStatsDashboard = () => {
     };
   }, [bets]);
 
-  const winRate = stats?.total_bets && stats.total_bets > 0
-    ? ((stats.wins || 0) / stats.total_bets) * 100
+  const settled = (stats?.wins || 0) + (stats?.losses || 0);
+  const rawWinRate = settled > 0
+    ? ((stats?.wins || 0) / settled) * 100
     : 0;
+  const winRate = isNaN(rawWinRate) || !isFinite(rawWinRate) ? 0 : Math.min(100, Math.max(0, rawWinRate));
 
-  const roi = stats?.roi_percentage || 0;
-  const totalProfit = stats?.total_profit || 0;
+  const roi = isNaN(stats?.roi_percentage || 0) ? 0 : stats?.roi_percentage || 0;
+  const totalProfit = isNaN(stats?.total_profit || 0) ? 0 : stats?.total_profit || 0;
   const currentStreak = stats?.current_streak || 0;
 
   if (isLoading) {

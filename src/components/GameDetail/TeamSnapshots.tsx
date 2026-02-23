@@ -73,8 +73,8 @@ const TeamSnapshots: React.FC<TeamSnapshotsProps> = ({ match, league }) => {
   };
 
   const formatDiff = (diff: number | undefined) => {
-    if (diff === undefined || diff === null || isNaN(diff)) return "—";
-    return diff > 0 ? `+${diff}` : `${diff}`;
+    if (diff === undefined || diff === null || isNaN(diff) || !isFinite(diff)) return "—";
+    return `${diff > 0 ? "+" : ""}${diff} pt diff`;
   };
 
   const renderTeamCard = (
@@ -111,9 +111,9 @@ const TeamSnapshots: React.FC<TeamSnapshotsProps> = ({ match, league }) => {
         <span className="text-xl font-bold">
           {record ? `${record.wins}-${record.losses}${record.ties > 0 ? `-${record.ties}` : ""}` : team?.record || "—"}
         </span>
-        {record && (
+        {record && !isNaN(record.winPercentage) && isFinite(record.winPercentage) && (
           <span className="text-xs text-muted-foreground ml-2">
-            ({record.winPercentage}%)
+            ({Math.min(100, Math.max(0, record.winPercentage)).toFixed(1)}%)
           </span>
         )}
       </div>
