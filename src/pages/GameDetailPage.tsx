@@ -1,28 +1,38 @@
-// src/pages/GameDetailPage.tsx
-
-import React, { useMemo, useState, lazy, Suspense } from "react";
+import React, { useMemo, lazy, Suspense } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useSportsData } from "@/hooks/useSportsData";
 import { applySmartScores } from "@/utils/smartScoreCalculator";
 import { Match, League } from "@/types/sports";
-import { BetType } from "@/types/betting";
 import NavBar from "@/components/NavBar";
 import AppBreadcrumb from "@/components/layout/AppBreadcrumb";
-import TeamLogo from "@/components/match/TeamLogo";
 import HeadToHeadHistory from "@/components/match/HeadToHeadHistory";
 import TeamNewsInjuries from "@/components/match/TeamNewsInjuries";
-import AddToBetSlipButton from "@/components/BetSlip/AddToBetSlipButton";
 import { SharpMoneyAlertBanner } from "@/components/BettingTrends";
 import { useMatchBettingTrend } from "@/hooks/useBettingTrends";
 import { useCrossSectionData } from "@/hooks/useCrossSectionData";
-import { CrossSectionPanel, CrossSectionBanner } from "@/components/CrossSection";
+import { CrossSectionPanel } from "@/components/CrossSection";
 import { useAlgorithmComparison } from "@/hooks/usePredictions";
 import { useLocalEnsemble, useFullEnsemble } from "@/hooks/useEnsemblePrediction";
 import { MatchData } from "@/domain/prediction/interfaces";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { AlertTriangle, ArrowLeft } from "lucide-react";
+import { useLockedPredictions } from "@/hooks/useLockedPredictions";
+import { motion } from "framer-motion";
 
-const EnsembleAnalysisCard = lazy(() => import("@/components/EnsembleAnalysisCard"));
+// New section components
+import {
+  GameHeader,
+  TeamSnapshots,
+  AIPredictionDashboard,
+  EnsembleSummary,
+  OddsValueSection,
+  BettingTrendsSection,
+  PlaceBetCard,
+} from "@/components/GameDetail";
+
+// Lazy-load heavy analytics
 const DebateAnalysisCard = lazy(() => import("@/components/DebateAnalysisCard"));
 const MonteCarloCard = lazy(() => import("@/components/MonteCarloCard"));
 const MLBWorldModelCard = lazy(() => import("@/components/MLBWorldModelCard"));
@@ -30,91 +40,58 @@ const MLBWorldModelCard = lazy(() => import("@/components/MLBWorldModelCard"));
 import { useDebateAnalysis } from "@/hooks/useDebateAnalysis";
 import { useMonteCarloUncertainty } from "@/hooks/useMonteCarloUncertainty";
 import { getMCConfigForLeague } from "@/domain/prediction/monteCarloEngine";
-import { useLockedPredictions } from "@/hooks/useLockedPredictions";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  ArrowLeft, 
-  Clock, 
-  Target, 
-  Zap,
-  DollarSign,
-  BarChart3,
-  AlertTriangle,
-  Radio,
-  Trophy,
-  TrendingUp,
-  Users,
-  Ticket,
-  Check,
-  Plus,
-  Brain
-} from "lucide-react";
-import { format, parseISO } from "date-fns";
-import { cn } from "@/lib/utils";
-import { motion, AnimatePresence } from "framer-motion";
-import { toast } from "sonner";
 
 const GameDetailPage: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [selectedBetType, setSelectedBetType] = useState<BetType>("moneyline");
-  
+
   const { upcomingMatches, liveMatches, finishedMatches, isLoading } = useSportsData({
     refreshInterval: 30000,
     useExternalApis: true,
   });
 
-  // Hydrate locked predictions cache for this match
   useLockedPredictions(id ? [id] : undefined);
 
-  // Combine all matches and apply smart scores
   const allMatches = useMemo(() => {
     const combined = [...upcomingMatches, ...liveMatches, ...finishedMatches];
     return applySmartScores(combined);
   }, [upcomingMatches, liveMatches, finishedMatches]);
 
-  // Find the specific match
   const match = useMemo(() => allMatches.find((m) => m.id === id), [allMatches, id]);
-  
-  // Fetch betting trends for sharp money detection
+
   const { data: bettingTrend, isLoading: trendLoading } = useMatchBettingTrend(
-    id || '',
-    match?.homeTeam?.name || '',
-    match?.awayTeam?.name || '',
-    (match?.league as League) || 'NBA',
+    id || "",
+    match?.homeTeam?.name || "",
+    match?.awayTeam?.name || "",
+    (match?.league as League) || "NBA",
     !!match
   );
 
-  // Cross-Section Intelligence Data
   const crossSectionData = useCrossSectionData(match || null);
 
-  // Ensemble Prediction Pipeline
   const matchData: MatchData | null = useMemo(() => {
     if (!match) return null;
     return {
       id: match.id,
       homeTeam: {
-        id: match.homeTeam?.id || 'home',
-        name: match.homeTeam?.name || 'Home',
-        shortName: match.homeTeam?.shortName || 'HME',
+        id: match.homeTeam?.id || "home",
+        name: match.homeTeam?.name || "Home",
+        shortName: match.homeTeam?.shortName || "HME",
         record: match.homeTeam?.record,
         recentForm: match.homeTeam?.recentForm,
         logo: match.homeTeam?.logo,
       },
       awayTeam: {
-        id: match.awayTeam?.id || 'away',
-        name: match.awayTeam?.name || 'Away',
-        shortName: match.awayTeam?.shortName || 'AWY',
+        id: match.awayTeam?.id || "away",
+        name: match.awayTeam?.name || "Away",
+        shortName: match.awayTeam?.shortName || "AWY",
         record: match.awayTeam?.record,
         recentForm: match.awayTeam?.recentForm,
         logo: match.awayTeam?.logo,
       },
-      league: (match.league as League) || 'NBA',
+      league: (match.league as League) || "NBA",
       startTime: match.startTime,
-      status: match.status || 'scheduled',
+      status: match.status || "scheduled",
       odds: match.odds,
     };
   }, [match]);
@@ -123,7 +100,6 @@ const GameDetailPage: React.FC = () => {
   const localEnsemble = useLocalEnsemble(consensus, matchData);
   const { data: fullEnsemble, isLoading: metaLoading } = useFullEnsemble(consensus, matchData, !!consensus && !!matchData);
 
-  // AI Debate Layer
   const predictionsArray = useMemo(() => Array.from(algPredictions.values()), [algPredictions]);
   const debateWeights = useMemo(() => consensus?.weights ?? [], [consensus]);
   const { debate, isLoading: debateLoading, error: debateError } = useDebateAnalysis({
@@ -133,10 +109,10 @@ const GameDetailPage: React.FC = () => {
     enabled: !!match && predictionsArray.length > 0,
   });
 
-  // Monte Carlo Uncertainty — use league-specific config (NBA = tighter noise)
   const mcConfig = getMCConfigForLeague(match?.league);
   const mcResult = useMonteCarloUncertainty(localEnsemble, mcConfig);
 
+  // Loading state
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
@@ -152,6 +128,7 @@ const GameDetailPage: React.FC = () => {
     );
   }
 
+  // Not found
   if (!match) {
     return (
       <div className="min-h-screen bg-background">
@@ -176,21 +153,8 @@ const GameDetailPage: React.FC = () => {
     );
   }
 
-  const isLive = match.status === "live";
-  const isFinished = match.status === "finished";
   const league = match.league as League;
-  const matchTitle = `${match.homeTeam?.name || 'Home'} vs ${match.awayTeam?.name || 'Away'}`;
-
-  // Get best odds for display
-  const bestOdds = match.liveOdds?.[0] || {
-    homeWin: match.odds?.homeWin || 1.91,
-    awayWin: match.odds?.awayWin || 1.91,
-    draw: match.odds?.draw,
-  };
-
-  // Get spread and totals from live odds if available
-  const spreadData = match.liveOdds?.[0]?.spread;
-  const totalsData = match.liveOdds?.[0]?.totals;
+  const isFinished = match.status === "finished";
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5">
@@ -198,737 +162,34 @@ const GameDetailPage: React.FC = () => {
       <div className="container max-w-4xl mx-auto py-6 px-4 space-y-6">
         <AppBreadcrumb />
 
-        {/* Back Button - Larger touch target on mobile */}
-        <Button 
-          variant="ghost" 
-          size="default"
-          onClick={() => navigate(-1)}
-          className="min-h-[44px] min-w-[44px] -ml-2 sm:ml-0"
-          aria-label="Go back to previous page"
-        >
-          <ArrowLeft className="h-5 w-5 mr-2" />
-          <span className="hidden sm:inline">Back</span>
-        </Button>
+        {/* SECTION 1: Game Header */}
+        <GameHeader match={match} league={league} />
 
-        {/* Match Header Card - Hero Style */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-        >
-          <Card className="overflow-hidden">
-            {/* Header Bar */}
-            <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-accent/10 px-6 py-3 border-b">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Badge variant="outline" className="font-semibold">
-                    {match.league || "Unknown"}
-                  </Badge>
-                  {isLive && (
-                    <Badge className="bg-red-500 text-white animate-pulse">
-                      <Radio className="h-3 w-3 mr-1" />
-                      LIVE
-                    </Badge>
-                  )}
-                  {isFinished && (
-                    <Badge variant="secondary">
-                      <Trophy className="h-3 w-3 mr-1" />
-                      FINAL
-                    </Badge>
-                  )}
-                </div>
-                <span className="text-sm text-muted-foreground">
-                  {match.isMockData ? "Demo Data" : "Live Data"}
-                </span>
-              </div>
-            </div>
-            
-            <CardContent className="py-8">
-              {/* Teams with Logos - Responsive Hero Display */}
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-6">
-                {/* Home Team */}
-                <motion.div 
-                  className="flex-1 text-center space-y-3 sm:space-y-4 w-full sm:w-auto"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.1 }}
-                >
-                  <div className="flex flex-col items-center">
-                    <TeamLogo 
-                      teamName={match.homeTeam?.name || "Home"} 
-                      league={league}
-                      size="xl"
-                      className="mb-2 sm:mb-3 shadow-lg"
-                    />
-                    <h2 className="text-lg sm:text-xl md:text-2xl font-bold leading-tight break-words max-w-[200px] sm:max-w-none">
-                      {match.homeTeam?.name || "Home Team"}
-                    </h2>
-                    <p className="text-xs sm:text-sm text-muted-foreground">Home</p>
-                    {match.homeTeam?.record && (
-                      <Badge variant="secondary" className="mt-1 sm:mt-2 text-xs">
-                        {match.homeTeam.record}
-                      </Badge>
-                    )}
-                  </div>
-                  {match.score && (
-                    <motion.p 
-                      className="text-4xl sm:text-5xl md:text-6xl font-bold text-primary"
-                      initial={{ scale: 0.8 }}
-                      animate={{ scale: 1 }}
-                      transition={{ delay: 0.2 }}
-                    >
-                      {match.score.home}
-                    </motion.p>
-                  )}
-                </motion.div>
+        {/* SECTION 2: Team Snapshots */}
+        <TeamSnapshots match={match} league={league} />
 
-                {/* VS Divider - Horizontal on mobile */}
-                <div className="flex flex-row sm:flex-col items-center gap-2 py-2 sm:py-0 sm:px-4">
-                  <div className="hidden sm:block text-3xl font-bold text-muted-foreground/50">VS</div>
-                  <div className="sm:hidden text-xl font-bold text-muted-foreground/50">vs</div>
-                  {match.score?.period && (
-                    <Badge variant="outline" className="text-[10px] sm:text-xs">
-                      {match.score.period}
-                    </Badge>
-                  )}
-                </div>
+        {/* SECTION 3: AI Prediction Dashboard */}
+        <AIPredictionDashboard match={match} league={league} />
 
-                {/* Away Team */}
-                <motion.div 
-                  className="flex-1 text-center space-y-3 sm:space-y-4 w-full sm:w-auto"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.1 }}
-                >
-                  <div className="flex flex-col items-center">
-                    <TeamLogo 
-                      teamName={match.awayTeam?.name || "Away"} 
-                      league={league}
-                      size="xl"
-                      className="mb-2 sm:mb-3 shadow-lg"
-                    />
-                    <h2 className="text-lg sm:text-xl md:text-2xl font-bold leading-tight break-words max-w-[200px] sm:max-w-none">
-                      {match.awayTeam?.name || "Away Team"}
-                    </h2>
-                    <p className="text-xs sm:text-sm text-muted-foreground">Away</p>
-                    {match.awayTeam?.record && (
-                      <Badge variant="secondary" className="mt-1 sm:mt-2 text-xs">
-                        {match.awayTeam.record}
-                      </Badge>
-                    )}
-                  </div>
-                  {match.score && (
-                    <motion.p 
-                      className="text-4xl sm:text-5xl md:text-6xl font-bold text-primary"
-                      initial={{ scale: 0.8 }}
-                      animate={{ scale: 1 }}
-                      transition={{ delay: 0.2 }}
-                    >
-                      {match.score.away}
-                    </motion.p>
-                  )}
-                </motion.div>
-              </div>
-
-              <Separator className="my-4 sm:my-6" />
-
-              {/* Match Info - Responsive text and spacing */}
-              <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-4 text-xs sm:text-sm">
-                <div className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-muted/50 rounded-lg">
-                  <Clock className="h-4 w-4 text-primary flex-shrink-0" />
-                  <span className="text-center sm:text-left">
-                    <span className="hidden sm:inline">{format(parseISO(match.startTime), "EEEE, MMM d, yyyy 'at' h:mm a")}</span>
-                    <span className="sm:hidden">{format(parseISO(match.startTime), "MMM d 'at' h:mm a")}</span>
-                  </span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        {/* Place Bet Card - NEW */}
-        {!isFinished && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.12 }}
-          >
-            <Card className="border-primary/30 bg-gradient-to-br from-primary/5 to-accent/5">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <Ticket className="h-5 w-5 text-primary" />
-                  Place Your Bet
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Bet Type Tabs */}
-                <Tabs value={selectedBetType} onValueChange={(v) => setSelectedBetType(v as BetType)}>
-                  {/* Bet type tabs with larger touch targets */}
-                  <TabsList className="grid w-full grid-cols-3 h-12 sm:h-10">
-                    <TabsTrigger value="moneyline" className="text-xs sm:text-sm min-h-[44px] sm:min-h-0">Moneyline</TabsTrigger>
-                    <TabsTrigger value="spread" disabled={!spreadData} className="text-xs sm:text-sm min-h-[44px] sm:min-h-0">Spread</TabsTrigger>
-                    <TabsTrigger value="total" disabled={!totalsData} className="text-xs sm:text-sm min-h-[44px] sm:min-h-0">Total</TabsTrigger>
-                  </TabsList>
-
-                  {/* Moneyline - Stack on mobile */}
-                  <TabsContent value="moneyline" className="mt-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
-                      {/* Home Win */}
-                      <BetOption
-                        matchId={match.id}
-                        matchTitle={matchTitle}
-                        league={match.league}
-                        betType="moneyline"
-                        selection={match.homeTeam?.name || "Home"}
-                        odds={bestOdds.homeWin}
-                        teamName={match.homeTeam?.name}
-                        leagueType={league}
-                        label="Home Win"
-                        isRecommended={match.prediction?.recommended === 'home'}
-                        confidence={match.prediction?.recommended === 'home' ? match.prediction?.confidence : undefined}
-                        evPercentage={match.prediction?.recommended === 'home' ? match.prediction?.evPercentage : undefined}
-                        kellyFraction={match.prediction?.recommended === 'home' ? match.prediction?.kellyFraction : undefined}
-                      />
-
-                      {/* Draw (if available) */}
-                      {bestOdds.draw && (
-                        <BetOption
-                          matchId={match.id}
-                          matchTitle={matchTitle}
-                          league={match.league}
-                          betType="moneyline"
-                          selection="Draw"
-                          odds={bestOdds.draw}
-                          label="Draw"
-                          isRecommended={match.prediction?.recommended === 'draw'}
-                        />
-                      )}
-
-                      {/* Away Win */}
-                      <BetOption
-                        matchId={match.id}
-                        matchTitle={matchTitle}
-                        league={match.league}
-                        betType="moneyline"
-                        selection={match.awayTeam?.name || "Away"}
-                        odds={bestOdds.awayWin}
-                        teamName={match.awayTeam?.name}
-                        leagueType={league}
-                        label="Away Win"
-                        isRecommended={match.prediction?.recommended === 'away'}
-                        confidence={match.prediction?.recommended === 'away' ? match.prediction?.confidence : undefined}
-                        evPercentage={match.prediction?.recommended === 'away' ? match.prediction?.evPercentage : undefined}
-                        kellyFraction={match.prediction?.recommended === 'away' ? match.prediction?.kellyFraction : undefined}
-                      />
-                    </div>
-                  </TabsContent>
-
-                  {/* Spread */}
-                  <TabsContent value="spread" className="mt-4">
-                    {spreadData ? (
-                      <div className="grid grid-cols-2 gap-4">
-                        <BetOption
-                          matchId={match.id}
-                          matchTitle={matchTitle}
-                          league={match.league}
-                          betType="spread"
-                          selection={`${match.homeTeam?.name} ${spreadData.homeSpread > 0 ? '+' : ''}${spreadData.homeSpread}`}
-                          odds={spreadData.homeSpreadOdds}
-                          teamName={match.homeTeam?.name}
-                          leagueType={league}
-                          label={`${match.homeTeam?.shortName || 'Home'} ${spreadData.homeSpread > 0 ? '+' : ''}${spreadData.homeSpread}`}
-                        />
-                        <BetOption
-                          matchId={match.id}
-                          matchTitle={matchTitle}
-                          league={match.league}
-                          betType="spread"
-                          selection={`${match.awayTeam?.name} ${spreadData.awaySpread > 0 ? '+' : ''}${spreadData.awaySpread}`}
-                          odds={spreadData.awaySpreadOdds}
-                          teamName={match.awayTeam?.name}
-                          leagueType={league}
-                          label={`${match.awayTeam?.shortName || 'Away'} ${spreadData.awaySpread > 0 ? '+' : ''}${spreadData.awaySpread}`}
-                        />
-                      </div>
-                    ) : (
-                      <p className="text-center text-muted-foreground py-4">Spread betting not available</p>
-                    )}
-                  </TabsContent>
-
-                  {/* Totals */}
-                  <TabsContent value="total" className="mt-4">
-                    {totalsData ? (
-                      <div className="grid grid-cols-2 gap-4">
-                        <BetOption
-                          matchId={match.id}
-                          matchTitle={matchTitle}
-                          league={match.league}
-                          betType="total"
-                          selection={`Over ${totalsData.total}`}
-                          odds={totalsData.overOdds}
-                          label={`Over ${totalsData.total}`}
-                          icon={<TrendingUp className="h-4 w-4" />}
-                        />
-                        <BetOption
-                          matchId={match.id}
-                          matchTitle={matchTitle}
-                          league={match.league}
-                          betType="total"
-                          selection={`Under ${totalsData.total}`}
-                          odds={totalsData.underOdds}
-                          label={`Under ${totalsData.total}`}
-                          icon={<TrendingUp className="h-4 w-4 rotate-180" />}
-                        />
-                      </div>
-                    ) : (
-                      <p className="text-center text-muted-foreground py-4">Total betting not available</p>
-                    )}
-                  </TabsContent>
-                </Tabs>
-
-                {/* AI Recommendation Banner */}
-                {match.prediction?.recommended && match.prediction.confidence >= 60 && (
-                  <div className="mt-4 p-3 bg-primary/10 border border-primary/30 rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <Target className="h-4 w-4 text-primary" />
-                      <span className="text-sm font-medium">AI Recommends: </span>
-                      <Badge className="bg-primary text-primary-foreground capitalize">
-                        {match.prediction.recommended}
-                      </Badge>
-                      <span className="text-sm text-muted-foreground">
-                        ({Math.round(match.prediction.confidence)}% confidence)
-                      </span>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
-
-        {/* Prediction Card */}
-        {match.prediction && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 }}
-          >
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <Target className="h-5 w-5 text-primary" />
-                  AI Prediction
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Prediction metrics - 2x2 grid on mobile, 4 cols on desktop */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
-                  {match.prediction.confidence !== undefined && (
-                    <div className="text-center p-3 sm:p-4 bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg border border-primary/20">
-                      <p className="text-2xl sm:text-3xl font-bold text-primary">
-                        {Math.round(match.prediction.confidence)}%
-                      </p>
-                      <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">Confidence</p>
-                    </div>
-                  )}
-                  {match.prediction.evPercentage !== undefined && (
-                    <div className="text-center p-3 sm:p-4 bg-muted/50 rounded-lg">
-                      <p className={cn(
-                        "text-2xl sm:text-3xl font-bold",
-                        match.prediction.evPercentage > 0 ? "text-green-500" : "text-red-500"
-                      )}>
-                        {match.prediction.evPercentage > 0 ? "+" : ""}{match.prediction.evPercentage.toFixed(1)}%
-                      </p>
-                      <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">Expected Value</p>
-                    </div>
-                  )}
-                  {match.prediction.kellyFraction !== undefined && (
-                    <div className="text-center p-3 sm:p-4 bg-muted/50 rounded-lg">
-                      <p className="text-2xl sm:text-3xl font-bold">
-                        {(match.prediction.kellyFraction * 100).toFixed(1)}%
-                      </p>
-                      <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">Kelly Stake</p>
-                    </div>
-                  )}
-                  {match.prediction.recommended && (
-                    <div className="text-center p-3 sm:p-4 bg-gradient-to-br from-accent/20 to-accent/10 rounded-lg border border-accent/30">
-                      <div className="flex items-center justify-center gap-1 sm:gap-2">
-                        <TeamLogo 
-                          teamName={match.prediction.recommended === 'home' 
-                            ? match.homeTeam?.name || '' 
-                            : match.awayTeam?.name || ''}
-                          league={league}
-                          size="sm"
-                        />
-                        <p className="text-lg sm:text-xl font-bold capitalize">
-                          {match.prediction.recommended}
-                        </p>
-                      </div>
-                      <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">Recommended Pick</p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Projected Score */}
-                {match.prediction.projectedScore && (
-                  <div className="pt-4 border-t">
-                    <p className="text-sm text-muted-foreground mb-3 text-center">Projected Score</p>
-                    <div className="flex items-center justify-center gap-6">
-                      <div className="flex items-center gap-3">
-                        <TeamLogo 
-                          teamName={match.homeTeam?.name || ''} 
-                          league={league}
-                          size="md"
-                        />
-                        <div className="text-center">
-                          <p className="text-sm text-muted-foreground">{match.homeTeam?.shortName}</p>
-                          <p className="text-3xl font-bold">{match.prediction.projectedScore.home}</p>
-                        </div>
-                      </div>
-                      <span className="text-2xl text-muted-foreground">-</span>
-                      <div className="flex items-center gap-3">
-                        <div className="text-center">
-                          <p className="text-sm text-muted-foreground">{match.awayTeam?.shortName}</p>
-                          <p className="text-3xl font-bold">{match.prediction.projectedScore.away}</p>
-                        </div>
-                        <TeamLogo 
-                          teamName={match.awayTeam?.name || ''} 
-                          league={league}
-                          size="md"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
-
-        {/* SmartScore Card */}
-        {match.smartScore && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-          >
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <Zap className="h-5 w-5 text-yellow-500" />
-                  SmartScore Analysis
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Overall Score</span>
-                  <div className="flex items-center gap-3">
-                    <div className="w-40 h-3 bg-muted rounded-full overflow-hidden">
-                      <motion.div 
-                        className={cn(
-                          "h-full",
-                          match.smartScore.overall >= 70 ? "bg-gradient-to-r from-green-500 to-emerald-400" :
-                          match.smartScore.overall >= 50 ? "bg-gradient-to-r from-yellow-500 to-amber-400" : 
-                          "bg-gradient-to-r from-red-500 to-rose-400"
-                        )}
-                        initial={{ width: 0 }}
-                        animate={{ width: `${match.smartScore.overall}%` }}
-                        transition={{ duration: 0.8, ease: "easeOut" }}
-                      />
-                    </div>
-                    <span className="font-bold text-lg min-w-[2rem] text-right">
-                      {Math.round(match.smartScore.overall)}
-                    </span>
-                  </div>
-                </div>
-
-                <Separator />
-
-                {/* Components breakdown - responsive grid */}
-                {match.smartScore.components && (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4">
-                    <ScoreCard label="Momentum" value={match.smartScore.components.momentum} icon={TrendingUp} />
-                    <ScoreCard label="Value" value={match.smartScore.components.value} icon={DollarSign} />
-                    <ScoreCard label="Odds Movement" value={match.smartScore.components.oddsMovement} icon={BarChart3} />
-                    <ScoreCard label="Weather Impact" value={match.smartScore.components.weather} />
-                    <ScoreCard label="Injury Impact" value={match.smartScore.components.injuries} icon={Users} />
-                    <ScoreCard label="Arbitrage" value={match.smartScore.components.arbitrage} icon={DollarSign} />
-                  </div>
-                )}
-
-                {match.smartScore.hasArbitrageOpportunity && (
-                  <motion.div 
-                    className="mt-4 p-4 bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/30 rounded-lg"
-                    initial={{ scale: 0.95 }}
-                    animate={{ scale: 1 }}
-                    transition={{ repeat: Infinity, repeatType: "reverse", duration: 2 }}
-                  >
-                    <div className="flex items-center gap-2 text-green-600">
-                      <DollarSign className="h-5 w-5" />
-                      <span className="font-semibold">Arbitrage Opportunity Detected!</span>
-                    </div>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Risk-free profit available across different sportsbooks
-                    </p>
-                  </motion.div>
-                )}
-
-                {match.smartScore.recommendation && (
-                  <div className="mt-4 p-4 bg-primary/10 border border-primary/30 rounded-lg">
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium text-primary capitalize">
-                        Bet on: {match.smartScore.recommendation.betOn} ({match.smartScore.recommendation.confidence} confidence)
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {match.smartScore.recommendation.reasoning}
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
-
-        {/* Ensemble Analysis Card */}
+        {/* SECTION 4: Ensemble Analysis (simplified) */}
         {localEnsemble && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.205 }}
-          >
-            <Suspense fallback={<Skeleton className="h-48 w-full rounded-lg" />}>
-              <EnsembleAnalysisCard
-                ensemble={localEnsemble}
-                metaSynthesis={fullEnsemble?.metaSynthesis}
-                isLoadingMeta={metaLoading}
-              />
-            </Suspense>
-          </motion.div>
+          <EnsembleSummary
+            ensemble={localEnsemble}
+            metaSynthesis={fullEnsemble?.metaSynthesis}
+            isLoadingMeta={metaLoading}
+            homeTeamName={match.homeTeam?.name || "Home"}
+            awayTeamName={match.awayTeam?.name || "Away"}
+          />
         )}
 
-        {/* AI Debate Analysis Card */}
-        {(debate || debateLoading) && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.207 }}
-          >
-            <Suspense fallback={<Skeleton className="h-48 w-full rounded-lg" />}>
-              <DebateAnalysisCard
-                debate={debate}
-                isLoading={debateLoading}
-                error={debateError}
-                homeTeam={match.homeTeam?.name || 'Home'}
-                awayTeam={match.awayTeam?.name || 'Away'}
-              />
-            </Suspense>
-          </motion.div>
-        )}
+        {/* Place Bet Card */}
+        <PlaceBetCard match={match} league={league} />
 
-        {/* Monte Carlo Uncertainty Card */}
-        {mcResult && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.22 }}
-          >
-            <Suspense fallback={<Skeleton className="h-48 w-full rounded-lg" />}>
-              <MonteCarloCard
-                mc={mcResult}
-                homeTeam={match.homeTeam?.name || 'Home'}
-                awayTeam={match.awayTeam?.name || 'Away'}
-              />
-            </Suspense>
-          </motion.div>
-        )}
-
-        {/* MLB LLM World Model Research Card */}
-        {league === 'MLB' && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.24 }}
-          >
-            <Suspense fallback={<Skeleton className="h-48 w-full rounded-lg" />}>
-              <MLBWorldModelCard />
-            </Suspense>
-          </motion.div>
-        )}
-
-        {/* Cross-Section Intelligence Panel */}
-        {!isFinished && crossSectionData.hasData && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.21 }}
-          >
-            <CrossSectionPanel match={match} crossSectionData={crossSectionData} />
-          </motion.div>
-        )}
-
-        {/* Sharp Money / Betting Trends Alert Banner */}
-        {!isFinished && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.22 }}
-          >
-            <SharpMoneyAlertBanner 
-              trend={bettingTrend} 
-              isLoading={trendLoading}
-            />
-          </motion.div>
-        )}
-
-        {/* Odds Card */}
-        {match.liveOdds && match.liveOdds.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.25 }}
-          >
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <BarChart3 className="h-5 w-5" />
-                  Odds Comparison
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {match.liveOdds.map((odds, index) => (
-                    <div key={index} className="flex items-center justify-between p-4 bg-muted/50 rounded-lg hover:bg-muted/70 transition-colors">
-                      <span className="font-medium">
-                        {typeof odds.sportsbook === 'string' ? odds.sportsbook : odds.sportsbook?.name || `Sportsbook ${index + 1}`}
-                      </span>
-                      <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-2">
-                          <TeamLogo teamName={match.homeTeam?.name || ''} league={league} size="sm" />
-                          <AddToBetSlipButton
-                            matchId={match.id}
-                            matchTitle={matchTitle}
-                            league={match.league}
-                            betType="moneyline"
-                            selection={match.homeTeam?.name || "Home"}
-                            odds={odds.homeWin}
-                            sportsbook={typeof odds.sportsbook === 'string' ? odds.sportsbook : odds.sportsbook?.name}
-                            modelConfidence={match.prediction?.confidence}
-                            modelEvPercentage={match.prediction?.evPercentage}
-                            kellyRecommended={match.prediction?.kellyFraction}
-                            variant="compact"
-                          />
-                        </div>
-                        {odds.draw !== undefined && (
-                          <AddToBetSlipButton
-                            matchId={match.id}
-                            matchTitle={matchTitle}
-                            league={match.league}
-                            betType="moneyline"
-                            selection="Draw"
-                            odds={odds.draw}
-                            sportsbook={typeof odds.sportsbook === 'string' ? odds.sportsbook : odds.sportsbook?.name}
-                            variant="compact"
-                          />
-                        )}
-                        <div className="flex items-center gap-2">
-                          <AddToBetSlipButton
-                            matchId={match.id}
-                            matchTitle={matchTitle}
-                            league={match.league}
-                            betType="moneyline"
-                            selection={match.awayTeam?.name || "Away"}
-                            odds={odds.awayWin}
-                            sportsbook={typeof odds.sportsbook === 'string' ? odds.sportsbook : odds.sportsbook?.name}
-                            modelConfidence={match.prediction?.confidence}
-                            modelEvPercentage={match.prediction?.evPercentage}
-                            kellyRecommended={match.prediction?.kellyFraction}
-                            variant="compact"
-                          />
-                          <TeamLogo teamName={match.awayTeam?.name || ''} league={league} size="sm" />
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
-
-        {/* Base Odds Card (fallback if no live odds) */}
-        {(!match.liveOdds || match.liveOdds.length === 0) && match.odds && !isFinished && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.25 }}
-          >
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <BarChart3 className="h-5 w-5" />
-                  Odds
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-around p-6 bg-muted/50 rounded-lg">
-                  <div className="text-center space-y-2">
-                    <TeamLogo teamName={match.homeTeam?.name || ''} league={league} size="md" className="mx-auto" />
-                    <p className="text-xs text-muted-foreground">{match.homeTeam?.shortName || "Home"}</p>
-                    <AddToBetSlipButton
-                      matchId={match.id}
-                      matchTitle={matchTitle}
-                      league={match.league}
-                      betType="moneyline"
-                      selection={match.homeTeam?.name || "Home"}
-                      odds={match.odds.homeWin}
-                      modelConfidence={match.prediction?.confidence}
-                      modelEvPercentage={match.prediction?.evPercentage}
-                      kellyRecommended={match.prediction?.kellyFraction}
-                    />
-                  </div>
-                  {match.odds.draw !== undefined && (
-                    <div className="text-center space-y-2">
-                      <div className="w-12 h-12 mx-auto rounded-full bg-muted flex items-center justify-center">
-                        <span className="text-sm font-bold">X</span>
-                      </div>
-                      <p className="text-xs text-muted-foreground">Draw</p>
-                      <AddToBetSlipButton
-                        matchId={match.id}
-                        matchTitle={matchTitle}
-                        league={match.league}
-                        betType="moneyline"
-                        selection="Draw"
-                        odds={match.odds.draw}
-                      />
-                    </div>
-                  )}
-                  <div className="text-center space-y-2">
-                    <TeamLogo teamName={match.awayTeam?.name || ''} league={league} size="md" className="mx-auto" />
-                    <p className="text-xs text-muted-foreground">{match.awayTeam?.shortName || "Away"}</p>
-                    <AddToBetSlipButton
-                      matchId={match.id}
-                      matchTitle={matchTitle}
-                      league={match.league}
-                      betType="moneyline"
-                      selection={match.awayTeam?.name || "Away"}
-                      odds={match.odds.awayWin}
-                      modelConfidence={match.prediction?.confidence}
-                      modelEvPercentage={match.prediction?.evPercentage}
-                      kellyRecommended={match.prediction?.kellyFraction}
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
-
-        {/* Head-to-Head History */}
+        {/* SECTION 5: Head-to-Head History */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
+          transition={{ delay: 0.25 }}
         >
           <HeadToHeadHistory
             homeTeamId={match.homeTeam?.id || "home"}
@@ -942,6 +203,73 @@ const GameDetailPage: React.FC = () => {
             league={league}
           />
         </motion.div>
+
+        {/* SECTION 6: Odds & Value */}
+        <OddsValueSection
+          match={match}
+          league={league}
+          bettingTrend={bettingTrend}
+        />
+
+        {/* SECTION 7: Betting Trends */}
+        <BettingTrendsSection
+          bettingTrend={bettingTrend}
+          isLoading={trendLoading}
+          match={match}
+        />
+
+        {/* Sharp Money Alert Banner */}
+        {!isFinished && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            <SharpMoneyAlertBanner trend={bettingTrend} isLoading={trendLoading} />
+          </motion.div>
+        )}
+
+        {/* Cross-Section Intelligence */}
+        {!isFinished && crossSectionData.hasData && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.32 }}
+          >
+            <CrossSectionPanel match={match} crossSectionData={crossSectionData} />
+          </motion.div>
+        )}
+
+        {/* AI Debate Analysis */}
+        {(debate || debateLoading) && (
+          <Suspense fallback={<Skeleton className="h-48 w-full rounded-lg" />}>
+            <DebateAnalysisCard
+              debate={debate}
+              isLoading={debateLoading}
+              error={debateError}
+              homeTeam={match.homeTeam?.name || "Home"}
+              awayTeam={match.awayTeam?.name || "Away"}
+            />
+          </Suspense>
+        )}
+
+        {/* Monte Carlo Uncertainty */}
+        {mcResult && (
+          <Suspense fallback={<Skeleton className="h-48 w-full rounded-lg" />}>
+            <MonteCarloCard
+              mc={mcResult}
+              homeTeam={match.homeTeam?.name || "Home"}
+              awayTeam={match.awayTeam?.name || "Away"}
+            />
+          </Suspense>
+        )}
+
+        {/* MLB World Model */}
+        {league === "MLB" && (
+          <Suspense fallback={<Skeleton className="h-48 w-full rounded-lg" />}>
+            <MLBWorldModelCard />
+          </Suspense>
+        )}
 
         {/* Team News & Injuries */}
         <motion.div
@@ -959,138 +287,5 @@ const GameDetailPage: React.FC = () => {
     </div>
   );
 };
-
-// Bet Option Card Component
-interface BetOptionProps {
-  matchId: string;
-  matchTitle: string;
-  league?: string;
-  betType: BetType;
-  selection: string;
-  odds: number;
-  teamName?: string;
-  leagueType?: League;
-  label: string;
-  icon?: React.ReactNode;
-  isRecommended?: boolean;
-  confidence?: number;
-  evPercentage?: number;
-  kellyFraction?: number;
-}
-
-const BetOption: React.FC<BetOptionProps> = ({
-  matchId,
-  matchTitle,
-  league,
-  betType,
-  selection,
-  odds,
-  teamName,
-  leagueType,
-  label,
-  icon,
-  isRecommended,
-  confidence,
-  evPercentage,
-  kellyFraction,
-}) => {
-  return (
-    <motion.div
-      whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
-      className={cn(
-        "relative p-3 sm:p-4 rounded-lg border transition-all",
-        // Minimum touch target height
-        "min-h-[120px] sm:min-h-0",
-        isRecommended 
-          ? "bg-gradient-to-br from-primary/15 to-primary/5 border-primary/40" 
-          : "bg-muted/50 border-border hover:border-primary/30"
-      )}
-    >
-      {isRecommended && (
-        <Badge className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-[10px]">
-          <Target className="h-3 w-3 mr-1" />
-          Pick
-        </Badge>
-      )}
-      
-      <div className="flex flex-col items-center gap-2 sm:gap-3">
-        {teamName && leagueType ? (
-          <TeamLogo teamName={teamName} league={leagueType} size="md" />
-        ) : icon ? (
-          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-muted flex items-center justify-center">
-            {icon}
-          </div>
-        ) : null}
-        
-        <div className="text-center">
-          <p className="text-xs sm:text-sm font-medium">{label}</p>
-          <p className="text-xl sm:text-2xl font-bold font-mono mt-1">{formatOdds(odds)}</p>
-        </div>
-
-        {isRecommended && confidence && (
-          <div className="text-[10px] sm:text-xs text-muted-foreground">
-            {Math.round(confidence)}% confidence
-          </div>
-        )}
-
-        <AddToBetSlipButton
-          matchId={matchId}
-          matchTitle={matchTitle}
-          league={league}
-          betType={betType}
-          selection={selection}
-          odds={odds}
-          modelConfidence={confidence}
-          modelEvPercentage={evPercentage}
-          kellyRecommended={kellyFraction}
-          className="w-full min-h-[44px]"
-        />
-      </div>
-    </motion.div>
-  );
-};
-
-// Helper to format odds
-const formatOdds = (odds: number): string => {
-  if (odds >= 2) {
-    const american = Math.round((odds - 1) * 100);
-    return american > 0 ? `+${american}` : `${american}`;
-  }
-  return odds > 0 ? `+${Math.round(odds)}` : `${Math.round(odds)}`;
-};
-
-// Score card component for SmartScore breakdown - with responsive padding
-const ScoreCard: React.FC<{ 
-  label: string; 
-  value: number;
-  icon?: React.ComponentType<{ className?: string }>;
-}> = ({ label, value, icon: Icon }) => (
-  <div className="p-2 sm:p-3 bg-muted/30 rounded-lg">
-    <div className="flex items-center gap-1 sm:gap-2 mb-1 sm:mb-2">
-      {Icon && <Icon className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />}
-      <span className="text-[10px] sm:text-xs text-muted-foreground truncate">{label}</span>
-    </div>
-    <div className="flex items-center gap-2">
-      <div className="flex-1 h-1.5 sm:h-2 bg-muted rounded-full overflow-hidden">
-        <div 
-          className={cn(
-            "h-full transition-all",
-            value >= 70 ? "bg-green-500" :
-            value >= 50 ? "bg-yellow-500" : "bg-red-500"
-          )}
-          style={{ width: `${value}%` }}
-        />
-      </div>
-      <span className={cn(
-        "font-bold text-xs sm:text-sm min-w-[1.5rem] text-right",
-        value >= 70 ? "text-green-500" :
-        value >= 50 ? "text-yellow-500" : "text-red-500"
-      )}>
-        {Math.round(value)}
-      </span>
-    </div>
-  </div>
-);
 
 export default GameDetailPage;
