@@ -191,40 +191,94 @@ export default function AIPredictions() {
 
         {/* Overview Stats */}
         {stats && (
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <StatCard
-              title="Total Predictions"
-              value={predictions.length.toString()}
-              icon={Brain}
-              isLoading={isLoading}
-            />
-            <StatCard
-              title="Win Rate"
-              value={`${stats.winRate.toFixed(1)}%`}
-              icon={Target}
-              trend={stats.winRate >= 50 ? "up" : "down"}
-              isLoading={isLoading}
-            />
-            <StatCard
-              title="Record"
-              value={`${stats.won}W - ${stats.lost}L`}
-              icon={Trophy}
-              isLoading={isLoading}
-            />
-            <StatCard
-              title="Profit/Loss"
-              value={`${stats.totalPL >= 0 ? '+' : ''}$${stats.totalPL.toFixed(0)}`}
-              icon={stats.totalPL >= 0 ? TrendingUp : TrendingDown}
-              trend={stats.totalPL >= 0 ? "up" : "down"}
-              isLoading={isLoading}
-            />
-            <StatCard
-              title="ROI"
-              value={`${stats.roi >= 0 ? '+' : ''}${stats.roi.toFixed(1)}%`}
-              icon={BarChart3}
-              trend={stats.roi >= 0 ? "up" : "down"}
-              isLoading={isLoading}
-            />
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+              <StatCard
+                title="Total"
+                value={predictions.length.toString()}
+                icon={Brain}
+                isLoading={isLoading}
+              />
+              <StatCard
+                title="Settled"
+                value={`${stats.settled}`}
+                icon={Target}
+                isLoading={isLoading}
+              />
+              <StatCard
+                title="Win Rate"
+                value={stats.settled > 0 ? `${stats.winRate.toFixed(1)}%` : 'N/A'}
+                icon={stats.winRate >= stats.breakEvenWinRate ? TrendingUp : TrendingDown}
+                trend={stats.settled > 0 ? (stats.winRate >= stats.breakEvenWinRate ? "up" : "down") : undefined}
+                isLoading={isLoading}
+              />
+              <StatCard
+                title="Record"
+                value={`${stats.won}W - ${stats.lost}L`}
+                icon={Trophy}
+                isLoading={isLoading}
+              />
+              <StatCard
+                title="P/L (Units)"
+                value={`${stats.totalPL >= 0 ? '+' : ''}${stats.totalPL.toFixed(2)}u`}
+                icon={stats.totalPL >= 0 ? TrendingUp : TrendingDown}
+                trend={stats.totalPL >= 0 ? "up" : "down"}
+                isLoading={isLoading}
+              />
+              <StatCard
+                title="ROI"
+                value={stats.settled > 0 ? `${stats.roi >= 0 ? '+' : ''}${stats.roi.toFixed(1)}%` : 'N/A'}
+                icon={BarChart3}
+                trend={stats.roi >= 0 ? "up" : "down"}
+                isLoading={isLoading}
+              />
+            </div>
+
+            {/* Data Validation Banner */}
+            {stats.pending > 0 && stats.settled === 0 && (
+              <Card className="border-yellow-500/30 bg-yellow-500/5">
+                <CardContent className="p-3">
+                  <div className="flex items-center gap-2 text-sm">
+                    <Clock className="h-4 w-4 text-yellow-500 shrink-0" />
+                    <span className="text-muted-foreground">
+                      All <span className="font-medium text-foreground">{stats.pending}</span> predictions are still pending. 
+                      Win rate and P/L will update once games settle.
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Break-Even Analysis */}
+            {stats.settled >= 10 && (
+              <Card className="border-muted">
+                <CardContent className="p-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-2">
+                      <Target className="h-4 w-4 text-primary" />
+                      <span className="text-muted-foreground">Break-even at -110 odds:</span>
+                      <span className="font-medium">{stats.breakEvenWinRate.toFixed(1)}%</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground">You:</span>
+                      <span className={cn(
+                        "font-bold",
+                        stats.winRate >= stats.breakEvenWinRate ? "text-green-500" : "text-red-500"
+                      )}>
+                        {stats.winRate.toFixed(1)}% 
+                        ({stats.winRate >= stats.breakEvenWinRate ? '+' : ''}{(stats.winRate - stats.breakEvenWinRate).toFixed(1)}%)
+                      </span>
+                    </div>
+                    {stats.winRate < stats.breakEvenWinRate && stats.lost > 0 && (
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <Lightbulb className="h-3 w-3 text-yellow-500" />
+                        Need {Math.ceil((stats.breakEvenWinRate / 100) * stats.settled) - stats.won} more wins to break even
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         )}
 

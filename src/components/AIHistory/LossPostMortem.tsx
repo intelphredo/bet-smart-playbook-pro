@@ -278,39 +278,60 @@ export function LossPostMortem({ predictions, isLoading }: LossPostMortemProps) 
             })}
           </div>
 
-          {/* Key Insights */}
+          {/* Key Insights - clickable to filter */}
           <div className="grid md:grid-cols-3 gap-3">
-            <div className="bg-orange-500/10 rounded-lg p-3">
+            <button
+              onClick={() => setCategoryFilter(categoryFilter === 'bad_beat' ? 'all' : 'bad_beat')}
+              className={cn(
+                "bg-orange-500/10 rounded-lg p-3 text-left transition-colors",
+                categoryFilter === 'bad_beat' && "ring-2 ring-orange-500"
+              )}
+            >
               <div className="flex items-center gap-2 mb-2">
                 <AlertTriangle className="h-4 w-4 text-orange-500" />
                 <span className="font-medium text-sm">Bad Beats</span>
+                <Badge variant="outline" className="ml-auto text-xs">{categoryBreakdown.bad_beat}</Badge>
               </div>
               <p className="text-xs text-muted-foreground">
-                {categoryBreakdown.bad_beat} losses were decided by 3 points or less. 
-                These are pure variance - the model was likely correct.
+                Losses decided by 3 points or less. Pure variance - model was likely correct.
               </p>
-            </div>
-            <div className="bg-red-500/10 rounded-lg p-3">
+            </button>
+            <button
+              onClick={() => setCategoryFilter(categoryFilter === 'model_error' ? 'all' : 'model_error')}
+              className={cn(
+                "bg-red-500/10 rounded-lg p-3 text-left transition-colors",
+                categoryFilter === 'model_error' && "ring-2 ring-red-500"
+              )}
+            >
               <div className="flex items-center gap-2 mb-2">
                 <Brain className="h-4 w-4 text-red-500" />
                 <span className="font-medium text-sm">Model Errors</span>
+                <Badge variant="outline" className="ml-auto text-xs">{categoryBreakdown.model_error + categoryBreakdown.high_confidence_miss}</Badge>
               </div>
               <p className="text-xs text-muted-foreground">
-                {categoryBreakdown.model_error + categoryBreakdown.high_confidence_miss} losses indicate 
-                potential model blind spots that need investigation.
+                Potential blind spots that need investigation.
               </p>
-            </div>
-            <div className="bg-purple-500/10 rounded-lg p-3">
+            </button>
+            <button
+              onClick={() => setCategoryFilter(categoryFilter === 'variance' ? 'all' : 'variance')}
+              className={cn(
+                "bg-purple-500/10 rounded-lg p-3 text-left transition-colors",
+                categoryFilter === 'variance' && "ring-2 ring-purple-500"
+              )}
+            >
               <div className="flex items-center gap-2 mb-2">
                 <BarChart3 className="h-4 w-4 text-purple-500" />
                 <span className="font-medium text-sm">Expected Variance</span>
+                <Badge variant="outline" className="ml-auto text-xs">{categoryBreakdown.variance + categoryBreakdown.close_game}</Badge>
               </div>
               <p className="text-xs text-muted-foreground">
-                {categoryBreakdown.variance + categoryBreakdown.close_game} losses fall within 
-                normal variance. Trust the process.
+                Normal variance losses. Trust the process.
               </p>
-            </div>
+            </button>
           </div>
+
+          {/* Pattern Analysis */}
+          <PatternAnalysis lossAnalyses={lossAnalyses} />
         </CardContent>
       </Card>
 
@@ -485,5 +506,103 @@ function LossCard({
         </CollapsibleContent>
       </Card>
     </Collapsible>
+  );
+}
+
+// Pattern Analysis Component - identifies model weaknesses
+function PatternAnalysis({ lossAnalyses }: { lossAnalyses: LossAnalysis[] }) {
+  const patterns = useMemo(() => {
+    const results: { title: string; description: string; severity: 'high' | 'medium' | 'low'; count: number }[] = [];
+    
+    // League-based patterns
+    const leagueLosses: Record<string, number> = {};
+    const leagueTotal: Record<string, number> = {};
+    lossAnalyses.forEach(a => {
+      const league = a.prediction.league || 'Unknown';
+      leagueLosses[league] = (leagueLosses[league] || 0) + 1;
+    });
+    
+    const worstLeague = Object.entries(leagueLosses).sort((a, b) => b[1] - a[1])[0];
+    if (worstLeague && worstLeague[1] >= 5) {
+      results.push({
+        title: `Struggles with ${worstLeague[0]}`,
+        description: `${worstLeague[1]} losses in ${worstLeague[0]}. Consider reducing confidence for this league.`,
+        severity: worstLeague[1] >= 15 ? 'high' : 'medium',
+        count: worstLeague[1],
+      });
+    }
+
+    // High confidence miss pattern
+    const highConfMisses = lossAnalyses.filter(a => a.category === 'high_confidence_miss');
+    if (highConfMisses.length >= 3) {
+      results.push({
+        title: 'Overconfidence pattern detected',
+        description: `${highConfMisses.length} losses at 70%+ confidence. Model assigns high confidence too liberally.`,
+        severity: 'high',
+        count: highConfMisses.length,
+      });
+    }
+
+    // Underdog pattern
+    const blowoutLosses = lossAnalyses.filter(a => a.scoreDiff >= 15);
+    if (blowoutLosses.length >= 3) {
+      results.push({
+        title: 'Blowout losses',
+        description: `${blowoutLosses.length} losses by 15+ points. Model may underestimate opponent strength in mismatches.`,
+        severity: 'medium',
+        count: blowoutLosses.length,
+      });
+    }
+
+    // Live prediction losses
+    const liveLosses = lossAnalyses.filter(a => a.prediction.is_live_prediction);
+    if (liveLosses.length >= 5) {
+      results.push({
+        title: 'Live betting weakness',
+        description: `${liveLosses.length} live prediction losses. In-game model may lag behind momentum shifts.`,
+        severity: 'medium',
+        count: liveLosses.length,
+      });
+    }
+
+    if (results.length === 0) {
+      results.push({
+        title: 'No strong patterns detected',
+        description: 'Losses appear distributed normally. Continue monitoring.',
+        severity: 'low',
+        count: 0,
+      });
+    }
+
+    return results;
+  }, [lossAnalyses]);
+
+  return (
+    <Card className="border-primary/20">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm flex items-center gap-2">
+          <Brain className="h-4 w-4 text-primary" />
+          Model Error Patterns
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        {patterns.map((pattern, i) => (
+          <div key={i} className={cn(
+            "p-3 rounded-lg border text-sm",
+            pattern.severity === 'high' && "bg-red-500/5 border-red-500/20",
+            pattern.severity === 'medium' && "bg-yellow-500/5 border-yellow-500/20",
+            pattern.severity === 'low' && "bg-muted/50 border-muted",
+          )}>
+            <div className="flex items-center justify-between mb-1">
+              <span className="font-medium">{pattern.title}</span>
+              {pattern.count > 0 && (
+                <Badge variant="outline" className="text-xs">{pattern.count}</Badge>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">{pattern.description}</p>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
   );
 }
