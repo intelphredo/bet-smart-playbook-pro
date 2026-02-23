@@ -29,6 +29,7 @@ import {
 import { PredictionDisclaimer } from "@/components/legal";
 import { useSmartNotifications } from "@/hooks/useSmartNotifications";
 import { useHighValueAlerts } from "@/hooks/useHighValueAlerts";
+import { useIntelligentAlerts } from "@/hooks/useIntelligentAlertsHook";
 import { GroupedLeagueSelect, LEAGUE_CATEGORIES } from "@/components/filters/GroupedLeagueSelect";
 
 const ALL_LEAGUES = Object.values(LEAGUE_CATEGORIES).flatMap(cat => cat.leagues);
@@ -107,6 +108,12 @@ const Index = () => {
     confidenceThreshold: 70,
     maxAlertsPerDay: 2,
     enableInjuryMonitoring: true,
+  });
+
+  // Intelligent notification engine
+  useIntelligentAlerts({
+    matches: allActiveMatches,
+    enabled: true,
   });
 
   // Computed stats

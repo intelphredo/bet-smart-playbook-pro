@@ -16,6 +16,11 @@ export interface NotificationPreferences {
   arbitrage: boolean;
   game_start: boolean;
   bet_results: boolean;
+  steam_moves: boolean;
+  sharp_money: boolean;
+  ai_confidence: boolean;
+  value_drops: boolean;
+  daily_briefing: boolean;
 }
 
 export interface BankrollPreferences {
@@ -57,6 +62,11 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
     arbitrage: false,
     game_start: false,
     bet_results: false,
+    steam_moves: true,
+    sharp_money: true,
+    ai_confidence: true,
+    value_drops: true,
+    daily_briefing: true,
   },
   bankroll: {
     current_bankroll: 1000,

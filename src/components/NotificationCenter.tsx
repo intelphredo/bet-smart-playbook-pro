@@ -23,7 +23,11 @@ const alertTypeConfig: Record<UserAlert['type'], { icon: typeof Bell; color: str
   game_start: { icon: Clock, color: 'text-purple-500' },
   system: { icon: Bell, color: 'text-muted-foreground' },
   sharp_money: { icon: Brain, color: 'text-purple-500' },
-  reverse_line: { icon: Zap, color: 'text-orange-500' }
+  reverse_line: { icon: Zap, color: 'text-orange-500' },
+  steam_move: { icon: Zap, color: 'text-red-500' },
+  ai_confidence: { icon: Brain, color: 'text-emerald-500' },
+  value_drop: { icon: TrendingUp, color: 'text-blue-500' },
+  daily_briefing: { icon: Bell, color: 'text-primary' },
 };
 
 function AlertItem({ 
