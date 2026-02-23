@@ -376,7 +376,7 @@ export const useHistoricalPredictions = (
       const startDate = getDateFromRange(timeRange);
 
       const data = await fetchAllPredictions({
-        orFilter: startDate ? `predicted_at.gte.${startDate.toISOString()},result_updated_at.gte.${startDate.toISOString()}` : undefined,
+        startDate: startDate ? startDate.toISOString() : undefined,
       }) as HistoricalPrediction[];
 
       // Normalize and sort
