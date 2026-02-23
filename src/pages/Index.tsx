@@ -31,6 +31,7 @@ import { useSmartNotifications } from "@/hooks/useSmartNotifications";
 import { useHighValueAlerts } from "@/hooks/useHighValueAlerts";
 import { useIntelligentAlerts } from "@/hooks/useIntelligentAlertsHook";
 import { GroupedLeagueSelect, LEAGUE_CATEGORIES } from "@/components/filters/GroupedLeagueSelect";
+import { LazyRender } from "@/components/ui/lazy-render";
 
 const ALL_LEAGUES = Object.values(LEAGUE_CATEGORIES).flatMap(cat => cat.leagues);
 
@@ -205,12 +206,14 @@ const Index = () => {
               />
             </div>
 
-            {/* BOTTOM: Recent Games + Live Scores */}
-            <RecentGamesStrip
-              liveMatches={filteredLive}
-              finishedMatches={filteredFinished}
-              upcomingMatches={filteredUpcoming}
-            />
+            {/* BOTTOM: Recent Games + Live Scores (lazy-loaded) */}
+            <LazyRender height="300px" rootMargin="300px">
+              <RecentGamesStrip
+                liveMatches={filteredLive}
+                finishedMatches={filteredFinished}
+                upcomingMatches={filteredUpcoming}
+              />
+            </LazyRender>
           </div>
         </main>
       </LiveScoresProvider>
