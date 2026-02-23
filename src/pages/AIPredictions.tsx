@@ -39,6 +39,8 @@ import {
   Lightbulb,
   AlertTriangle,
   BookOpen,
+  Shield,
+  MessageSquare,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import NavBar from "@/components/NavBar";
@@ -79,6 +81,7 @@ const getAlgorithmShortName = (algorithmId: string | null): string => {
     'Value Pick Finder': 'Value Pick',
     'Statistical Edge': 'Stat Edge',
     'Sharp Money': 'Sharp',
+    'AI Debate Moderator': 'AI Debate',
   };
   return shortNames[name] || name;
 };
@@ -490,6 +493,7 @@ function PredictionRow({ prediction, showType }: { prediction: any; showType?: b
   const homeTeam = prediction.home_team || 'Home';
   const awayTeam = prediction.away_team || 'Away';
   const matchTitle = prediction.match_title || `${homeTeam} vs ${awayTeam}`;
+  const isDebate = prediction.algorithm_id === 'ai-debate-moderator';
 
   const StatusIcon = prediction.status === 'won' 
     ? CheckCircle2 
@@ -502,6 +506,13 @@ function PredictionRow({ prediction, showType }: { prediction: any; showType?: b
     : prediction.status === 'lost' 
     ? 'text-red-500' 
     : 'text-yellow-500';
+
+  const agreementColors: Record<string, string> = {
+    unanimous: 'bg-green-500/10 text-green-500 border-green-500/20',
+    strong: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
+    split: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20',
+    contested: 'bg-red-500/10 text-red-500 border-red-500/20',
+  };
 
   return (
     <Card className="hover:bg-muted/50 transition-colors">
@@ -522,7 +533,11 @@ function PredictionRow({ prediction, showType }: { prediction: any; showType?: b
                     <span>•</span>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Badge variant="secondary" className="text-xs py-0 px-1.5 bg-primary/10 text-primary border-0 cursor-help">
+                        <Badge variant="secondary" className={cn(
+                          "text-xs py-0 px-1.5 border-0 cursor-help",
+                          isDebate ? "bg-purple-500/10 text-purple-400" : "bg-primary/10 text-primary"
+                        )}>
+                          {isDebate && <Sparkles className="h-3 w-3 mr-0.5 inline" />}
                           {getAlgorithmShortName(prediction.algorithm_id)}
                         </Badge>
                       </TooltipTrigger>
@@ -531,6 +546,14 @@ function PredictionRow({ prediction, showType }: { prediction: any; showType?: b
                         <p className="text-xs text-muted-foreground">{getAlgorithmDescription(prediction.algorithm_id)}</p>
                       </TooltipContent>
                     </Tooltip>
+                  </>
+                )}
+                {isDebate && prediction.agreement_level && (
+                  <>
+                    <span>•</span>
+                    <Badge variant="outline" className={cn("text-xs py-0 px-1.5", agreementColors[prediction.agreement_level])}>
+                      {prediction.agreement_level}
+                    </Badge>
                   </>
                 )}
                 {showType && (
@@ -560,6 +583,44 @@ function PredictionRow({ prediction, showType }: { prediction: any; showType?: b
             </div>
           </div>
         </div>
+
+        {/* Debate-specific expanded details */}
+        {isDebate && (prediction.debate_reasoning || prediction.risk_flag || prediction.biases_identified) && (
+          <div className="mt-2 pt-2 border-t border-border/50 space-y-1.5">
+            {prediction.debate_reasoning && (
+              <div className="flex items-start gap-1.5 text-xs text-muted-foreground">
+                <MessageSquare className="h-3 w-3 mt-0.5 shrink-0 text-purple-400" />
+                <span className="line-clamp-2">{prediction.debate_reasoning}</span>
+              </div>
+            )}
+            {prediction.key_factor && (
+              <div className="flex items-start gap-1.5 text-xs text-muted-foreground">
+                <Zap className="h-3 w-3 mt-0.5 shrink-0 text-yellow-500" />
+                <span><span className="font-medium text-foreground">Key:</span> {prediction.key_factor}</span>
+              </div>
+            )}
+            {prediction.temporal_insight && (
+              <div className="flex items-start gap-1.5 text-xs text-muted-foreground">
+                <Clock className="h-3 w-3 mt-0.5 shrink-0 text-blue-400" />
+                <span>{prediction.temporal_insight}</span>
+              </div>
+            )}
+            <div className="flex items-center gap-2 flex-wrap">
+              {prediction.risk_flag && (
+                <Badge variant="outline" className="text-xs py-0 bg-red-500/10 text-red-400 border-red-500/20">
+                  <AlertTriangle className="h-3 w-3 mr-0.5" />
+                  {prediction.risk_flag}
+                </Badge>
+              )}
+              {Array.isArray(prediction.biases_identified) && prediction.biases_identified.map((bias: string, i: number) => (
+                <Badge key={i} variant="outline" className="text-xs py-0 bg-orange-500/10 text-orange-400 border-orange-500/20">
+                  <Shield className="h-3 w-3 mr-0.5" />
+                  {bias}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

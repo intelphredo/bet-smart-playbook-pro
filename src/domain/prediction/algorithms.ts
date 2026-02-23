@@ -17,6 +17,7 @@ export const ALGORITHM_IDS = {
   VALUE_PICK_FINDER: "3a7e2d9b-8c5f-4b1f-9e17-7b31a4dce6c2",
   STATISTICAL_EDGE: "85c48bbe-5b1a-4c1e-a0d5-e284e9e952f1",
   SHARP_MONEY: "d7f3e8a2-9b4c-4e1a-8f5d-6c2b1a0e9d8f",
+  AI_DEBATE_MODERATOR: "ai-debate-moderator",
 } as const;
 
 export type AlgorithmId = typeof ALGORITHM_IDS[keyof typeof ALGORITHM_IDS];
@@ -180,6 +181,12 @@ export const ALGORITHM_REGISTRY = [
     name: "Statistical Edge",
     description: "Pure statistics-based algorithm using situational spots, weather, and matchup data.",
     icon: "chart",
+  },
+  {
+    id: ALGORITHM_IDS.AI_DEBATE_MODERATOR,
+    name: "AI Debate Moderator",
+    description: "LLM-powered meta-synthesis that debates across all algorithm predictions for a final qualitative recommendation.",
+    icon: "sparkles",
   },
 ] as const;
 
