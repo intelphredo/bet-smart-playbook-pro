@@ -1,5 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from "../_shared/rate-limiter.ts";
+import { fetchWithTimeout } from "../_shared/fetch-utils.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -32,6 +34,9 @@ Deno.serve(async (req) => {
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+  const rl = await checkRateLimit(req, { ...RATE_LIMITS.SCHEDULED, endpoint: "scheduler-master" });
+  if (!rl.allowed) return rateLimitResponse(rl, corsHeaders);
 
   try {
     // Parse request to determine which task(s) to run
@@ -87,7 +92,8 @@ Deno.serve(async (req) => {
       console.log(`Executing: ${taskName} -> ${functionName}`);
 
       try {
-        const response = await fetch(functionUrl, {
+        const response = await fetchWithTimeout(functionUrl, {
+          timeout: 55000,
           method: "POST",
           headers: {
             Authorization: `Bearer ${supabaseServiceKey}`,
