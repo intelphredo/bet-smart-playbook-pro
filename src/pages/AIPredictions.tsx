@@ -44,6 +44,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import NavBar from "@/components/NavBar";
+import RecordDetailModal from "@/components/RecordDetailModal";
+import MetricInfoModal from "@/components/MetricInfoModal";
 import PageFooter from "@/components/PageFooter";
 import { useHistoricalPredictions, TimeRange, PredictionType } from "@/hooks/useHistoricalPredictions";
 import PredictionCharts from "@/components/PredictionCharts";
@@ -117,6 +119,8 @@ export default function AIPredictions() {
   const [leagueFilter, setLeagueFilter] = useState<string>("all");
   const [algorithmFilter, setAlgorithmFilter] = useState<string>("all");
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [recordModal, setRecordModal] = useState<"won" | "lost" | null>(null);
+  const [metricModal, setMetricModal] = useState<"total" | "settled" | "winRate" | "record" | "pl" | "roi" | null>(null);
 
   const { data, isLoading, error, refetch } = useHistoricalPredictions(timeRange, predictionType);
   const { predictions, stats } = data || { predictions: [], stats: null };
@@ -240,12 +244,14 @@ export default function AIPredictions() {
                 value={displayStats.total.toString()}
                 icon={Brain}
                 isLoading={isLoading}
+                onClick={() => setMetricModal("total")}
               />
               <StatCard
                 title="Settled"
                 value={`${displayStats.settled}`}
                 icon={Target}
                 isLoading={isLoading}
+                onClick={() => setMetricModal("settled")}
               />
               <StatCard
                 title="Win Rate"
@@ -253,19 +259,38 @@ export default function AIPredictions() {
                 icon={displayStats.winRate >= displayStats.breakEvenWinRate ? TrendingUp : TrendingDown}
                 trend={displayStats.settled > 0 ? (displayStats.winRate >= displayStats.breakEvenWinRate ? "up" : "down") : undefined}
                 isLoading={isLoading}
+                onClick={() => setMetricModal("winRate")}
               />
-              <StatCard
-                title="Record"
-                value={`${displayStats.won}W - ${displayStats.lost}L`}
-                icon={Trophy}
-                isLoading={isLoading}
-              />
+              <Card className="cursor-pointer hover:ring-1 hover:ring-primary/30 transition-all" onClick={() => setMetricModal("record")}>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-xs text-muted-foreground">Record</p>
+                    <Trophy className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <p className="text-lg font-bold">
+                    <button
+                      className="text-green-500 hover:underline underline-offset-2"
+                      onClick={(e) => { e.stopPropagation(); setRecordModal("won"); }}
+                    >
+                      {displayStats.won}W
+                    </button>
+                    <span className="text-muted-foreground mx-0.5">-</span>
+                    <button
+                      className="text-red-500 hover:underline underline-offset-2"
+                      onClick={(e) => { e.stopPropagation(); setRecordModal("lost"); }}
+                    >
+                      {displayStats.lost}L
+                    </button>
+                  </p>
+                </CardContent>
+              </Card>
               <StatCard
                 title="P/L (Units)"
                 value={`${displayStats.totalPL >= 0 ? '+' : ''}${displayStats.totalPL.toFixed(2)}u`}
                 icon={displayStats.totalPL >= 0 ? TrendingUp : TrendingDown}
                 trend={displayStats.totalPL >= 0 ? "up" : "down"}
                 isLoading={isLoading}
+                onClick={() => setMetricModal("pl")}
               />
               <StatCard
                 title="ROI"
@@ -273,6 +298,7 @@ export default function AIPredictions() {
                 icon={BarChart3}
                 trend={displayStats.roi >= 0 ? "up" : "down"}
                 isLoading={isLoading}
+                onClick={() => setMetricModal("roi")}
               />
             </div>
 
@@ -501,6 +527,19 @@ export default function AIPredictions() {
             />
           </TabsContent>
         </Tabs>
+        {/* Modals */}
+        <RecordDetailModal
+          open={recordModal !== null}
+          onOpenChange={(open) => !open && setRecordModal(null)}
+          predictions={filteredPredictions.filter(p => p.status === recordModal)}
+          type={recordModal || "won"}
+        />
+        <MetricInfoModal
+          open={metricModal !== null}
+          onOpenChange={(open) => !open && setMetricModal(null)}
+          metric={metricModal}
+          stats={displayStats}
+        />
       </main>
 
       <PageFooter />
@@ -513,13 +552,15 @@ function StatCard({
   value, 
   icon: Icon, 
   trend,
-  isLoading 
+  isLoading,
+  onClick,
 }: { 
   title: string; 
   value: string; 
   icon: React.ComponentType<{ className?: string }>; 
   trend?: "up" | "down";
   isLoading?: boolean;
+  onClick?: () => void;
 }) {
   if (isLoading) {
     return (
@@ -533,7 +574,10 @@ function StatCard({
   }
 
   return (
-    <Card>
+    <Card 
+      className={cn(onClick && "cursor-pointer hover:ring-1 hover:ring-primary/30 transition-all")}
+      onClick={onClick}
+    >
       <CardContent className="p-4">
         <div className="flex items-center justify-between mb-1">
           <p className="text-xs text-muted-foreground">{title}</p>
