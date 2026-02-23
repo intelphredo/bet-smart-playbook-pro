@@ -275,18 +275,28 @@ async function gradeSharpPredictions(
     }
   }
 
-  // Batch update sharp predictions
-  for (const update of updates) {
-    const { error: updateError } = await supabase
-      .from("sharp_money_predictions")
-      .update(update)
-      .eq("id", update.id)
-      .eq("game_result", "pending");
-
-    if (!updateError) {
-      gradedCount++;
-      log.info(`Graded sharp prediction ${update.id}`, { result: update.game_result, matchId });
-    }
+  // Batch update sharp predictions using Promise.allSettled
+  if (updates.length > 0) {
+    const results = await Promise.allSettled(
+      updates.map(update =>
+        supabase
+          .from("sharp_money_predictions")
+          .update({
+            game_result: update.game_result,
+            actual_score_home: update.actual_score_home,
+            actual_score_away: update.actual_score_away,
+            result_verified_at: update.result_verified_at,
+            updated_at: update.updated_at,
+          })
+          .eq("id", update.id)
+          .eq("game_result", "pending")
+          .then(({ error }) => {
+            if (!error) gradedCount++;
+            return { id: update.id, error };
+          })
+      )
+    );
+    log.info(`Batch graded ${gradedCount}/${updates.length} sharp predictions`, { matchId });
   }
 
   return gradedCount;
@@ -399,75 +409,82 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Grade user bets
+    // Determine outcomes for all user bets first (no I/O)
+    const betUpdates: Array<{
+      bet: PendingBet;
+      outcome: { status: "won" | "lost" | "push"; resultProfit: number };
+    }> = [];
+
     for (const bet of (pendingBets || []) as PendingBet[]) {
       const game = completedGames.get(bet.match_id);
       if (!game) continue;
 
       let outcome: { status: "won" | "lost" | "push"; resultProfit: number } | null = null;
-
       switch (bet.bet_type) {
-        case "moneyline":
-          outcome = determineMoneylineOutcome(bet, game);
-          break;
-        case "spread":
-          outcome = determineSpreadOutcome(bet, game);
-          break;
-        case "total":
-          outcome = determineTotalOutcome(bet, game);
-          break;
+        case "moneyline": outcome = determineMoneylineOutcome(bet, game); break;
+        case "spread": outcome = determineSpreadOutcome(bet, game); break;
+        case "total": outcome = determineTotalOutcome(bet, game); break;
       }
 
       if (!outcome) {
         console.log(`Could not determine outcome for bet ${bet.id}`);
         continue;
       }
+      betUpdates.push({ bet, outcome });
+    }
 
-      const { error: updateError } = await supabase
-        .from("user_bets")
-        .update({
-          status: outcome.status,
-          result_profit: outcome.resultProfit,
-          settled_at: new Date().toISOString(),
-          graded_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .eq("id", bet.id)
-        .is("graded_at", null);
+    // Batch write all bet updates in parallel
+    if (betUpdates.length > 0) {
+      const now = new Date().toISOString();
+      const updateResults = await Promise.allSettled(
+        betUpdates.map(({ bet, outcome }) =>
+          supabase
+            .from("user_bets")
+            .update({
+              status: outcome.status,
+              result_profit: outcome.resultProfit,
+              settled_at: now,
+              graded_at: now,
+              updated_at: now,
+            })
+            .eq("id", bet.id)
+            .is("graded_at", null)
+            .then(({ error }) => ({ betId: bet.id, error }))
+        )
+      );
 
-      if (updateError) {
-        console.error(`Error updating bet ${bet.id}:`, updateError);
-        continue;
-      }
-
-      gradedBetsCount++;
-      log.info(`Graded bet ${bet.id}`, { 
-        status: outcome.status, 
-        profit: outcome.resultProfit,
-        matchId: bet.match_id 
-      });
-
-      const emoji = outcome.status === "won" ? "🎉" : outcome.status === "lost" ? "😔" : "↔️";
-      const profitText = outcome.resultProfit > 0 
-        ? `+$${outcome.resultProfit.toFixed(2)}` 
-        : outcome.resultProfit < 0 
-          ? `-$${Math.abs(outcome.resultProfit).toFixed(2)}`
-          : "$0.00";
-
-      alertsToCreate.push({
-        user_id: bet.user_id,
-        type: "bet_result",
-        title: `Bet ${outcome.status.charAt(0).toUpperCase() + outcome.status.slice(1)}! ${emoji}`,
-        message: `${bet.match_title}: Your ${bet.bet_type} bet on "${bet.selection}" ${outcome.status}. ${profitText}`,
-        match_id: bet.match_id,
-        bet_id: bet.id,
-        metadata: { 
-          status: outcome.status, 
-          profit: outcome.resultProfit,
-          bet_type: bet.bet_type,
-          selection: bet.selection
+      for (let i = 0; i < updateResults.length; i++) {
+        const result = updateResults[i];
+        if (result.status !== "fulfilled" || result.value.error) {
+          log.error(`Error updating bet`, result.status === "fulfilled" ? result.value.error : result.reason);
+          continue;
         }
-      });
+
+        gradedBetsCount++;
+        const { bet, outcome } = betUpdates[i];
+        const emoji = outcome.status === "won" ? "🎉" : outcome.status === "lost" ? "😔" : "↔️";
+        const profitText = outcome.resultProfit > 0
+          ? `+$${outcome.resultProfit.toFixed(2)}`
+          : outcome.resultProfit < 0
+            ? `-$${Math.abs(outcome.resultProfit).toFixed(2)}`
+            : "$0.00";
+
+        alertsToCreate.push({
+          user_id: bet.user_id,
+          type: "bet_result",
+          title: `Bet ${outcome.status.charAt(0).toUpperCase() + outcome.status.slice(1)}! ${emoji}`,
+          message: `${bet.match_title}: Your ${bet.bet_type} bet on "${bet.selection}" ${outcome.status}. ${profitText}`,
+          match_id: bet.match_id,
+          bet_id: bet.id,
+          metadata: {
+            status: outcome.status,
+            profit: outcome.resultProfit,
+            bet_type: bet.bet_type,
+            selection: bet.selection,
+          },
+        });
+      }
+      log.info(`Batch graded ${gradedBetsCount}/${betUpdates.length} user bets`);
     }
 
     if (alertsToCreate.length > 0) {
