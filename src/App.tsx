@@ -14,12 +14,15 @@ import { CalibrationProvider } from "@/components/ModelCalibration";
 import { CookieConsent, ResponsibleGamblingBadge } from "@/components/legal";
 import BettingAssistant from "@/components/BettingAssistant";
 import ErrorBoundary from "@/components/ErrorBoundary";
-// Create a client
+
+// Create a client with optimized defaults
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       refetchOnWindowFocus: false,
       staleTime: 60 * 1000, // 1 minute
+      gcTime: 10 * 60 * 1000, // 10 minutes - keep unused data longer for cache hits
+      retry: 2,
     },
   },
 });

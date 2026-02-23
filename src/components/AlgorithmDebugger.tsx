@@ -31,7 +31,8 @@ const AlgorithmDebugger = () => {
       if (error) throw error;
       return data;
     },
-    refetchInterval: 10000 // Refetch every 10 seconds
+    refetchInterval: 60000, // Refetch every 60 seconds (debug tool, no need for aggressive polling)
+    staleTime: 30000,
   });
   
   const { data: algorithms } = useQuery({
