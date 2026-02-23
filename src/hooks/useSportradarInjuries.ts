@@ -19,9 +19,9 @@ export const useInjuries = () => {
         injuries: g.injuries ?? [],
       }));
     },
-    staleTime: 15000,
-    refetchInterval: 15000,
-    refetchOnWindowFocus: true,
+    staleTime: 5 * 60 * 1000, // 5 minutes - injuries don't change rapidly
+    refetchInterval: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 
   return {
