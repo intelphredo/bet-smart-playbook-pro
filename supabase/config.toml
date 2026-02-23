@@ -1,1 +1,4 @@
 project_id = "pyknizknsygpmodoioae"
+
+[functions.grade-predictions]
+verify_jwt = false
