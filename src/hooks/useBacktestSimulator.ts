@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { getAlgorithmNameFromId } from '@/utils/predictions/algorithms';
 import { subDays, startOfDay, format, parseISO } from 'date-fns';
+import { fetchAllPredictions } from '@/utils/fetchAllPredictions';
 import { SituationalFiltersState } from '@/components/Backtest/SituationalFilters';
 
 export type BacktestStrategy = 
@@ -88,27 +88,14 @@ export function useBacktestSimulator(options: UseBacktestSimulatorOptions) {
       const startDate = startOfDay(subDays(new Date(), days)).toISOString();
       let skippedByFilters = 0;
 
-      // Fetch all settled predictions
-      let query = supabase
-        .from('algorithm_predictions')
-        .select('*')
-        .gte('predicted_at', startDate)
-        .not('prediction', 'is', null)
-        .in('status', ['won', 'lost'])
-        .order('predicted_at', { ascending: true });
-
-      if (league && league !== 'all') {
-        query = query.eq('league', league);
-      }
-
-      const { data: predictions, error } = await query;
-
-      if (error) {
-        console.error('Error fetching predictions for backtest:', error);
-        throw error;
-      }
-
-      const preds = predictions || [];
+      // Fetch all settled predictions with pagination
+      const preds = await fetchAllPredictions({
+        startDate,
+        league,
+        statuses: ['won', 'lost'],
+        excludeNullPrediction: true,
+        ascending: true,
+      });
 
       // Group predictions by match
       const matchPredictions = new Map<string, typeof preds>();

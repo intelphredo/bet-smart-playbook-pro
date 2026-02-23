@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { BettingAlgorithm } from "@/types/sports";
+import { fetchAllPredictions } from "@/utils/fetchAllPredictions";
 import { logger } from "@/utils/logger";
 import { queryKeys } from "@/config/queryKeys";
 
@@ -65,21 +66,10 @@ export const useAlgorithmPerformance = ({ dateRange }: UseAlgorithmPerformancePr
             dateRange.start ? dateRange.start.toISOString() : 'beginning'
           } to ${dateRange.end ? dateRange.end.toISOString() : 'now'}`);
             
-          const { data: predictions, error: predictionsError } = await supabase
-            .from("algorithm_predictions")
-            .select(`
-              algorithm_id,
-              status,
-              predicted_at,
-              confidence
-            `)
-            .gte('predicted_at', dateRange.start ? dateRange.start.toISOString() : '1970-01-01')
-            .lte('predicted_at', dateRange.end ? dateRange.end.toISOString() : new Date().toISOString());
-
-          if (predictionsError) {
-            logger.error("Error fetching predictions: " + predictionsError.message);
-            throw predictionsError;
-          }
+          const predictions = await fetchAllPredictions({
+            startDate: dateRange.start ? dateRange.start.toISOString() : '1970-01-01',
+            endDate: dateRange.end ? dateRange.end.toISOString() : new Date().toISOString(),
+          });
 
           // Calculate filtered stats for each algorithm
           filteredStats = predictions.reduce((acc, pred) => {

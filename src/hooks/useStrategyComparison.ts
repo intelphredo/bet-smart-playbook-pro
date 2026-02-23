@@ -1,7 +1,7 @@
 import { useQueries } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { getAlgorithmNameFromId } from '@/utils/predictions/algorithms';
 import { subDays, startOfDay, format, parseISO } from 'date-fns';
+import { fetchAllPredictions } from '@/utils/fetchAllPredictions';
 import type { BacktestStrategy, BacktestBet, BacktestResult } from './useBacktestSimulator';
 import { getStrategyDisplayName } from './useBacktestSimulator';
 
@@ -118,23 +118,13 @@ async function runBacktestForStrategy(
   const { startingBankroll, stakeType, stakeAmount, minConfidence, days, league } = config;
   const startDate = startOfDay(subDays(new Date(), days)).toISOString();
 
-  let query = supabase
-    .from('algorithm_predictions')
-    .select('*')
-    .gte('predicted_at', startDate)
-    .not('prediction', 'is', null)
-    .in('status', ['won', 'lost'])
-    .order('predicted_at', { ascending: true });
-
-  if (league && league !== 'all') {
-    query = query.eq('league', league);
-  }
-
-  const { data: predictions, error } = await query;
-
-  if (error) throw error;
-
-  const preds = predictions || [];
+  const preds = await fetchAllPredictions({
+    startDate,
+    league,
+    statuses: ['won', 'lost'],
+    excludeNullPrediction: true,
+    ascending: true,
+  });
 
   // Group predictions by match
   const matchPredictions = new Map<string, typeof preds>();

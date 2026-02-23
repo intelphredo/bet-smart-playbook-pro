@@ -4,8 +4,8 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { subDays, startOfDay } from 'date-fns';
+import { fetchAllPredictions } from '@/utils/fetchAllPredictions';
 import { getAlgorithmNameFromId, ALGORITHM_IDS } from '@/utils/predictions/algorithms';
 import { 
   analyzeAlgorithmPerformance, 
@@ -38,17 +38,10 @@ export function useModelRecalibration(options: UseModelRecalibrationOptions = {}
       // Fetch predictions for the analysis window
       const startDate = startOfDay(subDays(new Date(), config.longTermDays)).toISOString();
       
-      const { data: predictions, error } = await supabase
-        .from('algorithm_predictions')
-        .select('*')
-        .gte('predicted_at', startDate)
-        .not('prediction', 'is', null)
-        .order('predicted_at', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching predictions for recalibration:', error);
-        throw error;
-      }
+      const predictions = await fetchAllPredictions({
+        startDate,
+        excludeNullPrediction: true,
+      });
 
       // Update bin-level calibration with all predictions
       const historicalPredictions: HistoricalPrediction[] = (predictions || []).map(p => ({
