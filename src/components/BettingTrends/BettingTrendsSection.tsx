@@ -9,7 +9,6 @@ import { Label } from '@/components/ui/label';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { 
   TrendingUp, 
-  TrendingDown,
   RefreshCw, 
   Brain, 
   Users, 
@@ -28,12 +27,14 @@ import { League } from '@/types/sports';
 import { useBettingTrends } from '@/hooks/useBettingTrends';
 import { BettingTrend } from '@/types/bettingTrends';
 import BettingTrendsCard from './BettingTrendsCard';
+import { ConsensusMeter, getMeterLevel } from './ConsensusMeter';
+import { LineMovementMiniChart } from './LineMovementMiniChart';
 import { GroupedLeagueSelect } from '@/components/filters/GroupedLeagueSelect';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { format, subDays } from 'date-fns';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 
-// All available leagues for the filter
 const ALL_LEAGUES: League[] = [
   'NBA', 'NFL', 'MLB', 'NHL', 'NCAAB', 'NCAAF', 
   'WNBA', 'EPL', 'LA_LIGA', 'SERIE_A', 'BUNDESLIGA', 
@@ -46,135 +47,195 @@ const DATE_PRESETS = [
   { label: 'Last 7 Days', getValue: () => ({ from: subDays(new Date(), 7), to: new Date() }) },
 ] as const;
 
-const ITEMS_PER_PAGE = 8;
+const ITEMS_PER_PAGE = 12;
 
-function TrendSummaryRow({ trend, onClick }: { trend: BettingTrend; onClick: () => void }) {
+// Visual split bar for percentages
+function SplitBar({ 
+  leftPct, leftLabel, rightLabel, leftColor = 'bg-blue-500', rightColor = 'bg-slate-400/60',
+  height = 'h-3',
+}: { 
+  leftPct: number; leftLabel?: string; rightLabel?: string; 
+  leftColor?: string; rightColor?: string; height?: string;
+}) {
+  return (
+    <div className="w-full space-y-0.5">
+      {(leftLabel || rightLabel) && (
+        <div className="flex justify-between text-[10px] font-medium leading-none">
+          <span>{leftLabel}</span>
+          <span className="text-muted-foreground">{rightLabel}</span>
+        </div>
+      )}
+      <div className={cn('w-full rounded-full overflow-hidden flex', height)}>
+        <div className={cn('transition-all rounded-l-full', leftColor)} style={{ width: `${leftPct}%` }} />
+        <div className={cn('transition-all rounded-r-full', rightColor)} style={{ width: `${100 - leftPct}%` }} />
+      </div>
+    </div>
+  );
+}
+
+function TrendSummaryRow({ trend, onClick, isSelected }: { trend: BettingTrend; onClick: () => void; isSelected: boolean }) {
   const hasSharpSignals = trend.sharpBetting.signals.length > 0;
   const hasRLM = trend.lineMovement.reverseLineMovement;
   const sharpSide = trend.sharpBetting.spreadFavorite;
-  const sharpTeamName = sharpSide === 'home' ? trend.homeTeam.split(' ').pop() : 
-                        sharpSide === 'away' ? trend.awayTeam.split(' ').pop() : null;
+  const sharpTeam = sharpSide === 'home' ? trend.homeTeam.split(' ').pop() : 
+                    sharpSide === 'away' ? trend.awayTeam.split(' ').pop() : null;
   
-  const publicHomePct = trend.publicBetting.spreadHome;
-  const moneyHomePct = trend.moneyFlow.homeMoneyPct;
+  const publicHomePct = Math.round(trend.publicBetting.spreadHome);
+  const moneyHomePct = Math.round(trend.moneyFlow.homeMoneyPct);
   const splitDiff = Math.abs(publicHomePct - moneyHomePct);
-  const publicSharpConflict = splitDiff >= 12;
+  const isContrarian = splitDiff >= 12; // sharp and public disagree
+  
+  const meter = getMeterLevel(trend);
+  const homeShort = trend.homeTeam.split(' ').pop() || 'Home';
+  const awayShort = trend.awayTeam.split(' ').pop() || 'Away';
   
   return (
-    <button 
-      onClick={onClick}
-      className={cn(
-        'w-full p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors text-left',
-        hasRLM && 'border-purple-500/40 bg-purple-500/5',
-        hasSharpSignals && !hasRLM && 'border-primary/30'
-      )}
-    >
-      {/* Game Header with Spread */}
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex-1 min-w-0">
-          <p className="font-medium text-sm">
-            <span className="truncate">{trend.awayTeam.split(' ').pop()}</span>
-            <span className="text-muted-foreground mx-1">@</span>
-            <span className="truncate">{trend.homeTeam.split(' ').pop()}</span>
-          </p>
-          {/* Spread & Total */}
-          <p className="text-xs text-muted-foreground font-mono mt-0.5">
-            Spread: {trend.lineMovement.currentSpread > 0 ? '+' : ''}{trend.lineMovement.currentSpread.toFixed(1)}
-            <span className="mx-1.5">|</span>
-            O/U: {trend.lineMovement.currentTotal.toFixed(1)}
-          </p>
-        </div>
-        <div className="flex items-center gap-1.5">
-          {/* Line Movement Arrow */}
-          {Math.abs(trend.lineMovement.spreadMovement) >= 0.5 && (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span className={cn(
-                    'flex items-center text-xs font-mono font-medium px-1.5 py-0.5 rounded',
-                    trend.lineMovement.spreadMovement > 0 
-                      ? 'text-emerald-600 bg-emerald-500/10' 
-                      : 'text-red-500 bg-red-500/10'
-                  )}>
-                    {trend.lineMovement.spreadMovement > 0 ? (
-                      <ArrowUpRight className="h-3 w-3" />
-                    ) : (
-                      <ArrowDownRight className="h-3 w-3" />
-                    )}
-                    {Math.abs(trend.lineMovement.spreadMovement).toFixed(1)}
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent>Line moved {Math.abs(trend.lineMovement.spreadMovement).toFixed(1)} pts in last 24hrs</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+    <HoverCard openDelay={300} closeDelay={100}>
+      <HoverCardTrigger asChild>
+        <button 
+          onClick={onClick}
+          className={cn(
+            'w-full p-3 rounded-xl border transition-all text-left group',
+            'hover:shadow-md hover:border-primary/30',
+            isSelected && 'ring-2 ring-primary border-primary/40 bg-primary/5',
+            isContrarian && !isSelected && 'border-amber-500/40 bg-amber-500/5',
+            hasRLM && !isSelected && !isContrarian && 'border-purple-500/40 bg-purple-500/5',
+            !isSelected && !isContrarian && !hasRLM && 'bg-card',
           )}
-          {hasRLM && (
-            <Badge variant="outline" className="text-purple-500 bg-purple-500/10 text-xs px-1.5 border-purple-500/30">
-              <Zap className="h-3 w-3 mr-0.5" />
-              RLM
-            </Badge>
-          )}
-          {hasSharpSignals && !hasRLM && (
-            <Badge variant="outline" className="text-primary bg-primary/10 text-xs border-primary/30">
-              <Brain className="h-3 w-3 mr-0.5" />
-              Sharp
-            </Badge>
-          )}
-          <ChevronRight className="h-4 w-4 text-muted-foreground" />
-        </div>
-      </div>
-      
-      {/* Public vs Sharp mini bar */}
-      <div className="space-y-1.5">
-        <div className="flex items-center justify-between text-xs">
-          <span className="flex items-center gap-1 text-muted-foreground">
-            <Users className="h-3 w-3" />
-            Public: {publicHomePct.toFixed(0)}% / {(100 - publicHomePct).toFixed(0)}%
-          </span>
-          {sharpTeamName && (
-            <span className={cn(
-              'flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded',
-              publicSharpConflict 
-                ? 'bg-destructive/10 text-destructive' 
-                : 'bg-emerald-500/10 text-emerald-600'
-            )}>
-              <Brain className="h-3 w-3" />
-              Sharp: {sharpTeamName}
-              {publicSharpConflict && ' ⚠️'}
-            </span>
-          )}
-        </div>
-        
-        {/* Mini progress bar */}
-        <div className="h-1.5 bg-muted rounded-full overflow-hidden flex">
-          <div 
-            className="h-full bg-blue-500 rounded-l-full transition-all" 
-            style={{ width: `${publicHomePct}%` }} 
+        >
+          {/* Row 1: Teams + Tags */}
+          <div className="flex items-center justify-between mb-2.5">
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <p className="font-semibold text-sm truncate">
+                {awayShort} <span className="text-muted-foreground font-normal">@</span> {homeShort}
+              </p>
+              {isContrarian && (
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-amber-500/10 text-amber-600 border-amber-500/30 shrink-0">
+                  ⚡ Contrarian
+                </Badge>
+              )}
+            </div>
+            <div className="flex items-center gap-1.5 shrink-0">
+              {/* Sharp/Public icon */}
+              {hasSharpSignals ? (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="text-base cursor-default" role="img" aria-label="sharp money">🐐</span>
+                    </TooltipTrigger>
+                    <TooltipContent>Sharp money detected on {sharpTeam || 'this game'}</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              ) : (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="text-base opacity-40 cursor-default" role="img" aria-label="public only">👑</span>
+                    </TooltipTrigger>
+                    <TooltipContent>Public money only — no sharp signals</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+              
+              {hasRLM && (
+                <Badge variant="outline" className="text-purple-500 bg-purple-500/10 text-[10px] px-1.5 py-0 border-purple-500/30">
+                  RLM
+                </Badge>
+              )}
+              <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+            </div>
+          </div>
+          
+          {/* Row 2: Spread + Line movement mini */}
+          <div className="flex items-center justify-between mb-2.5">
+            <p className="text-xs text-muted-foreground font-mono">
+              {trend.lineMovement.currentSpread > 0 ? '+' : ''}{trend.lineMovement.currentSpread.toFixed(1)}
+              <span className="mx-1">|</span>
+              O/U {trend.lineMovement.currentTotal.toFixed(1)}
+            </p>
+            {Math.abs(trend.lineMovement.spreadMovement) >= 0.3 && (
+              <span className={cn(
+                'flex items-center text-[11px] font-mono font-medium px-1.5 py-0.5 rounded-md',
+                trend.lineMovement.spreadMovement > 0 
+                  ? 'text-emerald-600 bg-emerald-500/10' 
+                  : 'text-red-500 bg-red-500/10'
+              )}>
+                {trend.lineMovement.spreadMovement > 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+                {Math.abs(trend.lineMovement.spreadMovement).toFixed(1)}
+              </span>
+            )}
+          </div>
+          
+          {/* Row 3: Public Betting Visual Bar */}
+          <SplitBar 
+            leftPct={publicHomePct}
+            leftLabel={`${homeShort} ${publicHomePct}%`}
+            rightLabel={`${100 - publicHomePct}% ${awayShort}`}
+            leftColor="bg-blue-500"
+            rightColor="bg-slate-400/50"
           />
-          <div 
-            className="h-full bg-slate-400 rounded-r-full transition-all" 
-            style={{ width: `${100 - publicHomePct}%` }} 
-          />
-        </div>
-      </div>
-      
-      {/* Sharp signals preview */}
-      {hasSharpSignals && (
-        <div className="flex gap-1 mt-2">
-          {trend.sharpBetting.signals.slice(0, 2).map((signal, i) => (
-            <Badge key={i} variant="secondary" className="text-xs px-1.5 py-0">
-              {signal.type.replace(/_/g, ' ')}
-              {signal.strength === 'strong' && ' ⚡'}
-            </Badge>
-          ))}
-          {trend.sharpBetting.signals.length > 2 && (
-            <Badge variant="secondary" className="text-xs px-1.5 py-0">
-              +{trend.sharpBetting.signals.length - 2}
-            </Badge>
+          
+          {/* Row 4: Money Flow Bar (if divergent) */}
+          {splitDiff >= 8 && (
+            <div className="mt-1.5">
+              <SplitBar 
+                leftPct={moneyHomePct}
+                leftLabel={`💰 ${moneyHomePct}%`}
+                rightLabel={`${100 - moneyHomePct}%`}
+                leftColor="bg-emerald-500/80"
+                rightColor="bg-emerald-500/20"
+                height="h-2"
+              />
+            </div>
           )}
+          
+          {/* Row 5: Sharp signals */}
+          {hasSharpSignals && (
+            <div className="flex items-center gap-1 mt-2">
+              {trend.sharpBetting.signals.slice(0, 3).map((signal, i) => (
+                <Badge key={i} variant="secondary" className="text-[10px] px-1.5 py-0 gap-0.5">
+                  {signal.type === 'steam_move' && '🔥'}
+                  {signal.type === 'reverse_line' && '🔄'}
+                  {signal.type === 'whale_bet' && '🐋'}
+                  {signal.type === 'line_freeze' && '❄️'}
+                  {signal.type === 'syndicate_play' && '🎯'}
+                  {signal.type.replace(/_/g, ' ')}
+                  {signal.strength === 'strong' && ' ⚡'}
+                </Badge>
+              ))}
+              {trend.sharpBetting.signals.length > 3 && (
+                <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                  +{trend.sharpBetting.signals.length - 3}
+                </Badge>
+              )}
+            </div>
+          )}
+          
+          {/* Consensus meter dot */}
+          {meter.score > 0 && (
+            <div className="flex items-center gap-1.5 mt-2">
+              <div className={cn('h-1.5 rounded-full', meter.color)} style={{ width: `${Math.max(10, meter.score)}%` }} />
+              <span className="text-[10px] text-muted-foreground">{meter.label}</span>
+            </div>
+          )}
+        </button>
+      </HoverCardTrigger>
+      
+      {/* Hover: Line movement chart */}
+      <HoverCardContent side="right" align="start" className="w-52 p-3">
+        <p className="text-xs font-medium mb-1">Line Movement</p>
+        <LineMovementMiniChart trend={trend} width={180} height={40} />
+        <div className="flex justify-between text-[10px] text-muted-foreground mt-1 font-mono">
+          <span>Open: {trend.lineMovement.openSpread > 0 ? '+' : ''}{trend.lineMovement.openSpread.toFixed(1)}</span>
+          <span>Now: {trend.lineMovement.currentSpread > 0 ? '+' : ''}{trend.lineMovement.currentSpread.toFixed(1)}</span>
         </div>
-      )}
-    </button>
+        {sharpTeam && (
+          <p className="text-[10px] mt-1.5 flex items-center gap-1">
+            <Brain className="h-3 w-3 text-purple-500" /> Sharp on <span className="font-medium">{sharpTeam}</span> ({trend.sharpBetting.confidence}%)
+          </p>
+        )}
+      </HoverCardContent>
+    </HoverCard>
   );
 }
 
@@ -209,8 +270,11 @@ export function BettingTrendsSection({ league: initialLeague }: BettingTrendsSec
   
   const sharpActionGames = trends?.filter(t => t.sharpBetting.signals.length > 0) || [];
   const rlmGames = trends?.filter(t => t.lineMovement.reverseLineMovement) || [];
+  const contrarianGames = trends?.filter(t => {
+    const splitDiff = Math.abs(t.publicBetting.spreadHome - t.moneyFlow.homeMoneyPct);
+    return splitDiff >= 12;
+  }) || [];
   
-  // Reset pagination on league or filter change
   const handleLeagueChange = (v: string) => {
     setActiveLeague(v as League);
     setSelectedTrend(null);
@@ -250,7 +314,7 @@ export function BettingTrendsSection({ league: initialLeague }: BettingTrendsSec
           <div>
             <h2 className="text-2xl font-bold tracking-tight">Betting Trends</h2>
             <p className="text-muted-foreground text-sm">
-              Public vs sharp betting analysis with line movement tracking
+              Public vs sharp betting · hover any game for line movement chart
             </p>
           </div>
         </div>
@@ -263,7 +327,6 @@ export function BettingTrendsSection({ league: initialLeague }: BettingTrendsSec
       
       {/* Filters Row */}
       <div className="flex flex-wrap items-center gap-3">
-        {/* League Selector */}
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium text-muted-foreground">League:</span>
           <GroupedLeagueSelect
@@ -275,7 +338,6 @@ export function BettingTrendsSection({ league: initialLeague }: BettingTrendsSec
           />
         </div>
         
-        {/* Date Range Picker */}
         <div className="flex items-center gap-2">
           <Popover open={isDateOpen} onOpenChange={setIsDateOpen}>
             <PopoverTrigger asChild>
@@ -325,7 +387,6 @@ export function BettingTrendsSection({ league: initialLeague }: BettingTrendsSec
           </Popover>
         </div>
         
-        {/* Show Action Only Toggle */}
         <div className="flex items-center gap-2 ml-auto">
           <Switch
             id="action-filter"
@@ -342,9 +403,14 @@ export function BettingTrendsSection({ league: initialLeague }: BettingTrendsSec
         </div>
       </div>
       
+      {/* Consensus Meter */}
+      {!isLoading && trends && trends.length > 0 && (
+        <ConsensusMeter trends={trends} />
+      )}
+      
       {/* Stats Summary */}
       {!isLoading && trends && (
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-4">
           <Card>
             <CardContent className="pt-4">
               <div className="flex items-center justify-between">
@@ -367,24 +433,9 @@ export function BettingTrendsSection({ league: initialLeague }: BettingTrendsSec
               <div className="flex items-center justify-between">
                 <div>
                   <div className="flex items-center gap-1.5">
-                    <p className="text-sm text-muted-foreground">Sharp Action</p>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger>
-                          <Info className="h-3.5 w-3.5 text-muted-foreground" />
-                        </TooltipTrigger>
-                        <TooltipContent className="max-w-xs">
-                          <p className="font-medium mb-1">What is Sharp Action?</p>
-                          <p className="text-xs">Professional bettors ("sharps") placing large, informed wagers. Detected via money/ticket splits, steam moves, and line freezes.</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
+                    <p className="text-sm text-muted-foreground">Sharp 🐐</p>
                   </div>
-                  {sharpActionGames.length > 0 ? (
-                    <p className="text-2xl font-bold text-primary">{sharpActionGames.length}</p>
-                  ) : (
-                    <p className="text-sm text-muted-foreground mt-1 italic">No sharp data yet</p>
-                  )}
+                  <p className="text-2xl font-bold text-primary">{sharpActionGames.length || '—'}</p>
                 </div>
                 <Brain className="h-8 w-8 text-primary/60" />
               </div>
@@ -395,27 +446,22 @@ export function BettingTrendsSection({ league: initialLeague }: BettingTrendsSec
             <CardContent className="pt-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="flex items-center gap-1.5">
-                    <p className="text-sm text-muted-foreground">Reverse Line</p>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger>
-                          <Info className="h-3.5 w-3.5 text-muted-foreground" />
-                        </TooltipTrigger>
-                        <TooltipContent className="max-w-xs">
-                          <p className="font-medium mb-1">What is Reverse Line Movement?</p>
-                          <p className="text-xs">When the line moves AGAINST public betting. E.g., 70% of bets on Home but the line moves toward Away — indicates sharp money on Away.</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-                  {rlmGames.length > 0 ? (
-                    <p className="text-2xl font-bold text-purple-600">{rlmGames.length}</p>
-                  ) : (
-                    <p className="text-sm text-muted-foreground mt-1 italic">No RLM detected</p>
-                  )}
+                  <p className="text-sm text-muted-foreground">Reverse Line</p>
+                  <p className="text-2xl font-bold text-purple-600">{rlmGames.length || '—'}</p>
                 </div>
                 <Zap className="h-8 w-8 text-purple-500/60" />
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className={cn(contrarianGames.length > 0 && 'border-amber-500/30')}>
+            <CardContent className="pt-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Contrarian ⚡</p>
+                  <p className="text-2xl font-bold text-amber-600">{contrarianGames.length || '—'}</p>
+                </div>
+                <span className="text-2xl">🎯</span>
               </div>
             </CardContent>
           </Card>
@@ -430,33 +476,36 @@ export function BettingTrendsSection({ league: initialLeague }: BettingTrendsSec
             <CardTitle className="text-lg flex items-center gap-2">
               <Users className="h-5 w-5" />
               {datePreset === 'Today' ? "Today's" : datePreset} Games
+              <span className="text-xs font-normal text-muted-foreground ml-1">
+                🐐 = sharp · 👑 = public only
+              </span>
             </CardTitle>
             <CardDescription>
-              Click a game to see detailed betting trends
+              Click a game for details · hover for line movement chart
             </CardDescription>
           </CardHeader>
           <CardContent>
             {isLoading ? (
               <div className="space-y-3">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Skeleton key={i} className="h-24 w-full" />
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <Skeleton key={i} className="h-28 w-full rounded-xl" />
                 ))}
               </div>
             ) : filteredTrends.length > 0 ? (
               <div className="space-y-2">
-                <ScrollArea className="h-[480px]">
+                <ScrollArea className="h-[560px]">
                   <div className="space-y-2 pr-4">
                     {visibleTrends.map((trend) => (
                       <TrendSummaryRow 
                         key={trend.matchId} 
                         trend={trend} 
                         onClick={() => setSelectedTrend(trend)}
+                        isSelected={selectedTrend?.matchId === trend.matchId}
                       />
                     ))}
                   </div>
                 </ScrollArea>
                 
-                {/* Load More */}
                 {hasMore && (
                   <Button 
                     variant="outline" 
