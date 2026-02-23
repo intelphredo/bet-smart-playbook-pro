@@ -18,7 +18,7 @@ import {
   Loader2,
   Sparkles
 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { format } from "date-fns";
 
 const plans = [
@@ -80,22 +80,18 @@ const Billing = () => {
     createCheckoutSession,
     openCustomerPortal,
   } = useSubscription();
-  const { toast } = useToast();
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
   const [portalLoading, setPortalLoading] = useState(false);
 
   // Handle success/cancel from Stripe redirect
   useEffect(() => {
     if (searchParams.get("success") === "true") {
-      toast({
-        title: "Subscription Activated!",
+      toast.success("Subscription Activated!", {
         description: "Welcome to premium! Your subscription is now active.",
       });
     } else if (searchParams.get("canceled") === "true") {
-      toast({
-        title: "Checkout Canceled",
+      toast("Checkout Canceled", {
         description: "No worries! You can subscribe anytime.",
-        variant: "default",
       });
     }
   }, [searchParams, toast]);

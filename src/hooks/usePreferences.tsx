@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, createContext, useContext, ReactNode 
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { UserPreferences, DEFAULT_PREFERENCES } from '@/types/preferences';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { Json } from '@/integrations/supabase/types';
 import { isDevMode } from '@/utils/devMode';
 
@@ -28,14 +28,12 @@ const PreferencesContext = createContext<PreferencesContextType | null>(null);
 
 export function PreferencesProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const { toast } = useToast();
   const devMode = isDevMode();
   const [preferences, setPreferences] = useState<UserPreferences>(DEFAULT_PREFERENCES);
   const [isLoading, setIsLoading] = useState(true);
 
   // Fetch preferences from database or localStorage
   const fetchPreferences = useCallback(async () => {
-    // In dev mode, use localStorage
     if (devMode) {
       const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
       if (stored) {
@@ -63,11 +61,9 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
 
       if (data && typeof data === 'object') {
         const parsedData = data as Record<string, unknown>;
-        // Deep merge to ensure all nested arrays/objects exist
         const merged = { 
           ...DEFAULT_PREFERENCES,
           ...(parsedData as unknown as Partial<UserPreferences>),
-          // Ensure favorites has all required array fields
           favorites: {
             ...DEFAULT_PREFERENCES.favorites,
             ...((parsedData as any)?.favorites ?? {}),
@@ -98,7 +94,6 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     fetchPreferences();
   }, [fetchPreferences]);
 
-  // Update a single preference
   const updatePreference = useCallback(async <K extends keyof UserPreferences>(
     category: K,
     key: keyof UserPreferences[K],
@@ -112,21 +107,15 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
       },
     };
 
-    // Optimistic update
     setPreferences(newPrefs);
 
-    // In dev mode, save to localStorage
     if (devMode) {
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(newPrefs));
       return;
     }
 
     if (!user) {
-      toast({
-        title: 'Login required',
-        description: 'Please login to save preferences.',
-        variant: 'destructive',
-      });
+      toast.error('Login required', { description: 'Please login to save preferences.' });
       return;
     }
 
@@ -139,17 +128,11 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
       if (error) throw error;
     } catch (error: any) {
       console.error('Error updating preference:', error);
-      // Revert on error
       setPreferences(preferences);
-      toast({
-        title: 'Error saving preference',
-        description: error.message,
-        variant: 'destructive',
-      });
+      toast.error('Error saving preference', { description: error.message });
     }
-  }, [user, preferences, toast, devMode]);
+  }, [user, preferences, devMode]);
 
-  // Update multiple preferences at once
   const updatePreferences = useCallback(async (newPrefs: Partial<UserPreferences>) => {
     const mergedPrefs = {
       ...preferences,
@@ -158,13 +141,9 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
 
     setPreferences(mergedPrefs);
 
-    // In dev mode, save to localStorage
     if (devMode) {
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(mergedPrefs));
-      toast({
-        title: 'Preferences saved (Dev Mode)',
-        description: 'Saved to localStorage.',
-      });
+      toast.success('Preferences saved (Dev Mode)', { description: 'Saved to localStorage.' });
       return;
     }
 
@@ -178,31 +157,19 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
 
       if (error) throw error;
 
-      toast({
-        title: 'Preferences saved',
-        description: 'Your preferences have been updated.',
-      });
+      toast.success('Preferences saved', { description: 'Your preferences have been updated.' });
     } catch (error: any) {
       console.error('Error updating preferences:', error);
       setPreferences(preferences);
-      toast({
-        title: 'Error saving preferences',
-        description: error.message,
-        variant: 'destructive',
-      });
+      toast.error('Error saving preferences', { description: error.message });
     }
-  }, [user, preferences, toast, devMode]);
+  }, [user, preferences, devMode]);
 
-  // Reset to defaults
   const resetPreferences = useCallback(async () => {
-    // In dev mode, reset localStorage
     if (devMode) {
       localStorage.removeItem(LOCAL_STORAGE_KEY);
       setPreferences(DEFAULT_PREFERENCES);
-      toast({
-        title: 'Preferences reset (Dev Mode)',
-        description: 'Reset to defaults.',
-      });
+      toast.success('Preferences reset (Dev Mode)', { description: 'Reset to defaults.' });
       return;
     }
 
@@ -217,19 +184,12 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
       if (error) throw error;
 
       setPreferences(DEFAULT_PREFERENCES);
-      toast({
-        title: 'Preferences reset',
-        description: 'Your preferences have been reset to defaults.',
-      });
+      toast.success('Preferences reset', { description: 'Your preferences have been reset to defaults.' });
     } catch (error: any) {
       console.error('Error resetting preferences:', error);
-      toast({
-        title: 'Error resetting preferences',
-        description: error.message,
-        variant: 'destructive',
-      });
+      toast.error('Error resetting preferences', { description: error.message });
     }
-  }, [user, toast, devMode]);
+  }, [user, devMode]);
 
   // Helper functions for favorites
   const isFavoriteLeague = useCallback((league: string) => {

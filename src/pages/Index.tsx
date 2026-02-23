@@ -10,7 +10,7 @@ import { useArbitrageCalculator } from "@/hooks/useArbitrageCalculator";
 import { useBetTracking } from "@/hooks/useBetTracking";
 import { applySmartScores } from "@/utils/smartScoreCalculator";
 import { useLockedPredictions } from "@/hooks/useLockedPredictions";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { usePreferences } from "@/hooks/usePreferences";
 
@@ -70,7 +70,6 @@ const Index = () => {
   });
   const [recentResultsLimit, setRecentResultsLimit] = useState<number>(5);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
-  const { toast } = useToast();
   const { stats } = useBetTracking();
   const { preferences } = usePreferences();
 
@@ -177,7 +176,7 @@ const Index = () => {
   const handleRefresh = () => {
     refetchWithTimestamp();
     setLastRefresh(new Date());
-    toast({ title: "Data refreshed", description: "Latest sports data loaded" });
+    toast("Data refreshed", { description: "Latest sports data loaded" });
   };
 
   // Combined scores for ticker

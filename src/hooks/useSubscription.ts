@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 export type PlanTier = "free" | "basic" | "pro" | "elite";
 export type SubscriptionStatus = "trialing" | "active" | "canceled" | "past_due" | "incomplete" | "inactive";
@@ -76,7 +76,6 @@ const PLAN_PRICES = {
 
 export const useSubscription = () => {
   const { user, profile } = useAuth();
-  const { toast } = useToast();
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
   const [usageCount, setUsageCount] = useState<Record<string, number>>({});
@@ -183,10 +182,8 @@ export const useSubscription = () => {
       setUsageCount(prev => ({ ...prev, [featureName]: currentCount }));
 
       if (!allowed) {
-        toast({
-          title: "Daily Limit Reached",
+        toast.error("Daily Limit Reached", {
           description: `You've used all ${limit} ${featureName} for today. Upgrade for unlimited access.`,
-          variant: "destructive",
         });
       }
 
@@ -195,7 +192,7 @@ export const useSubscription = () => {
       console.error("Usage tracking error:", err);
       return { allowed: true, remaining: limit }; // Fail open
     }
-  }, [user, getLimit, toast]);
+  }, [user, getLimit]);
 
   // Get remaining usage for a feature
   const getRemainingUsage = useCallback(async (featureName: string): Promise<number | "unlimited"> => {
@@ -225,10 +222,8 @@ export const useSubscription = () => {
   // Create checkout session
   const createCheckoutSession = useCallback(async (planTier: "basic" | "pro" | "elite") => {
     if (!user) {
-      toast({
-        title: "Sign In Required",
+      toast.error("Sign In Required", {
         description: "Please sign in to subscribe to a plan.",
-        variant: "destructive",
       });
       return null;
     }
@@ -247,14 +242,12 @@ export const useSubscription = () => {
       return data;
     } catch (err) {
       console.error("Checkout error:", err);
-      toast({
-        title: "Checkout Error",
+      toast.error("Checkout Error", {
         description: "Unable to start checkout. Please try again.",
-        variant: "destructive",
       });
       return null;
     }
-  }, [user, toast]);
+  }, [user]);
 
   // Open customer portal
   const openCustomerPortal = useCallback(async () => {
@@ -272,14 +265,12 @@ export const useSubscription = () => {
       return data;
     } catch (err) {
       console.error("Portal error:", err);
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: "Unable to open billing portal. Please try again.",
-        variant: "destructive",
       });
       return null;
     }
-  }, [user, toast]);
+  }, [user]);
 
   return {
     subscription,

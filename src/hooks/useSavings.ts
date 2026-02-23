@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 export interface SavingsAccount {
   id: string;
@@ -43,7 +43,6 @@ const MILESTONES = [25, 50, 75, 100];
 
 export function useSavings() {
   const { user } = useAuth();
-  const { toast } = useToast();
   const [account, setAccount] = useState<SavingsAccount | null>(null);
   const [transactions, setTransactions] = useState<SavingsTransaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -110,9 +109,6 @@ export function useSavings() {
     return { originalStake: stake, savingsAmount, actualWager, savingsRate: rate };
   }, [account]);
 
-  /**
-   * Check for newly crossed milestones and show celebrations
-   */
   const checkMilestones = useCallback(async (
     oldBalance: number,
     newBalance: number,
@@ -134,18 +130,14 @@ export function useSavings() {
       ? `You've reached your $${goal} savings goal!`
       : `You're ${topMilestone}% of the way to your $${goal} goal!`;
 
-    toast({
-      title: `${emoji} Milestone reached: ${topMilestone}%`,
-      description: msg,
-    });
+    toast.success(`${emoji} Milestone reached: ${topMilestone}%`, { description: msg });
 
-    // Persist which milestones have been celebrated
     const updatedCelebrated = [...alreadyCelebrated, ...newlyCrossed];
     await supabase
       .from('user_savings' as any)
       .update({ milestones_celebrated: updatedCelebrated } as any)
       .eq('user_id', user.id);
-  }, [user, toast]);
+  }, [user]);
 
   const recordContribution = useCallback(async (
     split: BetSavingsSplit,
@@ -186,7 +178,6 @@ export function useSavings() {
 
       if (accError) throw accError;
 
-      // Check for milestone celebrations
       if (account.savings_goal) {
         await checkMilestones(
           oldBalance,
@@ -215,14 +206,14 @@ export function useSavings() {
         .eq('user_id', user.id);
       if (error) throw error;
       setAccount(prev => prev ? { ...prev, savings_rate: rate } : prev);
-      toast({ title: 'Savings rate updated', description: `${rate}% of each bet will go to your savings.` });
+      toast.success('Savings rate updated', { description: `${rate}% of each bet will go to your savings.` });
     } catch (err) {
       console.error('[useSavings] Error updating rate:', err);
-      toast({ title: 'Error', description: 'Could not update savings rate.', variant: 'destructive' });
+      toast.error('Error', { description: 'Could not update savings rate.' });
     } finally {
       setIsSaving(false);
     }
-  }, [user, toast]);
+  }, [user]);
 
   const updateSavingsGoal = useCallback(async (goal: number | null) => {
     if (!user) return;
@@ -232,24 +223,22 @@ export function useSavings() {
         .from('user_savings' as any)
         .update({
           savings_goal: goal,
-          // Reset milestones when goal changes
           milestones_celebrated: [],
           updated_at: new Date().toISOString(),
         } as any)
         .eq('user_id', user.id);
       if (error) throw error;
       setAccount(prev => prev ? { ...prev, savings_goal: goal, milestones_celebrated: [] } : prev);
-      toast({
-        title: goal ? 'Savings goal set!' : 'Goal removed',
+      toast.success(goal ? 'Savings goal set!' : 'Goal removed', {
         description: goal ? `Working toward $${goal.toFixed(2)}` : 'Savings goal has been cleared.',
       });
     } catch (err) {
       console.error('[useSavings] Error updating goal:', err);
-      toast({ title: 'Error', description: 'Could not update savings goal.', variant: 'destructive' });
+      toast.error('Error', { description: 'Could not update savings goal.' });
     } finally {
       setIsSaving(false);
     }
-  }, [user, toast]);
+  }, [user]);
 
   const toggleSavings = useCallback(async () => {
     if (!user || !account) return;
@@ -261,8 +250,7 @@ export function useSavings() {
         .eq('user_id', user.id);
       if (error) throw error;
       setAccount(prev => prev ? { ...prev, is_active: newActive } : prev);
-      toast({
-        title: newActive ? 'Savings enabled' : 'Savings paused',
+      toast(newActive ? 'Savings enabled' : 'Savings paused', {
         description: newActive
           ? `${account.savings_rate}% of each wager will be saved.`
           : 'Your savings rate is paused. Bets will use your full stake.',
@@ -270,7 +258,7 @@ export function useSavings() {
     } catch (err) {
       console.error('[useSavings] Error toggling savings:', err);
     }
-  }, [user, account, toast]);
+  }, [user, account]);
 
   return {
     account,
