@@ -25,6 +25,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 const EnsembleAnalysisCard = lazy(() => import("@/components/EnsembleAnalysisCard"));
 const DebateAnalysisCard = lazy(() => import("@/components/DebateAnalysisCard"));
 const MonteCarloCard = lazy(() => import("@/components/MonteCarloCard"));
+const MLBWorldModelCard = lazy(() => import("@/components/MLBWorldModelCard"));
 
 import { useDebateAnalysis } from "@/hooks/useDebateAnalysis";
 import { useMonteCarloUncertainty } from "@/hooks/useMonteCarloUncertainty";
@@ -734,6 +735,19 @@ const GameDetailPage: React.FC = () => {
                 homeTeam={match.homeTeam?.name || 'Home'}
                 awayTeam={match.awayTeam?.name || 'Away'}
               />
+            </Suspense>
+          </motion.div>
+        )}
+
+        {/* MLB LLM World Model Research Card */}
+        {league === 'MLB' && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.24 }}
+          >
+            <Suspense fallback={<Skeleton className="h-48 w-full rounded-lg" />}>
+              <MLBWorldModelCard />
             </Suspense>
           </motion.div>
         )}
