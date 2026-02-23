@@ -79,152 +79,216 @@ export interface MLBStandingsResponse {
   }>;
 }
 
+// Helper to extract team data from either schedule or live game format
+function extractGameTeams(game: any): { home: MLBTeam; away: MLBTeam } | null {
+  // Live game format: game.gameData.teams
+  if (game.gameData?.teams) {
+    return game.gameData.teams;
+  }
+  // Schedule format: game.teams.home.team / game.teams.away.team
+  if (game.teams?.home?.team && game.teams?.away?.team) {
+    return {
+      home: {
+        id: game.teams.home.team.id,
+        name: game.teams.home.team.name,
+        teamName: game.teams.home.team.teamName || game.teams.home.team.name,
+        abbreviation: game.teams.home.team.abbreviation || '',
+        record: game.teams.home.leagueRecord || game.teams.home.team.record,
+      },
+      away: {
+        id: game.teams.away.team.id,
+        name: game.teams.away.team.name,
+        teamName: game.teams.away.team.teamName || game.teams.away.team.name,
+        abbreviation: game.teams.away.team.abbreviation || '',
+        record: game.teams.away.leagueRecord || game.teams.away.team.record,
+      },
+    };
+  }
+  return null;
+}
+
+function extractGameStatus(game: any): string {
+  return game.gameData?.status?.abstractGameState
+    || game.status?.abstractGameState
+    || 'Preview';
+}
+
+function extractGameDateTime(game: any): string {
+  return game.gameData?.game?.dateTime || game.gameDate || game.officialDate || '';
+}
+
+function extractLinescore(game: any): any | null {
+  if (game.liveData?.linescore) return game.liveData.linescore;
+  if (game.linescore) return game.linescore;
+  return null;
+}
+
 // Map MLB games to our Match type
 export const mapMLBGameToMatch = (data: MLBScheduleResponse): Match[] => {
   const allGames: Match[] = [];
   
+  if (!data?.dates) return allGames;
+
   // Process each date in the schedule
   data.dates.forEach(dateObj => {
-    const games = dateObj.games.map(game => {
-      // Get home and away teams
-      const homeTeam: Team = {
-        id: game.gameData.teams.home.id.toString(),
-        name: game.gameData.teams.home.name,
-        shortName: game.gameData.teams.home.abbreviation || game.gameData.teams.home.teamName.substring(0, 3).toUpperCase(),
-        logo: `https://www.mlbstatic.com/team-logos/${game.gameData.teams.home.id}.svg`,
-        record: game.gameData.teams.home.record ? 
-          `${game.gameData.teams.home.record.wins}-${game.gameData.teams.home.record.losses}` : 
-          undefined,
-        // Add recent form data (simulated)
-        recentForm: generateRecentForm(game.gameData.teams.home.record?.wins || 0, game.gameData.teams.home.record?.losses || 0)
-      };
-      
-      const awayTeam: Team = {
-        id: game.gameData.teams.away.id.toString(),
-        name: game.gameData.teams.away.name,
-        shortName: game.gameData.teams.away.abbreviation || game.gameData.teams.away.teamName.substring(0, 3).toUpperCase(),
-        logo: `https://www.mlbstatic.com/team-logos/${game.gameData.teams.away.id}.svg`,
-        record: game.gameData.teams.away.record ? 
-          `${game.gameData.teams.away.record.wins}-${game.gameData.teams.away.record.losses}` : 
-          undefined,
-        // Add recent form data (simulated)  
-        recentForm: generateRecentForm(game.gameData.teams.away.record?.wins || 0, game.gameData.teams.away.record?.losses || 0)
-      };
-      
-      // Determine game status
-      let status: "scheduled" | "live" | "finished";
-      switch(game.gameData.status.abstractGameState) {
-        case "Live":
-          status = "live";
-          break;
-        case "Final":
-          status = "finished";
-          break;
-        default:
-          status = "scheduled";
-      }
-      
-      // Create score object if the game is live or finished
-      const score = status !== "scheduled" ? {
-        home: game.liveData.linescore.teams.home.runs,
-        away: game.liveData.linescore.teams.away.runs,
-        period: `${game.liveData.linescore.inningState} ${game.liveData.linescore.currentInningOrdinal}`,
-      } : undefined;
-      
-      // Generate odds more realistically based on team records
-      const homeRecord = game.gameData.teams.home.record || { wins: 0, losses: 0 };
-      const awayRecord = game.gameData.teams.away.record || { wins: 0, losses: 0 };
-      
-      const homeWinPct = homeRecord.wins / (homeRecord.wins + homeRecord.losses || 1);
-      const awayWinPct = awayRecord.wins / (awayRecord.wins + awayRecord.losses || 1);
-      
-      // Baseball odds typically range from 1.5 to 3.0
-      let baseHomeOdds, baseAwayOdds;
-      
-      if (homeWinPct > awayWinPct) {
-        // Home team is favored
-        baseHomeOdds = 1.5 + (1 - (homeWinPct - awayWinPct)) * 0.5;
-        baseAwayOdds = 2.0 + (homeWinPct - awayWinPct) * 2;
-      } else {
-        // Away team is favored
-        baseAwayOdds = 1.5 + (1 - (awayWinPct - homeWinPct)) * 0.5;
-        baseHomeOdds = 2.0 + (awayWinPct - homeWinPct) * 2;
-      }
-      
-      // Add slight randomness to odds
-      baseHomeOdds += (Math.random() * 0.2) - 0.1;
-      baseAwayOdds += (Math.random() * 0.2) - 0.1;
-      
-      // Generate realistic prediction based on team records and recent form
-      const homeStrength = calculateMLBTeamStrength(homeTeam);
-      const awayStrength = calculateMLBTeamStrength(awayTeam);
-      
-      // Determine recommended side based on strengths
-      let recommended: "home" | "away";
-      let confidence: number;
-      
-      if (homeStrength > awayStrength) {
-        recommended = "home";
-        confidence = Math.floor(50 + Math.min(25, (homeStrength - awayStrength) * 10));
-      } else {
-        recommended = "away";
-        confidence = Math.floor(50 + Math.min(25, (awayStrength - homeStrength) * 10));
-      }
-      
-      // Add randomness to confidence (baseball has higher variance)
-      confidence += Math.floor(Math.random() * 8) - 4;
-      confidence = Math.max(51, Math.min(75, confidence));
-      
-      // Create match object
-      const match: Match = {
-        id: game.gamePk.toString(),
-        league: "MLB" as League,
-        homeTeam,
-        awayTeam,
-        startTime: game.gameData.game.dateTime,
-        odds: {
-          homeWin: baseHomeOdds,
-          awayWin: baseAwayOdds,
-        },
-        liveOdds: [
-          {
-            sportsbook: {
-              id: "draftkings",
-              name: "DraftKings",
-              logo: SPORTSBOOK_LOGOS.draftkings,
-              isAvailable: true
-            },
-            homeWin: baseHomeOdds + (Math.random() * 0.1 - 0.05),
-            awayWin: baseAwayOdds + (Math.random() * 0.1 - 0.05),
-            updatedAt: new Date().toISOString()
-          },
-          {
-            sportsbook: {
-              id: "betmgm",
-              name: "BetMGM",
-              logo: SPORTSBOOK_LOGOS.betmgm,
-              isAvailable: true
-            },
-            homeWin: baseHomeOdds + (Math.random() * 0.1 - 0.05),
-            awayWin: baseAwayOdds + (Math.random() * 0.1 - 0.05),
-            updatedAt: new Date(Date.now() - 120000).toISOString() // 2 minutes ago
+    if (!dateObj.games) return;
+
+    const games = dateObj.games
+      .map(game => {
+        try {
+          const teams = extractGameTeams(game);
+          if (!teams) {
+            console.warn('MLB mapper: could not extract teams from game', game.gamePk);
+            return null;
           }
-        ],
-        prediction: {
-          recommended,
-          confidence,
-          projectedScore: {
-            home: score ? score.home + (Math.random() > 0.7 ? 1 : 0) : Math.floor(homeStrength * 0.1) + Math.floor(Math.random() * 3),
-            away: score ? score.away + (Math.random() > 0.7 ? 1 : 0) : Math.floor(awayStrength * 0.1) + Math.floor(Math.random() * 3)
+
+          const homeTeam: Team = {
+            id: teams.home.id.toString(),
+            name: teams.home.name,
+            shortName: teams.home.abbreviation || (teams.home.teamName || teams.home.name).substring(0, 3).toUpperCase(),
+            logo: `https://www.mlbstatic.com/team-logos/${teams.home.id}.svg`,
+            record: teams.home.record
+              ? `${teams.home.record.wins}-${teams.home.record.losses}`
+              : undefined,
+            recentForm: generateRecentForm(teams.home.record?.wins || 0, teams.home.record?.losses || 0),
+          };
+
+          const awayTeam: Team = {
+            id: teams.away.id.toString(),
+            name: teams.away.name,
+            shortName: teams.away.abbreviation || (teams.away.teamName || teams.away.name).substring(0, 3).toUpperCase(),
+            logo: `https://www.mlbstatic.com/team-logos/${teams.away.id}.svg`,
+            record: teams.away.record
+              ? `${teams.away.record.wins}-${teams.away.record.losses}`
+              : undefined,
+            recentForm: generateRecentForm(teams.away.record?.wins || 0, teams.away.record?.losses || 0),
+          };
+
+          // Determine game status
+          const abstractState = extractGameStatus(game);
+          let status: 'scheduled' | 'live' | 'finished';
+          switch (abstractState) {
+            case 'Live':
+            case 'In Progress':
+              status = 'live';
+              break;
+            case 'Final':
+              status = 'finished';
+              break;
+            default:
+              status = 'scheduled';
           }
-        },
-        status,
-        score,
-      };
-      
-      return match;
-    });
-    
+
+          // Create score object if the game is live or finished
+          const linescore = extractLinescore(game);
+          const score =
+            status !== 'scheduled' && linescore?.teams
+              ? {
+                  home: linescore.teams.home.runs ?? 0,
+                  away: linescore.teams.away.runs ?? 0,
+                  period: linescore.currentInningOrdinal
+                    ? `${linescore.inningState || ''} ${linescore.currentInningOrdinal}`
+                    : '',
+                }
+              : undefined;
+
+          // Generate odds based on team records
+          const homeRecord = teams.home.record || { wins: 0, losses: 0 };
+          const awayRecord = teams.away.record || { wins: 0, losses: 0 };
+
+          const homeWinPct = homeRecord.wins / (homeRecord.wins + homeRecord.losses || 1);
+          const awayWinPct = awayRecord.wins / (awayRecord.wins + awayRecord.losses || 1);
+
+          let baseHomeOdds: number, baseAwayOdds: number;
+
+          if (homeWinPct > awayWinPct) {
+            baseHomeOdds = 1.5 + (1 - (homeWinPct - awayWinPct)) * 0.5;
+            baseAwayOdds = 2.0 + (homeWinPct - awayWinPct) * 2;
+          } else {
+            baseAwayOdds = 1.5 + (1 - (awayWinPct - homeWinPct)) * 0.5;
+            baseHomeOdds = 2.0 + (awayWinPct - homeWinPct) * 2;
+          }
+
+          baseHomeOdds += Math.random() * 0.2 - 0.1;
+          baseAwayOdds += Math.random() * 0.2 - 0.1;
+
+          const homeStrength = calculateMLBTeamStrength(homeTeam);
+          const awayStrength = calculateMLBTeamStrength(awayTeam);
+
+          let recommended: 'home' | 'away';
+          let confidence: number;
+
+          if (homeStrength > awayStrength) {
+            recommended = 'home';
+            confidence = Math.floor(50 + Math.min(25, (homeStrength - awayStrength) * 10));
+          } else {
+            recommended = 'away';
+            confidence = Math.floor(50 + Math.min(25, (awayStrength - homeStrength) * 10));
+          }
+
+          confidence += Math.floor(Math.random() * 8) - 4;
+          confidence = Math.max(51, Math.min(75, confidence));
+
+          const startTime = extractGameDateTime(game);
+
+          const match: Match = {
+            id: (game.gamePk ?? game.gameData?.game?.pk ?? '').toString(),
+            league: 'MLB' as League,
+            homeTeam,
+            awayTeam,
+            startTime,
+            odds: {
+              homeWin: baseHomeOdds,
+              awayWin: baseAwayOdds,
+            },
+            liveOdds: [
+              {
+                sportsbook: {
+                  id: 'draftkings',
+                  name: 'DraftKings',
+                  logo: SPORTSBOOK_LOGOS.draftkings,
+                  isAvailable: true,
+                },
+                homeWin: baseHomeOdds + (Math.random() * 0.1 - 0.05),
+                awayWin: baseAwayOdds + (Math.random() * 0.1 - 0.05),
+                updatedAt: new Date().toISOString(),
+              },
+              {
+                sportsbook: {
+                  id: 'betmgm',
+                  name: 'BetMGM',
+                  logo: SPORTSBOOK_LOGOS.betmgm,
+                  isAvailable: true,
+                },
+                homeWin: baseHomeOdds + (Math.random() * 0.1 - 0.05),
+                awayWin: baseAwayOdds + (Math.random() * 0.1 - 0.05),
+                updatedAt: new Date(Date.now() - 120000).toISOString(),
+              },
+            ],
+            prediction: {
+              recommended,
+              confidence,
+              projectedScore: {
+                home: score
+                  ? score.home + (Math.random() > 0.7 ? 1 : 0)
+                  : Math.floor(homeStrength * 0.1) + Math.floor(Math.random() * 3),
+                away: score
+                  ? score.away + (Math.random() > 0.7 ? 1 : 0)
+                  : Math.floor(awayStrength * 0.1) + Math.floor(Math.random() * 3),
+              },
+            },
+            status,
+            score,
+          };
+
+          return match;
+        } catch (err) {
+          console.warn('MLB mapper: failed to map game', game.gamePk, err);
+          return null;
+        }
+      })
+      .filter((m): m is Match => m !== null);
+
     allGames.push(...games);
   });
   
