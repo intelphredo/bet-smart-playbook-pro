@@ -41,6 +41,9 @@ import {
   BookOpen,
   Shield,
   MessageSquare,
+  ChevronRight,
+  Download,
+  Home,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import NavBar from "@/components/NavBar";
@@ -120,6 +123,7 @@ export default function AIPredictions() {
   const [algorithmFilter, setAlgorithmFilter] = useState<string>("all");
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [recordModal, setRecordModal] = useState<"won" | "lost" | null>(null);
+  const [recordModalLeague, setRecordModalLeague] = useState<string | null>(null);
   const [metricModal, setMetricModal] = useState<"total" | "settled" | "winRate" | "record" | "pl" | "roi" | null>(null);
 
   const { data, isLoading, error, refetch } = useHistoricalPredictions(timeRange, predictionType);
@@ -159,6 +163,48 @@ export default function AIPredictions() {
     return { ...stats, total: fp.length, won, lost, pending, settled, winRate, totalPL, roi, avgConfidence, totalUnitsStaked: settled };
   })();
 
+  // League P/L breakdown for modals
+  const leagueBreakdown = stats?.leaguePerformance?.map(l => ({
+    league: getLeagueDisplayName(l.league),
+    won: l.won,
+    lost: l.lost,
+    pl: l.totalPL,
+  })).sort((a, b) => b.pl - a.pl) || [];
+
+  // Record modal predictions (optionally filtered by league)
+  const recordModalPredictions = filteredPredictions.filter(p => {
+    if (p.status !== recordModal) return false;
+    if (recordModalLeague && p.league !== recordModalLeague) return false;
+    return true;
+  });
+
+  const openRecordModal = (type: "won" | "lost", league?: string) => {
+    setRecordModal(type);
+    setRecordModalLeague(league || null);
+  };
+
+  // CSV export handler
+  const handleExportCSV = () => {
+    const headers = ["Date", "Match", "League", "Prediction", "Confidence", "Status", "Score"];
+    const rows = filteredPredictions.map(p => [
+      new Date(p.predicted_at).toLocaleDateString(),
+      p.match_title || `${p.home_team} vs ${p.away_team}`,
+      p.league || "Unknown",
+      p.prediction || "-",
+      p.confidence ? `${p.confidence}%` : "-",
+      p.status,
+      p.actual_score_home != null ? `${p.actual_score_home}-${p.actual_score_away}` : "-",
+    ]);
+    const csv = [headers, ...rows].map(r => r.join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `predictions-${timeLabel.replace(/\s/g, "-").toLowerCase()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   // Split by type
   const preLivePredictions = filteredPredictions.filter(p => !p.is_live_prediction);
   const livePredictions = filteredPredictions.filter(p => p.is_live_prediction);
@@ -173,6 +219,24 @@ export default function AIPredictions() {
       <main id="main-content" className="flex-1 container px-4 py-6 mx-auto space-y-6">
         {/* Prediction Disclaimer */}
         <PredictionDisclaimer className="mb-2" />
+
+        {/* Breadcrumb Navigation */}
+        <nav className="flex items-center gap-1 text-sm text-muted-foreground">
+          <button onClick={() => { setLeagueFilter("all"); setTimeRange("all"); }} className="hover:text-foreground transition-colors flex items-center gap-1">
+            <Home className="h-3.5 w-3.5" />
+            AI History
+          </button>
+          {leagueFilter !== "all" && (
+            <>
+              <ChevronRight className="h-3.5 w-3.5" />
+              <button onClick={() => setLeagueFilter(leagueFilter)} className="text-foreground font-medium">
+                {getLeagueDisplayName(leagueFilter)}
+              </button>
+            </>
+          )}
+          <ChevronRight className="h-3.5 w-3.5" />
+          <span className="text-foreground font-medium">{timeLabel}</span>
+        </nav>
 
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -235,6 +299,22 @@ export default function AIPredictions() {
           </div>
         </div>
 
+        {/* Quick Actions */}
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => openRecordModal("won")}>
+            <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
+            View All Wins ({displayStats?.won || 0})
+          </Button>
+          <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => openRecordModal("lost")}>
+            <XCircle className="h-3.5 w-3.5 text-red-500" />
+            Analyze Losses ({displayStats?.lost || 0})
+          </Button>
+          <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={handleExportCSV}>
+            <Download className="h-3.5 w-3.5" />
+            Export CSV
+          </Button>
+        </div>
+
         {/* Overview Stats */}
         {displayStats && (
           <div className="space-y-3">
@@ -245,6 +325,7 @@ export default function AIPredictions() {
                 icon={Brain}
                 isLoading={isLoading}
                 onClick={() => setMetricModal("total")}
+                tooltip="Click for breakdown by status"
               />
               <StatCard
                 title="Settled"
@@ -252,6 +333,7 @@ export default function AIPredictions() {
                 icon={Target}
                 isLoading={isLoading}
                 onClick={() => setMetricModal("settled")}
+                tooltip="Click to see settled predictions"
               />
               <StatCard
                 title="Win Rate"
@@ -260,6 +342,7 @@ export default function AIPredictions() {
                 trend={displayStats.settled > 0 ? (displayStats.winRate >= displayStats.breakEvenWinRate ? "up" : "down") : undefined}
                 isLoading={isLoading}
                 onClick={() => setMetricModal("winRate")}
+                tooltip="Click for win rate analysis vs break-even"
               />
               <Card className="cursor-pointer hover:ring-1 hover:ring-primary/30 transition-all" onClick={() => setMetricModal("record")}>
                 <CardContent className="p-4">
@@ -270,14 +353,14 @@ export default function AIPredictions() {
                   <p className="text-lg font-bold">
                     <button
                       className="text-green-500 hover:underline underline-offset-2"
-                      onClick={(e) => { e.stopPropagation(); setRecordModal("won"); }}
+                      onClick={(e) => { e.stopPropagation(); openRecordModal("won"); }}
                     >
                       {displayStats.won}W
                     </button>
                     <span className="text-muted-foreground mx-0.5">-</span>
                     <button
                       className="text-red-500 hover:underline underline-offset-2"
-                      onClick={(e) => { e.stopPropagation(); setRecordModal("lost"); }}
+                      onClick={(e) => { e.stopPropagation(); openRecordModal("lost"); }}
                     >
                       {displayStats.lost}L
                     </button>
@@ -291,6 +374,7 @@ export default function AIPredictions() {
                 trend={displayStats.totalPL >= 0 ? "up" : "down"}
                 isLoading={isLoading}
                 onClick={() => setMetricModal("pl")}
+                tooltip="Click for P/L breakdown by league"
               />
               <StatCard
                 title="ROI"
@@ -299,6 +383,7 @@ export default function AIPredictions() {
                 trend={displayStats.roi >= 0 ? "up" : "down"}
                 isLoading={isLoading}
                 onClick={() => setMetricModal("roi")}
+                tooltip="Click for ROI analysis"
               />
             </div>
 
@@ -414,43 +499,79 @@ export default function AIPredictions() {
                 </CardHeader>
                 <CardContent>
                   <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {stats.leaguePerformance.slice(0, 6).map(league => (
-                      <button
-                        key={league.league}
-                        onClick={() => setLeagueFilter(leagueFilter === league.league ? "all" : league.league)}
-                        className={cn(
-                          "flex items-center justify-between p-3 rounded-lg transition-all duration-200 text-left w-full",
-                          leagueFilter === league.league
-                            ? "bg-primary/10 border-2 border-primary ring-1 ring-primary/20"
-                            : "bg-muted/50 border-2 border-transparent hover:bg-muted hover:border-border/50"
-                        )}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-md bg-background flex items-center justify-center shadow-sm">
-                            <LeagueIcon league={league.league} size={20} />
+                    {stats.leaguePerformance.slice(0, 6).map(league => {
+                      const isEmpty = league.won === 0 && league.lost === 0;
+                      return (
+                        <div
+                          key={league.league}
+                          className={cn(
+                            "flex items-center justify-between p-3 rounded-lg transition-all duration-200 text-left w-full",
+                            leagueFilter === league.league
+                              ? "bg-primary/10 border-2 border-primary ring-1 ring-primary/20"
+                              : "bg-muted/50 border-2 border-transparent hover:bg-muted hover:border-border/50"
+                          )}
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <button
+                              onClick={() => setLeagueFilter(leagueFilter === league.league ? "all" : league.league)}
+                              className="flex items-center gap-3 min-w-0"
+                            >
+                              <div className="w-8 h-8 rounded-md bg-background flex items-center justify-center shadow-sm shrink-0">
+                                <LeagueIcon league={league.league} size={20} />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="font-medium text-sm hover:underline underline-offset-2 cursor-pointer">{getLeagueDisplayName(league.league)}</p>
+                                {isEmpty ? (
+                                  <p className="text-xs text-muted-foreground">No predictions yet</p>
+                                ) : (
+                                  <p className="text-xs text-muted-foreground">
+                                    <button
+                                      className="text-green-500 hover:underline underline-offset-2"
+                                      onClick={(e) => { e.stopPropagation(); openRecordModal("won", league.league); }}
+                                    >
+                                      {league.won}W
+                                    </button>
+                                    <span className="mx-0.5">-</span>
+                                    <button
+                                      className="text-red-500 hover:underline underline-offset-2"
+                                      onClick={(e) => { e.stopPropagation(); openRecordModal("lost", league.league); }}
+                                    >
+                                      {league.lost}L
+                                    </button>
+                                  </p>
+                                )}
+                              </div>
+                            </button>
                           </div>
-                          <div>
-                            <p className="font-medium text-sm">{getLeagueDisplayName(league.league)}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {league.won}W - {league.lost}L
-                            </p>
-                          </div>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                className="text-right shrink-0"
+                                onClick={() => setLeagueFilter(leagueFilter === league.league ? "all" : league.league)}
+                              >
+                                <p className={cn(
+                                  "font-bold",
+                                  league.winRate >= 55 && "text-green-500",
+                                  league.winRate < 45 && "text-red-500"
+                                )}>
+                                  {league.winRate.toFixed(1)}%
+                                </p>
+                                <Progress 
+                                  value={league.winRate} 
+                                  className="w-16 h-1.5 mt-1" 
+                                />
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="text-xs">
+                              {isEmpty 
+                                ? "No predictions available"
+                                : `${league.won}W-${league.lost}L • ${league.totalPL >= 0 ? '+' : ''}${league.totalPL.toFixed(2)}u P/L • Click to filter`
+                              }
+                            </TooltipContent>
+                          </Tooltip>
                         </div>
-                        <div className="text-right">
-                          <p className={cn(
-                            "font-bold",
-                            league.winRate >= 55 && "text-green-500",
-                            league.winRate < 45 && "text-red-500"
-                          )}>
-                            {league.winRate.toFixed(1)}%
-                          </p>
-                          <Progress 
-                            value={league.winRate} 
-                            className="w-16 h-1.5 mt-1" 
-                          />
-                        </div>
-                      </button>
-                    ))}
+                      );
+                    })}
                   </div>
                 </CardContent>
               </Card>
@@ -530,8 +651,8 @@ export default function AIPredictions() {
         {/* Modals */}
         <RecordDetailModal
           open={recordModal !== null}
-          onOpenChange={(open) => !open && setRecordModal(null)}
-          predictions={filteredPredictions.filter(p => p.status === recordModal)}
+          onOpenChange={(open) => { if (!open) { setRecordModal(null); setRecordModalLeague(null); } }}
+          predictions={recordModalPredictions}
           type={recordModal || "won"}
         />
         <MetricInfoModal
@@ -539,6 +660,11 @@ export default function AIPredictions() {
           onOpenChange={(open) => !open && setMetricModal(null)}
           metric={metricModal}
           stats={displayStats}
+          leagueBreakdown={leagueBreakdown}
+          onViewPredictions={(status) => {
+            setMetricModal(null);
+            if (status) openRecordModal(status);
+          }}
         />
       </main>
 
@@ -554,6 +680,7 @@ function StatCard({
   trend,
   isLoading,
   onClick,
+  tooltip,
 }: { 
   title: string; 
   value: string; 
@@ -561,6 +688,7 @@ function StatCard({
   trend?: "up" | "down";
   isLoading?: boolean;
   onClick?: () => void;
+  tooltip?: string;
 }) {
   if (isLoading) {
     return (
@@ -573,9 +701,9 @@ function StatCard({
     );
   }
 
-  return (
+  const card = (
     <Card 
-      className={cn(onClick && "cursor-pointer hover:ring-1 hover:ring-primary/30 transition-all")}
+      className={cn(onClick && "cursor-pointer hover:ring-1 hover:ring-primary/30 hover:shadow-md transition-all")}
       onClick={onClick}
     >
       <CardContent className="p-4">
@@ -593,6 +721,17 @@ function StatCard({
       </CardContent>
     </Card>
   );
+
+  if (tooltip) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>{card}</TooltipTrigger>
+        <TooltipContent side="bottom" className="text-xs">{tooltip}</TooltipContent>
+      </Tooltip>
+    );
+  }
+
+  return card;
 }
 
 function PredictionList({ 
