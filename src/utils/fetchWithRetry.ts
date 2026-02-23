@@ -30,6 +30,11 @@ export async function fetchWithRetry<T = any>(
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
+      const contentType = response.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) {
+        throw new Error(`Expected JSON but got ${contentType || 'unknown'} from ${url}`);
+      }
+
       return await response.json();
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
