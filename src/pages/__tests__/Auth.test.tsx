@@ -9,19 +9,24 @@ vi.mock('@/integrations/supabase/client', () => ({
   supabase: {
     auth: {
       getSession: vi.fn().mockResolvedValue({ data: { session: null } }),
+      onAuthStateChange: vi.fn().mockReturnValue({ data: { subscription: { unsubscribe: vi.fn() } } }),
       signInWithPassword: vi.fn(),
       signUp: vi.fn(),
     },
   },
 }));
 
-// Mock toast
-const mockToast = vi.fn();
-vi.mock('@/hooks/use-toast', () => ({
-  useToast: () => ({ toast: mockToast }),
+// Mock sonner toast
+vi.mock('sonner', () => ({
+  toast: Object.assign(vi.fn(), {
+    success: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+  }),
 }));
 
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 const renderAuth = () => {
   return render(
@@ -123,7 +128,7 @@ describe('Auth Page Input Tests', () => {
     it('shows error toast on auth failure', async () => {
       const user = userEvent.setup();
       (supabase.auth.signInWithPassword as ReturnType<typeof vi.fn>).mockResolvedValue({
-        error: { message: 'Invalid credentials' },
+        error: { message: 'Invalid login credentials' },
       });
 
       const { getByPlaceholderText, getByRole } = renderAuth();
@@ -134,11 +139,8 @@ describe('Auth Page Input Tests', () => {
       const submitButton = getByRole('button', { name: /login/i });
       await user.click(submitButton);
 
-      expect(mockToast).toHaveBeenCalledWith(
-        expect.objectContaining({
-          title: 'Error',
-          variant: 'destructive',
-        })
+      expect(toast.error).toHaveBeenCalledWith(
+        'Invalid email or password. Please try again.'
       );
     });
 

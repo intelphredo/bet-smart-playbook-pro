@@ -13,12 +13,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Radio, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { GroupedLeagueSelect } from "@/components/filters/GroupedLeagueSelect";
 import { getLeagueLogoUrl, getLeagueDisplayName } from "@/utils/teamLogos";
 
 export default function LiveGamesPage() {
-  const { toast } = useToast();
   const [leagueFilter, setLeagueFilter] = useState<string>("all");
   
   const {
@@ -62,7 +61,7 @@ export default function LiveGamesPage() {
 
   const handleRefresh = () => {
     refetchWithTimestamp();
-    toast({ title: "Refreshing live scores..." });
+    toast("Refreshing live scores...");
   };
 
   return (

@@ -12,7 +12,7 @@ import {
   SheetTrigger 
 } from "@/components/ui/sheet";
 import { Lock, Crown } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
 interface PremiumContentProps {
@@ -29,7 +29,6 @@ const PremiumContent = ({
   const [isOpen, setIsOpen] = useState(false);
   const { user, profile } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
 
   const handleUpgrade = async () => {
     if (!user) {
@@ -43,17 +42,12 @@ const PremiumContent = ({
       .eq("id", user.id);
 
     if (error) {
-      toast({
-        title: "Error",
-        description: "Failed to upgrade to premium. Please try again.",
-        variant: "destructive",
-      });
+      toast.error("Failed to upgrade to premium. Please try again.");
       return;
     }
 
     setIsOpen(false);
-    toast({
-      title: "Welcome to Premium! 🎉",
+    toast.success("Welcome to Premium! 🎉", {
       description: "You now have access to all premium features. Enjoy!",
     });
   };

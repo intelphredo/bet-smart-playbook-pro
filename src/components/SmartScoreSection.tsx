@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import SmartScoreCard from "./SmartScoreCard";
 import { hasArbitrageOpportunity } from "@/utils/smartScore/arbitrageFactors";
-import { useToast } from "@/hooks/use-toast";
+// toast import removed - no longer used in this component
 import { AlertTriangle, TrendingUp } from "lucide-react";
 import { InfoExplainer } from "@/components/ui/InfoExplainer";
 import { CalibrationStatusIndicator } from "@/components/ModelCalibration";
@@ -15,7 +15,6 @@ interface Props {
 }
 
 const SmartScoreSection = ({ matches }: Props) => {
-  const { toast } = useToast();
   const [alertedMatches, setAlertedMatches] = useState<Set<string>>(new Set());
 
   // Filter matches to only include those with smart scores

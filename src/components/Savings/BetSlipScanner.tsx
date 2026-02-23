@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { useSavings } from '@/hooks/useSavings';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
@@ -55,7 +55,6 @@ const LEAGUE_COLORS: Record<string, string> = {
 };
 
 export function BetSlipScanner({ open, onOpenChange }: BetSlipScannerProps) {
-  const { toast } = useToast();
   const { account, calculateSplit, recordContribution, refetch } = useSavings();
 
   const [step, setStep] = useState<ScanStep>('upload');
@@ -89,11 +88,11 @@ export function BetSlipScanner({ open, onOpenChange }: BetSlipScannerProps) {
 
   const processFile = useCallback((file: File) => {
     if (!file.type.startsWith('image/')) {
-      toast({ title: 'Invalid file', description: 'Please upload an image file.', variant: 'destructive' });
+      toast.error('Invalid file', { description: 'Please upload an image file.' });
       return;
     }
     if (file.size > 10 * 1024 * 1024) {
-      toast({ title: 'File too large', description: 'Please upload an image under 10MB.', variant: 'destructive' });
+      toast.error('File too large', { description: 'Please upload an image under 10MB.' });
       return;
     }
 
@@ -133,14 +132,12 @@ export function BetSlipScanner({ open, onOpenChange }: BetSlipScannerProps) {
       setStep('confirm');
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Unknown error';
-      toast({
-        title: 'Scan failed',
+      toast.error('Scan failed', {
         description: msg.includes('Rate limit') ? msg : 'Could not read the bet slip. Please try a clearer image.',
-        variant: 'destructive',
       });
       setStep('upload');
     }
-  }, [toast]);
+  }, []);
 
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -157,7 +154,7 @@ export function BetSlipScanner({ open, onOpenChange }: BetSlipScannerProps) {
   const handleConfirmAndSave = useCallback(async () => {
     const stake = parseFloat(editedStake);
     if (isNaN(stake) || stake <= 0) {
-      toast({ title: 'Invalid stake', description: 'Please enter a valid stake amount.', variant: 'destructive' });
+      toast.error('Invalid stake', { description: 'Please enter a valid stake amount.' });
       return;
     }
 
@@ -172,10 +169,10 @@ export function BetSlipScanner({ open, onOpenChange }: BetSlipScannerProps) {
       setStep('success');
       refetch();
     } else {
-      toast({ title: 'Error', description: 'Could not save contribution.', variant: 'destructive' });
+      toast.error('Error', { description: 'Could not save contribution.' });
       setStep('confirm');
     }
-  }, [editedStake, editedMatch, editedLeague, extracted, calculateSplit, recordContribution, refetch, toast]);
+  }, [editedStake, editedMatch, editedLeague, extracted, calculateSplit, recordContribution, refetch]);
 
   const stake = parseFloat(editedStake) || 0;
   const split = stake > 0 ? calculateSplit(stake) : null;

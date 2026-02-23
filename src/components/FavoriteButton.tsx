@@ -2,7 +2,7 @@ import { Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { usePreferences } from "@/hooks/usePreferences";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 interface FavoriteButtonProps {
   type: "match" | "team";
@@ -14,7 +14,6 @@ interface FavoriteButtonProps {
 
 const FavoriteButton = ({ type, id, name, size = "sm", className }: FavoriteButtonProps) => {
   const { preferences, isFavoriteTeam, toggleFavoriteTeam, updatePreference } = usePreferences();
-  const { toast } = useToast();
 
   const isFavorite = type === "team" 
     ? isFavoriteTeam(id)
@@ -26,8 +25,7 @@ const FavoriteButton = ({ type, id, name, size = "sm", className }: FavoriteButt
     
     if (type === "team") {
       await toggleFavoriteTeam(id);
-      toast({
-        title: isFavorite ? "Removed from favorites" : "Added to favorites",
+      toast(isFavorite ? "Removed from favorites" : "Added to favorites", {
         description: name ? `${name} ${isFavorite ? "removed from" : "added to"} your favorites` : undefined,
       });
     } else {
@@ -36,8 +34,7 @@ const FavoriteButton = ({ type, id, name, size = "sm", className }: FavoriteButt
         : [...preferences.favorites.matches, id];
       
       await updatePreference("favorites", "matches", matches);
-      toast({
-        title: isFavorite ? "Match unfavorited" : "Match favorited",
+      toast(isFavorite ? "Match unfavorited" : "Match favorited", {
         description: isFavorite ? "Match removed from favorites" : "Match added to favorites",
       });
     }

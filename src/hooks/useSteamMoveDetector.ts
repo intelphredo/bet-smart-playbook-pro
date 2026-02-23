@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { useToast } from '@/hooks/use-toast';
+// toast import removed - not used directly in this hook
 import { Match, League } from '@/types/sports';
 
 export interface SteamMove {
@@ -57,7 +57,6 @@ export function useSteamMoveDetector(
 ) {
   const { enabled = true, alertsEnabled = true, leagues } = options;
   const { user } = useAuth();
-  const { toast } = useToast();
   const queryClient = useQueryClient();
   
   const [steamMoves, setSteamMoves] = useState<SteamMove[]>([]);
@@ -311,7 +310,7 @@ export function useSteamMoveDetector(
     }
 
     setIsMonitoring(false);
-  }, [matches, enabled, alertsEnabled, leagues, extractOddsSnapshot, detectSteamMoves, toast, saveSteamMove]);
+  }, [matches, enabled, alertsEnabled, leagues, extractOddsSnapshot, detectSteamMoves, saveSteamMove]);
 
   // Set up polling interval
   useEffect(() => {
