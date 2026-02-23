@@ -3,7 +3,7 @@ import { Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Session } from "@supabase/supabase-js";
 
@@ -14,7 +14,7 @@ export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
   const [session, setSession] = useState<Session | null>(null);
   const [checkingSession, setCheckingSession] = useState(true);
-  const { toast } = useToast();
+  // Using sonner toast (imported at top level)
 
   useEffect(() => {
     // Set up auth state listener first
@@ -64,10 +64,7 @@ export default function Auth() {
         });
         if (error) throw error;
         
-        toast({
-          title: "Account created!",
-          description: "You're now logged in.",
-        });
+        toast.success("Account created! You're now logged in.");
       }
     } catch (error: any) {
       let message = error.message;
@@ -81,11 +78,7 @@ export default function Auth() {
         message = "Password must be at least 6 characters.";
       }
       
-      toast({
-        title: "Authentication Error",
-        description: message,
-        variant: "destructive",
-      });
+      toast.error(message);
     } finally {
       setLoading(false);
     }
