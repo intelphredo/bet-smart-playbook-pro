@@ -137,9 +137,30 @@ export default function AIPredictions() {
     return true;
   });
 
+  // Compute filtered stats for display when league filter is active
+  const PAYOUT_FACTOR = 0.9091;
+  const displayStats = (() => {
+    if (!stats) return null;
+    if (leagueFilter === "all") return stats;
+    const fp = filteredPredictions;
+    const won = fp.filter(p => p.status === "won").length;
+    const lost = fp.filter(p => p.status === "lost").length;
+    const pending = fp.filter(p => p.status === "pending").length;
+    const settled = won + lost;
+    const winRate = settled > 0 ? (won / settled) * 100 : 0;
+    const totalPL = (won * PAYOUT_FACTOR) - lost;
+    const roi = settled > 0 ? (totalPL / settled) * 100 : 0;
+    const confidences = fp.filter(p => p.confidence).map(p => p.confidence!);
+    const avgConfidence = confidences.length > 0 ? confidences.reduce((a, b) => a + b, 0) / confidences.length : 0;
+    return { ...stats, total: fp.length, won, lost, pending, settled, winRate, totalPL, roi, avgConfidence, totalUnitsStaked: settled };
+  })();
+
   // Split by type
   const preLivePredictions = filteredPredictions.filter(p => !p.is_live_prediction);
   const livePredictions = filteredPredictions.filter(p => p.is_live_prediction);
+
+  // Time range label for header
+  const timeLabel = TIME_RANGE_TABS.find(t => t.value === timeRange)?.label || "All Time";
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -151,14 +172,31 @@ export default function AIPredictions() {
 
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Brain className="h-6 w-6 text-primary" />
-              AI Prediction History
-              <InfoExplainer term="confidence" />
-            </h1>
-            <p className="text-muted-foreground text-sm mt-1">
-              Track all AI model predictions and their outcomes
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-2xl font-bold flex items-center gap-2">
+                <Brain className="h-6 w-6 text-primary" />
+                {leagueFilter !== "all" 
+                  ? `${getLeagueDisplayName(leagueFilter)} Predictions`
+                  : "AI Prediction History"}
+                <InfoExplainer term="confidence" />
+              </h1>
+              {leagueFilter !== "all" && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="h-7 text-xs gap-1"
+                  onClick={() => setLeagueFilter("all")}
+                >
+                  <XCircle className="h-3 w-3" />
+                  Show All Leagues
+                </Button>
+              )}
+            </div>
+            <p className="text-muted-foreground text-sm">
+              {leagueFilter !== "all" 
+                ? `${getLeagueDisplayName(leagueFilter)} • ${timeLabel}`
+                : "Track all AI model predictions and their outcomes"}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -194,58 +232,58 @@ export default function AIPredictions() {
         </div>
 
         {/* Overview Stats */}
-        {stats && (
+        {displayStats && (
           <div className="space-y-3">
             <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
               <StatCard
                 title="Total"
-                value={stats.total.toString()}
+                value={displayStats.total.toString()}
                 icon={Brain}
                 isLoading={isLoading}
               />
               <StatCard
                 title="Settled"
-                value={`${stats.settled}`}
+                value={`${displayStats.settled}`}
                 icon={Target}
                 isLoading={isLoading}
               />
               <StatCard
                 title="Win Rate"
-                value={stats.settled > 0 ? `${stats.winRate.toFixed(1)}%` : 'N/A'}
-                icon={stats.winRate >= stats.breakEvenWinRate ? TrendingUp : TrendingDown}
-                trend={stats.settled > 0 ? (stats.winRate >= stats.breakEvenWinRate ? "up" : "down") : undefined}
+                value={displayStats.settled > 0 ? `${displayStats.winRate.toFixed(1)}%` : 'N/A'}
+                icon={displayStats.winRate >= displayStats.breakEvenWinRate ? TrendingUp : TrendingDown}
+                trend={displayStats.settled > 0 ? (displayStats.winRate >= displayStats.breakEvenWinRate ? "up" : "down") : undefined}
                 isLoading={isLoading}
               />
               <StatCard
                 title="Record"
-                value={`${stats.won}W - ${stats.lost}L`}
+                value={`${displayStats.won}W - ${displayStats.lost}L`}
                 icon={Trophy}
                 isLoading={isLoading}
               />
               <StatCard
                 title="P/L (Units)"
-                value={`${stats.totalPL >= 0 ? '+' : ''}${stats.totalPL.toFixed(2)}u`}
-                icon={stats.totalPL >= 0 ? TrendingUp : TrendingDown}
-                trend={stats.totalPL >= 0 ? "up" : "down"}
+                value={`${displayStats.totalPL >= 0 ? '+' : ''}${displayStats.totalPL.toFixed(2)}u`}
+                icon={displayStats.totalPL >= 0 ? TrendingUp : TrendingDown}
+                trend={displayStats.totalPL >= 0 ? "up" : "down"}
                 isLoading={isLoading}
               />
               <StatCard
                 title="ROI"
-                value={stats.settled > 0 ? `${stats.roi >= 0 ? '+' : ''}${stats.roi.toFixed(1)}%` : 'N/A'}
+                value={displayStats.settled > 0 ? `${displayStats.roi >= 0 ? '+' : ''}${displayStats.roi.toFixed(1)}%` : 'N/A'}
                 icon={BarChart3}
-                trend={stats.roi >= 0 ? "up" : "down"}
+                trend={displayStats.roi >= 0 ? "up" : "down"}
                 isLoading={isLoading}
               />
             </div>
 
             {/* Data Validation Banner */}
-            {stats.pending > 0 && stats.settled === 0 && (
+            {displayStats.pending > 0 && displayStats.settled === 0 && (
               <Card className="border-yellow-500/30 bg-yellow-500/5">
                 <CardContent className="p-3">
                   <div className="flex items-center gap-2 text-sm">
                     <Clock className="h-4 w-4 text-yellow-500 shrink-0" />
                     <span className="text-muted-foreground">
-                      All <span className="font-medium text-foreground">{stats.pending}</span> predictions are still pending. 
+                      All <span className="font-medium text-foreground">{displayStats.pending}</span> predictions are still pending. 
                       Win rate and P/L will update once games settle.
                     </span>
                   </div>
@@ -254,29 +292,29 @@ export default function AIPredictions() {
             )}
 
             {/* Break-Even Analysis */}
-            {stats.settled >= 10 && (
+            {displayStats.settled >= 10 && (
               <Card className="border-muted">
                 <CardContent className="p-3">
                   <div className="flex items-center justify-between text-sm">
                     <div className="flex items-center gap-2">
                       <Target className="h-4 w-4 text-primary" />
                       <span className="text-muted-foreground">Break-even at -110 odds:</span>
-                      <span className="font-medium">{stats.breakEvenWinRate.toFixed(1)}%</span>
+                      <span className="font-medium">{displayStats.breakEvenWinRate.toFixed(1)}%</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-muted-foreground">You:</span>
                       <span className={cn(
                         "font-bold",
-                        stats.winRate >= stats.breakEvenWinRate ? "text-green-500" : "text-red-500"
+                        displayStats.winRate >= displayStats.breakEvenWinRate ? "text-green-500" : "text-red-500"
                       )}>
-                        {stats.winRate.toFixed(1)}% 
-                        ({stats.winRate >= stats.breakEvenWinRate ? '+' : ''}{(stats.winRate - stats.breakEvenWinRate).toFixed(1)}%)
+                        {displayStats.winRate.toFixed(1)}% 
+                        ({displayStats.winRate >= displayStats.breakEvenWinRate ? '+' : ''}{(displayStats.winRate - displayStats.breakEvenWinRate).toFixed(1)}%)
                       </span>
                     </div>
-                    {stats.winRate < stats.breakEvenWinRate && stats.lost > 0 && (
+                    {displayStats.winRate < displayStats.breakEvenWinRate && displayStats.lost > 0 && (
                       <div className="flex items-center gap-1 text-xs text-muted-foreground">
                         <Lightbulb className="h-3 w-3 text-yellow-500" />
-                        Need {Math.ceil((stats.breakEvenWinRate / 100) * stats.settled) - stats.won} more wins to break even
+                        Need {Math.ceil((displayStats.breakEvenWinRate / 100) * displayStats.settled) - displayStats.won} more wins to break even
                       </div>
                     )}
                   </div>
@@ -337,18 +375,29 @@ export default function AIPredictions() {
             {/* League Performance */}
             {stats?.leaguePerformance && stats.leaguePerformance.length > 0 && (
               <Card>
-                <CardHeader>
+                <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle className="text-base flex items-center gap-2">
                     <Trophy className="h-4 w-4 text-yellow-500" />
                     Performance by League
                   </CardTitle>
+                  {leagueFilter !== "all" && (
+                    <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setLeagueFilter("all")}>
+                      Clear Filter
+                    </Button>
+                  )}
                 </CardHeader>
                 <CardContent>
                   <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     {stats.leaguePerformance.slice(0, 6).map(league => (
-                      <div 
+                      <button
                         key={league.league}
-                        className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
+                        onClick={() => setLeagueFilter(leagueFilter === league.league ? "all" : league.league)}
+                        className={cn(
+                          "flex items-center justify-between p-3 rounded-lg transition-all duration-200 text-left w-full",
+                          leagueFilter === league.league
+                            ? "bg-primary/10 border-2 border-primary ring-1 ring-primary/20"
+                            : "bg-muted/50 border-2 border-transparent hover:bg-muted hover:border-border/50"
+                        )}
                       >
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-md bg-background flex items-center justify-center shadow-sm">
@@ -374,7 +423,7 @@ export default function AIPredictions() {
                             className="w-16 h-1.5 mt-1" 
                           />
                         </div>
-                      </div>
+                      </button>
                     ))}
                   </div>
                 </CardContent>
