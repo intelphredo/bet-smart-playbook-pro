@@ -182,12 +182,14 @@ const OddsValueSection: React.FC<OddsValueSectionProps> = ({ match, league, bett
             </div>
           )}
 
-          {/* Full sportsbook comparison */}
+          {/* Full sportsbook comparison — horizontal scroll on mobile */}
           {liveOdds.length > 0 && (
             <div className="space-y-2">
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                 All Sportsbooks
               </p>
+              <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
+              <div className="min-w-[480px] md:min-w-0 space-y-2">
               {liveOdds.map((odds, index) => {
                 const bookName = typeof odds.sportsbook === "string" ? odds.sportsbook : odds.sportsbook?.name || `Book ${index + 1}`;
                 const bookId = typeof odds.sportsbook === "string" ? odds.sportsbook : odds.sportsbook?.id || "";
@@ -229,6 +231,8 @@ const OddsValueSection: React.FC<OddsValueSectionProps> = ({ match, league, bett
                   </div>
                 );
               })}
+              </div>
+              </div>
             </div>
           )}
         </CardContent>

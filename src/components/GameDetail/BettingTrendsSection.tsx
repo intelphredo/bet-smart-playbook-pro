@@ -115,7 +115,7 @@ const BettingTrendsSection: React.FC<BettingTrendsSectionProps> = ({
                         ? "secondary"
                         : "outline"
                     }
-                    className="text-[9px] shrink-0"
+                    className="text-[10px] shrink-0 min-h-[28px] px-2"
                   >
                     {signal.type.replace("_", " ")}
                   </Badge>

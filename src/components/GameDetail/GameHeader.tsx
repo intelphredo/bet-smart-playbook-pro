@@ -48,7 +48,7 @@ const GameHeader: React.FC<GameHeaderProps> = ({ match, league }) => {
         variant="ghost"
         size="sm"
         onClick={() => navigate(-1)}
-        className="mb-3 -ml-2"
+        className="mb-3 -ml-2 min-h-[44px] min-w-[44px]"
       >
         <ArrowLeft className="h-4 w-4 mr-1" />
         Back
